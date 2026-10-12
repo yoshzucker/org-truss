@@ -601,28 +601,28 @@ This is the board of the file above:
  Subject  what was found: facts, summed up in clusters
  ├ Premises
  │   summary ······ Reviews run long                        → Sky
- │     (how › parts)
- │     fact ······· Eight of twelve reviews ran past the hour
- │     fact ······· The longest ran forty minutes over
+ │   (how › parts)
+ │   ├ fact ······· Eight of twelve reviews ran past the hour
+ │   └ fact ······· The longest ran forty minutes over
  │   fact ········· Six of twelve items each week come ba…  ground of Half the items repeat
  │   fact ········· Urgent items are raised in the team c…  ground of Urgent items need no review
  └ Issue ·········· The weekly review costs the team more time than it gives back.
 
  Members  what is made of it: interpretations and decisions
    hypothesis ····· Half the items repeat                   → Why it drags
+   (why › reasons, conclusion first)
+   │ ⬑ summary ···· Reviews run long
+   │ ⬑ fact ······· Six of twelve items each week come back from the week before
+   ├ assumption ··· Items need a week to move
+   └ x objection ·· Some items are urgent
      (why › reasons, conclusion first)
-     ⬑ summary ···· Reviews run long
-     ⬑ fact ······· Six of twelve items each week come back from the week before
-     assumption ··· Items need a week to move
-     x objection ·· Some items are urgent
-       (why › reasons, conclusion first)
-       x claim ···· Urgent items need no review
+     └ x claim ···· Urgent items need no review
          ⬑ fact ··· Urgent items are raised in the team chat
    hypothesis ····· Move to fortnightly                     → What we propose
-     (how › steps, conclusion first)
-     ⬑ hypothesis · Half the items repeat
-     step ········· Cancel every second review in the calendar
-     step ········· Carry what is still open to the next one
+   (how › steps, conclusion first)
+   │ ⬑ hypothesis · Half the items repeat
+   ├ step ········· Cancel every second review in the calendar
+   └ step ········· Carry what is still open to the next one
  Assumptions
    assumption ····· Items need a week to move               We assume most items need more than a week to change.
 
@@ -632,16 +632,16 @@ This is the board of the file above:
  │   summary ······ Reviews run long                        Reviews ran past the hour eight times this quarter.
  ├ Interpretation · Rain                                    Why it drags
  │   hypothesis ··· Half the items repeat                   Most items come back unchanged
+ │   (why › reasons, conclusion first)
+ │   ├ assumption · Items need a week to move               We assume most items need more than a week to change.
+ │   └ x objection  Some items are urgent                   Some items are urgent
  │     (why › reasons, conclusion first)
- │     assumption · Items need a week to move               We assume most items need more than a week to change.
- │     x objection  Some items are urgent                   Some items are urgent
- │       (why › reasons, conclusion first)
- │       x claim ·· Urgent items need no review             Urgent items need no review
+ │     └ x claim ·· Urgent items need no review             Urgent items need no review
  └ Conclusion ····· Umbrella                                What we propose
      hypothesis ··· Move to fortnightly                     Hold the review every other week.
-       (how › steps, conclusion first)
-       step ······· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-       step ······· Carry what is still open to the next …  2. Carry what is still open to the next one
+     (how › steps, conclusion first)
+     ├ step ······· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+     └ step ······· Carry what is still open to the next …  2. Carry what is still open to the next one
    Problem —
    Cause —
    Effect —
@@ -668,7 +668,15 @@ its line says only /Structure/.  Words too long for the middle are cut
 short, the whole of them in the tooltip, so the right keeps its column.
 The left is as wide as it needs; the middle and the right share the rest
 of the window evenly, and are drawn again when it is resized.  What a
-section or a member holds starts two columns right of its word.
+section or a member holds starts two columns right of its word: the
+members a section lists, the grounds of a member.  The sections under a
+section, and the members nested under a member, branch off from the
+column of its word.  The line of the tree starts right under the line
+naming its pattern and runs down past whatever comes before the first
+branch -- its grounds or the members it lists, and with entry text its
+notes -- so each cluster is held by it as far down as it goes.  The members' tree is drawn in the face
+~org-truss-branch~, faint by default, so where it meets the sections' tree
+in the structure the two read apart.
 
 The right says something different in each part, as the work there is
 different.  In the subject and the members it says where a member is used:
@@ -700,8 +708,8 @@ questions its pattern asks for and no section right below answers --
 /Broken links/, and /Duplicate ids/.  The mouse on the name of a check
 says what it finds.
 
-The patterns a cluster follows take a line of their own just below it, in
-parentheses, heading the sections or members they arrange: a section's
+The patterns a cluster follows go on the line just below it, in
+parentheses, where the sections or members they arrange branch off: a section's
 logic and telling patterns, as ~p~ offers them; a member's logic pattern
 and where it is told.  A member with members under it always has the
 line, so what they are to it shows even where no ~TRUSS_LOGIC~ is written
@@ -734,19 +742,31 @@ member has a source needs no mark: that is what makes it a /fact/.
 line: the notes that stay in the file in the middle, under the heading, and
 the rest of what the reader sees on the right, broken to fit the window.
 A heading too long for the middle is broken there too instead of cut
-short, since the board is now for reading.  Read down the right, the board
-is then the document, near enough, beside the tree and the notes it was
+short, since the board is now for reading, and so is every other line: a
+field's text, a ground, what a check lists.  The line naming a cluster's
+pattern stays right under its line, on the left of what follows it; when
+the pattern is too wide for the left it takes the line after the heading's
+words, and the notes start below it.  Read down the right, the board is
+then the document, near enough, beside the tree and the notes it was
 built from:
 
 #+begin_example
  ├ Interpretation · Rain                                                   Why it drags
  │   hypothesis ··· Half the items repeat                                  Most items come back unchanged
- │                  Robin keeps raising the same items.  Not something to  Half of each agenda repeats the week before.
- │                  put in writing.
- │     assumption · Items need a week to move                              We assume most items need more than a week to change.
- │     x objection  Some items are urgent                                  Some items are urgent
- │       x claim ·· Urgent items need no review                            Urgent items need no review
+ │   (why › reasons, conclusion first)                                     Half of each agenda repeats the week before.
+ │   │              Robin keeps raising the same items.  Not something to
+ │   │              put in writing.
+ │   ├ assumption · Items need a week to move                              We assume most items need more than a week to change.
+ │   └ x objection  Some items are urgent                                  Some items are urgent
+ │     (why › reasons, conclusion first)
+ │     └ x claim ·· Urgent items need no review                            Urgent items need no review
 #+end_example
+
+~w~ does the same for the line at point alone, so the board can be scanned
+a line each and one line read through: a member with its notes, a ground,
+a field.  ~w~ again, on any of its lines, puts it back on one.  While ~E~
+shows every line whole, ~w~ puts the line at point on one line instead,
+and ~E~ again draws every line the same way.
 
 The board's words are English whatever ~org-truss-language~ says, so in a
 file written in another language the two sides read apart at a glance.
@@ -801,6 +821,7 @@ foot of the board lists them in the same four lines.
 |       | ~TAB~       | go to it in the other window                      | same                                              |
 |       | ~SPC~       | show it in the other window, staying on the board | same                                              |
 |       | ~E~         | show the text under every heading, or stop        |                                                   |
+|       | ~w~         | show it whole, with the text under it, or stop    | same                                              |
 |       | ~z~         | fold what is under it, or unfold it               | fold what is nested under it, or unfold it        |
 |       | ~P~         | show the document in another window, kept current |                                                   |
 |       | ~x~         | write the document                                |                                                   |

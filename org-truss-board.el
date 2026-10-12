@@ -46,16 +46,22 @@ What the reader sees as body text takes `org-truss-dim', as the notes under
 a heading do in the middle column."
   :group 'org-truss)
 
+(defface org-truss-branch '((t :inherit org-truss-dim))
+  "Face for the tree that joins a member to the members nested under it.
+The tree of the brief's fields and of the sections keeps the default face,
+so the two trees read apart where they meet."
+  :group 'org-truss)
+
 ;; Every line has three columns.  On the left is what the board says the
 ;; line is, in its own words.  From one column, shared by every line, the
 ;; file's words -- headings, labels, the title -- as written.  On the right,
 ;; what the reader sees of it, so the document can be read down the page.
 ;; What the board says about how a section or an argument is arranged -- the
-;; pattern it follows -- takes a line of its own below, so the left side
-;; stays narrow and the file's words stay close to the tree.  With entry text
+;; pattern it follows -- goes on the line below, so the left side stays
+;; narrow and the file's words stay close to the tree.  With entry text
 ;; shown, what is written under each heading follows its line: what stays in
 ;; the file under the file's words, the rest of what the reader sees on the
-;; right.
+;; right; the pattern stays right under the heading's line, beside them.
 
 (defcustom org-truss-board-heading-width nil
   "Width the board gives the file's words on a line before what the reader sees.
@@ -124,6 +130,17 @@ board think the file was edited.")
 
 (defvar-local org-truss--entry-text nil
   "Non-nil when this board shows the text under each heading.")
+
+(defvar-local org-truss--wraps nil
+  "Keys of the lines of this board drawn the other way from the rest.
+Whole, with the text under the heading, while entry text is hidden; on one
+line while it is shown.")
+
+(defvar org-truss--wrapping nil
+  "The lines of the board being drawn the other way; see `org-truss--wraps'.")
+
+(defvar org-truss--text-column 0
+  "The column the file's words start at, while a board is drawn with entry text.")
 
 (defvar-local org-truss--view nil
   "The buffer showing this board's document, if one has been opened.")
@@ -300,26 +317,29 @@ face of a heading, the body in the face of body text."
           (body (mapcar (lambda (line) (propertize line 'face 'org-truss-dim))
                         (org-truss--fill (or (cdr seen) "") org-truss--reader-width))))
       (if (and title (not (string-blank-p title)))
-          (cons (propertize title 'face 'org-truss-reader) body)
+          (append (org-truss--break (propertize title 'face 'org-truss-reader)
+                                    org-truss--reader-width)
+                  body)
         body))))
 
 (defun org-truss--member-reader (member &optional wording)
   "Return what the reader sees of MEMBER as lines, the first for its own line.
 WORDING when a section tells it in words of its own; else its public block,
-or its label; `noexport' when the reader sees nothing of it.  The first
-line also says whom to confirm it with, when the file says."
+or its label; `noexport' when the reader sees nothing of it.  Whom to
+confirm it with, when the file says, follows the first line, or with entry
+text, the last, on lines of its own."
   (let ((lines (cond ((org-truss-noexport-p member)
                       (list (propertize "noexport" 'face 'org-truss-dim)))
                      (wording (org-truss--reader-lines (cons nil wording)))
                      (t (org-truss--reader-lines (org-truss-member-shown member)))))
-        (confirm (org-truss-member-confirm member)))
-    (if confirm
-        (cons (string-join (delq nil (list (car lines)
-                                           (propertize (concat "confirm with " confirm)
-                                                       'face 'org-truss-attention)))
-                           "  ")
-              (cdr lines))
-      lines)))
+        (confirm (and (org-truss-member-confirm member)
+                      (propertize (concat "confirm with " (org-truss-member-confirm member))
+                                  'face 'org-truss-attention))))
+    (cond ((null confirm) lines)
+          (org-truss--entries
+           (append lines (org-truss--break confirm org-truss--reader-width)))
+          (t (cons (string-join (delq nil (list (car lines) confirm)) "  ")
+                   (cdr lines))))))
 
 (defun org-truss--level-face (level)
   "Return the face Org gives the words of a heading at LEVEL.
@@ -346,23 +366,66 @@ rather than scanned."
       (org-truss--break label (- org-truss--heading-width 2))
     (list label)))
 
-(defun org-truss--entry-lines (left more notes below item)
-  "Return the lines under a heading when the board shows entry text.
-MORE, the rest of the heading's own words, and then NOTES, what is written
-under the heading and stays in the file, go in the file's column; BELOW,
-the rest of what the reader sees, on the right.  LEFT starts each line.
-ITEM is the heading's line's, kept under a key of its own."
-  (when org-truss--entries
-    (let ((middle (append more
-                          (mapcar (lambda (line) (propertize line 'face 'org-truss-dim))
-                                  (org-truss--fill (or notes "")
-                                                   (- org-truss--heading-width 2))))))
-      (cl-loop for i below (max (length middle) (length below))
-               collect (append (org-truss--line left (or (nth i middle) "") (nth i below)
-                                                (plist-put (copy-sequence item) :key
-                                                           (append (plist-get item :key)
-                                                                   (list 'text i))))
+(defun org-truss--entry-lines (left more notes below item &optional head stem)
+  "Return the lines under a heading's own line on the board.
+HEAD, if any, is the line that says how what is under the heading is
+arranged.  When the board shows entry text, MORE, the rest of the
+heading's own words, and then NOTES, what is written under the heading and
+stays in the file, go in the file's column; BELOW, the rest of what the
+reader sees, on the right.  LEFT starts each line, and STEM, when given,
+each line below HEAD, or every line without one: the line of the tree down
+to what branches off under the heading.  ITEM is the heading's line's,
+kept under a key of its own.
+
+HEAD's words take the left of the first of these lines, so they stay right
+under the heading's line.  When they are too wide for the board's own
+column they take the line after the heading's own words instead, and the
+file's column leaves that line to them."
+  (if (not org-truss--entries)
+      (and head (list head))
+    (let* ((notes (mapcar (lambda (line) (propertize line 'face 'org-truss-dim))
+                          (org-truss--fill (or notes "") (- org-truss--heading-width 2))))
+           (wide (and head (> (+ (string-width (plist-get head :left)) 2)
+                              org-truss--text-column)))
+           (at (cond (wide (length more)) (head 0) (t -1)))
+           (middle (append more (and wide (list nil)) notes)))
+      (cl-loop for i below (max (length middle) (length below) (1+ at))
+               collect (append (if (= i at)
+                                   (org-truss--line (plist-get head :left) (nth i middle)
+                                                    (nth i below) (plist-get head :item))
+                                 (org-truss--line (if (and stem (> i at)) stem left)
+                                                  (or (nth i middle) "") (nth i below)
+                                                  (plist-put (copy-sequence item) :key
+                                                             (append (plist-get item :key)
+                                                                     (list 'text i)))))
                                '(:bare t))))))
+
+(defun org-truss--wrapped (line)
+  "Return LINE as the lines it takes while entry text is shown.
+Its file's words are broken to their column and what follows them to the
+reader's, and what does not fit goes on lines of its own below, which
+start with LINE's :under, the tree on its left going on down.  A heading
+and what the reader sees of it are broken where they are drawn, to keep
+them in order with what is under the heading; this breaks the rest: a
+ground, what a check lists."
+  (let* ((room (- org-truss--heading-width 2))
+         (text (plist-get line :text))
+         (note (plist-get line :note))
+         (texts (and text (org-truss--break text room)))
+         (notes (and note (org-truss--break note org-truss--reader-width)))
+         (item (plist-get line :item)))
+    (if (and (null (cdr texts)) (null (cdr notes)))
+        (list line)
+      (cons (plist-put (plist-put (copy-sequence line) :text (car texts)) :note (car notes))
+            (cl-loop for i from 1 below (max (length texts) (length notes))
+                     collect (append (org-truss--line
+                                      (or (plist-get line :under) "")
+                                      (or (nth i texts) "") (nth i notes)
+                                      (and item
+                                           (plist-put (copy-sequence item) :key
+                                                      (append (plist-get item :key)
+                                                              (list 'wrap i)))))
+                                     '(:bare t)))))))
 
 (defvar org-truss--model nil
   "The model of the board being drawn.")
@@ -413,10 +476,23 @@ ground of, and how many more.  Nil when nothing uses it itself."
               (setcdr use (append (cdr use) (list m))))))))
     uses))
 
+(defun org-truss--branch (indent last)
+  "Return how the lines of a member nested under another start.
+INDENT starts the other's lines.  A cons (LINE . UNDER) for
+`org-truss--member-lines': LINE branches off to the member, and UNDER
+carries the tree down past it to the next, unless the member is the LAST."
+  (cons (concat indent (propertize (if last "└ " "├ ") 'face 'org-truss-branch))
+        (concat indent (propertize (if last "  " "│ ") 'face 'org-truss-branch))))
+
 (defun org-truss--member-lines (model member indent key
                                       &optional link section marker wording)
   "Return board lines for MEMBER and what is nested under it.
-INDENT starts each line.  KEY identifies the line across redraws.  LINK,
+INDENT starts each line: a string, or a cons (LINE . UNDER) for a member
+nested under another, LINE starting its own line and UNDER the lines under
+it, as `org-truss--branch' makes them.  The members nested under MEMBER
+branch off right under it, as the sections of the structure do; its
+pattern heads them, and its grounds go in further, as a section's links do.
+KEY identifies the line across redraws.  LINK,
 the reference the section's link makes, and SECTION are set when a
 section lists MEMBER, so the line can be moved;
 WORDING, when that section tells it in words of its own.  MARKER, when
@@ -427,7 +503,9 @@ In the structure, `org-truss--told', the right is what the document tells
 of it, and only what the document tells comes with it.  Elsewhere the
 right is where it is used, and its grounds follow it, marked with an
 arrow, and the places its pattern asks for and it lacks."
-  (let* ((told org-truss--told)
+  (let* ((under (if (consp indent) (cdr indent) indent))
+         (indent (if (consp indent) (car indent) indent))
+         (told org-truss--told)
          (material (org-truss-material-p member))
          ;; A cluster always says what it is, written or not: with nothing
          ;; written, what is under it is its support, why › reasons.
@@ -435,17 +513,31 @@ arrow, and the places its pattern asks for and it lacks."
                         (org-truss-member-children member)))
          (role (org-truss-member-role member))
          (label (org-truss--label-lines (org-truss--member-words member)))
-         (reader (if told
-                     (org-truss--member-reader member wording)
-                   (list (org-truss--use-text member))))
+         ;; A marker opens the first line, and the lines after it are
+         ;; indented as far, as a list item's are.
+         (hang (if (and told marker) (string-width marker) 0))
+         (reader (cond (told
+                        (let ((org-truss--reader-width (- org-truss--reader-width hang)))
+                          (org-truss--member-reader member wording)))
+                       ((and org-truss--entries (org-truss--use-text member))
+                        (org-truss--break (org-truss--use-text member) org-truss--reader-width))
+                       (t (list (org-truss--use-text member)))))
          (reader (if (and told marker (car reader))
-                     (cons (concat marker (car reader)) (cdr reader))
+                     (cons (concat marker (car reader))
+                           (mapcar (lambda (line)
+                                     (if (string-empty-p line) line
+                                       (concat (make-string hang ?\s) line)))
+                                   (cdr reader)))
                    reader))
          (how (org-truss-how-children member))
          (n 0)
          (children (and (not (and told material)) (org-truss-member-children member)))
          (nested (length (mapcan #'org-truss--subtree children)))
          (folded (and (> nested 0) (org-truss--folded-p key nil)))
+         (shown (and (not folded) children))
+         ;; What comes between its pattern and the members branching off
+         ;; below -- its notes, its grounds -- has the tree's line run past.
+         (stem (concat under (if shown (propertize "│ " 'face 'org-truss-branch) "  ")))
          (item (append (list :type 'member :pos (org-truss-member-pos member)
                              :label (org-truss-member-label member)
                              :link link :section section :key key)
@@ -462,53 +554,61 @@ arrow, and the places its pattern asks for and it lacks."
             (car label)
             (car reader)
             item))
-     (org-truss--entry-lines (concat indent "  ") (cdr label) (org-truss-member-notes member)
-                             (cdr reader) item)
-     (and patterned (not folded) (not (and told material))
-          (list (org-truss--line
-                 (propertize (if material
-                                 (format "%s  (%s)" indent
-                                         (org-truss-pattern-label (org-truss-member-logic member)))
-                               (format "%s  (%s, %s)" indent
-                                       (org-truss-pattern-label (org-truss-member-logic member))
-                                       (org-truss-pattern-name
-                                        (org-truss-conclusion-position member))))
-                             'face 'org-truss-dim
-                             'help-echo (and (null (org-truss-member-logic member))
-                                             (substitute-command-keys
-                                              "No TRUSS_LOGIC is written, so what is under it is its support; \\[org-truss-board-pattern] writes one")))
-                 nil nil (list :type 'member :pos (org-truss-member-pos member)
-                               :key (append key '(pattern))))))
+     (org-truss--entry-lines
+      under (cdr label) (org-truss-member-notes member) (cdr reader) item
+      (and patterned (not folded) (not (and told material))
+           (org-truss--line
+            (concat under
+                    (propertize (if material
+                                    (format "(%s)"
+                                            (org-truss-pattern-label (org-truss-member-logic member)))
+                                  (format "(%s, %s)"
+                                          (org-truss-pattern-label (org-truss-member-logic member))
+                                          (org-truss-pattern-name
+                                           (org-truss-conclusion-position member))))
+                                'face 'org-truss-dim
+                                'help-echo (and (null (org-truss-member-logic member))
+                                                (substitute-command-keys
+                                                 "No TRUSS_LOGIC is written, so what is under it is its support; \\[org-truss-board-pattern] writes one"))))
+            nil nil (list :type 'member :pos (org-truss-member-pos member)
+                          :key (append key '(pattern)))))
+      stem)
      (mapcar (lambda (ref)
                (let ((ground (org-truss-member-by-ref model ref)))
-                 (org-truss--line
-                  (concat indent "  " (propertize "⬑ " 'face 'org-truss-dim)
-                          (if ground (org-truss--kind-word model ground)
-                            (propertize "broken ground" 'face 'org-truss-attention)))
-                  (propertize (if ground (org-truss-member-label ground)
-                                (format "[[%s]]" (org-truss--target ref)))
-                              'face 'org-truss-dim)
-                  nil (list :type 'member :pos (org-truss-member-pos (or ground member))
-                            :label (and ground (org-truss-member-label ground))
-                            :claim (org-truss-member-pos member) :ground ref
-                            :key (append key (list 'ground ref))))))
+                 (append
+                  (org-truss--line
+                   (concat stem (propertize "⬑ " 'face 'org-truss-dim)
+                           (if ground (org-truss--kind-word model ground)
+                             (propertize "broken ground" 'face 'org-truss-attention)))
+                   (propertize (if ground (org-truss-member-label ground)
+                                 (format "[[%s]]" (org-truss--target ref)))
+                               'face 'org-truss-dim)
+                   nil (list :type 'member :pos (org-truss-member-pos (or ground member))
+                             :label (and ground (org-truss-member-label ground))
+                             :claim (org-truss-member-pos member) :ground ref
+                             :key (append key (list 'ground ref))))
+                  (list :under stem))))
              (and (not told) (not folded) (org-truss-member-grounds member)))
-     (mapcan (lambda (child)
-               (org-truss--member-lines model child (concat indent "  ")
-                                        (append key (list (org-truss-member-label child)))
-                                        nil nil
-                                        (and told
-                                             (memq child how)
-                                             (not (org-truss-noexport-p child))
-                                             (let ((marker (org-truss--list-marker
-                                                            member child (setq n (1+ n)))))
-                                               (concat (car marker) (cdr marker))))))
-             (and (not folded) children))
+     (let ((i 0))
+       (mapcan (lambda (child)
+                 (org-truss--member-lines model child
+                                          (org-truss--branch under (= (setq i (1+ i))
+                                                                      (length shown)))
+                                          (append key (list (org-truss-member-label child)))
+                                          nil nil
+                                          (and told
+                                               (memq child how)
+                                               (not (org-truss-noexport-p child))
+                                               (let ((marker (org-truss--list-marker
+                                                              member child (setq n (1+ n)))))
+                                                 (concat (car marker) (cdr marker))))))
+               shown))
      (mapcar (lambda (gap)
                (org-truss--line
-                (propertize (format "%s  %s —%s" indent (org-truss-role-name (car gap))
-                                    (if (> (cdr gap) 1) (format " ×%d" (cdr gap)) ""))
-                            'face 'org-truss-attention)
+                (concat under "  "
+                        (propertize (format "%s —%s" (org-truss-role-name (car gap))
+                                            (if (> (cdr gap) 1) (format " ×%d" (cdr gap)) ""))
+                                    'face 'org-truss-attention))
                 nil nil (list :type 'member :pos (org-truss-member-pos member)
                               :gap (car gap)
                               :key (append key (list 'gap (car gap))))))
@@ -543,8 +643,8 @@ section that answers nothing is not judged here: its own line says so."
           (t (format "fits more than one place: %s"
                      (concat (string-join (butlast hits) ", ") " and " (car (last hits))))))))
 
-(defun org-truss--pattern-lines (section indent item)
-  "Return the line naming the patterns SECTION follows, if it follows any.
+(defun org-truss--pattern-line (section indent item)
+  "Return the line naming the patterns SECTION follows, or nil if it follows none.
 Its logic pattern -- what the sections below must answer, how › proposal --
 and its telling pattern, which arranges them.  It goes under SECTION's own
 line, at INDENT.  ITEM is SECTION's line's, kept under a key of its own."
@@ -552,11 +652,11 @@ line, at INDENT.  ITEM is SECTION's line's, kept under a key of its own."
                                  (list (org-truss-section-logic section)
                                        (org-truss-section-telling section))))))
     (and names
-         (list (org-truss--line
-                (propertize (format "%s(%s)" indent (string-join names ", "))
-                            'face 'org-truss-dim)
-                nil nil (plist-put (copy-sequence item) :key
-                                   (append (plist-get item :key) '(pattern))))))))
+         (org-truss--line
+          (concat indent (propertize (format "(%s)" (string-join names ", "))
+                                     'face 'org-truss-dim))
+          nil nil (plist-put (copy-sequence item) :key
+                             (append (plist-get item :key) '(pattern)))))))
 
 (defun org-truss--section-gap-lines (section indent item)
   "Return a line for each role SECTION's patterns ask for and nothing right
@@ -564,9 +664,10 @@ below answers, at INDENT; ITEM is SECTION's line's.  On one, a new section
 answers that role."
   (mapcar (lambda (gap)
             (org-truss--line
-             (propertize (format "%s%s —%s" indent (org-truss-role-name (car gap))
-                                 (if (> (cdr gap) 1) (format " ×%d" (cdr gap)) ""))
-                         'face 'org-truss-attention)
+             (concat indent
+                     (propertize (format "%s —%s" (org-truss-role-name (car gap))
+                                         (if (> (cdr gap) 1) (format " ×%d" (cdr gap)) ""))
+                                 'face 'org-truss-attention))
              nil nil (append (list :gap (car gap)
                                    :key (append (plist-get item :key) (list 'gap (car gap))))
                              item)))
@@ -579,6 +680,8 @@ PATH is the labels from the root, which identifies the line across redraws."
   (let* ((path (append path (list (org-truss-section-label section))))
          (inner (concat prefix (if last "  " "│ ")))
          (children (org-truss-section-children section))
+         ;; Its notes and links have the line to the sections below run past.
+         (stem (concat inner (if children "│ " "  ")))
          (roles (org-truss-section-roles section))
          (misfit (and parent-pattern (org-truss--misfit roles parent-pattern)))
          (public (org-truss-section-public section))
@@ -607,9 +710,9 @@ PATH is the labels from the root, which identifies the line across redraws."
                             (append item (list :why (and (or misfit unnamed)
                                                                (string-join (delq nil (list misfit unnamed))
                                                                             ". "))))))
-     (org-truss--entry-lines inner (cdr label) (org-truss-section-notes section) (cdr reader) item)
-     (org-truss--pattern-lines section inner item)
-     (org-truss--links-lines model section (concat inner "  ") path)
+     (org-truss--entry-lines inner (cdr label) (org-truss-section-notes section) (cdr reader) item
+                             (org-truss--pattern-line section inner item) stem)
+     (org-truss--links-lines model section stem path)
      (let ((n (length children)) (i 0))
        (mapcan (lambda (child)
                  (setq i (1+ i))
@@ -655,12 +758,17 @@ Each with the board's word for it.  Those marked t are drawn even while
 empty, as a reminder; the rest once they hold text or members.")
 
 (defun org-truss--field-text (model key)
-  "Return the text of the field KEY, (PART FIELD), of MODEL on one line, or nil."
+  "Return the text of the field KEY, (PART FIELD), of MODEL as lines, or nil.
+One line; while entry text is shown, as many as it takes to break it to
+the room of the file's column."
   (let ((text (alist-get (cadr key) (if (eq (car key) 'brief)
                                         (org-truss-model-brief model)
                                       (org-truss-model-subject model)))))
     (and text (not (string-empty-p text))
-         (propertize (org-truss--one-line text) 'face 'org-truss-dim))))
+         (mapcar (lambda (line) (propertize line 'face 'org-truss-dim))
+                 (if org-truss--entries
+                     (org-truss--fill text (- org-truss--heading-width 2))
+                   (list (org-truss--one-line text)))))))
 
 (defun org-truss--field-members (model key)
   "Return the members written under the field KEY of MODEL."
@@ -676,26 +784,28 @@ It is when the file has it and it is marked to be drawn, or holds something."
 
 (defun org-truss--field-lines (model field at prefix inner)
   "Return board lines for FIELD, an entry of `org-truss--board-fields', of MODEL.
-Its own line, PREFIX and its name, with its text; then the members written
-under it, from INNER, so they can be gone to and placed from here.  AT
-gives the item for a place in the file."
+Its own line, PREFIX and its name, with its text, and with entry text the
+rest of its text below, from INNER; then the members written under it, so
+they can be gone to and placed from here.  AT gives the item for a place
+in the file."
   (let* ((key (car field))
          (text (org-truss--field-text model key))
          (members (org-truss--field-members model key))
          (fold (list 'field key))
          (folded (and members (org-truss--folded-p
-                               fold (> (length members) org-truss-board-fold-limit)))))
+                               fold (> (length members) org-truss-board-fold-limit))))
+         (item (append (funcall at key)
+                       (and members (list :fold fold :folded folded)))))
     (and (org-truss--field-drawn-p model field at)
-         (cons (org-truss--line (concat prefix (nth 1 field)
-                                        (if folded (org-truss--fold-mark (length members)) ""))
-                                text nil
-                                (append (funcall at key)
-                                        (and members (list :fold fold :folded folded))))
-               (and (not folded)
-                    (mapcan (lambda (m)
-                              (org-truss--member-lines model m (concat inner "  ")
-                                                       (list 'field key (org-truss-member-label m))))
-                            members))))))
+         (append (list (org-truss--line (concat prefix (nth 1 field)
+                                                (if folded (org-truss--fold-mark (length members)) ""))
+                                        (car text) nil item))
+                 (org-truss--entry-lines inner (cdr text) nil nil item)
+                 (and (not folded)
+                      (mapcan (lambda (m)
+                                (org-truss--member-lines model m (concat inner "  ")
+                                                         (list 'field key (org-truss-member-label m))))
+                              members))))))
 
 (defun org-truss--part-line (name gloss item &optional reader)
   "Return the line that opens the part NAME on the board.
@@ -726,7 +836,8 @@ AT gives the item for a place in the file."
     (if (null root)
         (list (org-truss--line (propertize " (no structure part)" 'face 'org-truss-attention)))
       (let ((item (list :type 'section :pos (org-truss-section-pos root) :root t
-                        :label (org-truss-section-label root) :key '(section root))))
+                        :label (org-truss-section-label root) :key '(section root)))
+            (stem (if (org-truss-section-children root) " │ " "   ")))
         ;; The root's heading names the part, as the brief's and the members'
         ;; do, and is not in the document; the board's word stands for it.
         (append
@@ -734,9 +845,9 @@ AT gives the item for a place in the file."
            (append
             (list (org-truss--part-line "Structure" "how it is told: sections, listing members"
                                         item (car lead)))
-            (org-truss--entry-lines " " nil (org-truss-section-notes root) (cdr lead) item)))
-         (org-truss--pattern-lines root " " item)
-         (org-truss--links-lines model root "   " '(root))
+            (org-truss--entry-lines " " nil (org-truss-section-notes root) (cdr lead) item
+                                    (org-truss--pattern-line root " " item) stem)))
+         (org-truss--links-lines model root stem '(root))
          (let* ((children (org-truss-section-children root)) (n (length children)) (i 0))
            (mapcan (lambda (child)
                      (setq i (1+ i))
@@ -882,18 +993,52 @@ Two past the widest of the board's own words on a line that has any."
                        widest))
                    lines 0)))
 
+(defun org-truss--owner (key)
+  "Return the key of the line that the line keyed KEY is drawn for.
+The lines a heading's line takes below it -- the rest of its text, the
+line naming its pattern, a line its words are broken onto -- are its own;
+any other line is its own owner."
+  (pcase (last key 2)
+    (`(,(or 'text 'wrap) ,(pred integerp)) (butlast key 2))
+    (`(,_ pattern) (butlast key))
+    (_ key)))
+
+(defun org-truss--groups (lines)
+  "Return LINES as groups (KEY LINE...), a line with those it takes below it.
+KEY is the owner of each, as `org-truss--owner' says."
+  (let (groups)
+    (dolist (line lines)
+      (let ((key (org-truss--owner (plist-get (plist-get line :item) :key))))
+        (if (and groups (equal key (caar groups)))
+            (push line (cdar groups))
+          (push (list key line) groups))))
+    (nreverse (mapcar (lambda (group) (cons (car group) (nreverse (cdr group)))) groups))))
+
+(defun org-truss--swap (lines other)
+  "Return LINES, with each line `org-truss--wrapping' holds as OTHER draws it.
+LINES and OTHER are the board drawn with entry text and without, one each,
+so the same lines come in the same order in both; each takes the lines it
+takes below it there."
+  (let ((groups (org-truss--groups lines))
+        (others (org-truss--groups other)))
+    (if (/= (length groups) (length others))
+        lines
+      (cl-mapcan (lambda (group other)
+                   (cdr (if (member (car group) org-truss--wrapping) other group)))
+                 groups others))))
+
 (defun org-truss-board-text (model &optional entries width)
   "Return the board for MODEL as a string, with entry text when ENTRIES.
-The file's words start one column for every line.  WIDTH is that of the
-window the board is drawn for: right of that column, the file's words and
-what the reader sees share it, and entry text is broken to fit; see
+The lines `org-truss--wrapping' holds are drawn the other way.  The file's
+words start one column for every line.  WIDTH is that of the window the
+board is drawn for: right of that column, the file's words and what the
+reader sees share it, and entry text is broken to fit; see
 `org-truss-board-heading-width' and `org-truss-board-reader-width'."
-  (let* ((room (and width
-                    ;; Where the file's words start does not depend on
-                    ;; entry text, so a drawing without it says.
-                    (- width 1 (org-truss--column
-                                (let ((org-truss--entries nil))
-                                  (org-truss--board-lines model))))))
+  (let* ((plain (let ((org-truss--entries nil)) (org-truss--board-lines model)))
+         ;; Where the file's words start does not depend on entry text, so
+         ;; the drawing without it says.
+         (column (org-truss--column plain))
+         (room (and width (- width 1 column)))
          (org-truss--heading-width
           (cond (org-truss-board-heading-width)
                 ;; Two of the file's columns go to the gap before the
@@ -904,9 +1049,13 @@ what the reader sees share it, and entry text is broken to fit; see
           (cond (org-truss-board-reader-width)
                 (room (max 20 (- room org-truss--heading-width)))
                 (t 60)))
-         (org-truss--entries entries)
-         (lines (org-truss--board-lines model))
-         (column (org-truss--column lines)))
+         (org-truss--text-column column)
+         (whole (and (or entries org-truss--wrapping)
+                     (let ((org-truss--entries t))
+                       (mapcan #'org-truss--wrapped (org-truss--board-lines model)))))
+         (lines (cond ((null org-truss--wrapping) (if entries whole plain))
+                      (entries (org-truss--swap whole plain))
+                      (t (org-truss--swap plain whole)))))
     (mapconcat (lambda (line) (org-truss--lay-out line column)) lines "")))
 
 (defconst org-truss--board-help
@@ -923,7 +1072,7 @@ shape  \\[org-truss-board-new-section] section  \\[org-truss-board-say] say  \
 \\[org-truss-board-flip] first/last
 see    \\[org-truss-board-visit] visit  \\[org-truss-board-visit-other-window] other window  \
 \\[org-truss-board-show] show  \\[org-truss-board-entry-text] entry text  \
-\\[org-truss-board-fold] fold  \
+\\[org-truss-board-wrap] wrap  \\[org-truss-board-fold] fold  \
 \\[org-truss-board-view] view  \\[org-truss-board-export] export  \
 \\[org-truss-board-redraw] redraw  \\[org-truss-board-save] save"
   "The keys written at the foot of the board, by what they work on.
@@ -970,7 +1119,8 @@ command acts on the file as it is, and a key pressed once is enough."
         (window (get-buffer-window (current-buffer) t)))
     (setq org-truss--drawn-width (and window (window-body-width window)))
     (erase-buffer)
-    (insert (let ((org-truss--folding org-truss--folds))
+    (insert (let ((org-truss--folding org-truss--folds)
+                  (org-truss--wrapping org-truss--wraps))
               (org-truss-board-text model org-truss--entry-text org-truss--drawn-width))
             "\n" (propertize (substitute-command-keys org-truss--board-help t)
                              'face 'org-truss-dim)
@@ -994,6 +1144,7 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "SPC") #'org-truss-board-show)
     (define-key map (kbd "e") #'org-truss-board-edit)
     (define-key map (kbd "E") #'org-truss-board-entry-text)
+    (define-key map (kbd "w") #'org-truss-board-wrap)
     (define-key map (kbd "z") #'org-truss-board-fold)
     (define-key map (kbd "c") #'org-truss-board-new)
     (define-key map (kbd "R") #'org-truss-board-rename)
@@ -1036,7 +1187,8 @@ The file's words take half the window, and entry text is broken to its
 width, so a new width wants a new drawing."
   (with-current-buffer (window-buffer window)
     (when (and (or (null org-truss-board-heading-width)
-                   (and org-truss--entry-text (null org-truss-board-reader-width)))
+                   (and (or org-truss--entry-text org-truss--wraps)
+                        (null org-truss-board-reader-width)))
                (buffer-live-p org-truss--source)
                (not (eql org-truss--drawn-width (window-body-width window))))
       (org-truss-board-redraw))))
@@ -1640,11 +1792,33 @@ members starts folded."
   "Show the text under each heading on the board, or stop showing it.
 As E does in the agenda.  What stays in the file goes under the heading, in
 the file's column; the rest of what the reader sees goes on the right, so
-the document can be read down the right of the board."
+the document can be read down the right of the board.  Every line is drawn
+the same way again, whatever \\[org-truss-board-wrap] did to it."
   (interactive)
-  (setq org-truss--entry-text (not org-truss--entry-text))
+  (setq org-truss--entry-text (not org-truss--entry-text)
+        org-truss--wraps nil)
   (org-truss-board-redraw)
   (message "Entry text %s" (if org-truss--entry-text "shown" "hidden")))
+
+(defun org-truss-board-wrap ()
+  "Draw the line at point whole, or on one line again; the rest stay as they are.
+Whole is as \\[org-truss-board-entry-text] draws every line: its words
+broken to fit, and under a heading what is written under it.  So the board
+can be scanned a line each and a line read through.  While entry text is
+shown, this puts the line back on one line instead."
+  (interactive)
+  (let ((key (org-truss--owner (plist-get (org-truss--item) :key)))
+        (start (point)))
+    (unless key (user-error "Nothing to wrap here"))
+    ;; To the line's own first, where the board puts point back.
+    (while (and (not (equal (plist-get (org-truss--item) :key) key))
+                (zerop (forward-line -1))))
+    (unless (equal (plist-get (org-truss--item) :key) key)
+      (goto-char start))
+    (setq org-truss--wraps (if (member key org-truss--wraps)
+                               (delete key org-truss--wraps)
+                             (cons key org-truss--wraps)))
+    (org-truss-board-redraw)))
 
 (defun org-truss-board-edit ()
   "Edit the heading of the line at point on its own, in another window.
