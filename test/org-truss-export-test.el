@@ -57,8 +57,8 @@ the breakdown it was found with, and stay behind."
 own; the structure's lead opens the document."
   (let ((out (org-truss-test--render
               (replace-regexp-in-string
-               (regexp-quote "- [[*Reviews run long]]")
-               "- [[*Reviews run long][Our reviews overran eight times.]]"
+               (regexp-quote "- [[#long]]")
+               "- [[#long][Our reviews overran eight times.]]"
                (replace-regexp-in-string
                 (regexp-quote ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n")
                 ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n#+begin_public\nRead this first.\n#+end_public\n"
@@ -70,7 +70,7 @@ own; the structure's lead opens the document."
 (ert-deftest org-truss-test-render-broken-link ()
   "A link to no member shows in the document, where it will be seen."
   (let ((org-truss-language 'en))
-    (should (string-match-p "(broken link: No such member)"
+    (should (string-match-p "(broken link: #none)"
                             (org-truss-test--render org-truss-test--file)))))
 
 (ert-deftest org-truss-test-render-conclusion-last ()
@@ -83,6 +83,7 @@ what argues against it still comes after it."
 :END:
 ** Claim
 :PROPERTIES:
+:CUSTOM_ID: claim
 :TRUSS_TELLING: last
 :END:
 #+begin_public The claim
@@ -107,7 +108,7 @@ Doubt body.
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
-- [[*Claim]]
+- [[#claim]]
 ")))
     (should (string-match-p "Ground body\\.\n\n\\*The claim\\*\nClaim body\\.\n\nDoubt body\\." out))
     (should-not (string-match-p "^\\*\\* The claim" out))))
@@ -120,6 +121,9 @@ Doubt body.
 :TRUSS_PART: members
 :END:
 ** Inner claim
+:PROPERTIES:
+:CUSTOM_ID: inner
+:END:
 #+begin_public Inner title
 #+end_public
 * S
@@ -138,7 +142,7 @@ Doubt body.
 :END:
 #+begin_public Where we are
 #+end_public
-- [[*Inner claim]]
+- [[#inner]]
 ")))
     (should (string-match-p "^\\* What to do\n" out))
     (should (string-match-p "^\\*\\* Where we are\n" out))
@@ -205,6 +209,7 @@ labelled with the reader's questions they answer, in the purpose's order."
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
+:CUSTOM_ID: move
 :TRUSS_LOGIC: report
 :END:
 *** Hold them every other week
@@ -220,7 +225,7 @@ labelled with the reader's questions they answer, in the purpose's order."
 :TRUSS_PART: structure
 :END:
 ** Now
-- [[*We move to fortnightly reviews]]
+- [[#move]]
 ")))
     (should (string-match-p
              "^We move to fortnightly reviews\n\n- 現状：Reviews run long\n- 結論：Hold them every other week\n"

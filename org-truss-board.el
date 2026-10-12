@@ -400,14 +400,14 @@ ground of, and how many more.  Nil when nothing uses it itself."
         (cell (lambda (m uses) (or (gethash m uses) (puthash m (cons nil nil) uses)))))
     (when root
       (dolist (section (cons root (org-truss-sections model)))
-        (dolist (label (org-truss-section-links section))
-          (let ((m (org-truss-member-by-label model label)))
+        (dolist (ref (org-truss-section-links section))
+          (let ((m (org-truss-member-by-ref model ref)))
             (when m
               (let ((use (funcall cell m uses)))
                 (setcar use (append (car use) (list section)))))))))
     (dolist (m (org-truss-model-all model))
-      (dolist (label (org-truss-member-grounds m))
-        (let ((ground (org-truss-member-by-label model label)))
+      (dolist (ref (org-truss-member-grounds m))
+        (let ((ground (org-truss-member-by-ref model ref)))
           (when ground
             (let ((use (funcall cell ground uses)))
               (setcdr use (append (cdr use) (list m))))))))
@@ -416,8 +416,9 @@ ground of, and how many more.  Nil when nothing uses it itself."
 (defun org-truss--member-lines (model member indent key
                                       &optional link section marker wording)
   "Return board lines for MEMBER and what is nested under it.
-INDENT starts each line.  KEY identifies the line across redraws.  LINK and
-SECTION are set when a section lists MEMBER, so the line can be moved;
+INDENT starts each line.  KEY identifies the line across redraws.  LINK,
+the reference the section's link makes, and SECTION are set when a
+section lists MEMBER, so the line can be moved;
 WORDING, when that section tells it in words of its own.  MARKER, when
 MEMBER says how to do the member above it, is how the reader sees it
 begin: its number, its bullet, its label.
@@ -478,17 +479,19 @@ arrow, and the places its pattern asks for and it lacks."
                                               "No TRUSS_LOGIC is written, so what is under it is its support; \\[org-truss-board-pattern] writes one")))
                  nil nil (list :type 'member :pos (org-truss-member-pos member)
                                :key (append key '(pattern))))))
-     (mapcar (lambda (label)
-               (let ((ground (org-truss-member-by-label model label)))
+     (mapcar (lambda (ref)
+               (let ((ground (org-truss-member-by-ref model ref)))
                  (org-truss--line
                   (concat indent "  " (propertize "⬑ " 'face 'org-truss-dim)
                           (if ground (org-truss--kind-word model ground)
-                            (propertize "broken link" 'face 'org-truss-attention)))
-                  (propertize label 'face 'org-truss-dim)
+                            (propertize "broken ground" 'face 'org-truss-attention)))
+                  (propertize (if ground (org-truss-member-label ground)
+                                (format "[[%s]]" (org-truss--target ref)))
+                              'face 'org-truss-dim)
                   nil (list :type 'member :pos (org-truss-member-pos (or ground member))
-                            :label (and ground label)
-                            :claim (org-truss-member-pos member) :ground label
-                            :key (append key (list 'ground label))))))
+                            :label (and ground (org-truss-member-label ground))
+                            :claim (org-truss-member-pos member) :ground ref
+                            :key (append key (list 'ground ref))))))
              (and (not told) (not folded) (org-truss-member-grounds member)))
      (mapcan (lambda (child)
                (org-truss--member-lines model child (concat indent "  ")
@@ -513,18 +516,18 @@ arrow, and the places its pattern asks for and it lacks."
 
 (defun org-truss--links-lines (model section indent path)
   "Return board lines for the members SECTION of MODEL lists."
-  (mapcan (lambda (label)
-            (let ((member (org-truss-member-by-label model label))
-                  (key (list 'link path label)))
+  (mapcan (lambda (ref)
+            (let ((member (org-truss-member-by-ref model ref))
+                  (key (list 'link path ref)))
               (if member
-                  (org-truss--member-lines model member indent key label
+                  (org-truss--member-lines model member indent key ref
                                            (org-truss-section-pos section) nil
-                                           (org-truss-section-wording section label))
+                                           (org-truss-section-wording section ref))
                 (list (org-truss--line
                        (propertize (concat indent "broken link") 'face 'org-truss-attention)
-                       (propertize label 'face 'org-truss-attention)
+                       (propertize (format "[[%s]]" (org-truss--target ref)) 'face 'org-truss-attention)
                        nil (list :type 'broken :pos (org-truss-section-pos section)
-                                 :link label :section (org-truss-section-pos section) :key key))))))
+                                 :link ref :section (org-truss-section-pos section) :key key))))))
           (org-truss-section-links section)))
 
 (defun org-truss--misfit (roles pattern)
@@ -615,12 +618,18 @@ PATH is the labels from the root, which identifies the line across redraws."
                children))
      (org-truss--section-gap-lines section (concat inner "  ") item))))
 
+(defun org-truss--check-heading (name)
+  "Return the line that heads the check NAME, saying what it finds on hover."
+  (org-truss--line (propertize (concat " " name) 'face 'org-truss-section
+                               'help-echo (org-truss-check-about name))))
+
 (defun org-truss--list-lines (model heading members kind &optional right)
   "Return a HEADING line and one line per member of MEMBERS, keyed by KIND.
 RIGHT, given a member, returns what goes on the right of its line; by
-default what the reader sees of it."
+default what the reader sees of it.  HEADING names a check, and what the
+check finds is shown when the mouse is on it."
   (when members
-    (cons (org-truss--line (propertize (concat " " heading) 'face 'org-truss-section))
+    (cons (org-truss--check-heading heading)
           (mapcar (lambda (m)
                     (org-truss--line
                      (concat "   " (org-truss--kind-word model m))
@@ -807,6 +816,13 @@ left to do there."
      (org-truss--list-lines model "Pattern gaps" (funcall argued gaps) 'gaps)
      (org-truss--list-lines model "Misplaced" (funcall argued (mapcar #'car misplaced))
                             'misplaced why)
+     (let ((broken (plist-get checks :broken-grounds)))
+       (org-truss--list-lines model "Broken grounds" (seq-uniq (mapcar #'car broken)) 'broken-grounds
+                              (lambda (m)
+                                (propertize (mapconcat (lambda (b) (format "[[%s]]" (org-truss--target (cdr b))))
+                                                       (seq-filter (lambda (b) (eq (car b) m)) broken)
+                                                       " ")
+                                            'face 'org-truss-attention))))
      (list (org-truss--line ""))
      (org-truss--structure-lines model)
      (and (or (plist-get checks :section-gaps) (plist-get checks :broken)
@@ -814,7 +830,7 @@ left to do there."
           (list (org-truss--line "")))
      (let ((gaps (plist-get checks :section-gaps)))
        (and gaps
-            (cons (org-truss--line (propertize " Pattern gaps" 'face 'org-truss-section))
+            (cons (org-truss--check-heading "Pattern gaps")
                   (mapcar (lambda (g)
                             (let ((root (eq (car g) (org-truss-model-structure model))))
                               (org-truss--line
@@ -839,11 +855,12 @@ left to do there."
                           gaps))))
      (let ((broken (plist-get checks :broken)))
        (and broken
-            (cons (org-truss--line (propertize " Broken links" 'face 'org-truss-section))
+            (cons (org-truss--check-heading "Broken links")
                   (mapcar (lambda (b)
                             (org-truss--line
                              "   "
-                             (propertize (format "%s ← %s" (cdr b) (org-truss-section-label (car b)))
+                             (propertize (format "[[%s]] ← %s" (org-truss--target (cdr b))
+                                                 (org-truss-section-label (car b)))
                                          'face 'org-truss-attention)
                              nil (list :type 'broken :pos (org-truss-section-pos (car b))
                                        :link (cdr b) :section (org-truss-section-pos (car b))
@@ -851,8 +868,9 @@ left to do there."
                           broken))))
      (let ((duplicates (plist-get checks :duplicates)))
        (and duplicates
-            (list (org-truss--line " Duplicate labels"
-                                   (propertize (string-join duplicates " · ")
+            (list (org-truss--line (propertize " Duplicate ids" 'face 'org-truss-section
+                                               'help-echo (org-truss-check-about "Duplicate ids"))
+                                   (propertize (mapconcat (lambda (id) (concat "#" id)) duplicates " · ")
                                                'face 'org-truss-attention))))))))
 
 (defun org-truss--column (lines)
@@ -1335,32 +1353,34 @@ whole.  A heading is what names a member; the path says where it is."
       (string-join (cons (if field (org-truss--field-name field) "Members") segments) " › "))))
 
 (defun org-truss--member-choices (model)
-  "Return (PATH . LABEL) for every member of MODEL, the unplaced first."
+  "Return (PATH . POSITION) for every member of MODEL, the unplaced first."
   (let ((unplaced (plist-get (org-truss-checks model) :unplaced)))
-    (mapcar (lambda (m) (cons (org-truss--member-path model m) (org-truss-member-label m)))
+    (mapcar (lambda (m) (cons (org-truss--member-path model m) (org-truss-member-pos m)))
             (append unplaced
                     (seq-remove (lambda (m) (memq m unplaced)) (org-truss-model-all model))))))
 
-(defun org-truss--placings (model label)
-  "Return the sections of MODEL that place the member LABEL."
+(defun org-truss--placings (model ref)
+  "Return the sections of MODEL that place the member REF."
   (let ((root (org-truss-model-structure model)))
-    (and root (seq-filter (lambda (s) (member label (org-truss-section-links s)))
+    (and root (seq-filter (lambda (s) (member ref (org-truss-section-links s)))
                           (cons root (org-truss-sections model))))))
 
-(defun org-truss--place (model label to)
-  "Place the member LABEL of MODEL in the section at TO, and nowhere else.
-Run in the truss file.  A member is placed in one section at most: where
+(defun org-truss--place (pos to)
+  "Place the member at POS in the section at TO, and nowhere else.
+Run in the truss file.  The member is given a CUSTOM_ID to be pointed to
+by, when it has none.  A member is placed in one section at most: where
 it was placed, it is taken out, and the words it was told in there go with
 it."
-  (let* ((placings (org-truss--placings model label))
+  (let* ((to (copy-marker to))
+         (ref (org-truss-ensure-id pos))
+         (placings (org-truss--placings (org-truss-read) ref))
          (from (mapcar #'org-truss-section-pos placings))
-         (wording (seq-some (lambda (s) (org-truss-section-wording s label)) placings))
-         (to (copy-marker to)))
+         (wording (seq-some (lambda (s) (org-truss-section-wording s ref)) placings)))
     (if (equal from (list (marker-position to)))
         (message "Already placed there")
       (dolist (pos (sort from #'>))
-        (org-truss-remove-link pos label))
-      (org-truss-add-link to label wording))
+        (org-truss-remove-link pos ref))
+      (org-truss-add-link to ref wording))
     (set-marker to nil)))
 
 (defun org-truss-board-place ()
@@ -1375,24 +1395,26 @@ itself, in the file, does not move: the section lists it."
          (model (org-truss-read org-truss--source)))
     (pcase (plist-get item :type)
       ('section
-       (let ((label (org-truss--read-choice "Place: " (org-truss--member-choices model))))
-         (org-truss--editing (org-truss--place model label (plist-get item :pos)))))
+       (let ((pos (org-truss--read-choice "Place: " (org-truss--member-choices model))))
+         (org-truss--editing (org-truss--place pos (plist-get item :pos)))))
       ('broken
-       (let ((label (org-truss--read-choice
-                     (format "Place instead of %s: " (plist-get item :link))
-                     (org-truss--member-choices model))))
+       (let ((pos (org-truss--read-choice
+                   (format "Place instead of [[%s]]: " (org-truss--target (plist-get item :link)))
+                   (org-truss--member-choices model))))
          (org-truss--editing
-           (let ((section (copy-marker (plist-get item :section))))
-             (dolist (pos (sort (mapcar #'org-truss-section-pos (org-truss--placings model label))
+           (let* ((section (copy-marker (plist-get item :section)))
+                  (ref (org-truss-ensure-id pos)))
+             (dolist (pos (sort (mapcar #'org-truss-section-pos
+                                        (org-truss--placings (org-truss-read) ref))
                                 #'>))
-               (org-truss-remove-link pos label))
-             (org-truss-relink section (plist-get item :link) label)
+               (org-truss-remove-link pos ref))
+             (org-truss-relink section (plist-get item :link) ref)
              (set-marker section nil)))))
       (_
-       (let ((label (or (plist-get item :link) (plist-get item :label)
-                        (user-error "Nothing to place here")))
+       (let ((pos (or (and (plist-get item :label) (plist-get item :pos))
+                      (user-error "Nothing to place here")))
              (to (org-truss--read-choice "Place in: " (org-truss--section-choices model))))
-         (org-truss--editing (org-truss--place model label to)))))))
+         (org-truss--editing (org-truss--place pos to)))))))
 
 (defun org-truss--confirm-loss (labels)
   "Ask whether to lose the writing in the sections LABELS; non-nil means yes."
@@ -1444,9 +1466,10 @@ stood on it can be seen."
 (defun org-truss-board-ground ()
   "Make another member a ground of the member at point, or no longer one.
 A ground supports a member from outside what is nested under it, through
-TRUSS_GROUNDS.  Its grounds now are offered first, and choosing one takes
-it away.  On a ground's own line, the one marked with an arrow, take it
-away from the member it supports without asking."
+TRUSS_GROUNDS, which points to it by its CUSTOM_ID; one is given to it
+when it has none.  Its grounds now are offered first, and choosing one
+takes it away.  On a ground's own line, the one marked with an arrow, take
+it away from the member it supports without asking."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'member))
          (model (org-truss-read org-truss--source)))
@@ -1457,25 +1480,27 @@ away from the member it supports without asking."
           (org-truss--editing
             (org-truss-set-grounds (org-truss-member-pos claim)
                                    (remove ground (org-truss-member-grounds claim))))
-          (message "%s no longer grounds %s" ground (org-truss-member-label claim)))
+          (message "%s no longer grounds %s" (or (plist-get item :label) ground)
+                   (org-truss-member-label claim)))
       (let* ((member (org-truss--member-at model item))
              (grounds (org-truss-member-grounds member))
              (inside (org-truss--subtree member))
              (others (seq-remove (lambda (m) (memq m inside)) (org-truss-model-all model)))
-             (current (seq-filter (lambda (m) (member (org-truss-member-label m) grounds)) others))
-             (choices (mapcar (lambda (m) (cons (org-truss--member-path model m)
-                                                (org-truss-member-label m)))
+             (current (seq-filter (lambda (m) (member (org-truss-member-id m) grounds)) others))
+             (choices (mapcar (lambda (m) (cons (org-truss--member-path model m) m))
                               (append current (seq-remove (lambda (m) (memq m current)) others))))
-             (label (org-truss--read-choice
-                     "Ground: " choices
-                     (mapcar (lambda (m) (cons (org-truss--member-path model m)
-                                               "a ground now; choose to take it away"))
-                             current))))
+             (ground (org-truss--read-choice
+                      "Ground: " choices
+                      (mapcar (lambda (m) (cons (org-truss--member-path model m)
+                                                "a ground now; choose to take it away"))
+                              current))))
         (org-truss--editing
-          (org-truss-set-grounds (plist-get item :pos)
-                                 (if (member label grounds)
-                                     (remove label grounds)
-                                   (append grounds (list label)))))))))
+          (let ((at (copy-marker (plist-get item :pos))))
+            (if (memq ground current)
+                (org-truss-set-grounds at (remove (org-truss-member-id ground) grounds))
+              (let ((ref (org-truss-ensure-id (org-truss-member-pos ground))))
+                (org-truss-set-grounds at (append grounds (list ref)))))
+            (set-marker at nil)))))))
 
 (defun org-truss-board-unwrap ()
   "Take away the sections below the section at point, keeping their links."
@@ -1532,7 +1557,8 @@ rest, are on \\[org-truss-board-pattern]."
 
 (defun org-truss-board-rename ()
   "Rewrite the heading of the section or member at point.
-A member's label is also changed in every link and ground that names it."
+Links and grounds point to a member by its CUSTOM_ID, so they go on
+finding it."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'section 'member))
          (new (string-trim (read-string "New heading: " (plist-get item :label)))))
@@ -1560,12 +1586,13 @@ away when it is finished."
   (let ((item (org-truss--want (org-truss--item) 'section 'member)))
     (if (plist-get item :link)
         (let* ((section (plist-get item :section))
-               (label (plist-get item :link))
+               (ref (plist-get item :link))
+               (label (plist-get item :label))
                (old (with-current-buffer org-truss--source
-                      (org-truss-link-wording section label)))
+                      (org-truss-link-wording section ref)))
                (new (string-trim (read-string "Say here: " (or old label)))))
           (org-truss--editing
-            (org-truss-set-wording section label (unless (equal new label) new))))
+            (org-truss-set-wording section ref (unless (equal new label) new))))
       (org-truss--fresh)
       (let* ((pos (plist-get item :pos))
              (session (with-current-buffer org-truss--source
@@ -1794,7 +1821,10 @@ member away."
          (role (if (and next (eq (org-truss-how-list up) 'labelled))
                    (org-truss--read-role up)
                  (plist-get item :gap)))
-         (props (and role (list (cons "TRUSS_ROLE" (symbol-name role)))))
+         ;; Listed in a section, it is pointed to from the start.
+         (id (and section (with-current-buffer org-truss--source (org-truss--next-id))))
+         (props (append (and id (list (cons "CUSTOM_ID" id)))
+                        (and role (list (cons "TRUSS_ROLE" (symbol-name role))))))
          (session (with-current-buffer org-truss--source
                     (list :original "" :hash (buffer-hash) :modified (buffer-modified-p))))
          at)
@@ -1819,12 +1849,12 @@ member away."
                      (org-truss-add-member-after parent label props)
                    (org-truss-add-member parent label props)))
         (when section
-          (org-truss-add-link section label))
+          (org-truss-add-link section id))
         (when (or section head)
           (setq session (plist-put session :undo
                                    (lambda ()
                                      (when section
-                                       (org-truss-remove-link section label)
+                                       (org-truss-remove-link section id)
                                        (set-marker section nil))
                                      (when head
                                        (org-truss-set-logic head nil)

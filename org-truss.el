@@ -35,8 +35,11 @@
 ;;
 ;; `org-truss-init'            start a truss.org
 ;; `org-truss-board'           draw the structure, change it, see what is undone
+;; `org-truss-check'           list what is undone, line by line
 ;; `org-truss-export'          write the document
 ;; `org-truss-refresh-guides'  put the current guidance back into a truss.org
+;; `org-truss-convert-references'
+;;                             point by CUSTOM_ID where a heading is named
 ;;
 ;; See README.org.
 
@@ -76,6 +79,52 @@ left unsaved, to be looked over."
       (org-truss-refresh-guides-in-buffer)
       (message "org-truss: guidance in %s is current; not saved yet"
                (abbreviate-file-name file)))))
+
+;;;###autoload
+(defun org-truss-check ()
+  "List what the nearest truss file leaves undone, a line for each thing.
+What the board shows under each part, as text: under each check, what it
+finds and where, by line.  RET on a line visits it."
+  (interactive)
+  (let* ((file (or (org-truss-locate)
+                   (user-error "No %s here or above" org-truss-file-name)))
+         (report (with-current-buffer (find-file-noselect file)
+                   (org-truss-check-report (org-truss-read)))))
+    (with-current-buffer (get-buffer-create "*org-truss-check*")
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (setq default-directory (file-name-directory file))
+        (insert report))
+      (compilation-mode)
+      (goto-char (point-min))
+      (display-buffer (current-buffer)))))
+
+;;;###autoload
+(defun org-truss-convert-references ()
+  "Make the nearest truss file point to its members by CUSTOM_ID.
+A link [[*heading]] in the structure, and a heading named in
+TRUSS_GROUNDS, become [[#id]], and the member named is given an id when it
+has none; a link keeps its words.  For a file written before members were
+pointed to by id, or a link written by heading.  The buffer is left
+unsaved, to be looked over."
+  (interactive)
+  (let ((file (or (org-truss-locate)
+                  (user-error "No %s here or above" org-truss-file-name))))
+    (with-current-buffer (find-file-noselect file)
+      (message "org-truss: %d references in %s point by id now; not saved yet"
+               (org-truss-convert-references-in-buffer)
+               (abbreviate-file-name file)))))
+
+(defun org-truss-batch-check ()
+  "Print what the truss file named on the command line leaves undone.
+
+  emacs --batch -L DIR -l org-truss -f org-truss-batch-check truss.org
+
+Each line reads FILE:LINE: and what is there, under the check that
+finds it."
+  (let ((file (pop command-line-args-left)))
+    (with-current-buffer (find-file-noselect file)
+      (princ (org-truss-check-report (org-truss-read) file)))))
 
 (defun org-truss-batch-board ()
   "Print the board of the truss file named on the command line.

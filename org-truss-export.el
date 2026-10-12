@@ -199,14 +199,14 @@ its paragraph in bold instead."
 
 (defun org-truss--render-links (model section level)
   "Return Org text for the members SECTION of MODEL lists, under LEVEL."
-  (mapconcat (lambda (label)
-               (let ((member (org-truss-member-by-label model label)))
+  (mapconcat (lambda (ref)
+               (let ((member (org-truss-member-by-ref model ref)))
                  (if member
                      (org-truss--emit (org-truss--flow member 1 (org-truss-section-wording
-                                                                   section label))
+                                                                   section ref))
                                       level)
                    (format (org-truss--pick "(broken link: %s)\n\n" "（リンク切れ: %s）\n\n")
-                           label))))
+                           (org-truss--target ref)))))
              (org-truss-section-links section) ""))
 
 (defun org-truss-render (model)

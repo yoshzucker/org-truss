@@ -19,7 +19,11 @@
 ;;   members    every statement, written once; what supports a claim is
 ;;              nested under it
 ;;   structure  the document's composition, a tree of sections that answer
-;;              the reader's questions and link members with [[*label]]
+;;              the reader's questions and link members with [[#id]]
+;;
+;; A member is pointed to by its CUSTOM_ID, which Org resolves within the
+;; file alone: a link [[#m7]], a ground [[#m7]] in TRUSS_GROUNDS.  Its
+;; heading can be rewritten without breaking either.
 ;;
 ;; Nothing here draws or exports.  See org-truss-board.el and
 ;; org-truss-export.el.
@@ -291,11 +295,33 @@ stands for no logic pattern written, which reads as why › reasons."
 (defconst org-truss--properties-re "^[ \t]*:PROPERTIES:[ \t]*$")
 (defconst org-truss--drawer-re "^[ \t]*:[[:alnum:]_-]+:[ \t]*$")
 (defconst org-truss--end-re "^[ \t]*:END:[ \t]*$")
-(defconst org-truss--link-re "\\[\\[\\*\\([^]]+\\)\\]\\(?:\\[[^]]*\\]\\)?\\]")
+(defconst org-truss--link-re "\\[\\[\\([#*][^]]+\\)\\]\\(?:\\[[^]]*\\]\\)?\\]"
+  "A link to a member: [[#id]], or [[*heading]], which names none.
+Its target is read by `org-truss--ref'.")
 (defconst org-truss--link-item-re
-  "^[ \t]*[-+] \\[\\[\\*\\([^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\][ \t]*$"
+  "^[ \t]*[-+] \\[\\[\\([#*][^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\][ \t]*$"
   "A list item holding nothing but a link: the form a section lists a member in.
 The link's description, if any, is the member's wording in that section.")
+
+(defun org-truss--ref (target)
+  "Return the reference a link's TARGET makes.
+[[#m7]] refers to the member whose CUSTOM_ID is m7, and its reference is
+m7.  A target of another form -- [[*heading]], say -- is kept whole, so it
+refers to no member and shows as a broken link, to be turned into one by
+`org-truss-convert-references'."
+  (if (string-prefix-p "#" target) (substring target 1) target))
+
+(defun org-truss--target (ref)
+  "Return the link target that makes REF, as `org-truss--ref' reads it."
+  (if (string-prefix-p "*" ref) ref (concat "#" ref)))
+
+(defun org-truss--refs-in (text)
+  "Return the references of the links to members in TEXT, in order."
+  (let ((from 0) refs)
+    (while (and text (string-match org-truss--link-re text from))
+      (push (org-truss--ref (match-string 1 text)) refs)
+      (setq from (match-end 0)))
+    (nreverse refs)))
 
 (defun org-truss--own-bounds (pos)
   "Return (START . END) of the own text of the heading at POS.
@@ -311,9 +337,10 @@ Return a plist:
   :props   property drawer as an ordered alist
   :public  (TITLE . BODY) of the first public block, or nil
   :public-raw  that block as written
-  :links   labels of every [[*label]] outside drawers and the public block
-  :items   labels of the link-only list items, the ones edits move
-  :wordings  (LABEL . DESCRIPTION) for those items whose link has a description
+  :links   references of every link to a member outside drawers and the
+           public block; see `org-truss--ref'
+  :items   references of the link-only list items, the ones edits move
+  :wordings  (REF . DESCRIPTION) for those items whose link has a description
   :drawers drawers other than the property drawer, as written
   :notes   everything else, as written"
   (let ((case-fold-search t)
@@ -355,17 +382,16 @@ Return a plist:
                (push raw drawers)
                (setq state 'drawer))
               ((string-match org-truss--link-item-re line)
-               (let ((wording (match-string 2 line)))
+               (let ((ref (org-truss--ref (match-string 1 line)))
+                     (wording (match-string 2 line)))
                  (when (and wording (not (string-blank-p wording)))
-                   (push (cons (match-string 1 line) (string-trim wording)) wordings)))
-               (push (match-string 1 line) items)
-               (push (match-string 1 line) links))
+                   (push (cons ref (string-trim wording)) wordings))
+                 (push ref items)
+                 (push ref links)))
               (t
                (push raw notes)
-               (let ((from 0))
-                 (while (string-match org-truss--link-re line from)
-                   (push (match-string 1 line) links)
-                   (setq from (match-end 0))))))))
+               (dolist (ref (org-truss--refs-in line))
+                 (push ref links))))))
           (forward-line 1))))
     (list :props (nreverse props)
           :public (and public
@@ -406,10 +432,21 @@ not depending on what has been shown; a label is the words."
   "Return the label of the heading at POS: its text without tags or keyword."
   (org-with-point-at pos (org-truss--heading-text)))
 
-(defun org-truss--split-labels (value)
-  "Return the labels in VALUE, a `;'-separated property value."
-  (and value (seq-remove #'string-empty-p
-                         (mapcar #'string-trim (split-string value ";")))))
+(defun org-truss--grounds-refs (value)
+  "Return the references in VALUE, a TRUSS_GROUNDS property value.
+It lists links, [[#m3]] [[#m7]].  A value with no link is read as headings
+separated by `;', as files once wrote it: each refers to no member and
+shows as a broken ground, until `org-truss-convert-references' turns it
+into a link."
+  (cond ((or (null value) (string-blank-p value)) nil)
+        ((string-match-p org-truss--link-re value) (org-truss--refs-in value))
+        (t (mapcar (lambda (label) (concat "*" label))
+                   (seq-remove #'string-empty-p
+                               (mapcar #'string-trim (split-string value ";")))))))
+
+(defun org-truss--grounds-value (refs)
+  "Return the TRUSS_GROUNDS value that lists REFS."
+  (mapconcat (lambda (ref) (format "[[%s]]" (org-truss--target ref))) refs " "))
 
 (defun org-truss--intern (value)
   "Return VALUE as a symbol, or nil when it is empty."
@@ -437,8 +474,11 @@ not depending on what has been shown; a label is the words."
                                 (:copier nil))
   "A statement, and what is nested under it.
 HOME is the part it is written in: `members', or `subject' or `brief' for
-one written under a field of theirs.  LEVEL is its heading's, in the file."
-  pos label level tags source grounds logic telling role confirm public notes
+one written under a field of theirs.  LEVEL is its heading's, in the file.
+ID is its CUSTOM_ID, by which links and grounds point to it, or nil when
+nothing has pointed to it yet.  GROUNDS are the references of its
+TRUSS_GROUNDS."
+  pos id label level tags source grounds logic telling role confirm public notes
   children home)
 
 (cl-defstruct (org-truss-section (:constructor org-truss--make-section)
@@ -463,11 +503,13 @@ none written, its support."
     (org-with-point-at pos
       (org-truss--make-member
        :pos pos
+       :id (let ((id (org-entry-get nil "CUSTOM_ID")))
+             (and id (not (string-blank-p id)) (string-trim id)))
        :label (org-truss--heading-text)
        :level (org-current-level)
        :tags (org-get-tags nil t)
        :source (org-entry-get nil "TRUSS_SOURCE")
-       :grounds (org-truss--split-labels (org-entry-get nil "TRUSS_GROUNDS"))
+       :grounds (org-truss--grounds-refs (org-entry-get nil "TRUSS_GROUNDS"))
        :logic (org-truss--intern (org-entry-get nil "TRUSS_LOGIC"))
        :telling (org-truss--intern (org-entry-get nil "TRUSS_TELLING"))
        :role (org-truss--intern (org-entry-get nil "TRUSS_ROLE"))
@@ -519,7 +561,9 @@ A heading under a field of the brief or the subject is a member like those
 of the members part, found and linked the same way; the model keeps them as
 its conditions, ((PART FIELD) . MEMBERS), apart from the members part's own.
 Its places say where the title, the parts and their fields are, keyed
-\(title), (PART) and (PART FIELD)."
+\(title), (PART) and (PART FIELD).  Its index finds a member by its
+CUSTOM_ID; an id more than one member has is among its duplicates, and
+points to the first."
   (with-current-buffer (or buffer (current-buffer))
     (org-with-wide-buffer
      (let* ((brief (org-truss--part-pos "brief"))
@@ -548,10 +592,11 @@ Its places say where the title, the parts and their fields are, keyed
             (parents (make-hash-table :test #'eq))
             duplicates)
        (dolist (m all)
-         (let ((label (org-truss-member-label m)))
-           (if (gethash label index)
-               (cl-pushnew label duplicates :test #'equal)
-             (puthash label m index)))
+         (let ((id (org-truss-member-id m)))
+           (when id
+             (if (gethash id index)
+                 (cl-pushnew id duplicates :test #'equal)
+               (puthash id m index))))
          (dolist (c (org-truss-member-children m))
            (puthash c m parents)))
        (org-truss--make-model
@@ -575,9 +620,16 @@ Its places say where the title, the parts and their fields are, keyed
 
 ;;;; What a member is
 
+(defun org-truss-member-by-ref (model ref)
+  "Return the member of MODEL that REF, a link's or a ground's, points to, or nil."
+  (gethash ref (org-truss-model-index model)))
+
 (defun org-truss-member-by-label (model label)
-  "Return the member of MODEL labelled LABEL, or nil."
-  (gethash label (org-truss-model-index model)))
+  "Return the first member of MODEL labelled LABEL, or nil.
+Nothing in the file points to a member by its label; this finds one by
+what it says."
+  (seq-find (lambda (m) (equal (org-truss-member-label m) label))
+            (org-truss-model-all model)))
 
 (defun org-truss-parent (model member)
   "Return the member MEMBER is nested under in MODEL, or nil."
@@ -689,7 +741,7 @@ subject, a member whose pattern says how sums up what is nested under it,
 and holds as they do: they support it."
   (append (unless (and (org-truss-how-p member) (not (org-truss-material-p member)))
             (seq-remove #'org-truss-against-p (org-truss-member-children member)))
-          (delq nil (mapcar (lambda (label) (org-truss-member-by-label model label))
+          (delq nil (mapcar (lambda (ref) (org-truss-member-by-ref model ref))
                             (org-truss-member-grounds member)))))
 
 (defun org-truss-kind (model member)
@@ -776,11 +828,11 @@ is not itself an objection counts."
   (let ((root (org-truss-model-structure model)))
     (and root (org-truss--section-descendants root))))
 
-(defun org-truss-section-wording (section label)
-  "Return the words SECTION tells the member LABEL in, or nil for its own.
+(defun org-truss-section-wording (section ref)
+  "Return the words SECTION tells the member REF in, or nil for its own.
 They are the description of the link that lists it: what the reader is
 told there, while the member's heading stays what it asserts."
-  (cdr (assoc label (org-truss-section-wordings section))))
+  (cdr (assoc ref (org-truss-section-wordings section))))
 
 (defun org-truss--section-descendants (section)
   "Return the sections below SECTION, depth first."
@@ -802,14 +854,14 @@ PLACED is what the structure links, with what is nested under it.  IN-USE adds
 everything those rest on through TRUSS_GROUNDS, followed all the way down."
   (let* ((root (org-truss-model-structure model))
          (sections (and root (cons root (org-truss-sections model))))
-         (linked (delq nil (mapcar (lambda (label) (org-truss-member-by-label model label))
+         (linked (delq nil (mapcar (lambda (ref) (org-truss-member-by-ref model ref))
                                    (mapcan (lambda (s) (copy-sequence (org-truss-section-links s)))
                                            sections))))
          (placed (seq-uniq (mapcan #'org-truss--subtree linked) #'eq))
          (in-use (copy-sequence placed))
          (queue placed))
     (while queue
-      (dolist (ground (delq nil (mapcar (lambda (label) (org-truss-member-by-label model label))
+      (dolist (ground (delq nil (mapcar (lambda (ref) (org-truss-member-by-ref model ref))
                                         (org-truss-member-grounds (pop queue)))))
         (dolist (m (org-truss--subtree ground))
           (unless (memq m in-use)
@@ -863,8 +915,9 @@ reads as an interpretation.  The brief is not judged."
 :questions     questions in use, and every question in the subject
 :gaps          (MEMBER . GAPS) for clusters of members short of their pattern
 :misplaced     (MEMBER . WHY) for members in the wrong part
-:broken        (SECTION . LABEL) for links to no member
-:duplicates    labels used by more than one member"
+:broken        (SECTION . REF) for links to no member
+:broken-grounds  (MEMBER . REF) for grounds that name no member
+:duplicates    CUSTOM_IDs more than one member has"
   (let* ((usage (org-truss-usage model))
          (placed (car usage))
          (in-use (cdr usage))
@@ -903,12 +956,131 @@ reads as an interpretation.  The brief is not judged."
                                   in-use))
           :misplaced (org-truss-misplaced model)
           :broken (mapcan (lambda (s)
-                            (mapcar (lambda (label) (cons s label))
-                                    (seq-remove (lambda (label)
-                                                  (org-truss-member-by-label model label))
+                            (mapcar (lambda (ref) (cons s ref))
+                                    (seq-remove (lambda (ref) (org-truss-member-by-ref model ref))
                                                 (org-truss-section-links s))))
                           sections)
+          :broken-grounds (mapcan (lambda (m)
+                                    (mapcar (lambda (ref) (cons m ref))
+                                            (seq-remove (lambda (ref) (org-truss-member-by-ref model ref))
+                                                        (org-truss-member-grounds m))))
+                                  (org-truss-model-all model))
           :duplicates (org-truss-model-duplicates model))))
+
+;;;; What is left to do, as text
+
+(defconst org-truss-check-descriptions
+  '(("Broken links"
+     . "links in a section that point to no member: [[#id]] wants a member with that CUSTOM_ID")
+    ("Broken grounds"
+     . "TRUSS_GROUNDS that point to no member: [[#id]] wants a member with that CUSTOM_ID")
+    ("Duplicate ids"
+     . "CUSTOM_IDs more than one member has; what points to one finds the first")
+    ("Misplaced"
+     . "members written in the wrong part: facts, and questions to find out, go in Subject; interpretations and decisions in Members")
+    ("Pattern gaps"
+     . "roles the TRUSS_LOGIC or TRUSS_TELLING of a cluster asks for that no heading right under it fills by its TRUSS_ROLE; the Structure asks for premises too once an assumption is in use")
+    ("No source"
+     . "members of Subject in use with no TRUSS_SOURCE and nothing nested under them to sum up")
+    ("Bare (no source, no support)"
+     . "members in use with no TRUSS_SOURCE, no support nested under them, and no TRUSS_GROUNDS")
+    ("Unanswered objections"
+     . "members tagged :against: that nothing but a question answers")
+    ("Unmet constraints"
+     . "statements under Subject's Constraints of which nothing is placed, nor the ground of anything placed")
+    ("Not placed"
+     . "members right under Members that no section lists and no member stands on")
+    ("Only as grounds"
+     . "members right under Members that no section lists, used only as grounds")
+    ("Open questions"
+     . "members tagged :question:, whose answers are not known yet")
+    ("Assumptions"
+     . "members tagged :assumption:, taken as given without being checked"))
+  "What each check finds, by the name the board and the report give it.
+In the order the report prints them: what breaks the file first, what is
+only to be kept in mind last.")
+
+(defun org-truss-check-about (name)
+  "Return what the check NAME finds, or nil."
+  (cdr (assoc name org-truss-check-descriptions)))
+
+(defun org-truss-check-report (model &optional file)
+  "Return what MODEL leaves undone, as text to read without the board.
+Under the name of each check that finds something, and what it finds,
+one line per thing: FILE:LINE: and what is there, as compilation mode
+reads it.  FILE is the name the lines give the file, by default the name
+of the file MODEL was read from."
+  (let* ((checks (org-truss-checks model))
+         (buffer (org-truss-model-buffer model))
+         (file (or file (let ((name (buffer-file-name buffer)))
+                          (if name (file-name-nondirectory name) (buffer-name buffer)))))
+         (line (lambda (pos)
+                 (with-current-buffer buffer
+                   (org-with-wide-buffer (line-number-at-pos pos)))))
+         (at (lambda (pos text) (format "%s:%d: %s" file (funcall line pos) text)))
+         (member-line (lambda (m &optional more)
+                        (funcall at (org-truss-member-pos m)
+                                 (concat (org-truss-member-label m) (if more (concat " -- " more) "")))))
+         (pattern-of (lambda (chunk)
+                       (let ((asks (or (org-truss--chunk-logic chunk) (org-truss--chunk-telling chunk))))
+                         (if asks (org-truss-pattern-label asks) "an assumption is in use"))))
+         ;; Roles by the value TRUSS_ROLE takes, so what lacks one can be
+         ;; written straight from here.
+         (gap-text (lambda (chunk gaps)
+                     (format "lacks TRUSS_ROLE %s (%s)"
+                             (mapconcat (lambda (g) (symbol-name (car g))) gaps " ")
+                             (funcall pattern-of chunk))))
+         (material (seq-filter #'org-truss-material-p (plist-get checks :bare)))
+         (groups
+          (list
+           (cons "Broken links"
+                 (mapcar (lambda (b)
+                           (let* ((section (car b))
+                                  (item (with-current-buffer buffer
+                                          (org-with-wide-buffer
+                                           (org-truss--link-line (org-truss-section-pos section) (cdr b))))))
+                             (funcall at (if item (car item) (org-truss-section-pos section))
+                                      (format "[[%s]] in %s" (org-truss--target (cdr b))
+                                              (org-truss-section-label section)))))
+                         (plist-get checks :broken)))
+           (cons "Broken grounds"
+                 (mapcar (lambda (b) (funcall member-line (car b)
+                                              (format "[[%s]]" (org-truss--target (cdr b)))))
+                         (plist-get checks :broken-grounds)))
+           (cons "Duplicate ids"
+                 (mapcan (lambda (id)
+                           (mapcar (lambda (m) (funcall member-line m (concat "#" id)))
+                                   (seq-filter (lambda (m) (equal (org-truss-member-id m) id))
+                                               (org-truss-model-all model))))
+                         (plist-get checks :duplicates)))
+           (cons "Misplaced"
+                 (mapcar (lambda (c) (funcall member-line (car c) (cdr c)))
+                         (plist-get checks :misplaced)))
+           (cons "Pattern gaps"
+                 (append (mapcar (lambda (g) (funcall member-line (car g) (funcall gap-text (car g) (cdr g))))
+                                 (plist-get checks :gaps))
+                         (mapcar (lambda (g)
+                                   (funcall at (org-truss-section-pos (car g))
+                                            (format "%s -- %s" (org-truss-section-label (car g))
+                                                    (funcall gap-text (car g) (cdr g)))))
+                                 (plist-get checks :section-gaps))))
+           (cons "No source" (mapcar member-line material))
+           (cons "Bare (no source, no support)"
+                 (mapcar member-line (seq-remove (lambda (m) (memq m material))
+                                                 (plist-get checks :bare))))
+           (cons "Unanswered objections" (mapcar member-line (plist-get checks :unanswered)))
+           (cons "Unmet constraints" (mapcar member-line (plist-get checks :unmet)))
+           (cons "Not placed" (mapcar member-line (plist-get checks :unplaced)))
+           (cons "Only as grounds" (mapcar member-line (plist-get checks :grounds-only)))
+           (cons "Open questions" (mapcar member-line (plist-get checks :questions)))
+           (cons "Assumptions" (mapcar member-line (plist-get checks :assumptions)))))
+         (found (seq-filter #'cdr groups)))
+    (if (null found)
+        "Nothing is left to do.\n"
+      (mapconcat (lambda (group)
+                   (format "%s -- %s\n%s\n" (car group) (org-truss-check-about (car group))
+                           (mapconcat #'identity (cdr group) "\n")))
+                 found "\n"))))
 
 ;;;; Finding the file
 
@@ -983,19 +1155,19 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
           (plist-get snapshot :drawers)
           (org-truss--trim-blank-lines (plist-get snapshot :notes))
           (plist-get snapshot :public-raw)
-          (mapconcat (lambda (label)
+          (mapconcat (lambda (ref)
                        (org-truss--link-item
-                        label (cdr (assoc label (plist-get snapshot :wordings)))))
+                        ref (cdr (assoc ref (plist-get snapshot :wordings)))))
                      (plist-get snapshot :links) "")
           "\n"
           (mapconcat (lambda (c) (org-truss--serialize c (1+ level)))
                      (plist-get snapshot :children) "")))
 
-(defun org-truss--link-item (label &optional wording)
-  "Return the list item that lists the member LABEL, told in WORDING if given."
+(defun org-truss--link-item (ref &optional wording)
+  "Return the list item that lists the member REF, told in WORDING if given."
   (if wording
-      (format "- [[*%s][%s]]\n" label wording)
-    (format "- [[*%s]]\n" label)))
+      (format "- [[%s][%s]]\n" (org-truss--target ref) wording)
+    (format "- [[%s]]\n" (org-truss--target ref))))
 
 (defun org-truss--replace-subtree (pos text)
   "Replace the subtree at POS with TEXT."
@@ -1108,52 +1280,53 @@ sections holding it are returned."
         (save-excursion
           (goto-char pos)
           (delete-region pos (progn (org-end-of-subtree t t) (point))))
-        (dolist (label links)
-          (org-truss-add-link parent label (cdr (assoc label wordings))))
+        (dolist (ref links)
+          (org-truss-add-link parent ref (cdr (assoc ref wordings))))
         (set-marker parent nil)
         nil))))
 
 ;;;; Editing: links and properties
 
-(defun org-truss--link-line (pos label)
-  "Return (BEG . END) of the item that lists LABEL in the own text at POS, or nil."
+(defun org-truss--link-line (pos ref)
+  "Return (BEG . END) of the item that lists REF in the own text at POS, or nil."
   (let* ((bounds (org-truss--own-bounds pos))
-         (re (format "^[ \t]*[-+] \\[\\[\\*%s\\]\\(?:\\[[^]]*\\]\\)?\\][ \t]*$"
-                     (regexp-quote label))))
+         (re (format "^[ \t]*[-+] \\[\\[%s\\]\\(?:\\[[^]]*\\]\\)?\\][ \t]*$"
+                     (regexp-quote (org-truss--target ref)))))
     (save-excursion
       (goto-char (car bounds))
       (when (re-search-forward re (cdr bounds) t)
         (cons (line-beginning-position)
               (min (point-max) (1+ (line-end-position))))))))
 
-(defun org-truss-add-link (pos label &optional wording)
-  "List the member LABEL in the section at POS, after its last item.
-WORDING, if given, is what the reader is told there instead of its heading."
+(defun org-truss-add-link (pos ref &optional wording)
+  "List the member REF in the section at POS, after its last item.
+REF is the member's CUSTOM_ID; see `org-truss-ensure-id'.  WORDING, if
+given, is what the reader is told there instead of its heading."
   (save-excursion
     (let* ((bounds (org-truss--own-bounds pos))
            (heading-end (progn (goto-char pos) (line-end-position))))
       (goto-char (cdr bounds))
       (skip-chars-backward " \t\n" heading-end)
-      (insert "\n" (string-remove-suffix "\n" (org-truss--link-item label wording)))
+      (insert "\n" (string-remove-suffix "\n" (org-truss--link-item ref wording)))
       (unless (looking-at "\n")
         (insert "\n")))))
 
-(defun org-truss-remove-link (pos label)
-  "Stop listing the member LABEL in the section at POS."
-  (let ((line (org-truss--link-line pos label)))
+(defun org-truss-remove-link (pos ref)
+  "Stop listing the member REF in the section at POS."
+  (let ((line (org-truss--link-line pos ref)))
     (when line
       (delete-region (car line) (cdr line))
       t)))
 
-(defun org-truss-link-wording (pos label)
-  "Return the words the section at POS tells the member LABEL in, or nil."
-  (cdr (assoc label (plist-get (org-truss--own pos) :wordings))))
+(defun org-truss-link-wording (pos ref)
+  "Return the words the section at POS tells the member REF in, or nil."
+  (cdr (assoc ref (plist-get (org-truss--own pos) :wordings))))
 
-(defun org-truss-set-wording (pos label wording)
-  "Tell the member LABEL in WORDING in the section at POS, where it is listed.
+(defun org-truss-set-wording (pos ref wording)
+  "Tell the member REF in WORDING in the section at POS, where it is listed.
 With WORDING nil or blank, the section tells it in its own heading again.
-Return non-nil when the section lists LABEL."
-  (let ((line (org-truss--link-line pos label))
+Return non-nil when the section lists REF."
+  (let ((line (org-truss--link-line pos ref))
         (wording (and wording (not (string-blank-p wording)) (string-trim wording))))
     (when (and wording (string-match-p "[][\n]" wording))
       (user-error "Words for a link cannot hold brackets or line breaks"))
@@ -1162,7 +1335,7 @@ Return non-nil when the section lists LABEL."
         (goto-char (car line))
         (let ((indent (progn (looking-at "[ \t]*") (match-string 0))))
           (delete-region (car line) (cdr line))
-          (insert indent (org-truss--link-item label wording))))
+          (insert indent (org-truss--link-item ref wording))))
       t)))
 
 (defun org-truss-relink (pos old new)
@@ -1173,22 +1346,23 @@ Return non-nil when there was such an item."
     (when line
       (save-excursion
         (goto-char (car line))
-        (re-search-forward (concat "\\[\\[\\*" (regexp-quote old) "\\]") (cdr line))
-        (replace-match (concat "[[*" new "]") t t))
+        (re-search-forward (concat "\\[\\[" (regexp-quote (org-truss--target old)) "\\]")
+                           (cdr line))
+        (replace-match (concat "[[" (org-truss--target new) "]") t t))
       t)))
 
-(defun org-truss-move-link (from label to)
-  "Move the member LABEL from the section at FROM to the section at TO."
+(defun org-truss-move-link (from ref to)
+  "Move the member REF from the section at FROM to the section at TO."
   (let ((to (copy-marker to))
-        (wording (org-truss-link-wording from label)))
-    (when (org-truss-remove-link from label)
-      (org-truss-add-link to label wording))
+        (wording (org-truss-link-wording from ref)))
+    (when (org-truss-remove-link from ref)
+      (org-truss-add-link to ref wording))
     (set-marker to nil)))
 
-(defun org-truss-shift-link (pos label delta)
-  "Move the item for LABEL in the section at POS by DELTA items, -1 or 1."
+(defun org-truss-shift-link (pos ref delta)
+  "Move the item for REF in the section at POS by DELTA items, -1 or 1."
   (let* ((items (plist-get (org-truss--own pos) :items))
-         (i (seq-position items label))
+         (i (seq-position items ref))
          (j (and i (+ i delta))))
     (when (and j (<= 0 j) (< j (length items)))
       (let ((a (org-truss--link-line pos (nth (min i j) items)))
@@ -1275,37 +1449,72 @@ Return a marker at the new heading."
                 (org-truss--drawer props) "\n")
         at))))
 
-(defun org-truss-set-grounds (pos labels)
-  "Make the members LABELS the grounds of the member at POS, or none if nil."
-  (if labels
-      (org-entry-put pos "TRUSS_GROUNDS" (string-join labels "; "))
+(defun org-truss-set-grounds (pos refs)
+  "Make the members REFS the grounds of the member at POS, or none if nil.
+REFS are CUSTOM_IDs; see `org-truss-ensure-id'."
+  (if refs
+      (org-entry-put pos "TRUSS_GROUNDS" (org-truss--grounds-value refs))
     (org-entry-delete pos "TRUSS_GROUNDS")))
+
+(defconst org-truss--id-re "^[ \t]*:CUSTOM_ID:[ \t]+m\\([0-9]+\\)[ \t]*$"
+  "A CUSTOM_ID of the form org-truss gives: m and a number.")
+
+(defun org-truss--next-id ()
+  "Return a CUSTOM_ID no heading in the buffer has: m and the next number."
+  (org-with-wide-buffer
+   (goto-char (point-min))
+   (let ((case-fold-search t)
+         (top 0))
+     (while (re-search-forward org-truss--id-re nil t)
+       (setq top (max top (string-to-number (match-string 1)))))
+     (format "m%d" (1+ top)))))
+
+(defun org-truss-ensure-id (pos)
+  "Return the CUSTOM_ID of the member at POS, giving it one when it has none.
+A new one is m and the next number free in the file, written first in its
+property drawer, where the eye finds it.  Links and grounds point to a
+member by it, so its heading can be rewritten freely."
+  (let ((id (org-entry-get pos "CUSTOM_ID")))
+    (if (and id (not (string-blank-p id)))
+        (string-trim id)
+      (let ((id (org-truss--next-id)))
+        (org-with-point-at pos
+          (let ((drawer (org-get-property-block)))
+            (if drawer
+                (save-excursion
+                  (goto-char (car drawer))
+                  (insert ":CUSTOM_ID: " id "\n"))
+              (org-entry-put nil "CUSTOM_ID" id))))
+        id))))
 
 (defun org-truss-delete-member (pos)
   "Delete the member at POS, with what is nested under it, and its placings.
-Every link item in the structure that names it, or a member under it, goes
-too.  A ground that names one is left, so the board shows as a broken link
-what stood on it.  Return the labels deleted."
+Every link item in the structure that points to it, or to a member under
+it, goes too.  A ground that points to one is left, so the board shows as
+a broken ground what stood on it.  Return the labels deleted."
   (let* ((end (save-excursion (goto-char pos) (org-end-of-subtree t t) (point)))
-         (labels (save-excursion
-                   (let (out)
-                     (goto-char pos)
-                     (while (and (< (point) end) (re-search-forward org-heading-regexp end t))
-                       (push (org-truss--label (line-beginning-position)) out))
-                     (nreverse out)))))
+         (labels nil)
+         (ids nil))
+    (save-excursion
+      (goto-char pos)
+      (while (and (< (point) end) (re-search-forward org-heading-regexp end t))
+        (let ((at (line-beginning-position)))
+          (push (org-truss--label at) labels)
+          (let ((id (org-entry-get at "CUSTOM_ID")))
+            (when id (push (string-trim id) ids))))))
     (delete-region pos end)
     (let ((structure (org-truss--part-pos "structure")))
-      (when structure
+      (when (and structure ids)
         (save-excursion
           (let ((stop (copy-marker (save-excursion (goto-char structure)
                                                    (org-end-of-subtree t t) (point)))))
             (goto-char structure)
             (while (re-search-forward org-truss--link-item-re stop t)
-              (when (member (match-string-no-properties 1) labels)
+              (when (member (org-truss--ref (match-string-no-properties 1)) ids)
                 (delete-region (line-beginning-position)
                                (min (point-max) (1+ (line-end-position))))))
             (set-marker stop nil)))))
-    labels))
+    (nreverse labels)))
 
 (defun org-truss--quote-bounds (pos)
   "Return (BEG . END) of the first quotation in the own text at POS, or nil.
@@ -1421,8 +1630,8 @@ it is a fact or a claim."
   "Move the member at POS, with what is nested under it, to the end of PARENT.
 PARENT is the position of a part, a field or another member, outside the
 subtree at POS.  Its headings take the levels of their new place.  Links
-and grounds name it by its label, so they still find it.  Return a marker
-at its heading."
+and grounds point to it by its CUSTOM_ID, which goes with it, so they
+still find it.  Return a marker at its heading."
   (let* ((end (save-excursion (goto-char pos) (org-end-of-subtree t t) (point)))
          (parent (copy-marker parent))
          (delta (- (1+ (org-truss--level parent)) (org-truss--level pos)))
@@ -1448,385 +1657,170 @@ at its heading."
         at))))
 
 (defun org-truss-rename (pos new)
-  "Relabel the member at POS to NEW, and every link and ground that names it."
-  (let ((old (org-truss--label pos))
-        (case-fold-search nil))
-    (when (org-truss-member-by-label (org-truss-read) new)
-      (user-error "A member is already labelled %s" new))
-    (org-with-point-at pos (org-edit-headline new))
-    (save-excursion
-      (goto-char (point-min))
-      (let ((re (concat "\\[\\[\\*" (regexp-quote old) "\\]")))
-        (while (re-search-forward re nil t)
-          (replace-match (concat "[[*" new "]") t t)))
-      (goto-char (point-min))
-      (while (re-search-forward "^[ \t]*:TRUSS_GROUNDS:[ \t]+\\(.*?\\)[ \t]*$" nil t)
-        (let* ((labels (org-truss--split-labels (match-string 1)))
-               (renamed (mapcar (lambda (l) (if (equal l old) new l)) labels)))
-          (unless (equal labels renamed)
-            (replace-match (string-join renamed "; ") t t nil 1)))))))
+  "Relabel the member at POS to NEW.
+Links and grounds point to it by its CUSTOM_ID, so nothing else changes.
+A label another member has is refused: a statement is written once."
+  (let ((other (org-truss-member-by-label (org-truss-read) new)))
+    (when (and other (/= (org-truss-member-pos other) pos))
+      (user-error "A member is already labelled %s" new)))
+  (org-with-point-at pos (org-edit-headline new)))
+
+(defun org-truss-convert-references-in-buffer ()
+  "Make every link and ground that names a member by its heading point by id.
+A link [[*heading]] in the structure becomes [[#id]], keeping its words,
+and a heading in TRUSS_GROUNDS -- a link to it, or a name in the old
+`;'-separated list -- becomes [[#id]]; the member named is given a
+CUSTOM_ID when it has none.  A heading no member has is left as it is, and
+the checks show it as broken.  Return the number of references changed."
+  (let ((count 0)
+        (case-fold-search nil)
+        (id-of (lambda (label)
+                 (let ((m (org-truss-member-by-label (org-truss-read) label)))
+                   (and m (org-truss-ensure-id (org-truss-member-pos m)))))))
+    (org-with-wide-buffer
+     (let ((structure (org-truss--part-pos "structure")))
+       (when structure
+         (goto-char structure)
+         (while (re-search-forward "\\[\\[\\*\\([^]]+\\)\\]" nil t)
+           ;; Giving the member an id writes above, so where the link is
+           ;; is kept in markers.
+           (let* ((beg (copy-marker (match-beginning 0)))
+                  (end (copy-marker (match-end 0)))
+                  (id (save-excursion (funcall id-of (match-string-no-properties 1)))))
+             (when id
+               (goto-char beg)
+               (delete-region beg end)
+               (insert "[[#" id "]")
+               (setq count (1+ count)))
+             (goto-char end)
+             (set-marker beg nil)
+             (set-marker end nil)))))
+     (goto-char (point-min))
+     (while (re-search-forward "^[ \t]*:TRUSS_GROUNDS:[ \t]+\\(.*?\\)[ \t]*$" nil t)
+       (let* ((at (copy-marker (line-beginning-position)))
+              (refs (org-truss--grounds-refs (match-string-no-properties 1)))
+              (new (mapcar (lambda (ref)
+                             (or (and (string-prefix-p "*" ref)
+                                      (save-excursion (funcall id-of (substring ref 1))))
+                                 ref))
+                           refs)))
+         (unless (equal refs new)
+           (setq count (+ count (seq-count #'identity (seq-mapn (lambda (a b) (not (equal a b)))
+                                                                refs new))))
+           (goto-char at)
+           (org-back-to-heading t)
+           (org-entry-put nil "TRUSS_GROUNDS" (org-truss--grounds-value new)))
+         (goto-char at)
+         (forward-line 1)
+         (set-marker at nil))))
+    count))
 
 ;;;; Guidance, and a new file
 
 (defconst org-truss--preamble-text
   '("\
-# This file makes one document.  Writing it out -- x on the board, or
-# M-x org-truss-export -- puts the document in out/, beside this file: for
-# truss.org, out/truss.org, and out/truss.md when pandoc is found.
+# This truss.org makes one document: x on the board, or M-x org-truss-export,
+# writes it to out/.  M-x org-truss-board opens the board, keys at its foot.
+# How to write each part is in its :GUIDE: drawer (TAB opens it).
 #
-# The file has four parts, its top-level headings.  Fill them from the top.
+# Parts, filled from the top
+#   Brief      the reader: who, and what they expect
+#   Subject    what was found: facts, and questions still open
+#   Members    what is made of it: what the facts mean, and what to do
+#   Structure  the document's outline: sections, each listing members
 #
-#   Brief      who reads it, what question they open it with, what they
-#              should do once they have read it
-#   Subject    what was found: facts, summed up in clusters; what is
-#              taken as given, the issue, what cannot move
-#   Members    what is made of it: what the facts mean here, and what is
-#              to be done
-#   Structure  the document's sections, each listing links to the members
-#              it shows
+# Rules
+#   Member     a heading under a field of Brief or Subject, or under Members:
+#              one fact, claim, assumption or question, in a sentence that
+#              reads alone.  Notes under it are not written out
+#   Cluster    a heading with headings under it.  TRUSS_LOGIC why: they
+#              support it; how: they are its parts or steps; none: support.
+#              A new cluster takes parts in Subject, reasons in Members
+#   Reference  give the member :CUSTOM_ID: m7 (the next free number), write
+#              [[#m7]].  Rewriting its heading breaks nothing
 #
-# Work in that order: find the facts and sum them up in the subject, say
-# in the members what they mean and what to do, then choose in the
-# structure what the reader is shown.
-#
-# Members
-#
-#   A heading under the Members part, or under a field (a ** heading) of
-#   the brief or the subject, is a member.  Its heading is one sentence:
-#   one fact, claim, assumption or question.  Write it to make sense pulled
-#   out on its own -- no \"the following\", no \"above\".  The text under a
-#   member's heading -- notes, a source's own words -- is never written out.
-#
-#   Write a fact, and a question still to find out, in the subject; what
-#   the facts mean here, and what is to be done, in the members.  The board
-#   lists what is in the other part under Misplaced.
-#
-#   To make a member from elsewhere in the file support it -- a member of
-#   the members standing on the head of a cluster, say -- put that member's
-#   heading in its TRUSS_GROUNDS (b).
-#
-# Clusters
-#
-#   A heading with headings under it is a cluster: a member with the
-#   members nested under it, a section with the sections below it.  The
-#   Structure heading is the largest, the whole document.  A cluster's
-#   TRUSS_LOGIC says what is right under it is to it, in any part:
-#
-#     why › reasons induction deduction
-#               they support it; one that argues against it is tagged
-#               :against:
-#     how › parts steps 6w1h 5w1h proposal report explanation
-#               it is made of them: its parts, its steps -- not its
-#               support.  6w1h asks them for who, whom, when, where,
-#               what, why, how; proposal for the reader's questions
-#               below
-#
-#   With no TRUSS_LOGIC, what is under a member supports it.  When c on
-#   the board writes the first member under another, it writes the usual
-#   pattern there: parts in the subject -- the member above sums up its
-#   parts in one sentence and says no more than they do -- and reasons in
-#   the members.  p changes it.
-#
-#   A pattern that names roles asks for them: each heading right under the
-#   cluster fills one by its TRUSS_ROLE, and what is not filled is listed
-#   under Pattern gaps.  On the Structure heading or a section, the roles
-#   are the reader's questions the sections right below must answer:
-#
-#     proposal     situation problem cause conclusion effect plan cost
-#                  alternatives ask
-#     report       situation problem cause conclusion plan
-#     explanation  situation cause conclusion premises
-#
-#   A new file's Structure has proposal.  Any cluster takes any pattern: a
-#   5w1h on the Structure asks its sections for who, when, where, what, why
-#   and how; a report on a member asks the members under it for a
-#   situation, a problem, ...
-#
-# What is written out
-#
-#   Only what the structure reaches:
-#
-#     #+title                         the document's title
-#     the #+begin_public right under       the document's opening
-#       Structure
-#     a section's heading                  a heading of the document
-#     a section's #+begin_public           the section's opening
-#     a link listed in a section,          the member it points to
-#       - [[*heading]]
-#
-#   A member is written out as its heading; or as the text of its
-#   #+begin_public, when it has one; or as the link's description, when the
-#   link has one: - [[*heading][words]].  A member of the members brings
-#   the members nested under it -- under a how pattern, as a numbered or
-#   labelled list; a member of the subject comes alone, without its parts.
-#   Not written out: a member tagged :noexport: and what is under it, the
-#   members in TRUSS_GROUNDS, and members no section lists.
-#
-# The board
-#
-#   M-x org-truss-board opens it, asking for the file when none is near.
-#   It shows the brief, then the subject, the members and the structure,
-#   each followed by what is left to do there.  On the right of a line,
-#   in the subject and the members, is where the member is used (-> a
-#   section, or the member it is a ground of); in the structure, what the
-#   document says.  Put point on a line and press a key:
-#
-#     Structure,       p  pick a pattern: a logic pattern (TRUSS_LOGIC), or
-#     a section, a        a telling pattern (TRUSS_TELLING), which for a
-#     member              section adds its sections (Sky, Rain, Umbrella;
-#                         SCQA; ...)
-#     a section        a  list a member in it   s  add a section under it
-#                         (on a gap, one that answers it)
-#                      r  change the reader's questions it answers
-#                      S  write its opening
-#     a listed member  S  write the words it is told in there (the link's
-#                         description)
-#     a member         t  say what it is: a fact asks for its source, an
-#                         assumption for whom to confirm it with
-#                      b  add a member as its grounds   Q  paste its source
-#                      f  move it, with what is under it   D  delete it
-#     any line         c  write a new member: listed in the section at
-#                         point, under the member or field at point, or else
-#                         at the top of Members.  C-c C-c keeps it, C-c C-k
-#                         throws it away
-#                      P  show the document beside the board   x  write it out
-#
-#   What is left to do:
-#
-#     under the subject
-#     Unmet constraints   clusters under Constraints nothing of which is
-#                         used
-#     No source           facts without a source
-#     Misplaced           interpretations written in the subject, and
-#                         clusters there with no TRUSS_LOGIC
-#     under the members
-#     Not placed          members right under Members that no section
-#                         lists and none stands on
-#     Only as grounds     members right under Members that no section
-#                         lists, used only as grounds
-#     Bare                members with neither a source nor support
-#     Unanswered          objections nothing answers
-#       objections
-#     Misplaced           facts, and questions standing alone
-#     under either
-#     Open questions      members tagged :question:
-#     Assumptions         members tagged :assumption:
-#     Pattern gaps        roles a member's pattern asks for that nothing
-#                         under it fills (6W1H's who, a deduction's minor
-#                         premise, ...)
-#     under the structure
-#     Pattern gaps        reader's questions the pattern of the Structure
-#                         or a section asks for that no section right
-#                         below answers; premises too, on the Structure,
-#                         once an assumption is in use
-#     Broken links        links to no member's heading
+# Written out (only what Structure reaches)
+#   #+title            the title
+#   section heading    a heading
+#   #+begin_public     its section's opening (right under Structure, the
+#                      document's)
+#   - [[#m7][words]]   member m7: the words, else its #+begin_public, else
+#                      its heading; a member of Members brings its own
 #
 # Properties and tags
+#   CUSTOM_ID         a member's id
+#   TRUSS_SOURCE      its source; makes it a fact
+#   TRUSS_GROUNDS     support from outside its cluster: [[#m3]] [[#m7]]
+#   TRUSS_CONFIRM     whom to confirm an assumption with
+#   TRUSS_LOGIC       why: reasons induction deduction; how: parts steps
+#                     6w1h 5w1h proposal report explanation
+#   TRUSS_TELLING     sections: sky-rain-umbrella scqa problem-solving;
+#                     members: first last prep
+#   TRUSS_ROLE        role in the pattern above: a reader's question, who,
+#                     minor, ...  The check names those missing
+#   TRUSS_PART, TRUSS_FIELD  mark the parts and fields; leave them be
+#   :against: objection  :assumption: assumed  :question: open
+#   :noexport: not written out
 #
-#   Written by the skeleton; leave them as they are
-#     TRUSS_PART        marks a part: brief subject members structure
-#     TRUSS_FIELD       marks a field: reader question response constraints
-#                       premises issue
-#   Written by you, or on the board with the key in parentheses
-#     TRUSS_SOURCE      where a member comes from; it makes it a fact (t)
-#     TRUSS_GROUNDS     headings of members elsewhere that support it,
-#                       separated by ; (b)
-#     TRUSS_CONFIRM     whom to confirm an assumption with (t)
-#     :against:         argues against the member above
-#     :assumption:      taken as given without being checked (t)
-#     :question:        a question whose answer is not known yet (t)
-#     :noexport:        not written out, with what is nested under it
-#   Written by the board
-#     TRUSS_LOGIC       on a cluster -- Structure, a section, a member --
-#                       what is right under it is (p; c writes the usual
-#                       one): why -- reasons induction deduction -- or how
-#                       -- parts steps 6w1h 5w1h proposal report
-#                       explanation.  See Clusters
-#     TRUSS_TELLING     the order it is written out in (p): for a section,
-#                       its sections, sky-rain-umbrella scqa problem-solving;
-#                       for a member, first last prep (o puts its
-#                       conclusion first or last)
-#     TRUSS_ROLE        the role a heading fills in the cluster above it.
-#                       For a section, the reader's questions it answers
-#                       (r): situation problem cause interpretation
-#                       conclusion effect plan cost premises alternatives
-#                       ask.  For a member, its place in a pattern: who in
-#                       a 6W1H, ...
+# After editing, check (what is left to do, by line)
+#   emacs --batch -L ORG-TRUSS-DIR -l org-truss -f org-truss-batch-check FILE
 #
-# Open a :GUIDE: drawer with TAB, and delete it once it is in the way;
-# M-x org-truss-refresh-guides puts the current wording back.
+# M-x org-truss-refresh-guides brings this text and the :GUIDE:s up to date.
 "
     "\
-# このファイルで文書を一つ作ります。書き出すと（盤面の x、または
-# M-x org-truss-export）、このファイルと同じ場所の out/ に文書ができます。
-# truss.org なら out/truss.org と、pandoc があれば out/truss.md です。
+# この truss.org から文書を一つ作ります。盤面の x か M-x org-truss-export で
+# out/ に書き出します。盤面は M-x org-truss-board で開き、キーは盤面の下に
+# 出ます。各部の書き方は、その部の :GUIDE:（TAB で開く）にあります。
 #
-# ファイルは四つの部（* の見出し）からなり、上から順に埋めます。
+# 部（上から順に埋める）
+#   Brief      読み手のこと：誰か、何を期待するか
+#   Subject    調べたこと：事実と、まだ調べている問い
+#   Members    考えたこと：事実が何を意味するか（解釈）と、何をするか（判断）
+#   Structure  生成文書の構成：節ごとに載せる部材を並べる
 #
-#   Brief      誰が読むか、どんな問いを持って開くか、読んだあと何を
-#              してほしいか
-#   Subject    調べたこと：事実と、それを塊ごとにまとめた一文。前提、課題、
-#              動かせない条件（期限・予算・法令など）
-#   Members    考えたこと：その事実がここで何を意味するか（解釈）と、何を
-#              するか（判断）
-#   Structure  文書の節。節ごとに、載せる部材へのリンクを並べる
+# 規則
+#   部材  Brief・Subject の項目の下と、Members の下の見出し。事実・主張・
+#         前提・問いを一つ、抜き出しても通じる一文で書く。下のメモは書き出さない
+#   塊    下に見出しを持つ見出し。TRUSS_LOGIC が why なら下は根拠、how なら
+#         部分や手順、なければ根拠。新しい塊には Subject で parts、Members で
+#         reasons を書く
+#   参照  指す部材に :CUSTOM_ID: m7（空いている次の番号）を付け、[[#m7]] と
+#         書く。見出しを書き換えても切れない
 #
-# この順に作業します。Subject で事実を集めて塊にまとめ、Members でその意味と
-# することを決め、Structure で読み手に何を見せるかを選びます。
-#
-# 部材
-#
-#   Members の下の見出しと、Brief・Subject の項目（** の見出し）の下に書いた
-#   見出しを、部材と呼びます。部材の見出しには、事実・主張・前提・問いの
-#   どれか一つを一文で書きます。見出しだけ抜き出しても意味が通るように書き
-#   ます（「次の」「上記の」を使わない）。部材の見出しの下に書いた本文（メモ、
-#   出典の原文）は書き出されません。
-#
-#   事実と、まだ調べている問いは Subject に、解釈と判断は Members に書き
-#   ます。違う部に書いたものは、盤面の Misplaced に出ます。
-#
-#   入れ子の外の部材を根拠にするときは、その見出しを TRUSS_GROUNDS に書き
-#   ます（盤面の b）。Members の部材は、ふつう Subject の塊の頭を根拠に
-#   します。
-#
-# 塊
-#
-#   下に見出しを入れ子にした見出しを、その下ごと塊と呼びます。部材とその
-#   下の部材、節とその下の節です。Structure の見出しは一番大きな塊で、文書
-#   全体です。塊の TRUSS_LOGIC は、すぐ下の見出しがその塊にとって何かを
-#   言います。どの部でも同じです。
-#
-#     why › reasons induction deduction
-#               下は上の根拠。反論には :against: を付ける
-#     how › parts steps 6w1h 5w1h proposal report explanation
-#               上は下からなる。下は部分や手順で、根拠ではない。6w1h は
-#               下に誰が・誰に・いつ・どこで・何を・なぜ・どうやってを、
-#               proposal は下の表の読み手の問いを求める
-#
-#   TRUSS_LOGIC を書いていない部材では、下の部材はその根拠です。盤面の c
-#   で部材の下に初めて部材を作ると、そこでのふつうの型を書きます。Subject
-#   では parts（上の部材は、下の事実が合わせて言っていることを一文にまとめ、
-#   それ以上のことは言わない）、Members では reasons です。p で変えられます。
-#
-#   役割を名指す型は、それを求めます。塊のすぐ下の見出しは、TRUSS_ROLE で
-#   役割を一つずつ埋め、埋まっていない役割は Pattern gaps に出ます。
-#   Structure の見出しや節では、役割は、すぐ下の節が答えるべき読み手の問い
-#   です。
-#
-#     proposal     situation problem cause conclusion effect plan cost
-#                  alternatives ask
-#     report       situation problem cause conclusion plan
-#     explanation  situation cause conclusion premises
-#
-#   新しいファイルの Structure は proposal です。どの塊にもどの型でも付け
-#   られます。Structure に 5w1h を付ければ、すぐ下の節に誰が・いつ・どこで・
-#   何を・なぜ・どうやってを求め、部材に report を付ければ、下の部材に現状・
-#   問題などを求めます。
-#
-# 書き出されるもの
-#
-#   書き出されるのは、Structure から辿れるものだけです。
-#
-#     #+title                            文書のタイトル
-#     Structure 直下の #+begin_public    文書の最初の文
-#     節の見出し                         文書の見出し
-#     節の #+begin_public                節の最初の文
-#     節に並べたリンク - [[*見出し]]     リンク先の部材
-#
-#   リンク先の部材は見出しが書き出されます。部材に #+begin_public があれば
-#   その中身が、リンクに説明があれば（- [[*見出し][言い方]]）その説明が、
-#   見出しの代わりに出ます。Members の部材は、下に入れ子にした部材も続けて
-#   出ます（how の型なら番号付きか、ラベル付きの箇条書き）。Subject の部材
-#   はその一文だけが出て、内訳は出ません。書き出されないのは、:noexport: を
-#   付けた部材とその下、TRUSS_GROUNDS で指した部材、どの節にも載っていない
-#   部材です。
-#
-# 盤面
-#
-#   M-x org-truss-board で開きます（近くにこのファイルがなければ、どれかを
-#   聞きます）。上から Brief、Subject、Members、Structure の順に並び、それ
-#   ぞれの下に、そこで残っている作業が出ます。行の右には、Subject と
-#   Members ではその部材がどこで使われているか（→ 節、または ground of
-#   根拠にしている部材）が、Structure では書き出される文が出ます。
-#   行にカーソルを置いてキーを押します。
-#
-#     Structure・節・  p  型を選ぶ。論理の型（TRUSS_LOGIC）か語りの型
-#     部材の行            （TRUSS_TELLING）。節の語りの型は節を作る（空・
-#                         雨・傘、SCQA など）
-#     節の行           a  部材を載せる   s  下に節を足す（Pattern gaps の
-#                         行なら、その問いに答える節）
-#                      r  節が答える読み手の問いを変える
-#                      S  節の最初の文を書く
-#     載せた部材の行   S  その節での言い方を書く（リンクの説明になる）
-#     部材の行         t  種類を決める（事実なら出典を、前提なら確認先を聞く）
-#                      b  根拠にする部材を足す   Q  コピーした原文を貼る
-#                      f  入れ子ごと動かす   D  消す
-#     どの行でも       c  部材を作る。節の行ならその節に載せ、部材や項目の行
-#                         ならその下に、それ以外は Members の先頭に作る。
-#                         C-c C-c で保存、C-c C-k で取り消し
-#                      P  文書を横に表示する   x  書き出す
-#
-#   残っている作業：
-#
-#     Subject の下
-#     Unmet constraints   Constraints の塊で、どこも使われていないもの
-#     No source           出典のない事実
-#     Misplaced           Subject に書いた解釈と、TRUSS_LOGIC のない塊
-#     Members の下
-#     Not placed          Members 直下の部材で、どの節にも載らず、根拠にも
-#                         使われていないもの
-#     Only as grounds     Members 直下の部材で、どの節にも載らず、根拠に
-#                         だけ使われているもの
-#     Bare                出典も根拠もない部材
-#     Unanswered          答えのない反論
-#       objections
-#     Misplaced           Members に書いた事実と、単独で立つ問い
-#     どちらの下にも
-#     Open questions      :question: の部材
-#     Assumptions         :assumption: の部材
-#     Pattern gaps        部材の型が求めるのに、下のどれも埋めていない役割
-#                         （6W1H の「誰が」、演繹の小前提など）
-#     Structure の下
-#     Pattern gaps        Structure や節の型が求める読み手の問いのうち、
-#                         すぐ下のどの節も答えていないもの。前提を使って
-#                         いれば、Structure には premises も求める
-#     Broken links        どの部材の見出しにも当たらないリンク
+# 書き出されるもの（Structure から辿れるものだけ）
+#   #+title                 文書のタイトル
+#   節の見出し              文書の見出し
+#   #+begin_public          節の最初の文（Structure 直下なら文書の最初の文）
+#   節の - [[#m7][言い方]]  部材 m7。言い方、なければ部材の #+begin_public、
+#                           なければ見出し。Members の部材は下の部材も出る
 #
 # プロパティとタグ
+#   CUSTOM_ID         部材の ID
+#   TRUSS_SOURCE      出典。書くと事実になる
+#   TRUSS_GROUNDS     入れ子の外の根拠：[[#m3]] [[#m7]]
+#   TRUSS_CONFIRM     前提を誰に確かめるか
+#   TRUSS_LOGIC       塊のすぐ下が何か。why：reasons induction deduction、
+#                     how：parts steps 6w1h 5w1h proposal report explanation
+#   TRUSS_TELLING     書き出す順。節：sky-rain-umbrella scqa problem-solving、
+#                     部材：first last prep
+#   TRUSS_ROLE        型の中の役割。節は読み手の問い、部材は who・minor など。
+#                     足りない役割は検査が名前で出す
+#   TRUSS_PART, TRUSS_FIELD  部と項目の印。変えない
+#   :against: 反論  :assumption: 前提  :question: 未解決  :noexport: 書き出さない
 #
-#   雛形が書くもの（変えない）
-#     TRUSS_PART        部の印：brief subject members structure
-#     TRUSS_FIELD       項目の印：reader question response constraints
-#                       premises issue
-#   自分で書くもの（括弧は盤面のキー）
-#     TRUSS_SOURCE      部材の出典。書くとその部材は事実になる（t）
-#     TRUSS_GROUNDS     根拠にする、別の場所の部材の見出し。; で区切る（b）
-#     TRUSS_CONFIRM     前提を誰に確かめるか（t）
-#     :against:         すぐ上の部材への反論
-#     :assumption:      確かめずに置く前提（t）
-#     :question:        まだ答えが分からない問い（t）
-#     :noexport:        書き出さない。入れ子の下も
-#   盤面が書くもの
-#     TRUSS_LOGIC       塊（Structure・節・部材）のすぐ下が何か（p。c が
-#                       ふつうの型を書く）。why なら reasons induction
-#                       deduction、how なら parts steps 6w1h 5w1h proposal
-#                       report explanation。「塊」を参照
-#     TRUSS_TELLING     書き出す順（p）。節には sky-rain-umbrella scqa
-#                       problem-solving、部材には first last prep（o で結論
-#                       を先にするか後にするか）
-#     TRUSS_ROLE        すぐ上の塊の中で、その見出しが埋める役割。節なら
-#                       答える読み手の問い（r）：situation problem cause
-#                       interpretation conclusion effect plan cost premises
-#                       alternatives ask。部材なら型の中の場所（6W1H の
-#                       「誰が」など）
+# 編集したら確かめる（残りの作業を行番号付きで出す）
+#   emacs --batch -L ORG-TRUSS-DIR -l org-truss -f org-truss-batch-check FILE
 #
-# :GUIDE: ドロワーは TAB で開きます。邪魔なら消してかまいません。
-# M-x org-truss-refresh-guides で今の文面に書き戻せます。
+# この文面と :GUIDE: は M-x org-truss-refresh-guides で最新に戻せます。
 ")
   "The comment block at the head of a truss file, in English and Japanese.
-Each part's guide says what that part is.  How the parts stand to one
-another, and in what order they are filled, is said once, here, where it is
-read without opening anything.")
+It holds the rules of the file, the same for whoever edits it -- a person,
+or a model working in the file: what each part holds, what a member and a
+cluster are, how one member points to another, what is written out, and
+what each property means.  How to work in each part is in its guide; the
+board's keys are at the board's foot; what each check means is printed
+with it.  ORG-TRUSS-DIR and FILE stand for where org-truss is loaded from
+and `org-truss-file-name'; see `org-truss--preamble'.")
 
 (defconst org-truss--guides
   '((brief
@@ -1876,10 +1870,10 @@ TRUSS_SOURCE に（盤面の t）、出典の原文を本文に #+begin_quote �
     (members
      "What is made of what was found: what the facts mean here, and what is
 to be done.  Each heading is a member, one claim in one sentence.  Make it
-stand on the heads of the subject's clusters it reads by naming them in
-TRUSS_GROUNDS (b on the board).  Nest under a claim the members that
-support it, with TRUSS_LOGIC reasons (c on the board writes it), and tag
-one that argues against it :against:.  Give a member
+stand on the heads of the subject's clusters it reads by pointing to them
+in TRUSS_GROUNDS, [[#m3]] [[#m7]] (b on the board).  Nest under a claim
+the members that support it, with TRUSS_LOGIC reasons (c on the board
+writes it), and tag one that argues against it :against:.  Give a member
 that says what to do a how pattern -- how › steps, how › parts, how › 6W1H
 (p on the board) -- and what is under it is its steps or parts instead of
 its support.  Tag :assumption: what you take as given without checking.
@@ -1890,10 +1884,10 @@ section that lists it (S on the board).  The text under a heading is never
 written out; tag :noexport: a member that should not be."
      "考えたこと：Subject の事実が、ここで何を意味するか（解釈）と、何を
 するか（判断）。見出し一つが部材一つで、主張を一文で書く。読んだ Subject の
-塊の頭を TRUSS_GROUNDS で指して根拠にする（盤面の b）。主張を支える部材は
-その下に入れ子にし、主張には TRUSS_LOGIC: reasons を付ける（盤面の c が
-書く）。反論には :against: を付ける。やることを言う部材に how
-の型（盤面の p で how › steps、how › parts、how › 6W1H）を付けると、下の
+塊の頭を TRUSS_GROUNDS に [[#m3]] [[#m7]] と書いて根拠にする（盤面の b）。
+主張を支える部材はその下に入れ子にし、主張には TRUSS_LOGIC: reasons を
+付ける（盤面の c が書く）。反論には :against: を付ける。やることを言う部材に
+how の型（盤面の p で how › steps、how › parts、how › 6W1H）を付けると、下の
 部材は根拠ではなく手順や部分になる。確かめずに置くものには :assumption:
 を付ける。事実と、まだ調べていることは Subject に書く。
 見出しは、抜き出して読んでも通じるように書く（「次の」「上記の」を使わ
@@ -1902,30 +1896,38 @@ written out; tag :noexport: a member that should not be."
     (structure
      "The sections of the document.  Each answers one or more of the
 reader's questions (TRUSS_ROLE) and lists the members it shows as links,
-- [[*heading]].  The TRUSS_LOGIC here, or on a section, names the
-questions the sections right below must answer -- proposal, report,
-explanation, or any other logic pattern (p on the board); what none
-answers is listed under Pattern gaps.  A section's heading becomes a heading of the document,
-and the text of its #+begin_public, the section's opening.  A link's
-description, - [[*heading][words]], is written out in place of the
-member's heading (S on the board).  Write here only what guides the
+- [[#m7]], m7 being the member's CUSTOM_ID (a on the board).  The
+TRUSS_LOGIC here, or on a section, names the questions the sections right
+below must answer -- proposal, report, explanation, or any other logic
+pattern (p on the board); what none answers is listed under Pattern gaps.
+A section's heading becomes a heading of the document, and the text of
+its #+begin_public, the section's opening.  A link's description,
+- [[#m7][words]], is written out in place of the member's heading (S on
+the board).  Write here only what guides the
 reader; put facts and claims in members, which are what the board's checks
 read.  Sections nest as deep as the document needs."
      "書き出す文書の節。節は読み手の問い（TRUSS_ROLE）のどれかに答え、載せる
-部材をリンクの箇条（- [[*見出し]]）で並べる。ここや節の TRUSS_LOGIC は、
-すぐ下の節が答えるべき問いを決める（proposal、report、explanation、ほかの
-論理の型も付けられる。盤面の p）。どの節も答えていない問いは Pattern gaps
-に出る。節の見出しは文書の見出しに、節の #+begin_public の中身は、節の
-最初の文になる。リンクに説明を付けると
-（- [[*見出し][言い方]]）、部材の見出しの代わりにその説明が出る（盤面の
+部材をリンクの箇条（- [[#m7]]。m7 は部材の CUSTOM_ID。盤面の a）で並べる。
+ここや節の TRUSS_LOGIC は、すぐ下の節が答えるべき問いを決める（proposal、
+report、explanation、ほかの論理の型も付けられる。盤面の p）。どの節も答えて
+いない問いは Pattern gaps に出る。節の見出しは文書の見出しになり、節に
+書いた #+begin_public の中身は節の最初の文になる。リンクに説明を付けると
+（- [[#m7][言い方]]）、部材の見出しの代わりにその説明が出る（盤面の
 S）。ここには読み手を案内する言葉だけを書き、事実や主張は Members の部材に
 する。盤面のチェックが読むのは部材だけだから。節はいくらでも入れ子にできる。"))
   "Guidance written into a truss file, in English and Japanese.
 Keyed by a part, or by (PART FIELD) for a field of the brief or the subject.")
 
 (defun org-truss--preamble ()
-  "Return the comment block at the head of a truss file, in `org-truss-language'."
-  (apply #'org-truss--pick org-truss--preamble-text))
+  "Return the comment block at the head of a truss file, in `org-truss-language'.
+The command that checks the file is written as it runs here: with the
+directory org-truss is loaded from, and the name of a truss file."
+  (let ((library (locate-library "org-truss")))
+    (string-replace
+     "ORG-TRUSS-DIR"
+     (if library (directory-file-name (abbreviate-file-name (file-name-directory library))) "DIR")
+     (string-replace "FILE" org-truss-file-name
+                     (apply #'org-truss--pick org-truss--preamble-text)))))
 
 (defun org-truss--guide (key)
   "Return the guide drawer for KEY, a part or (PART FIELD), or nil for none."

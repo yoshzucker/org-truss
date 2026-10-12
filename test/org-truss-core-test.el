@@ -30,6 +30,7 @@ The team leads.
 :END:
 ** Reviews run long
 :PROPERTIES:
+:CUSTOM_ID: long
 :TRUSS_SOURCE: calendar export
 :END:
 #+begin_public
@@ -38,14 +39,16 @@ Reviews ran past the hour eight times this quarter.
 
 ** Half the items repeat
 :PROPERTIES:
-:TRUSS_GROUNDS: Reviews run long
+:CUSTOM_ID: half
+:TRUSS_GROUNDS: [[#long]]
 :END:
-Robin keeps raising the same items; see [[*Agenda diff]].
+Robin keeps raising the same items; see [[#diff]].
 #+begin_public Most items come back unchanged
-Half of each agenda repeats the week before, as [[*Reviews run long]] shows.
+Half of each agenda repeats the week before, as [[#long]] shows.
 #+end_public
 *** Agenda diff                                                  :noexport:
 :PROPERTIES:
+:CUSTOM_ID: diff
 :TRUSS_SOURCE: agendas, weeks 1-12
 :END:
 *** Items need a week to move                                    :assumption:
@@ -64,7 +67,8 @@ Some items cannot wait two weeks.
 
 ** Move to fortnightly
 :PROPERTIES:
-:TRUSS_GROUNDS: Half the items repeat
+:CUSTOM_ID: move
+:TRUSS_GROUNDS: [[#half]]
 :TRUSS_LOGIC: deduction
 :END:
 #+begin_public
@@ -77,6 +81,7 @@ Hold the review every other week.
 
 ** Unused aside
 :PROPERTIES:
+:CUSTOM_ID: aside
 :TRUSS_SOURCE: hallway
 :END:
 
@@ -92,7 +97,7 @@ Hold the review every other week.
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
-- [[*Reviews run long]]
+- [[#long]]
 
 ** Rain
 :PROPERTIES:
@@ -100,14 +105,14 @@ Hold the review every other week.
 :END:
 #+begin_public Why it drags
 #+end_public
-- [[*Half the items repeat]]
+- [[#half]]
 
 ** Umbrella
 :PROPERTIES:
 :TRUSS_ROLE: conclusion
 :END:
-- [[*Move to fortnightly]]
-- [[*No such member]]
+- [[#move]]
+- [[#none]]
 "
   "A truss file covering every kind of member and a structure with a broken link.")
 
@@ -147,6 +152,7 @@ The safety board.
 Finance said so at the October meeting.
 *** No budget this year
 :PROPERTIES:
+:CUSTOM_ID: budget
 :TRUSS_SOURCE: finance, 3 October
 :END:
 *** The schedule is fixed
@@ -166,7 +172,7 @@ Finance said so at the October meeting.
 :PROPERTIES:
 :TRUSS_ROLE: premises
 :END:
-- [[*No budget this year]]
+- [[#budget]]
 "
   "A truss file with members written under fields of the subject.")
 
@@ -192,6 +198,7 @@ Finance said so at the October meeting.
 :END:
 *** The manager checks every driver before and after driving
 :PROPERTIES:
+:CUSTOM_ID: rule
 :TRUSS_LOGIC: parts
 :END:
 **** The rule asks for a check before driving
@@ -208,11 +215,12 @@ Finance said so at the October meeting.
 :END:
 *** A manager is named for five cars or more
 :PROPERTIES:
+:CUSTOM_ID: five
 :TRUSS_SOURCE: law 74-3
 :END:
 *** The law binds us, so we must check
 :PROPERTIES:
-:TRUSS_GROUNDS: A manager is named for five cars or more
+:TRUSS_GROUNDS: [[#five]]
 :END:
 
 * Members
@@ -221,11 +229,13 @@ Finance said so at the October meeting.
 :END:
 ** The rule may apply to us
 :PROPERTIES:
-:TRUSS_GROUNDS: A manager is named for five cars or more
+:CUSTOM_ID: may
+:TRUSS_GROUNDS: [[#five]]
 :END:
 ** Drivers are checked before and after driving
 :PROPERTIES:
-:TRUSS_GROUNDS: The rule may apply to us; The manager checks every driver before and after driving
+:CUSTOM_ID: checked
+:TRUSS_GROUNDS: [[#may]] [[#rule]]
 :TRUSS_LOGIC: steps
 :END:
 *** The driver blows into the tester
@@ -243,12 +253,12 @@ Finance said so at the October meeting.
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
-- [[*The manager checks every driver before and after driving][The rules ask for a check before and after driving.]]
+- [[#rule][The rules ask for a check before and after driving.]]
 ** What we do
 :PROPERTIES:
 :TRUSS_ROLE: conclusion
 :END:
-- [[*Drivers are checked before and after driving]]
+- [[#checked]]
 "
   "A truss file whose subject holds a cluster of facts under the one that
 sums them up, with a member in the wrong part on each side.")
@@ -261,12 +271,14 @@ sums them up, with a member in the wrong part on each side.")
 :END:
 ** The law asks for a check
 :PROPERTIES:
+:CUSTOM_ID: law
 :TRUSS_SOURCE: ordinance, article 9-10
 :END:
 ** Check before every test
 :PROPERTIES:
+:CUSTOM_ID: check
 :TRUSS_LOGIC: steps
-:TRUSS_GROUNDS: The law asks for a check
+:TRUSS_GROUNDS: [[#law]]
 :END:
 *** Meet the driver face to face
 **** A video call counts as face to face
@@ -293,7 +305,7 @@ The driver breathes into the checker.
 :PROPERTIES:
 :TRUSS_ROLE: conclusion
 :END:
-- [[*Check before every test]]
+- [[#check]]
 "
   "A truss file with a member that says how, in steps.")
 
@@ -305,6 +317,7 @@ The driver breathes into the checker.
 :END:
 ** Check before every test
 :PROPERTIES:
+:CUSTOM_ID: check
 :TRUSS_LOGIC: 5w1h
 :END:
 *** The driver's manager
@@ -328,12 +341,14 @@ The driver breathes into the checker.
 **** Read the checker
 ** What a check needs
 :PROPERTIES:
+:CUSTOM_ID: needs
 :TRUSS_LOGIC: parts
 :END:
 *** A checker that works
 *** Someone to check
 ** Tests are safer checked
 :PROPERTIES:
+:CUSTOM_ID: safer
 :TRUSS_TELLING: prep
 :END:
 *** A drunk driver crashed last year
@@ -352,9 +367,9 @@ The driver breathes into the checker.
 :TRUSS_PART: structure
 :END:
 ** Do
-- [[*Check before every test]]
-- [[*What a check needs]]
-- [[*Tests are safer checked]]
+- [[#check]]
+- [[#needs]]
+- [[#safer]]
 "
   "A truss file with parts, labelled parts holding steps, and a PREP.")
 
@@ -442,10 +457,42 @@ pattern sits beside a logic pattern and adds its own roles."
   "Links in the public block and in drawers are not references; inline ones are."
   (org-truss-test--with org-truss-test--file
     (let ((own (org-truss--own (org-truss-test--heading-pos "Half the items repeat"))))
-      (should (equal (plist-get own :links) '("Agenda diff")))
+      (should (equal (plist-get own :links) '("diff")))
       (should (equal (car (plist-get own :public)) "Most items come back unchanged"))
       (should (string-match-p "\\`Half of each agenda" (cdr (plist-get own :public))))
-      (should (equal (plist-get own :props) '(("TRUSS_GROUNDS" . "Reviews run long")))))))
+      (should (equal (plist-get own :props) '(("CUSTOM_ID" . "half")
+                                              ("TRUSS_GROUNDS" . "[[#long]]")))))))
+
+(ert-deftest org-truss-test-references ()
+  "A link or a ground points to a member by its CUSTOM_ID.  One that names a
+heading points to no member, nor do grounds written as `;'-separated
+headings, as files once wrote them: each shows as broken."
+  (should (equal (org-truss--refs-in "[[#a]] and [[#b][words]], [[*C]] [[https://x]]")
+                 '("a" "b" "*C")))
+  (should (equal (org-truss--grounds-refs "[[#a]] [[#b]]") '("a" "b")))
+  (should (equal (org-truss--grounds-refs "Old one; Old two") '("*Old one" "*Old two")))
+  (should (equal (org-truss--grounds-value '("a" "*B")) "[[#a]] [[*B]]"))
+  (should (equal (org-truss--link-item "a" "w") "- [[#a][w]]\n"))
+  (org-truss-test--with org-truss-test--file
+    (let ((model (org-truss-read)))
+      (should (equal (org-truss-member-label (org-truss-member-by-ref model "half"))
+                     "Half the items repeat"))
+      (should (equal (org-truss-member-id (org-truss-test--m model "Lone remark")) nil))
+      (should-not (org-truss-member-by-ref model "Half the items repeat")))))
+
+(ert-deftest org-truss-test-ensure-id ()
+  "A member is given m and the next free number, once; one it has stays."
+  (org-truss-test--with (concat org-truss-test--file "* X\n:PROPERTIES:\n:CUSTOM_ID: m4\n:END:\n")
+    (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Lone remark")) "m5"))
+    (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Lone remark")) "m5"))
+    (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Reviews run long")) "long"))
+    (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Agenda diff")) "diff"))
+    (should (equal (org-truss-member-id (org-truss-test--m (org-truss-read) "Lone remark")) "m5"))
+    (should (string-match-p "^\\*\\* Lone remark\n:PROPERTIES:\n:CUSTOM_ID: m5\n:END:\n" (buffer-string)))
+    (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Urgent items go to chat")) "m6"))
+    (should (string-match-p (concat "Urgent items go to chat +:against:\n:PROPERTIES:\n"
+                                    ":CUSTOM_ID: m6\n:TRUSS_SOURCE: team agreement\n:END:\n")
+                            (buffer-string)))))
 
 (ert-deftest org-truss-test-brief ()
   "A brief field is its text, without the guidance drawer."
@@ -516,11 +563,13 @@ judged like one, but never asked to be placed.  The field's text is apart."
 :END:
 ** A
 :PROPERTIES:
-:TRUSS_GROUNDS: B
+:CUSTOM_ID: a
+:TRUSS_GROUNDS: [[#b]]
 :END:
 ** B
 :PROPERTIES:
-:TRUSS_GROUNDS: A
+:CUSTOM_ID: b
+:TRUSS_GROUNDS: [[#a]]
 :END:
 "
     (let ((model (org-truss-read)))
@@ -592,7 +641,67 @@ judged like one, but never asked to be placed.  The field's text is apart."
       (should (equal (mapcar (lambda (g) (org-truss-member-label (car g)))
                              (plist-get checks :gaps))
                      '("Move to fortnightly")))
-      (should (equal (mapcar #'cdr (plist-get checks :broken)) '("No such member"))))))
+      (should (equal (mapcar #'cdr (plist-get checks :broken)) '("none")))
+      (should (null (plist-get checks :broken-grounds)))))
+  (org-truss-test--with (replace-regexp-in-string
+                         ":TRUSS_GROUNDS: \\[\\[#half\\]\\]" ":TRUSS_GROUNDS: [[#half]] [[#gone]]"
+                         org-truss-test--file)
+    (let ((checks (org-truss-checks (org-truss-read))))
+      (should (equal (mapcar (lambda (b) (cons (org-truss-member-label (car b)) (cdr b)))
+                             (plist-get checks :broken-grounds))
+                     '(("Move to fortnightly" . "gone")))))))
+
+(ert-deftest org-truss-test-check-report ()
+  "The report names each check that finds something, says what it finds,
+and gives each thing found a line of its own that compilation mode reads."
+  (org-truss-test--with org-truss-test--file
+    (let ((report (org-truss-check-report (org-truss-read) "truss.org")))
+      (should (string-match-p "^Broken links -- links in a section" report))
+      (should (string-match-p "^truss\\.org:[0-9]+: \\[\\[#none\\]\\] in Umbrella$" report))
+      (should (string-match-p "^truss\\.org:[0-9]+: Move to fortnightly -- lacks TRUSS_ROLE minor (why › deduction)$"
+                              report))
+      (should (string-match-p "^truss\\.org:[0-9]+: Structure -- lacks TRUSS_ROLE problem cause " report))
+      (should (string-match-p "^Not placed -- .*\ntruss\\.org:[0-9]+: Unused aside\ntruss\\.org:[0-9]+: Lone remark$"
+                              report))
+      (should (< (string-match "^Broken links" report) (string-match "^Assumptions" report)))
+      (let ((line (and (string-match "^truss\\.org:\\([0-9]+\\): Lone remark$" report)
+                       (string-to-number (match-string 1 report)))))
+        (should (equal (progn (goto-char (point-min)) (forward-line (1- line))
+                              (buffer-substring (point) (line-end-position)))
+                       "** Lone remark")))))
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+"
+    (should (equal (org-truss-check-report (org-truss-read) "f") "Nothing is left to do.\n"))))
+
+(ert-deftest org-truss-test-convert-references ()
+  "Links and grounds that name headings come to point by id, the member
+named being given one; a heading no member has stays, broken."
+  (org-truss-test--with (replace-regexp-in-string
+                         "^- \\[\\[#\\(long\\|half\\)\\]"
+                         (lambda (m) (if (equal (match-string 1 m) "long")
+                                         "- [[*Reviews run long]" "- [[*Half the items repeat]"))
+                         (replace-regexp-in-string
+                          ":TRUSS_GROUNDS: \\[\\[#half\\]\\]"
+                          ":TRUSS_GROUNDS: Half the items repeat; Lone remark; Nobody"
+                          (replace-regexp-in-string ":CUSTOM_ID: half\n" "" org-truss-test--file)))
+    (should (= (org-truss-convert-references-in-buffer) 4))
+    (let* ((model (org-truss-read))
+           (lone (org-truss-member-id (org-truss-test--m model "Lone remark")))
+           (half (org-truss-member-id (org-truss-test--m model "Half the items repeat"))))
+      (should (equal (list half lone) '("m1" "m2")))
+      (should (equal (org-truss-member-grounds (org-truss-test--m model "Move to fortnightly"))
+                     '("m1" "m2" "*Nobody")))
+      (should (equal (org-truss-member-grounds (org-truss-test--m model "Half the items repeat"))
+                     '("long")))
+      (should (equal (org-truss-section-links (car (org-truss-section-children
+                                                    (org-truss-model-structure model))))
+                     '("long")))
+      (should (string-match-p "^- \\[\\[#m1\\]\\]$" (buffer-string)))
+      (should (string-match-p "as \\[\\[#long\\]\\] shows" (buffer-string))))
+    (should (= (org-truss-convert-references-in-buffer) 0))))
 
 (ert-deftest org-truss-test-any-logic-anywhere ()
   "Any cluster takes any logic pattern.  A section's asks for what the
@@ -660,10 +769,12 @@ for too.  A member's purpose asks its parts for the reader's questions."
 :END:
 ** Shown
 :PROPERTIES:
-:TRUSS_GROUNDS: Behind
+:CUSTOM_ID: shown
+:TRUSS_GROUNDS: [[#behind]]
 :END:
 ** Behind
 :PROPERTIES:
+:CUSTOM_ID: behind
 :TRUSS_SOURCE: x
 :END:
 * S
@@ -674,22 +785,33 @@ for too.  A member's purpose asks its parts for the reader's questions."
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
-- [[*Shown]]
+- [[#shown]]
 "
     (let ((checks (org-truss-checks (org-truss-read))))
       (should (equal (org-truss-test--labels (plist-get checks :grounds-only)) '("Behind")))
       (should (null (plist-get checks :unplaced))))))
 
 (ert-deftest org-truss-test-duplicates ()
-  "Two members with one label are reported, since a link cannot tell them apart."
+  "Two members with one id are reported, since a link cannot tell them apart;
+two with one label are not, since nothing points by label."
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
 :END:
+** One
+:PROPERTIES:
+:CUSTOM_ID: x
+:END:
+** Two
+:PROPERTIES:
+:CUSTOM_ID: x
+:END:
 ** Same
 ** Same
 "
-    (should (equal (org-truss-model-duplicates (org-truss-read)) '("Same")))))
+    (let ((model (org-truss-read)))
+      (should (equal (org-truss-model-duplicates model) '("x")))
+      (should (equal (org-truss-member-label (org-truss-member-by-ref model "x")) "One")))))
 
 ;;;; Editing the structure
 
@@ -706,14 +828,14 @@ as it is; the pattern adds the rest, and what fits no place stays at the end."
       (should (equal (org-truss-test--section-labels root)
                      '("Sky" "Problem" "Cause" "Umbrella" "Plan" "Effect" "Rain")))
       (should (equal (org-truss-section-links (funcall by-label "Sky"))
-                     '("Reviews run long")))
+                     '("long")))
       (should (equal (org-truss-section-links (funcall by-label "Umbrella"))
-                     '("Move to fortnightly" "No such member")))
+                     '("move" "none")))
       (should (equal (org-truss-section-roles (funcall by-label "Umbrella")) '(conclusion)))
       (should (equal (org-truss-section-roles (funcall by-label "Problem")) '(problem)))
       (should (equal (car (org-truss-section-public (funcall by-label "Rain"))) "Why it drags"))
       (should (equal (org-truss-section-links (funcall by-label "Rain"))
-                     '("Half the items repeat"))))))
+                     '("half"))))))
 
 (ert-deftest org-truss-test-apply-pattern-fills-a-place-twice ()
   "Two sections answering the same question both take that place, in order."
@@ -753,7 +875,7 @@ as it is; the pattern adds the rest, and what fits no place stays at the end."
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
-- [[*Inner]]
+- [[#inner]]
 "
     (org-truss-apply-structure-pattern (org-truss--part-pos "structure") 'scqa)
     (let* ((root (org-truss-model-structure (org-truss-read)))
@@ -761,7 +883,7 @@ as it is; the pattern adds the rest, and what fits no place stays at the end."
       (should (equal (org-truss-section-label answer) "Umbrella"))
       (should (eq (org-truss-section-telling answer) 'sky-rain-umbrella))
       (should (equal (org-truss-section-links (car (org-truss-section-children answer)))
-                     '("Inner"))))))
+                     '("inner"))))))
 
 (ert-deftest org-truss-test-unwrap ()
   "Unwrapping refuses to lose writing unless forced, and keeps every link."
@@ -775,8 +897,7 @@ as it is; the pattern adds the rest, and what fits no place stays at the end."
         (should (null (org-truss-section-children section)))
         (should (null (org-truss-section-telling section)))
         (should (equal (org-truss-section-links section)
-                       '("Reviews run long" "Half the items repeat"
-                         "Move to fortnightly" "No such member")))))))
+                       '("long" "half" "move" "none")))))))
 
 (ert-deftest org-truss-test-dissolve ()
   "A dissolved section hands its links to the section above."
@@ -785,23 +906,24 @@ as it is; the pattern adds the rest, and what fits no place stays at the end."
                                       (org-truss--part-pos "structure"))))
     (let ((root (org-truss-model-structure (org-truss-read))))
       (should (equal (org-truss-test--section-labels root) '("Rain" "Umbrella")))
-      (should (equal (org-truss-section-links root) '("Reviews run long"))))))
+      (should (equal (org-truss-section-links root) '("long"))))))
 
 (ert-deftest org-truss-test-links ()
   "Links are added after the last one, moved, reordered and removed."
   (org-truss-test--with org-truss-test--file
     (let ((links-of (lambda (label)
                       (plist-get (org-truss--own (org-truss-test--heading-pos label)) :items))))
-      (org-truss-add-link (org-truss-test--heading-pos "Sky") "Unused aside")
-      (should (equal (funcall links-of "Sky") '("Reviews run long" "Unused aside")))
-      (org-truss-shift-link (org-truss-test--heading-pos "Sky") "Unused aside" -1)
-      (should (equal (funcall links-of "Sky") '("Unused aside" "Reviews run long")))
-      (org-truss-move-link (org-truss-test--heading-pos "Sky") "Unused aside"
+      (org-truss-add-link (org-truss-test--heading-pos "Sky") "aside")
+      (should (equal (funcall links-of "Sky") '("long" "aside")))
+      (should (string-match-p "^- \\[\\[#long\\]\\]\n- \\[\\[#aside\\]\\]$" (buffer-string)))
+      (org-truss-shift-link (org-truss-test--heading-pos "Sky") "aside" -1)
+      (should (equal (funcall links-of "Sky") '("aside" "long")))
+      (org-truss-move-link (org-truss-test--heading-pos "Sky") "aside"
                            (org-truss-test--heading-pos "Rain"))
-      (should (equal (funcall links-of "Sky") '("Reviews run long")))
-      (should (equal (funcall links-of "Rain") '("Half the items repeat" "Unused aside")))
-      (org-truss-remove-link (org-truss-test--heading-pos "Rain") "Unused aside")
-      (should (equal (funcall links-of "Rain") '("Half the items repeat"))))))
+      (should (equal (funcall links-of "Sky") '("long")))
+      (should (equal (funcall links-of "Rain") '("half" "aside")))
+      (org-truss-remove-link (org-truss-test--heading-pos "Rain") "aside")
+      (should (equal (funcall links-of "Rain") '("half"))))))
 
 (defun org-truss-test--wording (section label)
   "Return the words the section labelled SECTION tells LABEL in, read anew."
@@ -817,27 +939,27 @@ written and taken off in place, and goes with the link when the member is
 renamed, the link moved, or the section unwrapped."
   (org-truss-test--with org-truss-test--file
     (should (org-truss-set-wording (org-truss-test--heading-pos "Sky")
-                                   "Reviews run long" " Our reviews overran "))
-    (should (equal (org-truss-test--wording "Sky" "Reviews run long") "Our reviews overran"))
-    (should (string-match-p "^- \\[\\[\\*Reviews run long\\]\\[Our reviews overran\\]\\]$"
+                                   "long" " Our reviews overran "))
+    (should (equal (org-truss-test--wording "Sky" "long") "Our reviews overran"))
+    (should (string-match-p "^- \\[\\[#long\\]\\[Our reviews overran\\]\\]$"
                             (buffer-string)))
     (should (equal (org-truss-section-links
                     (car (org-truss-section-children (org-truss-model-structure (org-truss-read)))))
-                   '("Reviews run long")))
+                   '("long")))
     (org-truss-rename (org-truss-test--heading-pos "Reviews run long") "Reviews overrun")
-    (should (equal (org-truss-test--wording "Sky" "Reviews overrun") "Our reviews overran"))
-    (org-truss-move-link (org-truss-test--heading-pos "Sky") "Reviews overrun"
+    (should (equal (org-truss-test--wording "Sky" "long") "Our reviews overran"))
+    (org-truss-move-link (org-truss-test--heading-pos "Sky") "long"
                          (org-truss-test--heading-pos "Rain"))
-    (should (equal (org-truss-test--wording "Rain" "Reviews overrun") "Our reviews overran"))
-    (should-not (org-truss-set-wording (org-truss-test--heading-pos "Sky") "Reviews overrun" "x"))
+    (should (equal (org-truss-test--wording "Rain" "long") "Our reviews overran"))
+    (should-not (org-truss-set-wording (org-truss-test--heading-pos "Sky") "long" "x"))
     (should-error (org-truss-set-wording (org-truss-test--heading-pos "Rain")
-                                         "Reviews overrun" "a [b]")
+                                         "long" "a [b]")
                   :type 'user-error)
     (org-truss-unwrap (org-truss--part-pos "structure") t)
-    (should (equal (org-truss-test--wording "Structure" "Reviews overrun") "Our reviews overran"))
-    (org-truss-set-wording (org-truss--part-pos "structure") "Reviews overrun" "  ")
-    (should-not (org-truss-test--wording "Structure" "Reviews overrun"))
-    (should (string-match-p "^- \\[\\[\\*Reviews overrun\\]\\]$" (buffer-string)))))
+    (should (equal (org-truss-test--wording "Structure" "long") "Our reviews overran"))
+    (org-truss-set-wording (org-truss--part-pos "structure") "long" "  ")
+    (should-not (org-truss-test--wording "Structure" "long"))
+    (should (string-match-p "^- \\[\\[#long\\]\\]$" (buffer-string)))))
 
 (ert-deftest org-truss-test-public-body ()
   "Where a public block's text starts is found, or a block is written for it:
@@ -853,7 +975,7 @@ taken away."
       (should (equal (org-truss-section-public (funcall section "Sky"))
                      '(nil . "Where we are.")))
       (should (string-match-p
-               ":TRUSS_ROLE: situation\n:END:\n#\\+begin_public\nWhere we are\\.\n#\\+end_public\n- \\[\\[\\*Reviews run long"
+               ":TRUSS_ROLE: situation\n:END:\n#\\+begin_public\nWhere we are\\.\n#\\+end_public\n- \\[\\[#long"
                (buffer-string)))
       (goto-char (org-truss-public-body (org-truss-test--heading-pos "Rain")))
       (insert "Why.")
@@ -894,16 +1016,19 @@ taken away."
       (should (equal (org-truss-section-roles last) '(ask))))))
 
 (ert-deftest org-truss-test-rename ()
-  "Renaming a member follows it into links and grounds, and refuses a taken label."
+  "Renaming a member changes its heading alone: links and grounds point to it
+by its id, and still find it.  A label another member has is refused."
   (org-truss-test--with org-truss-test--file
-    (org-truss-rename (org-truss-test--heading-pos "Half the items repeat") "Agendas repeat")
+    (let ((before (buffer-string)))
+      (org-truss-rename (org-truss-test--heading-pos "Half the items repeat") "Agendas repeat")
+      (should (equal (buffer-string)
+                     (replace-regexp-in-string "^\\*\\* Half the items repeat$" "** Agendas repeat"
+                                               before))))
     (let ((model (org-truss-read)))
-      (should (org-truss-member-by-label model "Agendas repeat"))
-      (should (equal (org-truss-member-grounds (org-truss-test--m model "Move to fortnightly"))
-                     '("Agendas repeat")))
-      (should (member "Agendas repeat"
-                      (org-truss-section-links
-                       (nth 1 (org-truss-section-children (org-truss-model-structure model)))))))
+      (should (equal (org-truss-member-label (org-truss-member-by-ref model "half")) "Agendas repeat"))
+      (should (memq (org-truss-member-by-ref model "half")
+                    (org-truss-supports model (org-truss-test--m model "Move to fortnightly")))))
+    (org-truss-rename (org-truss-test--heading-pos "Agendas repeat") "Agendas repeat")
     (should-error (org-truss-rename (org-truss-test--heading-pos "Agendas repeat") "Lone remark")
                   :type 'user-error)))
 
@@ -949,8 +1074,8 @@ language; the guidance is in the language."
                        '("Brief" "Reader" "Their question" "Response wanted" "Constraints"
                          "Subject" "Premises" "Issue" "Constraints" "Members" "Structure")))
         (should (string-match-p (if (eq org-truss-language 'ja)
-                                    "^# このファイルで文書を一つ作ります。"
-                                  "^# This file makes one document\\.")
+                                    "^# この truss\\.org から文書を一つ作ります。"
+                                  "^# This truss\\.org makes one document:")
                                 (buffer-string)))
         (should (string-match-p (if (eq org-truss-language 'ja)
                                     "^この文書が満たすべき条件。"
@@ -1048,7 +1173,7 @@ written; with none, its support.  Nothing is read into it from the part: a
 cluster of facts that does not say how › parts reads as an interpretation,
 and the board says so."
   (org-truss-test--with (replace-regexp-in-string
-                         "driving\n:PROPERTIES:\n:TRUSS_LOGIC: parts\n:END:\n" "driving\n"
+                         ":CUSTOM_ID: rule\n:TRUSS_LOGIC: parts\n" ":CUSTOM_ID: rule\n"
                          org-truss-test--clusters-file)
     (let* ((model (org-truss-read))
            (head (org-truss-test--m model "The manager checks every driver before and after driving")))

@@ -127,7 +127,8 @@ whatever part it is written: with a why pattern, or none, it supports it,
 unless it is tagged ~:against:~, in which case it argues against it; with a
 how pattern it is a step or a part of it.  A reply to an objection is tagged
 ~:against:~ too, since it argues against the objection.  Support that lives
-elsewhere is named with ~TRUSS_GROUNDS~, labels separated by ~;~.
+elsewhere is pointed to with ~TRUSS_GROUNDS~, by links to the members it
+names: ~[[#m3]] [[#m7]]~ (see [[*Pointing to a member]]).
 
 The line between a fact and an assumption is whether you can say where it
 came from.
@@ -323,10 +324,13 @@ for a kind of document you write.
 * The file
 
 There is one ~truss.org~ per document.  ~M-x org-truss-init~ writes one.  A
-comment block at its head says in what order the parts are filled, how
-they stand to one another, how the board builds the structure, and what
-each property and tag is for; a folded ~:GUIDE:~ drawer under each part and
-field says what it is.  Its headings are English whatever
+comment block at its head holds the rules of the file, the same for
+whoever edits it, by hand, on the board, or as a language model working in
+the file: what each part holds, what a member and a cluster are, how one
+member points to another, what is written out, what each property and tag
+means, and the command that checks the file.  A folded ~:GUIDE:~ drawer
+under each part and field says how to work there.  The board's keys are at
+its foot, and what each check finds is said where it is reported.  Its headings are English whatever
 ~org-truss-language~ says: they name the parts and the fields, you do not
 rewrite them, and the reader never sees them.
 
@@ -358,6 +362,7 @@ The team leads.
 :END:
 ,*** Reviews run long
 :PROPERTIES:
+:CUSTOM_ID: m1
 :TRUSS_LOGIC: parts
 :END:
 ,#+begin_public
@@ -373,10 +378,12 @@ Reviews ran past the hour eight times this quarter.
 :END:
 ,*** Six of twelve items each week come back from the week before
 :PROPERTIES:
+:CUSTOM_ID: m2
 :TRUSS_SOURCE: agendas, weeks 1-12
 :END:
 ,*** Urgent items are raised in the team chat
 :PROPERTIES:
+:CUSTOM_ID: m3
 :TRUSS_SOURCE: team agreement
 :END:
 ,** Issue
@@ -391,7 +398,8 @@ The weekly review costs the team more time than it gives back.
 :END:
 ,** Half the items repeat
 :PROPERTIES:
-:TRUSS_GROUNDS: Reviews run long; Six of twelve items each week come back from the week before
+:CUSTOM_ID: m4
+:TRUSS_GROUNDS: [[#m1]] [[#m2]]
 :TRUSS_LOGIC: reasons
 :END:
 Robin keeps raising the same items.  Not something to put in writing.
@@ -408,12 +416,13 @@ We assume most items need more than a week to change.
 :END:
 ,**** Urgent items need no review                                  :against:
 :PROPERTIES:
-:TRUSS_GROUNDS: Urgent items are raised in the team chat
+:TRUSS_GROUNDS: [[#m3]]
 :END:
 
 ,** Move to fortnightly
 :PROPERTIES:
-:TRUSS_GROUNDS: Half the items repeat
+:CUSTOM_ID: m5
+:TRUSS_GROUNDS: [[#m4]]
 :TRUSS_LOGIC: steps
 :END:
 ,#+begin_public
@@ -432,7 +441,7 @@ Hold the review every other week.
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
-- [[*Reviews run long]]
+- [[#m1]]
 
 ,** Rain
 :PROPERTIES:
@@ -440,7 +449,7 @@ Hold the review every other week.
 :END:
 ,#+begin_public Why it drags
 ,#+end_public
-- [[*Half the items repeat]]
+- [[#m4]]
 
 ,** Umbrella
 :PROPERTIES:
@@ -448,13 +457,14 @@ Hold the review every other week.
 :END:
 ,#+begin_public What we propose
 ,#+end_public
-- [[*Move to fortnightly]]
+- [[#m5]]
 #+end_src
 
 ** Headings assert; the structure tells
 
-A member's heading is the sentence it asserts: its label, the name links
-use, and what the checks read.  It can be wrong and can stand on others,
+A member's heading is the sentence it asserts, and what the checks read.
+Links point to it by its ~CUSTOM_ID~, not its heading, so the heading can
+be reworded at any time.  It can be wrong and can stand on others,
 so write it to read on its own, pulled out of the document -- no "the
 following", no "above", no "first".  The order it is told in is the
 structure's, and a heading that leans on that order stops being true when
@@ -479,7 +489,7 @@ document rather than of the world, so it needs no grounds:
 ,#+begin_public
 The check runs as follows.
 ,#+end_public
-,- [[*Drivers are checked before and after driving][Please have the check before and after you drive.]]
+,- [[#m12][Please have the check before and after you drive.]]
 #+end_src
 
 The joins between members are seldom the structure's to write either: a
@@ -533,15 +543,38 @@ is nested under and what links to it.
 
 ** Sections list members
 
-A section lists the members it shows as link items, ~- [[*label]]~.  The link
+A section lists the members it shows as link items, ~- [[#m7]]~.  The link
 brings a member of the members with everything nested under it, and a
 member of the subject alone.  Its description, if it
-has one, ~- [[*label][words]]~, is what the reader is told there in place of
+has one, ~- [[#m7][words]]~, is what the reader is told there in place of
 the heading.  A section can hold sections of its own.
 
-Labels must be unique, since a link names one.  ~R~ on the board relabels a
-member and every link and ground that names it; on a section, it rewrites
-the heading.
+** Pointing to a member
+
+A link in a section, and a ground in ~TRUSS_GROUNDS~, point to a member by
+its ~CUSTOM_ID~: ~[[#m7]]~ is the member with ~:CUSTOM_ID: m7~.  Org
+resolves such a link within the file alone -- ~C-c C-o~ follows it, in a
+section or in a property -- and, unlike ~:ID:~, it is not entered in
+~org-id-locations~, nor made a node by org-roam.
+
+A heading is what a member asserts, and it gets reworded as the argument
+and the document take shape.  Were links to name headings, each rewording
+would break what pointed to it; pointing by id, a heading can be rewritten
+anywhere -- on the board with ~R~, in the file by hand, or by a model
+editing the file -- and nothing breaks.
+
+A member is given an id only once something points to it: ~a~ placing it,
+~b~ making it a ground, ~c~ writing it in a section.  An id is ~m~ and the
+next number free in the file; one you write yourself is kept.  Two members
+with one id are reported as /Duplicate ids/; a link or a ground that points
+to no member, as /Broken links/ or /Broken grounds/.  ~a~ on a broken link
+places a member where it stands.
+
+A file written when links named headings -- ~[[*heading]]~, and headings
+separated by ~;~ in ~TRUSS_GROUNDS~ -- shows them all as broken.
+~M-x org-truss-convert-references~ points each by id, giving the member
+named one, and keeps a link's words.  It does the same for a link written
+by heading, with Org's completion, say.
 
 * The board
 
@@ -661,10 +694,11 @@ Each part is followed by what is left to do in it.  Under the subject:
 /Assumptions/; /Pattern gaps/; and what is /Misplaced/ there.  Under the
 members: what is /Not placed/, or used /Only as grounds/; /Bare/ members;
 their /Open questions/, /Assumptions/ and /Unanswered objections/;
-/Pattern gaps/; and what is /Misplaced/ there.  Under the structure: its
-/Pattern gaps/ -- the structure, or a section, with the questions its
-pattern asks for and no section right below answers -- /Broken links/, and
-/Duplicate labels/.
+/Pattern gaps/; what is /Misplaced/ there; and /Broken grounds/.  Under
+the structure: its /Pattern gaps/ -- the structure, or a section, with the
+questions its pattern asks for and no section right below answers --
+/Broken links/, and /Duplicate ids/.  The mouse on the name of a check
+says what it finds.
 
 The patterns a cluster follows take a line of their own just below it, in
 parentheses, heading the sections or members they arrange: a section's
@@ -746,7 +780,7 @@ foot of the board lists them in the same four lines.
 |-------+-------------+---------------------------------------------------+---------------------------------------------------|
 | write | ~c~         | write a new member, placed in it                  | write the next step, or a member under it         |
 |       | ~e~         | edit its entry alone, beside the board            | same                                              |
-|       | ~R~         | rewrite its heading                               | relabel it, links and grounds too                 |
+|       | ~R~         | rewrite its heading                               | rewrite its heading                               |
 |       | ~t~         |                                                   | say what it is: fact, assumption, question ...    |
 |       | ~b~         |                                                   | make another member a ground of it, or not        |
 |       | ~Q~         |                                                   | put the text copied last under it, as a quotation |
@@ -805,8 +839,9 @@ asking, in place of the quotation already there.
 
 A ground supports a member from outside what is nested under it, through
 ~TRUSS_GROUNDS~.  ~b~ on a member offers its grounds first, and choosing
-one takes it away; any other is added.  On a ground's own line, the one
-marked =⬑=, ~b~ takes that ground away at once.
+one takes it away; any other is added, and given a ~CUSTOM_ID~ when it has
+none.  On a ground's own line, the one marked =⬑=, ~b~ takes that ground
+away at once.
 
 On the /Structure/ line, ~p~ sets the purpose of the document -- ~how ›
 proposal~, ~how › report~, ~how › explanation~ -- or any other logic pattern,
@@ -857,8 +892,8 @@ with what is nested under it, to the top of the members, under a field of
 the brief or the subject, or under another member as what its
 ~TRUSS_LOGIC~ says -- support, a step, a part.  A member with nothing under
 it is given the usual ~TRUSS_LOGIC~ for its part first, as ~c~ gives it.
-Links and grounds name it by its label, so the structure still shows it
-wherever it goes.  The places are offered in the order of the file, and a
+Links and grounds point to it by its ~CUSTOM_ID~, which goes with it, so
+the structure still shows it wherever it goes.  The places are offered in the order of the file, and a
 member by its path -- from Members or its field, through what it is nested
 under, to its own heading, with a step's number or a part's role:
 /Members › Check before every … › step 2: Read the checker/.  ~a~ on a
@@ -935,12 +970,19 @@ everyone.
 * Batch
 
 #+begin_src sh
+emacs --batch -L . -l org-truss -f org-truss-batch-check  truss.org
 emacs --batch -L . -l org-truss -f org-truss-batch-board  truss.org
 emacs --batch -L . -l org-truss -f org-truss-batch-export truss.org
 #+end_src
 
-The first prints the board as text, for anything that reads the structure
-without Emacs open.
+The first prints what is left to do, as ~M-x org-truss-check~ lists it:
+under the name of each check that finds something and what it finds, a
+line for each thing, ~truss.org:42: …~.  Anything that edits the file
+without the board -- you by hand, or a model working in the file -- can
+run it to see what it broke or left undone.  The comment block at the head
+of a truss file gives this line, with the directory org-truss is loaded
+from.  The second prints the board as text, for anything that reads the
+structure without Emacs open.
 
 * Tests
 

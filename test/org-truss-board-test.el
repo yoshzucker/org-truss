@@ -78,7 +78,8 @@ In the structure when TOLD."
       (should (string-match-p
                "hypothesis[ ·]+Move to fortnightly +Hold the review every other week\\.\n +(why › deduction, conclusion last)$" text))
       (should (string-match-p "Minor premise —" text))
-      (should (string-match-p "broken link[ ·]+No such member" text))
+      (should (string-match-p "broken link[ ·]+\\[\\[#none\\]\\]" text))
+      (should (string-match-p "^ Broken links\n +\\[\\[#none\\]\\] ← Umbrella$" text))
       (should (string-match-p "\n   Problem —\n   Cause —\n" text))
       (should (string-match-p "^ Pattern gaps\n   Structure[ ·]+how › proposal +Problem, Cause, Effect, Plan, Cost, Alternatives, Ask, Premises$" text))
       (should (string-match-p "^ Not placed$" text))
@@ -133,10 +134,14 @@ issue are drawn even while empty; the rest once they hold something."
     (org-truss-test--goto-line-with "bare[ ·]+The schedule is fixed")
     (org-truss-test--answering '("Structure › Premises › Premises")
       (org-truss-board-place))
+    ;; Placed, it is given an id to be pointed to by.
     (should (equal (org-truss-section-links
                     (car (org-truss-section-children
                           (org-truss-model-structure (org-truss-read source)))))
-                   '("No budget this year" "The schedule is fixed")))))
+                   '("budget" "m1")))
+    (should (equal (with-current-buffer source
+                     (org-entry-get (org-truss-test--heading-pos "The schedule is fixed") "CUSTOM_ID"))
+                   "m1"))))
 
 (ert-deftest org-truss-test-board-cuts-long-headings ()
   "A heading too long for its room is cut short, so what the reader sees
@@ -468,7 +473,7 @@ its own text, and replaces it the next time, after asking."
         (org-truss-test--answering '(t)
           (org-truss-board-quote)))
       (should (equal (funcall own)
-                     (concat ":PROPERTIES:\n:TRUSS_SOURCE: hallway\n:END:\n"
+                     (concat ":PROPERTIES:\n:CUSTOM_ID: aside\n:TRUSS_SOURCE: hallway\n:END:\n"
                              "#+begin_quote\nSaid in the hallway.\n * not a heading\n#+end_quote\n\n")))
       (org-truss-test--goto-line-with "fact[ ·]+Unused aside")
       (let ((kill-ring (list "Said twice.")))
@@ -672,10 +677,11 @@ on a section a member listed there, and on a field a member under the field."
     (org-truss-test--goto-line-with "├ Situation[ ·]+Sky")
     (org-truss-test--creating '("The team grew")
       (should (equal (org-truss-test--parent-label source "The team grew") '("Members" . 2)))
-      (should (member "The team grew"
-                      (org-truss-section-links
-                       (car (org-truss-section-children
-                             (org-truss-model-structure (org-truss-read source)))))))))
+      (let ((model (org-truss-read source)))
+        (should (equal (org-truss-member-id (org-truss-member-by-label model "The team grew")) "m1"))
+        (should (member "m1"
+                        (org-truss-section-links
+                         (car (org-truss-section-children (org-truss-model-structure model)))))))))
   (org-truss-test--with-board org-truss-test--conditions-file
     (org-truss-test--goto-line-with "^ └ Constraints")
     (org-truss-test--creating '("Tests start at seven")
@@ -1086,7 +1092,7 @@ in one section at most."
     (let ((root (org-truss-model-structure (org-truss-read source))))
       (should (null (org-truss-section-links (car (org-truss-section-children root)))))
       (should (equal (org-truss-section-links (nth 2 (org-truss-section-children root)))
-                     '("Move to fortnightly" "No such member" "Reviews run long"))))))
+                     '("move" "none" "long"))))))
 
 (ert-deftest org-truss-test-board-places-an-unplaced-member ()
   "a on an unplaced member places it in the chosen section; on a section, a
@@ -1098,23 +1104,23 @@ member placed elsewhere is moved there, and one placed there stays put."
     (should (equal (org-truss-section-links
                     (car (org-truss-section-children
                           (org-truss-model-structure (org-truss-read source)))))
-                   '("Reviews run long" "Lone remark")))
+                   '("long" "m1")))
     (should-not (string-match-p "^ Not placed\n.*\n   bare[ ·]+Lone remark" (buffer-string)))
     (org-truss-test--goto-line-with "└ Conclusion[ ·]+Umbrella")
     (org-truss-test--answering '("Members › Lone remark")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
       (should (equal (org-truss-section-links (car (org-truss-section-children root)))
-                     '("Reviews run long")))
+                     '("long")))
       (should (equal (org-truss-section-links (nth 2 (org-truss-section-children root)))
-                     '("Move to fortnightly" "No such member" "Lone remark"))))
+                     '("move" "none" "m1"))))
     (org-truss-test--goto-line-with "└ Conclusion[ ·]+Umbrella")
     (org-truss-test--answering '("Members › Lone remark")
       (org-truss-board-place))
     (should (equal (org-truss-section-links
                     (nth 2 (org-truss-section-children
                             (org-truss-model-structure (org-truss-read source)))))
-                   '("Move to fortnightly" "No such member" "Lone remark")))))
+                   '("move" "none" "m1")))))
 
 (ert-deftest org-truss-test-board-places-instead-of-a-broken-link ()
   "a on a broken link places the chosen member where the link stands; one
@@ -1123,22 +1129,23 @@ placed elsewhere is moved from there."
     (let ((links (lambda (n) (org-truss-section-links
                               (nth n (org-truss-section-children
                                       (org-truss-model-structure (org-truss-read source))))))))
-      (org-truss-test--goto-line-with "broken link[ ·]+No such member")
+      (org-truss-test--goto-line-with "broken link[ ·]+\\[\\[#none\\]\\]")
       (org-truss-test--answering '("Members › Lone remark")
         (org-truss-board-place))
-      (should (equal (funcall links 2) '("Move to fortnightly" "Lone remark")))
+      (should (equal (funcall links 2) '("move" "m1")))
       (should-not (string-match-p "broken link" (buffer-string))))
+    ;; A link that names a heading is broken too, and is put right the same way.
     (with-current-buffer source
       (goto-char (point-max))
-      (insert "- [[*Gone too]]\n- [[*Last]]\n"))
+      (insert "- [[*Reviews run long]]\n- [[#last]]\n"))
     (org-truss-board-redraw)
-    (org-truss-test--goto-line-with "broken link[ ·]+Gone too")
+    (org-truss-test--goto-line-with "broken link[ ·]+\\[\\[\\*Reviews run long\\]\\]")
     (org-truss-test--answering '("Members › Reviews run long")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
       (should (null (org-truss-section-links (car (org-truss-section-children root)))))
       (should (equal (org-truss-section-links (nth 2 (org-truss-section-children root)))
-                     '("Move to fortnightly" "Lone remark" "Reviews run long" "Last"))))))
+                     '("move" "m1" "long" "last"))))))
 
 (ert-deftest org-truss-test-board-takes-out-and-deletes ()
   "d takes a member out of the structure and leaves it in the file; D deletes
@@ -1164,8 +1171,10 @@ grounds that named it to show as broken."
       (should (null (org-truss-section-links
                      (nth 1 (org-truss-section-children (org-truss-model-structure model))))))
       (should (equal (org-truss-member-grounds (org-truss-member-by-label model "Move to fortnightly"))
-                     '("Half the items repeat"))))
-    (should (string-match-p "⬑ broken link[ ·]+Half the items repeat" (buffer-string)))))
+                     '("half"))))
+    (should (string-match-p "⬑ broken ground[ ·]+\\[\\[#half\\]\\]" (buffer-string)))
+    (should (string-match-p "^ Broken grounds\n +claim[ ·]+Move to fortnightly +\\[\\[#half\\]\\]$"
+                            (buffer-string)))))
 
 (ert-deftest org-truss-test-board-grounds ()
   "b makes another member a ground, or no longer one; on a ground's own line
@@ -1176,12 +1185,23 @@ it takes that ground away."
       (org-truss-test--goto-line-with "hypothesis[ ·]+Move to fortnightly")
       (org-truss-test--answering '("Members › Unused aside")
         (org-truss-board-ground))
-      (should (equal (funcall grounds) '("Half the items repeat" "Unused aside")))
+      (should (equal (funcall grounds) '("half" "aside")))
       (should (string-match-p "⬑ fact[ ·]+Unused aside" (buffer-string)))
+      ;; A member pointed to for the first time is given an id.
+      (org-truss-test--goto-line-with "hypothesis[ ·]+Move to fortnightly")
+      (org-truss-test--answering '("Members › Lone remark")
+        (org-truss-board-ground))
+      (should (equal (funcall grounds) '("half" "aside" "m1")))
+      (should (with-current-buffer source
+                (string-match-p ":TRUSS_GROUNDS: \\[\\[#half\\]\\] \\[\\[#aside\\]\\] \\[\\[#m1\\]\\]$"
+                                (buffer-string))))
+      (org-truss-test--goto-line-with "hypothesis[ ·]+Move to fortnightly")
+      (org-truss-test--answering '("Members › Lone remark")
+        (org-truss-board-ground))
       (org-truss-test--goto-line-with "hypothesis[ ·]+Move to fortnightly")
       (org-truss-test--answering '("Members › Half the items repeat")
         (org-truss-board-ground))
-      (should (equal (funcall grounds) '("Unused aside")))
+      (should (equal (funcall grounds) '("aside")))
       (org-truss-test--goto-line-with "⬑ fact[ ·]+Unused aside")
       (org-truss-board-ground)
       (should (null (funcall grounds)))
@@ -1244,7 +1264,7 @@ command is asking makes it draw again instead of acting."
       (should-not (org-truss--stale-p))
       (org-truss-test--answering '("Structure › Conclusion › Umbrella")
         (org-truss-board-place))
-      (should (member "Reviews run long" (funcall umbrella)))
+      (should (member "long" (funcall umbrella)))
       (org-truss-test--goto-line-with "fact[ ·]+Reviews run long")
       (cl-letf (((symbol-function 'completing-read)
                  (lambda (&rest _)
@@ -1253,7 +1273,7 @@ command is asking makes it draw again instead of acting."
                      (insert "\n"))
                    "Structure › Situation › Sky")))
         (should-error (org-truss-board-place) :type 'user-error))
-      (should (member "Reviews run long" (funcall umbrella))))))
+      (should (member "long" (funcall umbrella))))))
 
 (ert-deftest org-truss-test-board-orders-sections ()
   "M-down moves a section after its next sibling."
