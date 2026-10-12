@@ -1732,25 +1732,26 @@ the checks show it as broken.  Return the number of references changed."
 # Rules
 #   Member     a heading under a field of Brief or Subject, or under Members:
 #              one fact, claim, assumption or question, in a sentence that
-#              reads alone.  Notes under it are not written out
+#              reads alone
 #   Cluster    a heading with headings under it.  TRUSS_LOGIC why: they
 #              support it; how: they are its parts or steps; none: support.
-#              A new cluster takes parts in Subject, reasons in Members
-#   Reference  give the member :CUSTOM_ID: m7 (the next free number), write
-#              [[#m7]].  Rewriting its heading breaks nothing
+#              In Subject a cluster will be parts, in Members reasons
+#   Reference  give the member :CUSTOM_ID: m7 (the next free number), and
+#              point to it as ~[[#m7]]~
 #
 # Written out (only what Structure reaches)
-#   #+title            the title
-#   section heading    a heading
-#   #+begin_public     its section's opening (right under Structure, the
-#                      document's)
-#   - [[#m7][words]]   member m7: the words, else its #+begin_public, else
-#                      its heading; a member of Members brings its own
+#   #+title             the title
+#   section heading     a heading
+#   #+begin_public      its section's opening (right under Structure, the
+#                       document's)
+#   ~- [[#m7][words]]~  member m7: the words, else its #+begin_public, else
+#                       its heading; a member of Members brings its own
+#   Notes under a heading, outside #+begin_public, are not written out
 #
 # Properties and tags
 #   CUSTOM_ID         a member's id
 #   TRUSS_SOURCE      its source; makes it a fact
-#   TRUSS_GROUNDS     support from outside its cluster: [[#m3]] [[#m7]]
+#   TRUSS_GROUNDS     support from outside its cluster: ~[[#m3]] [[#m7]]~
 #   TRUSS_CONFIRM     whom to confirm an assumption with
 #   TRUSS_LOGIC       why: reasons induction deduction; how: parts steps
 #                     6w1h 5w1h proposal report explanation
@@ -1780,24 +1781,25 @@ the checks show it as broken.  Return the number of references changed."
 #
 # 規則
 #   部材  Brief・Subject の項目の下と、Members の下の見出し。事実・主張・
-#         前提・問いを一つ、抜き出しても通じる一文で書く。下のメモは書き出さない
+#         前提・問いを一つ、抜き出しても通じる一文で書く
 #   塊    下に見出しを持つ見出し。TRUSS_LOGIC が why なら下は根拠、how なら
-#         部分や手順、なければ根拠。新しい塊には Subject で parts、Members で
-#         reasons を書く
-#   参照  指す部材に :CUSTOM_ID: m7（空いている次の番号）を付け、[[#m7]] と
-#         書く。見出しを書き換えても切れない
+#         部分や手順、なければ根拠。塊は Subject なら parts、Members なら
+#         reasons になるはず
+#   参照  指す部材に :CUSTOM_ID: m7（空いている次の番号）を付け、リンクは
+#         ~[[#m7]]~ と書く
 #
 # 書き出されるもの（Structure から辿れるものだけ）
-#   #+title                 文書のタイトル
-#   節の見出し              文書の見出し
-#   #+begin_public          節の最初の文（Structure 直下なら文書の最初の文）
-#   節の - [[#m7][言い方]]  部材 m7。言い方、なければ部材の #+begin_public、
-#                           なければ見出し。Members の部材は下の部材も出る
+#   #+title                   文書のタイトル
+#   節の見出し                文書の見出し
+#   #+begin_public            節の最初の文（Structure 直下なら文書の最初の文）
+#   節の ~- [[#m7][言い方]]~  部材 m7。言い方、なければ部材の #+begin_public、
+#                             なければ見出し。Members の部材は下の部材も出る
+#   見出しの下のメモ（#+begin_public の外）は書き出さない
 #
 # プロパティとタグ
 #   CUSTOM_ID         部材の ID
 #   TRUSS_SOURCE      出典。書くと事実になる
-#   TRUSS_GROUNDS     入れ子の外の根拠：[[#m3]] [[#m7]]
+#   TRUSS_GROUNDS     入れ子の外の根拠を ~[[#m3]] [[#m7]]~ と並べる
 #   TRUSS_CONFIRM     前提を誰に確かめるか
 #   TRUSS_LOGIC       塊のすぐ下が何か。why：reasons induction deduction、
 #                     how：parts steps 6w1h 5w1h proposal report explanation
@@ -1871,7 +1873,7 @@ TRUSS_SOURCE に（盤面の t）、出典の原文を本文に #+begin_quote �
      "What is made of what was found: what the facts mean here, and what is
 to be done.  Each heading is a member, one claim in one sentence.  Make it
 stand on the heads of the subject's clusters it reads by pointing to them
-in TRUSS_GROUNDS, [[#m3]] [[#m7]] (b on the board).  Nest under a claim
+in TRUSS_GROUNDS, ~[[#m3]] [[#m7]]~ (b on the board).  Nest under a claim
 the members that support it, with TRUSS_LOGIC reasons (c on the board
 writes it), and tag one that argues against it :against:.  Give a member
 that says what to do a how pattern -- how › steps, how › parts, how › 6W1H
@@ -1884,7 +1886,7 @@ section that lists it (S on the board).  The text under a heading is never
 written out; tag :noexport: a member that should not be."
      "考えたこと：Subject の事実が、ここで何を意味するか（解釈）と、何を
 するか（判断）。見出し一つが部材一つで、主張を一文で書く。読んだ Subject の
-塊の頭を TRUSS_GROUNDS に [[#m3]] [[#m7]] と書いて根拠にする（盤面の b）。
+塊の頭を TRUSS_GROUNDS に ~[[#m3]] [[#m7]]~ と書いて根拠にする（盤面の b）。
 主張を支える部材はその下に入れ子にし、主張には TRUSS_LOGIC: reasons を
 付ける（盤面の c が書く）。反論には :against: を付ける。やることを言う部材に
 how の型（盤面の p で how › steps、how › parts、how › 6W1H）を付けると、下の
@@ -1896,23 +1898,23 @@ how の型（盤面の p で how › steps、how › parts、how › 6W1H）を�
     (structure
      "The sections of the document.  Each answers one or more of the
 reader's questions (TRUSS_ROLE) and lists the members it shows as links,
-- [[#m7]], m7 being the member's CUSTOM_ID (a on the board).  The
+as ~- [[#m7]]~ with m7 the member's CUSTOM_ID (a on the board).  The
 TRUSS_LOGIC here, or on a section, names the questions the sections right
 below must answer -- proposal, report, explanation, or any other logic
 pattern (p on the board); what none answers is listed under Pattern gaps.
 A section's heading becomes a heading of the document, and the text of
-its #+begin_public, the section's opening.  A link's description,
-- [[#m7][words]], is written out in place of the member's heading (S on
+its #+begin_public, the section's opening.  A link's description, as in
+~- [[#m7][words]]~, is written out in place of the member's heading (S on
 the board).  Write here only what guides the
 reader; put facts and claims in members, which are what the board's checks
 read.  Sections nest as deep as the document needs."
      "書き出す文書の節。節は読み手の問い（TRUSS_ROLE）のどれかに答え、載せる
-部材をリンクの箇条（- [[#m7]]。m7 は部材の CUSTOM_ID。盤面の a）で並べる。
+部材をリンクの箇条 ~- [[#m7]]~ で並べる（m7 は部材の CUSTOM_ID。盤面の a）。
 ここや節の TRUSS_LOGIC は、すぐ下の節が答えるべき問いを決める（proposal、
 report、explanation、ほかの論理の型も付けられる。盤面の p）。どの節も答えて
 いない問いは Pattern gaps に出る。節の見出しは文書の見出しになり、節に
-書いた #+begin_public の中身は節の最初の文になる。リンクに説明を付けると
-（- [[#m7][言い方]]）、部材の見出しの代わりにその説明が出る（盤面の
+書いた #+begin_public の中身は節の最初の文になる。リンクに説明を付けて
+~- [[#m7][言い方]]~ とすると、部材の見出しの代わりにその説明が出る（盤面の
 S）。ここには読み手を案内する言葉だけを書き、事実や主張は Members の部材に
 する。盤面のチェックが読むのは部材だけだから。節はいくらでも入れ子にできる。"))
   "Guidance written into a truss file, in English and Japanese.

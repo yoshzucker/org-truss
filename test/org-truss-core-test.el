@@ -1059,6 +1059,20 @@ a line opening with #+begin_ stops org-mode starting at all."
                                   "#+begin_public\nThe lead.\n#+end_public\n")
       (org-fold-hide-block-all))))
 
+(ert-deftest org-truss-test-guidance-shows-links-as-written ()
+  "A link written in the comment block or a guide to show how one is written
+is shown as written: Org draws a link there too, as its description alone,
+unless it is code, ~[[#m7]]~, with a space either side."
+  (dolist (org-truss-language '(en ja))
+    (org-truss-test--with (org-truss-skeleton "T")
+      (org-fold-show-all)
+      (font-lock-ensure)
+      (let ((n 0))
+        (while (re-search-forward "\\[\\[#" nil t)
+          (setq n (1+ n))
+          (should-not (get-text-property (match-beginning 0) 'invisible)))
+        (should (> n 3))))))
+
 (ert-deftest org-truss-test-skeleton ()
   "A new file has its parts and empty fields, headed in English whatever the
 language; the guidance is in the language."
