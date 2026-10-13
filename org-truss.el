@@ -28,12 +28,12 @@
 ;; A document that argues for something -- a proposal, an explanation -- is
 ;; built here the way a truss is: members first, each written once; then
 ;; arguments, members joined so that a claim stands on what supports it; then
-;; the structure, sections that answer the reader's questions and show those
-;; arguments in order.  What the reader sees is the headings, or the public
+;; the structure, sections that show those arguments in the order they are
+;; told.  What the reader sees is the headings, or the public
 ;; blocks written under them; everything else stays in the file, and the
 ;; document is generated from it.
 ;;
-;; `org-truss-init'            start a truss.org
+;; `org-truss-init'            set up a directory: a truss.org, what goes beside it
 ;; `org-truss-board'           draw the structure, change it, see what is undone
 ;; `org-truss-check'           list what is undone, line by line
 ;; `org-truss-export'          write the document
@@ -54,17 +54,93 @@
 ;;;###autoload (autoload 'org-truss-board "org-truss" "Draw the board for the nearest truss file." t)
 ;;;###autoload (autoload 'org-truss-export "org-truss" "Write the document of the nearest truss file." t)
 
+(defcustom org-truss-agent-file "CLAUDE.md"
+  "File `org-truss-init' writes beside the truss file for a coding agent, or nil.
+It tells an agent working in the directory -- Claude Code reads CLAUDE.md
+at the start of each session -- where the rules are: in the comment at the
+head of the truss file, read when it is needed, rather than repeated here
+to be read every time."
+  :type '(choice (const :tag "None" nil) string)
+  :group 'org-truss)
+
+(defconst org-truss--agent-text
+  '("\
+# This directory
+
+One document is made here with org-truss.  FILE is its only manuscript;
+OUT/ is written from it and is not edited by hand.
+
+- Before working here, read the comment at the head of FILE: the file's
+  rules, and what goes in which directory beside it.
+- Before writing in a part of FILE, read that part's :GUIDE: drawer.
+- After editing FILE, run the check that comment names.
+"
+    "\
+# このディレクトリ
+
+org-truss で文書を一つ作るディレクトリです。原稿は FILE だけで、OUT/ は
+そこから書き出したもの。手で直さない。
+
+- ここで作業する前に、FILE の冒頭のコメントを読む。ファイルの規則と、隣の
+  どのディレクトリに何を置くかが書いてある。
+- FILE のある部に書く前に、その部の :GUIDE: ドロワーを読む。
+- FILE を編集したら、冒頭のコメントにある検査を走らせる。
+")
+  "What `org-truss-agent-file' says, in English and Japanese.
+FILE and OUT/ stand for `org-truss-file-name' and
+`org-truss-output-directory'.  The rules themselves are in the truss
+file's head comment, which an agent reads as any editor does; this only
+says to read it, and when.")
+
+(defun org-truss--agent-text ()
+  "Return what `org-truss-agent-file' says, in `org-truss-language'."
+  (string-replace "OUT/" (file-name-as-directory org-truss-output-directory)
+                  (string-replace "FILE" org-truss-file-name
+                                  (apply #'org-truss--pick org-truss--agent-text))))
+
+(defun org-truss-set-up-directory (directory)
+  "Put beside the truss file in DIRECTORY what is missing of what goes there.
+The directories `org-truss-sources-directory' and
+`org-truss-notes-directory', and `org-truss-agent-file'.  What is there is
+left as it is.  Return the names of what was made."
+  (let (made)
+    (dolist (dir (list org-truss-sources-directory org-truss-notes-directory))
+      (let ((path (expand-file-name dir directory)))
+        (unless (file-directory-p path)
+          (make-directory path t)
+          (push (file-name-as-directory dir) made))))
+    (when org-truss-agent-file
+      (let ((path (expand-file-name org-truss-agent-file directory)))
+        (unless (file-exists-p path)
+          (with-temp-file path (insert (org-truss--agent-text)))
+          (push org-truss-agent-file made))))
+    (nreverse made)))
+
 ;;;###autoload
 (defun org-truss-init (directory)
-  "Open the truss file in DIRECTORY, writing a new one when there is none."
+  "Set up DIRECTORY to make a document in, and open its truss file.
+A new truss file when there is none.  Beside it, what is missing of the
+directories its head comment names and of `org-truss-agent-file'; see
+`org-truss-set-up-directory'.  A truss file written before its
+attachments were kept beside it is given the line that keeps them there,
+left unsaved to be looked over."
   (interactive (list (read-directory-name "Directory: " (org-truss--default-directory))))
-  (let ((file (expand-file-name org-truss-file-name directory)))
-    (if (file-exists-p file)
-        (find-file file)
-      (let ((title (read-string "Title: ")))
-        (find-file file)
-        (insert (org-truss-skeleton title))
-        (goto-char (point-min))))))
+  (let* ((file (expand-file-name org-truss-file-name directory))
+         (new (not (file-exists-p file)))
+         (title (and new (read-string "Title: "))))
+    (make-directory directory t)
+    (find-file file)
+    (if new
+        (progn
+          (insert (org-truss-skeleton title))
+          (setq-local org-attach-id-dir
+                      (file-name-as-directory org-truss-attach-directory))
+          (goto-char (point-min)))
+      (org-truss-put-file-variables))
+    (let ((made (org-truss-set-up-directory directory)))
+      (when made
+        (message "org-truss: made %s in %s" (string-join made ", ")
+                 (abbreviate-file-name (file-name-as-directory directory)))))))
 
 ;;;###autoload
 (defun org-truss-refresh-guides ()

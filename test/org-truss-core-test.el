@@ -90,18 +90,17 @@ Hold the review every other week.
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure
-:TRUSS_LOGIC: proposal
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 ** Sky
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_ROLE: sky
 :END:
 - [[#long]]
 
 ** Rain
 :PROPERTIES:
-:TRUSS_ROLE: interpretation
+:TRUSS_ROLE: rain
 :END:
 #+begin_public Why it drags
 #+end_public
@@ -109,7 +108,7 @@ Hold the review every other week.
 
 ** Umbrella
 :PROPERTIES:
-:TRUSS_ROLE: conclusion
+:TRUSS_ROLE: umbrella
 :END:
 - [[#move]]
 - [[#none]]
@@ -166,7 +165,6 @@ Finance said so at the October meeting.
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure
-:TRUSS_LOGIC: proposal
 :END:
 ** Premises
 :PROPERTIES:
@@ -318,7 +316,8 @@ The driver breathes into the checker.
 ** Check before every test
 :PROPERTIES:
 :CUSTOM_ID: check
-:TRUSS_LOGIC: 5w1h
+:TRUSS_LOGIC: parts
+:TRUSS_ASPECTS: 5w1h
 :END:
 *** The driver's manager
 :PROPERTIES:
@@ -382,6 +381,24 @@ The driver breathes into the checker.
      (goto-char (point-min))
      ,@body))
 
+(defmacro org-truss-test--in-directory (files &rest body)
+  "Run BODY in a new directory `dir' holding FILES, (NAME . TEXT) pairs."
+  (declare (indent 1))
+  `(let ((dir (file-name-as-directory (make-temp-file "org-truss-test" t))))
+     (unwind-protect
+         (progn
+           (dolist (file ,files)
+             (make-directory (file-name-directory (expand-file-name (car file) dir)) t)
+             (with-temp-file (expand-file-name (car file) dir)
+               (insert (cdr file))))
+           ,@body)
+       (dolist (buffer (buffer-list))
+         (when (or (string-prefix-p dir (or (buffer-file-name buffer) ""))
+                   (string-prefix-p "*truss " (buffer-name buffer)))
+           (with-current-buffer buffer (set-buffer-modified-p nil))
+           (kill-buffer buffer)))
+       (delete-directory dir t))))
+
 (defun org-truss-test--labels (members)
   (mapcar #'org-truss-member-label members))
 
@@ -423,13 +440,15 @@ against it is still an objection, and what is under a step supports the step."
       (should-not (plist-get (org-truss-checks model) :bare)))))
 
 (ert-deftest org-truss-test-how-and-telling ()
-  "Parts and labelled parts say how, as steps do.  Labelled parts are told in
-the order of their roles, and the roles not filled are gaps.  A telling
-pattern sits beside a logic pattern and adds its own roles."
+  "Parts and steps say how.  Parts that cover aspects are told in the order
+of the aspects, and an aspect none covers is a gap.  A telling pattern sits
+beside a logic pattern and asks for the places what is under it fills: not
+its point, which is the member itself, nor the point said again."
   (org-truss-test--with org-truss-test--how-file
     (let* ((model (org-truss-read))
            (kind (lambda (label) (org-truss-kind model (org-truss-test--m model label))))
-           (check (org-truss-test--m model "Check before every test")))
+           (check (org-truss-test--m model "Check before every test"))
+           (safer (org-truss-test--m model "Tests are safer checked")))
       (should (eq (funcall kind "The driver's manager") 'part))
       (should (eq (funcall kind "A checker that works") 'part))
       (should (eq (funcall kind "Meet the driver") 'step))
@@ -438,15 +457,52 @@ pattern sits beside a logic pattern and adds its own roles."
                      '("The driver's manager" "Before the first run of the day"
                        "In the office or by video call" "As follows")))
       (should (equal (org-truss-gaps check) '((what . 1) (why . 1))))
-      (should (eq (org-truss-conclusion-position
-                   (org-truss-test--m model "Tests are safer checked"))
-                  'prep))))
+      (should (equal (org-truss-asked-roles safer) '(reason example)))
+      (should-not (org-truss-gaps safer))))
   (org-truss-test--with (replace-regexp-in-string
                          ":TRUSS_TELLING: prep" ":TRUSS_LOGIC: deduction\n:TRUSS_TELLING: prep"
                          org-truss-test--how-file)
     (let ((member (org-truss-test--m (org-truss-read) "Tests are safer checked")))
-      (should (equal (org-truss-member-roles member) '(major minor reason example)))
-      (should (eq (org-truss-conclusion-position member) 'prep)))))
+      (should (equal (org-truss-asked-roles member) '(major minor reason example)))
+      (should (equal (org-truss-gaps member) '((major . 1) (minor . 1)))))))
+
+(ert-deftest org-truss-test-aspects-sort-everything ()
+  "Aspects are taken by reasons, steps and parts, not by a deduction or an
+induction.  What covers none of a cluster's aspects is outside its
+breakdown; what argues against it is not counted.  A heading can fill a
+place for each pattern that asks."
+  (should (org-truss-aspects-allowed-p nil))
+  (should (org-truss-aspects-allowed-p 'steps))
+  (should-not (org-truss-aspects-allowed-p 'deduction))
+  (org-truss-test--with "#+title: T
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Move to fortnightly
+:PROPERTIES:
+:TRUSS_ASPECTS: pros-cons
+:TRUSS_TELLING: prep
+:END:
+*** Less time in meetings
+:PROPERTIES:
+:TRUSS_ROLE: pros reason
+:END:
+*** Items wait longer
+:PROPERTIES:
+:TRUSS_ROLE: cons
+:END:
+*** Robin likes it
+*** Nobody asked for it                                             :against:
+"
+    (let* ((model (org-truss-read))
+           (move (org-truss-test--m model "Move to fortnightly")))
+      (should (equal (org-truss-member-roles (org-truss-test--m model "Less time in meetings"))
+                     '(pros reason)))
+      (should (equal (org-truss-test--labels (org-truss-unsorted move)) '("Robin likes it")))
+      (should (equal (org-truss-gaps move) '((example . 1))))
+      (should (equal (org-truss-test--labels (plist-get (org-truss-checks model) :unsorted))
+                     '("Robin likes it"))))))
 
 (defun org-truss-test--section-labels (section)
   (mapcar #'org-truss-section-label (org-truss-section-children section)))
@@ -598,11 +654,7 @@ judged like one, but never asked to be placed.  The field's text is apart."
   (org-truss-test--with org-truss-test--file
     (let ((model (org-truss-read)))
       (should (equal (org-truss-gaps (org-truss-test--m model "Move to fortnightly"))
-                     '((minor . 1))))
-      (should (eq (org-truss-conclusion-position (org-truss-test--m model "Move to fortnightly"))
-                  'last))
-      (should (eq (org-truss-conclusion-position (org-truss-test--m model "Half the items repeat"))
-                  'first))))
+                     '((minor . 1))))))
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -630,7 +682,7 @@ judged like one, but never asked to be placed.  The field's text is apart."
       (should (null (plist-get checks :grounds-only)))
       (should (equal (mapcar (lambda (g) (cons (org-truss-section-label (car g)) (mapcar #'car (cdr g))))
                              (plist-get checks :section-gaps))
-                     '(("Structure" problem cause effect plan cost alternatives ask premises))))
+                     '(("Structure" premises))))
       (should (equal (org-truss-test--labels (plist-get checks :bare))
                      '("A meeting that repeats itself can meet less")))
       (should (equal (org-truss-test--labels (plist-get checks :questions))
@@ -660,7 +712,8 @@ and gives each thing found a line of its own that compilation mode reads."
       (should (string-match-p "^truss\\.org:[0-9]+: \\[\\[#none\\]\\] in Umbrella$" report))
       (should (string-match-p "^truss\\.org:[0-9]+: Move to fortnightly -- lacks TRUSS_ROLE minor (why › deduction)$"
                               report))
-      (should (string-match-p "^truss\\.org:[0-9]+: Structure -- lacks TRUSS_ROLE problem cause " report))
+      (should (string-match-p "^truss\\.org:[0-9]+: Structure -- lacks TRUSS_ROLE premises (tell › Sky, Rain, Umbrella)$"
+                              report))
       (should (string-match-p "^Not placed -- .*\ntruss\\.org:[0-9]+: Unused aside\ntruss\\.org:[0-9]+: Lone remark$"
                               report))
       (should (< (string-match "^Broken links" report) (string-match "^Assumptions" report)))
@@ -703,31 +756,29 @@ named being given one; a heading no member has stays, broken."
       (should (string-match-p "as \\[\\[#long\\]\\] shows" (buffer-string))))
     (should (= (org-truss-convert-references-in-buffer) 0))))
 
-(ert-deftest org-truss-test-any-logic-anywhere ()
-  "Any cluster takes any logic pattern.  A section's asks for what the
-sections right below it answer -- deeper down, a question is answered for
-that section, not this one -- and its telling pattern's places are asked
-for too.  A member's purpose asks its parts for the reader's questions."
+(ert-deftest org-truss-test-any-pattern-anywhere ()
+  "A member and a section take the patterns alike.  A section's telling
+pattern asks the sections right below for each of its places -- deeper
+down, a place is filled for that section, not this one.  A member's asks
+what is under it for each place but the member's own, its answer.  A
+heading fills a place for each pattern that asks, and roles are named in
+the file's language."
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
-:TRUSS_LOGIC: report
+:TRUSS_TELLING: scqa
 :END:
 *** Reviews run long
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
-*** Hold them every other week
-:PROPERTIES:
-:TRUSS_ROLE: conclusion
-:END:
 * S
 :PROPERTIES:
 :TRUSS_PART: structure
-:TRUSS_LOGIC: explanation
+:TRUSS_TELLING: scqa
 :END:
 ** Now
 :PROPERTIES:
@@ -735,13 +786,13 @@ for too.  A member's purpose asks its parts for the reader's questions."
 :END:
 ** What we do
 :PROPERTIES:
-:TRUSS_ROLE: conclusion
-:TRUSS_LOGIC: 5w1h
-:TRUSS_TELLING: scqa
+:TRUSS_ROLE: answer
+:TRUSS_LOGIC: parts
+:TRUSS_ASPECTS: 5w1h
 :END:
 *** Why it is so
 :PROPERTIES:
-:TRUSS_ROLE: cause why
+:TRUSS_ROLE: complication why
 :END:
 "
     (let* ((model (org-truss-read))
@@ -749,16 +800,13 @@ for too.  A member's purpose asks its parts for the reader's questions."
            (what (cadr (org-truss-section-children root)))
            (move (org-truss-test--m model "We move to fortnightly reviews"))
            (checks (org-truss-checks model)))
-      (should (eq (org-truss-section-logic root) 'explanation))
-      (should (equal (org-truss-gaps root) '((cause . 1) (premises . 1))))
-      (should (equal (mapcar #'car (org-truss-gaps what))
-                     '(who when where what how situation problem conclusion)))
+      (should (equal (org-truss-gaps root) '((complication . 1) (question . 1))))
+      (should (equal (mapcar #'car (org-truss-gaps what)) '(who when where what how)))
       (should (equal (mapcar #'car (plist-get checks :section-gaps)) (list root what)))
-      (should (equal (org-truss-gaps move) '((problem . 1) (cause . 1) (plan . 1))))
-      (should (eq (org-truss-kind model (org-truss-test--m model "Reviews run long")) 'part))
-      (should (equal (org-truss-role-label 'situation) "Situation"))
+      (should (equal (org-truss-gaps move) '((complication . 1) (question . 1))))
+      (should (equal (org-truss-role-label 'sky) "Sky"))
       (let ((org-truss-language 'ja))
-        (should (equal (org-truss-role-label 'situation) "現状"))
+        (should (equal (org-truss-role-label 'umbrella) "傘"))
         (should (equal (org-truss-role-label 'who) "誰が"))))))
 
 (ert-deftest org-truss-test-grounds-only ()
@@ -815,50 +863,52 @@ two with one label are not, since nothing points by label."
 
 ;;;; Editing the structure
 
-(ert-deftest org-truss-test-apply-structure-pattern ()
-  "A section takes the place of the one new section it shares a question with,
+(ert-deftest org-truss-test-apply-section-telling ()
+  "A section takes the place of the one new section it shares a role with,
 as it is; the pattern adds the rest, and what fits no place stays at the end."
-  (org-truss-test--with org-truss-test--file
-    (org-truss-apply-structure-pattern (org-truss--part-pos "structure") 'problem-solving)
+  (org-truss-test--with (replace-regexp-in-string
+                         ":TRUSS_ROLE: umbrella" ":TRUSS_ROLE: answer"
+                         (replace-regexp-in-string ":TRUSS_ROLE: sky" ":TRUSS_ROLE: situation"
+                                                   org-truss-test--file))
+    (org-truss-apply-section-telling (org-truss--part-pos "structure") 'scqa)
     (let* ((model (org-truss-read))
            (root (org-truss-model-structure model))
            (by-label (lambda (l) (seq-find (lambda (s) (equal (org-truss-section-label s) l))
                                            (org-truss-section-children root)))))
-      (should (eq (org-truss-section-telling root) 'problem-solving))
+      (should (eq (org-truss-section-telling root) 'scqa))
       (should (equal (org-truss-test--section-labels root)
-                     '("Sky" "Problem" "Cause" "Umbrella" "Plan" "Effect" "Rain")))
+                     '("Sky" "Complication" "Question" "Umbrella" "Rain")))
       (should (equal (org-truss-section-links (funcall by-label "Sky"))
                      '("long")))
       (should (equal (org-truss-section-links (funcall by-label "Umbrella"))
                      '("move" "none")))
-      (should (equal (org-truss-section-roles (funcall by-label "Umbrella")) '(conclusion)))
-      (should (equal (org-truss-section-roles (funcall by-label "Problem")) '(problem)))
+      (should (equal (org-truss-section-roles (funcall by-label "Umbrella")) '(answer)))
+      (should (equal (org-truss-section-roles (funcall by-label "Question")) '(question)))
       (should (equal (car (org-truss-section-public (funcall by-label "Rain"))) "Why it drags"))
       (should (equal (org-truss-section-links (funcall by-label "Rain"))
                      '("half"))))))
 
 (ert-deftest org-truss-test-apply-pattern-fills-a-place-twice ()
-  "Two sections answering the same question both take that place, in order."
+  "Two sections filling the same place both take it, in order."
   (org-truss-test--with "* S
 :PROPERTIES:
 :TRUSS_PART: structure
 :END:
 ** Now
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_ROLE: sky
 :END:
 ** Then
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_ROLE: sky
 :END:
 "
-    (org-truss-apply-structure-pattern (org-truss--part-pos "structure") 'sky-rain-umbrella)
+    (org-truss-apply-section-telling (org-truss--part-pos "structure") 'sky-rain-umbrella)
     (let ((sections (org-truss-section-children (org-truss-model-structure (org-truss-read)))))
       (should (equal (mapcar #'org-truss-section-label sections)
                      '("Now" "Then" "Rain" "Umbrella")))
-      ;; Sky, Rain, Umbrella is fact, interpretation, action.
       (should (equal (mapcar #'org-truss-section-roles sections)
-                     '((situation) (situation) (interpretation) (conclusion)))))))
+                     '((sky) (sky) (rain) (umbrella)))))))
 
 (ert-deftest org-truss-test-apply-pattern-keeps-a-nested-pattern ()
   "A section that takes a new one's place brings its own sections and pattern."
@@ -868,18 +918,18 @@ as it is; the pattern adds the rest, and what fits no place stays at the end."
 :END:
 ** Umbrella
 :PROPERTIES:
-:TRUSS_ROLE: conclusion
+:TRUSS_ROLE: answer
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 *** Sky
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_ROLE: sky
 :END:
 - [[#inner]]
 "
-    (org-truss-apply-structure-pattern (org-truss--part-pos "structure") 'scqa)
+    (org-truss-apply-section-telling (org-truss--part-pos "structure") 'scqa)
     (let* ((root (org-truss-model-structure (org-truss-read)))
-           (answer (nth 2 (org-truss-section-children root))))
+           (answer (nth 3 (org-truss-section-children root))))
       (should (equal (org-truss-section-label answer) "Umbrella"))
       (should (eq (org-truss-section-telling answer) 'sky-rain-umbrella))
       (should (equal (org-truss-section-links (car (org-truss-section-children answer)))
@@ -975,7 +1025,7 @@ taken away."
       (should (equal (org-truss-section-public (funcall section "Sky"))
                      '(nil . "Where we are.")))
       (should (string-match-p
-               ":TRUSS_ROLE: situation\n:END:\n#\\+begin_public\nWhere we are\\.\n#\\+end_public\n- \\[\\[#long"
+               ":TRUSS_ROLE: sky\n:END:\n#\\+begin_public\nWhere we are\\.\n#\\+end_public\n- \\[\\[#long"
                (buffer-string)))
       (goto-char (org-truss-public-body (org-truss-test--heading-pos "Rain")))
       (insert "Why.")
@@ -1075,15 +1125,22 @@ unless it is code, ~[[#m7]]~, with a space either side."
 
 (ert-deftest org-truss-test-skeleton ()
   "A new file has its parts and empty fields, headed in English whatever the
-language; the guidance is in the language."
+language; the guidance is in the language.  Its first line keeps what is
+attached to its headings beside it, and its head comment names the
+directories there."
   (dolist (org-truss-language '(en ja))
     (org-truss-test--with (org-truss-skeleton "T")
       (let ((model (org-truss-read)))
         (should (equal (org-truss-model-title model) "T"))
-        (should (eq (org-truss-section-logic (org-truss-model-structure model)) 'proposal))
+        (should-not (org-truss-section-logic (org-truss-model-structure model)))
+        (should-not (org-truss-document-p model))
         (should-not (string-match-p ":TRUSS_PURPOSE:" (buffer-string)))
-        (should (string-prefix-p (concat "#+title: T\n\n" (org-truss--preamble) "\n* Brief\n")
+        (should (string-prefix-p (concat "# -*- org-attach-id-dir: \"attach/\"; -*-\n"
+                                         "#+title: T\n\n" (org-truss--preamble) "\n* Brief\n")
                                  (buffer-string)))
+        (should (equal (hack-local-variables-prop-line) '((org-attach-id-dir . "attach/"))))
+        (dolist (dir '("^#   sources/ " "^#   notes/ " "^#   attach/ " "^#   out/ "))
+          (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries (lambda () (org-get-heading t t t t)))
                        '("Brief" "Reader" "Their question" "Response wanted" "Constraints"
                          "Subject" "Premises" "Issue" "Constraints" "Members" "Structure")))
@@ -1107,7 +1164,9 @@ language; the guidance is in the language."
 
 (ert-deftest org-truss-test-refresh-guides ()
   "Refreshing puts the current guidance back, adds it where it was deleted,
-and leaves everything else as it was, a guide of your own included."
+and leaves everything else as it was, a guide of your own included.  A
+file without the first line that keeps its attachments beside it is given
+it, and the buffer takes it at once."
   (let ((org-truss-language 'ja))
     (org-truss-test--with "#+title: T
 
@@ -1145,7 +1204,10 @@ Not a part's.
 "
       (org-truss-refresh-guides-in-buffer)
       (let ((text (buffer-string)))
-        (should (string-prefix-p (concat "#+title: T\n\n" (org-truss--preamble) "\n* 与件\n") text))
+        (should (string-prefix-p (concat "# -*- org-attach-id-dir: \"attach/\"; -*-\n"
+                                         "#+title: T\n\n" (org-truss--preamble) "\n* 与件\n")
+                                 text))
+        (should (equal org-attach-id-dir "attach/"))
         (should-not (string-match-p "Old wording\\|An old preamble" text))
         (should (string-match-p (concat ":END:\n:GUIDE:\nこの文書が満たすべき条件。\\(?:.*\n\\)*?:END:\n"
                                         "Notes on the brief\\.")
@@ -1158,6 +1220,118 @@ Not a part's.
         (should (string-match-p ":GUIDE:\nNot a part's\\.\n:END:" text))
         (org-truss-refresh-guides-in-buffer)
         (should (equal (buffer-string) text))))))
+
+(ert-deftest org-truss-test-checks-before-a-document ()
+  "Until the structure tells something -- a pattern, a section, a link --
+there is no document: every member is checked as one in use, none is
+listed as not placed or used only as grounds, and the structure asks for
+no premises.  Once it tells something, what it does not use is not
+placed."
+  (let ((text "#+title: T
+* Subject
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** Constraints
+:PROPERTIES:
+:TRUSS_FIELD: constraints
+:END:
+*** Keep it short
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** We should move to fortnightly
+:PROPERTIES:
+:CUSTOM_ID: m1
+:TRUSS_GROUNDS: [[#m2]]
+:TRUSS_LOGIC: deduction
+:END:
+** Items need a week to move                                   :assumption:
+:PROPERTIES:
+:CUSTOM_ID: m2
+:END:
+** A loose remark
+** Who decides what is urgent                                    :question:
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+"))
+    (org-truss-test--with text
+      (let* ((model (org-truss-read))
+             (checks (org-truss-checks model))
+             (labels (lambda (key) (org-truss-test--labels (plist-get checks key)))))
+        (should-not (org-truss-document-p model))
+        (should-not (plist-get checks :unplaced))
+        (should-not (plist-get checks :grounds-only))
+        (should-not (plist-get checks :unmet))
+        (should-not (plist-get checks :section-gaps))
+        (should (equal (funcall labels :bare) '("Keep it short" "A loose remark")))
+        (should (equal (funcall labels :assumptions) '("Items need a week to move")))
+        (should (member "Who decides what is urgent" (funcall labels :questions)))
+        (should (equal (mapcar (lambda (g) (org-truss-member-label (car g))) (plist-get checks :gaps))
+                       '("We should move to fortnightly")))))
+    (org-truss-test--with (concat text "** Now\n")
+      (let* ((model (org-truss-read))
+             (checks (org-truss-checks model)))
+        (should (org-truss-document-p model))
+        (should (equal (org-truss-test--labels (plist-get checks :unplaced))
+                       '("We should move to fortnightly" "Items need a week to move"
+                         "A loose remark" "Who decides what is urgent")))
+        (should-not (plist-get checks :bare))))))
+
+(ert-deftest org-truss-test-file-variables ()
+  "A first line setting variables of its own gets the attachments' among
+them; one that sets where attachments go already is left as it is."
+  (org-truss-test--with "# -*- fill-column: 70 -*-\n#+title: T\n"
+    (org-truss-put-file-variables)
+    (let ((vars (hack-local-variables-prop-line)))
+      (should (equal (alist-get 'fill-column vars) 70))
+      (should (equal (alist-get 'org-attach-id-dir vars) "attach/")))
+    (should (string-match-p "\n#\\+title: T\n\\'" (buffer-string))))
+  (org-truss-test--with "# -*- org-attach-id-dir: \"pictures/\" -*-\n#+title: T\n"
+    (let ((before (buffer-string)))
+      (org-truss-put-file-variables)
+      (should (equal (buffer-string) before)))))
+
+(ert-deftest org-truss-test-reads-attachments-as-files ()
+  "A link to what is attached to a heading reads, in the model, as a link
+to the file, from the truss file's directory; the file itself is not
+changed.  Where the heading has nothing attached, the link stays."
+  (org-truss-test--in-directory '(("attach/ab/cdef/shot.png" . "png"))
+    (let ((file (expand-file-name "truss.org" dir)))
+      (with-temp-file file
+        (insert "# -*- org-attach-id-dir: \"attach/\"; -*-
+#+title: T
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** A claim
+:PROPERTIES:
+:ID:       abcdef
+:END:
+#+begin_public Said
+[[attachment:shot.png]]
+#+end_public
+See [[attachment:shot.png][the shot]].
+** Another
+[[attachment:shot.png]]
+"))
+      (with-current-buffer (find-file-noselect file)
+        (unwind-protect
+            (let* ((model (org-truss-read))
+                   (claim (org-truss-member-by-label model "A claim")))
+              (should (equal (cdr (org-truss-member-public claim))
+                             "[[file:attach/ab/cdef/shot.png]]"))
+              (should (equal (org-truss-member-notes claim)
+                             "See [[file:attach/ab/cdef/shot.png][the shot]]."))
+              (should (equal (org-truss-member-notes (org-truss-member-by-label model "Another"))
+                             "[[attachment:shot.png]]"))
+              (should (string-match-p "\\[\\[attachment:shot\\.png\\]\\]\n#\\+end_public"
+                                      (buffer-string))))
+          (kill-buffer))))))
 
 (ert-deftest org-truss-test-subject-clusters ()
   "In the subject, a member whose pattern is how › parts sums up what is

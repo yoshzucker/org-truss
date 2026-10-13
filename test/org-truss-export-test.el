@@ -113,6 +113,20 @@ Doubt body.
     (should (string-match-p "Ground body\\.\n\n\\*The claim\\*\nClaim body\\.\n\nDoubt body\\." out))
     (should-not (string-match-p "^\\*\\* The claim" out))))
 
+(ert-deftest org-truss-test-render-conclusion-first ()
+  "Told conclusion first, a member comes before its support, under a heading
+of its own; with no telling pattern it is told the same."
+  (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+                       "** Claim\n:PROPERTIES:\n:CUSTOM_ID: claim\n:TRUSS_TELLING: first\n:END:\n"
+                       "#+begin_public The claim\nClaim body.\n#+end_public\n"
+                       "*** Doubt                                                           :against:\n"
+                       "*** Ground\n:PROPERTIES:\n:TRUSS_SOURCE: s\n:END:\n"
+                       "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[#claim]]\n"))
+         (out (org-truss-test--render text)))
+    (should (string-match-p "^\\*\\* The claim\nClaim body\\.\n\nGround\n\nDoubt\n" out))
+    (should (equal (org-truss-test--render (replace-regexp-in-string ":TRUSS_TELLING: first\n" "" text))
+                   out))))
+
 (ert-deftest org-truss-test-render-nesting ()
   "Nested sections are written one level deeper, titled members deeper still."
   (let ((out (org-truss-test--render "#+title: T
@@ -169,9 +183,9 @@ follows the list."
     (should (string-match-p "^1\\. Meet[^\0]*\n\nCheck before every test\n\nThe checker" out))))
 
 (ert-deftest org-truss-test-render-parts-and-prep ()
-  "Parts are a bulleted list, labelled ones opening with their role in the
-order of the roles, and what a part holds goes inside it.  PREP tells the
-point, the reasons, the examples, and the point again."
+  "Parts are a bulleted list, those covering aspects opening with the aspect
+in the order of the aspects, and what a part holds goes inside it.  PREP
+tells the point, the reasons, the examples, and the point again."
   (let ((out (org-truss-test--render org-truss-test--how-file)))
     (should (string-match-p
              (concat "^Check before every test\n\n"
@@ -192,31 +206,40 @@ point, the reasons, the examples, and the point again."
   (let* ((org-truss-language 'ja)
          (out (org-truss-test--render
                (replace-regexp-in-string
-                ":TRUSS_LOGIC: 5w1h" ":TRUSS_LOGIC: 6w1h"
+                ":TRUSS_ASPECTS: 5w1h" ":TRUSS_ASPECTS: 6w1h"
                 (replace-regexp-in-string
                  "^\\*\\*\\* Before the first run"
                  "*** Whoever drives\n:PROPERTIES:\n:TRUSS_ROLE: whom\n:END:\n*** Before the first run"
                  org-truss-test--how-file)))))
     (should (string-match-p "^- 誰が：The driver's manager\n- 誰に：Whoever drives\n- いつ：" out))))
 
-(ert-deftest org-truss-test-render-a-purpose-on-a-member ()
-  "A purpose is a how pattern like any other: on a member, its parts are
-labelled with the reader's questions they answer, in the purpose's order."
-  (let* ((org-truss-language 'ja)
-         (out (org-truss-test--render "* M
+(ert-deftest org-truss-test-render-a-telling-on-a-member ()
+  "A telling pattern on a member tells what is under it in the order of its
+places, and the member itself at its own: SCQA's answer last, its title in
+bold since its support comes first; what fills no place comes with the
+last place.  SDS says the member, the details, and the member again."
+  (let* ((text "* M
 :PROPERTIES:
 :TRUSS_PART: members
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
 :CUSTOM_ID: move
-:TRUSS_LOGIC: report
+:TRUSS_TELLING: scqa
 :END:
-*** Hold them every other week
+#+begin_public Fortnightly
+We move to fortnightly reviews.
+#+end_public
+*** Should we keep meeting weekly
 :PROPERTIES:
-:TRUSS_ROLE: conclusion
+:TRUSS_ROLE: question
 :END:
-*** Reviews run long
+*** Half the items repeat
+:PROPERTIES:
+:TRUSS_ROLE: complication
+:END:
+*** Robin agrees
+*** Reviews are weekly
 :PROPERTIES:
 :TRUSS_ROLE: situation
 :END:
@@ -226,10 +249,19 @@ labelled with the reader's questions they answer, in the purpose's order."
 :END:
 ** Now
 - [[#move]]
-")))
+")
+         (out (org-truss-test--render text)))
     (should (string-match-p
-             "^We move to fortnightly reviews\n\n- 現状：Reviews run long\n- 結論：Hold them every other week\n"
-             out))))
+             (concat "^Reviews are weekly\n\nHalf the items repeat\n\nShould we keep meeting weekly\n\n"
+                     "Robin agrees\n\n\\*Fortnightly\\*\nWe move to fortnightly reviews\\.\n")
+             out))
+    (should-not (string-match-p "^\\*+ Fortnightly" out))
+    (let ((out (org-truss-test--render (replace-regexp-in-string "scqa" "sds" text))))
+      (should (string-match-p
+               (concat "^\\*\\* Fortnightly\nWe move to fortnightly reviews\\.\n\n"
+                       "Should we keep meeting weekly\n\nHalf the items repeat\n\nRobin agrees\n\n"
+                       "Reviews are weekly\n\nWe move to fortnightly reviews\\.\n")
+               out)))))
 
 (ert-deftest org-truss-test-export-writes-files ()
   "The Org file is always written; the Markdown one when pandoc is there."
@@ -252,6 +284,58 @@ labelled with the reader's questions they answer, in the purpose's order."
                 (should (string-match-p "Reviews ran past the hour" (buffer-string))))
               (kill-buffer buffer))))
       (delete-directory dir t))))
+
+(ert-deftest org-truss-test-export-relinks-files ()
+  "A link to a file by a relative path is written relative to where the
+document goes; its words, a search in the file, and any other link stay."
+  (should (equal (org-truss--relink
+                  (concat "[[file:attach/a b.png]]\n[[./sources/x.pdf][the law]]\n"
+                          "[[file:/abs/y.png]] [[https://e.x/z.png]] [[#m7]]\n"
+                          "[[file:notes/n.org::*Head]]")
+                  "/p/" "/p/out/")
+                 (concat "[[file:../attach/a b.png]]\n[[file:../sources/x.pdf][the law]]\n"
+                         "[[file:/abs/y.png]] [[https://e.x/z.png]] [[#m7]]\n"
+                         "[[file:../notes/n.org::*Head]]"))))
+
+(ert-deftest org-truss-test-export-shows-pictures ()
+  "A picture attached to a member and shown in its public block is shown in
+the document, linked from where the document is written."
+  (org-truss-test--in-directory
+      (list (cons "attach/ab/cdef/shot.png" "png")
+            (cons "truss.org" "# -*- org-attach-id-dir: \"attach/\"; -*-
+#+title: T
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** A claim
+:PROPERTIES:
+:ID:       abcdef
+:CUSTOM_ID: m1
+:END:
+#+begin_public
+As the shot shows.
+
+[[attachment:shot.png]]
+#+end_public
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** Now
+- [[#m1]]
+"))
+    (let* ((buffer (find-file-noselect (expand-file-name "truss.org" dir)))
+           (written (org-truss-export-buffer buffer)))
+      (with-temp-buffer
+        (insert-file-contents (car written))
+        (should (string-match-p "^\\[\\[file:\\.\\./attach/ab/cdef/shot\\.png\\]\\]$"
+                                (buffer-string))))
+      (when (cdr written)
+        (with-temp-buffer
+          (insert-file-contents (cadr written))
+          (should (string-match-p "!\\[[^]]*\\](\\.\\./attach/ab/cdef/shot\\.png)"
+                                  (buffer-string))))))))
 
 (provide 'org-truss-export-test)
 

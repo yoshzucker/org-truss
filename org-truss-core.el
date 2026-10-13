@@ -19,7 +19,7 @@
 ;;   members    every statement, written once; what supports a claim is
 ;;              nested under it
 ;;   structure  the document's composition, a tree of sections that answer
-;;              the reader's questions and link members with [[#id]]
+;;              their places in how it is told and link members with [[#id]]
 ;;
 ;; A member is pointed to by its CUSTOM_ID, which Org resolves within the
 ;; file alone: a link [[#m7]], a ground [[#m7]] in TRUSS_GROUNDS.  Its
@@ -31,6 +31,8 @@
 ;;; Code:
 
 (require 'org)
+(require 'org-attach)
+(require 'files-x)
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
@@ -58,152 +60,182 @@ file reads the same to every setting."
   :type 'string
   :group 'org-truss)
 
-(defconst org-truss-questions
-  '((situation    "Situation"    "現状"   "What is the case now?"
-                  "今どうなっている？")
-    (problem      "Problem"      "問題"   "What is wrong, and why now?"
-                  "何が困る？なぜ今？")
-    (cause        "Cause"        "原因"   "Why is it so?"
-                  "なぜそうなっている？")
-    (interpretation "Interpretation" "解釈" "What do the facts mean here?"
-                  "その事実から、ここで何が言える？")
-    (conclusion   "Conclusion"   "結論"   "So what do we do?  In short?"
-                  "で、どうする？／要するに？")
-    (effect       "Effect"       "効果"   "Why would that make it better?"
-                  "なぜそれで良くなる？")
-    (plan         "Plan"         "進め方" "Who does what, by when?"
-                  "誰が、いつ、どうやる？")
-    (cost         "Cost"         "代償"   "What does it cost, and what could go wrong?"
-                  "何を払う？何が起きうる？")
-    (premises     "Premises"     "前提"   "What does it assume, and how far does it hold?"
-                  "何を前提に、どこまで言える？")
-    (alternatives "Alternatives" "他案"   "Why not something else?"
-                  "他ではだめな理由は？")
-    (ask          "Ask"          "依頼"   "What should I do?"
-                  "私は何をすれば？"))
-  "The reader's questions: id, English name, Japanese name, and the question.
-A section of the structure answers one or more of them.  Nested sections
-answer them about their parent's topic: the situation inside a remedy is the
-situation that remedy works in.")
+;; Beside the truss file are the directories its work needs, so the whole
+;; can be moved or handed over as one.  The comment at the head of the file
+;; names them, for whoever works in it.
 
-(defcustom org-truss-member-roles
-  '((major   "Major premise" "大前提")
-    (minor   "Minor premise" "小前提")
-    (case    "Case"          "事例")
-    (reason  "Reason"        "理由")
-    (example "Example"       "例")
-    (who     "Who"           "誰が")
-    (whom    "Whom"          "誰に")
-    (when    "When"          "いつ")
-    (where   "Where"         "どこで")
-    (what    "What"          "何を")
-    (why     "Why"           "なぜ")
-    (how     "How"           "どうやって"))
-  "Roles a member can take under one whose pattern names them.
-Each is (ID ENGLISH JAPANESE): the board calls it by its English name, and
-the reader sees it, as the label of a part, in `org-truss-language'.  A
-pattern of your own in `org-truss-patterns' can name any of them, or roles
-added here."
+(defcustom org-truss-output-directory "out"
+  "Directory the document is written to, relative to the truss file."
+  :type 'directory
+  :group 'org-truss)
+
+(defcustom org-truss-sources-directory "sources"
+  "Directory beside the truss file for what was read, a file for each source.
+A page fetched, a PDF, an extract, kept so the facts can be checked
+against it; a fact's TRUSS_SOURCE names its file here as well as where it
+came from.  `org-truss-init' makes it."
+  :type 'directory
+  :group 'org-truss)
+
+(defcustom org-truss-notes-directory "notes"
+  "Directory beside the truss file for what is ours and not a source.
+A memo, slides of our own, minutes: kept with the work, but nothing a
+fact can cite.  What is worked out goes in the truss file itself.
+`org-truss-init' makes it."
+  :type 'directory
+  :group 'org-truss)
+
+(defcustom org-truss-attach-directory "attach"
+  "Directory beside the truss file that what is attached to its headings goes in.
+A new truss file sets `org-attach-id-dir' to it on its first line, so
+whatever `org-attach' puts on a heading of the file -- a picture, a file --
+is kept here, each heading's in a directory named by its ID, and not in
+the directory attachments go in elsewhere."
+  :type 'directory
+  :group 'org-truss)
+
+;; Org declares `org-attach-id-dir' safe as a file variable, but only once
+;; org-attach is loaded; said here too, a truss file opened before then sets
+;; it without asking.
+;;;###autoload
+(put 'org-attach-id-dir 'safe-local-variable #'stringp)
+
+(defcustom org-truss-roles
+  '(;; Places in a logic pattern: what a premise or a case is to its claim.
+    (major    "Major premise" "大前提")
+    (minor    "Minor premise" "小前提")
+    (case     "Case"          "事例")
+    ;; Aspects: what a breakdown must cover.
+    (who      "Who"           "誰が")
+    (whom     "Whom"          "誰に")
+    (when     "When"          "いつ")
+    (where    "Where"         "どこで")
+    (what     "What"          "何を")
+    (why      "Why"           "なぜ")
+    (how      "How"           "どうやって")
+    (pros     "Pros"          "メリット")
+    (cons     "Cons"          "デメリット")
+    (short    "Short term"    "短期")
+    (long     "Long term"     "長期")
+    (past     "Past"          "過去")
+    (present  "Present"       "現在")
+    (future   "Future"        "未来")
+    ;; Places in a telling pattern, in the order the patterns tell them.
+    (body     "Body"          "本文")
+    (conclusion "Conclusion"  "結論")
+    (point    "Point"         "要点")
+    (reason   "Reason"        "理由")
+    (example  "Example"       "例")
+    (recap    "Point again"   "まとめ")
+    (summary  "Summary"       "要約")
+    (details  "Details"       "詳細")
+    (situation "Situation"    "状況")
+    (complication "Complication" "複雑化")
+    (question "Question"      "問い")
+    (answer   "Answer"        "答え")
+    (sky      "Sky"           "空")
+    (rain     "Rain"          "雨")
+    (umbrella "Umbrella"      "傘")
+    ;; What the structure asks for once an assumption is in use.
+    (premises "Premises"      "前提"))
+  "Places what is under a cluster can fill, each the value of a TRUSS_ROLE.
+Each is (ID ENGLISH JAPANESE): the board calls it by its English name; the
+file and the document, as the label of a part or the heading of a section
+made for it, in `org-truss-language'.  A pattern of your own in
+`org-truss-patterns' can name any of them, or roles added here."
   :type '(repeat (list symbol string string))
   :group 'org-truss)
 
 (defcustom org-truss-patterns
-  '((sky-rain-umbrella
-     :kind structure :name "Sky, Rain, Umbrella"
-     :slots (("Sky" "空" situation)
-             ("Rain" "雨" interpretation)
-             ("Umbrella" "傘" conclusion)))
-    (scqa
-     :kind structure :name "SCQA"
-     :slots (("Situation" "状況" situation)
-             ("Complication" "複雑化" problem)
-             ("Answer" "答え" conclusion)))
-    (problem-solving
-     :kind structure :name "Problem solving"
-     :slots (("Situation" "現状" situation)
-             ("Problem" "問題" problem)
-             ("Cause" "原因" cause)
-             ("Remedy" "打ち手" conclusion)
-             ("Plan" "進め方" plan)
-             ("Effect" "効果" effect)))
-    (reasons
+  '((reasons
      :kind logic :question why :name "reasons"
      :about "reasons that each hold it up alone")
-    (induction
-     :kind logic :question why :name "induction"
-     :about "cases, two or more, that it generalises"
-     :roles (case) :at-least ((case . 2)) :conclusion last)
     (deduction
      :kind logic :question why :name "deduction"
      :about "a major and a minor premise it follows from, together"
-     :roles (major minor) :conclusion last)
+     :roles (major minor))
+    (induction
+     :kind logic :question why :name "induction"
+     :about "cases, two or more, that it generalises"
+     :roles (case) :at-least ((case . 2)))
     (steps
      :kind logic :question how :name "steps" :list numbered
      :about "what to do, in order")
     (parts
      :kind logic :question how :name "parts" :list bulleted
      :about "what it is made of, in no order")
-    (6w1h
-     :kind logic :question how :name "6W1H" :list labelled
-     :about "who, to whom, when, where, what, why and how; each asked for"
-     :roles (who whom when where what why how))
+    (what-why-how
+     :kind aspects :name "What, Why, How" :roles (what why how)
+     :about "what it is, why, and how")
+    (pros-cons
+     :kind aspects :name "Pros and cons" :roles (pros cons)
+     :about "what is for it and what is against it")
+    (short-long
+     :kind aspects :name "Short and long term" :roles (short long)
+     :about "what holds soon and what holds later")
+    (past-present-future
+     :kind aspects :name "Past, present, future" :roles (past present future)
+     :about "what was, what is, what will be")
     (5w1h
-     :kind logic :question how :name "5W1H" :list labelled
-     :about "who, when, where, what, why and how; for what is done to no one"
-     :roles (who when where what why how))
-    (proposal
-     :kind logic :question how :name "proposal" :list labelled
-     :about "what a proposal answers: situation, problem, cause, conclusion, effect, plan, cost, alternatives, ask"
-     :roles (situation problem cause conclusion effect plan cost alternatives ask))
-    (report
-     :kind logic :question how :name "report" :list labelled
-     :about "what a report answers: situation, problem, cause, conclusion, plan"
-     :roles (situation problem cause conclusion plan))
-    (explanation
-     :kind logic :question how :name "explanation" :list labelled
-     :about "what an explanation answers: situation, cause, conclusion, premises"
-     :roles (situation cause conclusion premises))
+     :kind aspects :name "5W1H" :roles (who when where what why how)
+     :about "who, when, where, what, why and how; for what is done to no one")
+    (6w1h
+     :kind aspects :name "6W1H" :roles (who whom when where what why how)
+     :about "who, to whom, when, where, what, why and how")
     (first
-     :kind telling :name "conclusion first" :conclusion first
-     :about "it, then what is under it")
+     :kind telling :name "conclusion first"
+     :slots ((conclusion :point) (body :any :optional))
+     :about "it, then what is under it; as it is told with no telling pattern")
     (last
-     :kind telling :name "conclusion last" :conclusion last
+     :kind telling :name "conclusion last"
+     :slots ((body :any :optional) (conclusion :point))
      :about "what is under it, then it")
     (prep
-     :kind telling :name "PREP" :conclusion prep
-     :about "point, reasons, examples, the point again"
-     :roles (reason example)))
+     :kind telling :name "PREP"
+     :slots ((point :point) (reason) (example) (recap :again))
+     :about "point, reasons, examples, the point again")
+    (sds
+     :kind telling :name "SDS"
+     :slots ((summary :point) (details :any) (recap :again))
+     :about "summary, details, the summary again")
+    (scqa
+     :kind telling :name "SCQA"
+     :slots ((situation) (complication) (question) (answer :point))
+     :about "situation, complication, question, answer")
+    (sky-rain-umbrella
+     :kind telling :name "Sky, Rain, Umbrella"
+     :slots ((sky) (rain) (umbrella :point))
+     :about "what is seen, what it means, what to do"))
   "Patterns that can be applied to a cluster: a heading, with what is under it.
 
 A cluster is a member and the members nested under it, or a section and the
 sections below it; the structure is the largest, the whole document.  Each
 entry is (ID . PLIST).  :name is what the board calls it, and :about says,
-for the board, what it asks for.  :kind is one of:
+for the board, what it asks for.  A pattern is of one of three kinds, its
+:kind, and a cluster takes one of each, each its own property:
 
-`logic'      written as TRUSS_LOGIC, on any cluster: what is under it is to
-             it.  Its :question is `why' -- what is under it is its support
-             -- or `how' -- what is under it, but for what argues against
-             it, is what it is made of, and is not its support.  A `how'
-             pattern says how a member's is written as a :list: `numbered'
-             steps, `bulleted' parts, or parts `labelled' with their roles.
-             The purposes of a document -- proposal, report, explanation --
-             are how patterns whose roles are the reader's questions, for
-             the structure or a section.
-`structure'  a telling pattern for a section, written as TRUSS_TELLING.
-             It lists :slots, each (ENGLISH JAPANESE ROLE...): the sections
-             it creates, the heading each gets in the file -- in
-             `org-truss-language' -- and the reader's questions each
-             answers.  SCQA has no slot for the question; the reader's
-             question is in the brief.
-`telling'    a telling pattern for a member, written as TRUSS_TELLING: in
-             what order it is told.  Its :conclusion is `first', `last' or
-             `prep' -- first, and again at the end.
+`logic'    TRUSS_LOGIC: how what is under it is joined to it.  Its
+           :question is `why' -- what is under it is its support -- or
+           `how' -- what is under it, but for what argues against it, is
+           what it is made of, and is not its support.  A how pattern says
+           how its parts are written as a :list, `numbered' or `bulleted'.
+           Deduction and induction name the places of what is under them.
+`aspects'  TRUSS_ASPECTS: what must all be there, so that nothing is left
+           out -- on reasons, steps or parts.  Each part is labelled with
+           the aspect it covers, and comes in the order they are listed.
+`telling'  TRUSS_TELLING: how it is told, as the places of a framework, in
+           order, its :slots.  A slot is (ROLE . FLAGS).  On a member the
+           slot flagged :point is the member itself, and one flagged :again
+           is it said once more; on a section, which says nothing itself,
+           each is a section.  A slot flagged :any takes, besides its own,
+           what has no place in the pattern; one flagged :optional is not
+           asked for.  A member with no telling pattern is told as
+           `first' tells it.
 
-A pattern can list the :roles what is right under the cluster fills, the
+A pattern lists the :roles what is right under the cluster fills, the
 TRUSS_ROLE of each, and :at-least for roles that need more than one; a
-structure pattern's slots ask for theirs.  The board lists a role asked for
-and not filled as a gap.  A logic or telling pattern can give a :conclusion
-that holds unless a telling pattern says otherwise."
+telling pattern asks for the roles of its slots.  The board lists a role
+asked for and not filled as a gap."
   :type '(alist :key-type symbol :value-type plist)
   :group 'org-truss)
 
@@ -222,33 +254,19 @@ For what is written into the file or the document; the board is English."
   (if (eq org-truss-language 'ja) ja en))
 
 (defun org-truss-role-name (role)
-  "Return what the board calls ROLE, a reader's question or a member's role."
-  (let ((entry (or (alist-get role org-truss-questions)
-                   (alist-get role org-truss-member-roles))))
+  "Return what the board calls ROLE."
+  (let ((entry (alist-get role org-truss-roles)))
     (if entry (nth 0 entry) (symbol-name role))))
 
 (defun org-truss-role-label (role)
-  "Return ROLE as the reader sees it, labelling a part, in `org-truss-language'.
-ROLE is a member's role or a reader's question."
-  (let ((entry (alist-get role org-truss-member-roles)))
-    (cond (entry (org-truss--pick (nth 0 entry) (nth 1 entry)))
-          ((alist-get role org-truss-questions) (org-truss-role-heading role))
-          (t (symbol-name role)))))
+  "Return ROLE as the file and the document name it, in `org-truss-language'.
+The label of a part covering it, or the heading of a section made for it."
+  (let ((entry (alist-get role org-truss-roles)))
+    (if entry (org-truss--pick (nth 0 entry) (nth 1 entry)) (symbol-name role))))
 
 (defun org-truss-role-names (roles)
   "Return what the board calls ROLES, joined."
   (mapconcat #'org-truss-role-name roles ", "))
-
-(defun org-truss-role-heading (role)
-  "Return the heading for ROLE, a reader's question, in `org-truss-language'.
-This is what a section answering ROLE is called in the file and the document."
-  (let ((entry (alist-get role org-truss-questions)))
-    (if entry (org-truss--pick (nth 0 entry) (nth 1 entry)) (symbol-name role))))
-
-(defun org-truss-question-text (role)
-  "Return the question that ROLE, a reader's question, asks."
-  (let ((entry (alist-get role org-truss-questions)))
-    (and entry (org-truss--pick (nth 2 entry) (nth 3 entry)))))
 
 (defun org-truss-pattern (id)
   "Return the plist of the pattern ID, or nil."
@@ -258,15 +276,21 @@ This is what a section answering ROLE is called in the file and the document."
   "Return what the board calls the pattern ID."
   (or (plist-get (org-truss-pattern id) :name) (symbol-name id)))
 
+(defun org-truss-pattern-slots (id)
+  "Return the slots of the telling pattern ID, each (ROLE . FLAGS)."
+  (plist-get (org-truss-pattern id) :slots))
+
 (defun org-truss-slot-name-p (id name)
-  "Non-nil when NAME is what the structure pattern ID calls one of its places.
+  "Non-nil when NAME is what the telling pattern ID calls one of its places.
 In either language: the heading the pattern gave a section it made, which
 names the place in the pattern, not what the reader finds there."
-  (seq-some (lambda (slot) (member name (list (nth 0 slot) (nth 1 slot))))
-            (plist-get (org-truss-pattern id) :slots)))
+  (seq-some (lambda (slot)
+              (let ((entry (alist-get (car slot) org-truss-roles)))
+                (and entry (member name (list (nth 0 entry) (nth 1 entry))))))
+            (org-truss-pattern-slots id)))
 
 (defun org-truss-patterns-of-kind (kind)
-  "Return the ids of the patterns of KIND: `structure', `logic' or `telling'.
+  "Return the ids of the patterns of KIND: `logic', `aspects' or `telling'.
 Logic patterns come those that answer why first, then those that answer how."
   (let ((ids (mapcar #'car (seq-filter (lambda (p) (eq (plist-get (cdr p) :kind) kind))
                                        org-truss-patterns))))
@@ -277,15 +301,23 @@ Logic patterns come those that answer why first, then those that answer how."
 
 (defun org-truss-pattern-label (id)
   "Return the pattern ID as the board offers it: the question it answers or
-the family it is of, then its name -- why › deduction, tell › PREP.  Nil
-stands for no logic pattern written, which reads as why › reasons."
+its kind, then its name -- why › deduction, aspects › 6W1H, tell › PREP.
+Nil stands for no logic pattern written, which reads as why › reasons."
   (let ((pattern (org-truss-pattern id)))
     (format "%s › %s"
-            (cond ((null id) "why")
-                  ((eq (plist-get pattern :kind) 'logic)
-                   (symbol-name (plist-get pattern :question)))
-                  (t "tell"))
+            (pcase (and id (plist-get pattern :kind))
+              ('nil "why")
+              ('logic (symbol-name (plist-get pattern :question)))
+              ('aspects "aspects")
+              (_ "tell"))
             (if id (org-truss-pattern-name id) "reasons"))))
+
+(defun org-truss-aspects-allowed-p (logic)
+  "Non-nil when a cluster whose logic pattern is LOGIC can take aspects.
+Reasons, steps and parts can: each is a set of what is under it, whose
+members can cover a breakdown.  A deduction's premises and an induction's
+cases are what they are by their places, and cover nothing besides."
+  (memq logic '(nil reasons steps parts)))
 
 ;;;; Reading an entry's own text
 
@@ -410,6 +442,45 @@ Return a plist:
   (let ((bounds (org-truss--own-bounds pos)))
     (org-truss--own-parse (car bounds) (cdr bounds))))
 
+(defconst org-truss--attachment-re
+  "\\[\\[attachment:\\([^]]+\\)\\]\\(\\[[^]]*\\]\\)?\\]"
+  "A link to an attachment: the file's name, and its description as written.")
+
+(defun org-truss--attachments-as-files (text)
+  "Return TEXT with its links to attachments of the heading at point as file links.
+An attachment link names a file only by the heading it is under, which
+only `org-attach' can follow; a file link, named from the truss file's
+directory, is found by the board and the document as any other file is.
+A link stays as it is where the heading has no attachments to find."
+  (let ((dir (and text (string-search "attachment:" text)
+                  (ignore-errors (org-attach-dir)))))
+    (if (not dir)
+        text
+      (replace-regexp-in-string
+       org-truss--attachment-re
+       (lambda (link)
+         (let ((name (match-string 1 link))
+               (words (or (match-string 2 link) "")))
+           (save-match-data
+             (format "[[%s]%s]"
+                     (org-link-escape
+                      (concat "file:" (file-relative-name
+                                       (expand-file-name (org-link-unescape name) dir))))
+                     words))))
+       text t t))))
+
+(defun org-truss--read-public (own)
+  "Return the public block of OWN, a parse of the heading at point, as read.
+Its body with links to attachments as file links; see
+`org-truss--attachments-as-files'."
+  (let ((public (plist-get own :public)))
+    (and public (cons (car public) (org-truss--attachments-as-files (cdr public))))))
+
+(defun org-truss--read-notes (own)
+  "Return the notes of OWN, a parse of the heading at point, as read.
+Trimmed, with links to attachments as file links."
+  (org-truss--attachments-as-files (string-trim (plist-get own :notes))))
+
 (defun org-truss--children (pos)
   "Return the positions of the direct children of the heading at POS."
   (save-excursion
@@ -452,6 +523,10 @@ into a link."
   "Return VALUE as a symbol, or nil when it is empty."
   (and value (not (string-blank-p value)) (intern (string-trim value))))
 
+(defun org-truss--roles (value)
+  "Return the roles VALUE, a TRUSS_ROLE property value, names."
+  (mapcar #'intern (split-string (or value ""))))
+
 (defun org-truss--part-pos (part)
   "Return the position of the heading whose TRUSS_PART is PART, or nil."
   (org-with-wide-buffer
@@ -477,14 +552,15 @@ HOME is the part it is written in: `members', or `subject' or `brief' for
 one written under a field of theirs.  LEVEL is its heading's, in the file.
 ID is its CUSTOM_ID, by which links and grounds point to it, or nil when
 nothing has pointed to it yet.  GROUNDS are the references of its
-TRUSS_GROUNDS."
-  pos id label level tags source grounds logic telling role confirm public notes
-  children home)
+TRUSS_GROUNDS.  ROLES are the places it fills in the patterns of the member
+it is nested under, from its TRUSS_ROLE: one for each pattern that asks."
+  pos id label level tags source grounds logic aspects telling roles confirm
+  public notes children home)
 
 (cl-defstruct (org-truss-section (:constructor org-truss--make-section)
                                  (:copier nil))
   "A section of the structure."
-  pos label level roles logic telling public notes links wordings children)
+  pos label level roles logic aspects telling public notes links wordings children)
 
 (cl-defstruct (org-truss-model (:constructor org-truss--make-model)
                                (:copier nil))
@@ -511,11 +587,12 @@ none written, its support."
        :source (org-entry-get nil "TRUSS_SOURCE")
        :grounds (org-truss--grounds-refs (org-entry-get nil "TRUSS_GROUNDS"))
        :logic (org-truss--intern (org-entry-get nil "TRUSS_LOGIC"))
+       :aspects (org-truss--intern (org-entry-get nil "TRUSS_ASPECTS"))
        :telling (org-truss--intern (org-entry-get nil "TRUSS_TELLING"))
-       :role (org-truss--intern (org-entry-get nil "TRUSS_ROLE"))
+       :roles (org-truss--roles (org-entry-get nil "TRUSS_ROLE"))
        :confirm (org-entry-get nil "TRUSS_CONFIRM")
-       :public (plist-get own :public)
-       :notes (string-trim (plist-get own :notes))
+       :public (org-truss--read-public own)
+       :notes (org-truss--read-notes own)
        :home home
        :children (mapcar (lambda (child) (org-truss--read-member child home)) children)))))
 
@@ -527,11 +604,12 @@ none written, its support."
        :pos pos
        :label (org-truss--heading-text)
        :level (org-current-level)
-       :roles (mapcar #'intern (split-string (or (org-entry-get nil "TRUSS_ROLE") "")))
+       :roles (org-truss--roles (org-entry-get nil "TRUSS_ROLE"))
        :logic (org-truss--intern (org-entry-get nil "TRUSS_LOGIC"))
+       :aspects (org-truss--intern (org-entry-get nil "TRUSS_ASPECTS"))
        :telling (org-truss--intern (org-entry-get nil "TRUSS_TELLING"))
-       :public (plist-get own :public)
-       :notes (string-trim (plist-get own :notes))
+       :public (org-truss--read-public own)
+       :notes (org-truss--read-notes own)
        :links (plist-get own :links)
        :wordings (plist-get own :wordings)
        :children (mapcar #'org-truss--read-section (org-truss--children pos))))))
@@ -547,7 +625,8 @@ none written, its support."
   "Return the fields of the brief or the subject at POS, as (FIELD . TEXT).
 TEXT is what is written under the field's heading, above any heading below it."
   (mapcar (lambda (field)
-            (cons (car field) (string-trim (plist-get (org-truss--own (cdr field)) :notes))))
+            (cons (car field) (org-with-point-at (cdr field)
+                                (org-truss--read-notes (org-truss--own (cdr field))))))
           (org-truss--fields pos)))
 
 (defun org-truss--flatten (members)
@@ -664,7 +743,9 @@ That is when its logic pattern answers how."
   (eq (plist-get (org-truss-pattern (org-truss-member-logic member)) :question) 'how))
 
 (defun org-truss-how-list (member)
-  "Return how MEMBER's how is written: `numbered', `bulleted' or `labelled'."
+  "Return how MEMBER's how is written: `numbered' or `bulleted'.
+Each item is labelled too with the aspect it covers, when MEMBER has
+aspects; see `org-truss-aspect-of'."
   (and (org-truss-how-p member)
        (or (plist-get (org-truss-pattern (org-truss-member-logic member)) :list) 'bulleted)))
 
@@ -689,43 +770,63 @@ its support, why › reasons."
 sections below a section."
   (if (org-truss-section-p chunk) (org-truss-section-children chunk) (org-truss-member-children chunk)))
 
+(defun org-truss--chunk-aspects (chunk)
+  "Return the aspects pattern of CHUNK, a member or a section."
+  (if (org-truss-section-p chunk) (org-truss-section-aspects chunk) (org-truss-member-aspects chunk)))
+
 (defun org-truss--chunk-roles (chunk)
   "Return the roles CHUNK, a member or a section, fills, from its TRUSS_ROLE."
-  (if (org-truss-section-p chunk)
-      (org-truss-section-roles chunk)
-    (let ((role (org-truss-member-role chunk))) (and role (list role)))))
+  (if (org-truss-section-p chunk) (org-truss-section-roles chunk) (org-truss-member-roles chunk)))
 
-(defun org-truss-pattern-roles (logic telling)
-  "Return the roles the patterns LOGIC and TELLING ask to be filled, in order.
-Those a pattern lists, and the questions a structure pattern's slots answer."
-  (let ((telling (org-truss-pattern telling)))
-    (seq-uniq (append (plist-get (org-truss-pattern logic) :roles)
-                      (plist-get telling :roles)
-                      (mapcan (lambda (slot) (copy-sequence (nthcdr 2 slot)))
-                              (plist-get telling :slots))))))
+(defun org-truss-aspect-roles (chunk)
+  "Return the aspects CHUNK, a member or a section, must cover, in order."
+  (plist-get (org-truss-pattern (org-truss--chunk-aspects chunk)) :roles))
 
-(defun org-truss-member-roles (chunk)
-  "Return the roles what is under CHUNK can take, from both its patterns.
-CHUNK is a member or a section."
-  (org-truss-pattern-roles (org-truss--chunk-logic chunk) (org-truss--chunk-telling chunk)))
+(defun org-truss--slots (chunk)
+  "Return the slots of CHUNK's telling pattern that what is under it fills.
+On a member, the slot that is the member itself and the one that says it
+again are its own; on a section, which says nothing itself, every slot is
+a section's."
+  (let ((slots (org-truss-pattern-slots (org-truss--chunk-telling chunk))))
+    (if (org-truss-section-p chunk)
+        slots
+      (seq-remove (lambda (slot) (or (memq :point (cdr slot)) (memq :again (cdr slot))))
+                  slots))))
+
+(defun org-truss-asked-roles (chunk)
+  "Return the roles CHUNK's patterns ask of what is right under it, in order.
+The places its logic pattern names, the aspects it must cover, and the
+places of its telling pattern that what is under it fills, but for those
+the pattern does not ask for.  CHUNK is a member or a section."
+  (seq-uniq (append (plist-get (org-truss-pattern (org-truss--chunk-logic chunk)) :roles)
+                    (org-truss-aspect-roles chunk)
+                    (mapcar #'car (seq-remove (lambda (slot) (memq :optional (cdr slot)))
+                                              (org-truss--slots chunk))))))
 
 (defun org-truss--by-role (members roles)
-  "Return MEMBERS ordered by where their role comes in ROLES; the rest after.
-Members of one role keep their order."
-  (sort (copy-sequence members)
-        (lambda (a b)
-          (< (or (seq-position roles (org-truss-member-role a)) (length roles))
-             (or (seq-position roles (org-truss-member-role b)) (length roles))))))
+  "Return MEMBERS ordered by where the first of their roles comes in ROLES.
+Those with none of ROLES come after; members of one place keep their order."
+  (let ((rank (lambda (m)
+                (or (seq-min (or (delq nil (mapcar (lambda (r) (seq-position roles r))
+                                                   (org-truss--chunk-roles m)))
+                                 (list (length roles))))
+                    (length roles)))))
+    (sort (copy-sequence members)
+          (lambda (a b) (< (funcall rank a) (funcall rank b))))))
 
 (defun org-truss-how-children (member)
   "Return what says how to do MEMBER, in the order the reader is told it.
 That is what is nested under it, but for what argues against it, when it
-says how; parts that are labelled come in the order of their roles."
+says how; parts that cover aspects come in the order of the aspects."
   (when (org-truss-how-p member)
-    (let ((how (seq-remove #'org-truss-against-p (org-truss-member-children member))))
-      (if (eq (org-truss-how-list member) 'labelled)
-          (org-truss--by-role how (org-truss-member-roles member))
-        how))))
+    (let ((how (seq-remove #'org-truss-against-p (org-truss-member-children member)))
+          (aspects (org-truss-aspect-roles member)))
+      (if aspects (org-truss--by-role how aspects) how))))
+
+(defun org-truss-aspect-of (member child)
+  "Return the aspect CHILD covers of those MEMBER must cover, or nil."
+  (seq-find (lambda (role) (memq role (org-truss-member-roles child)))
+            (org-truss-aspect-roles member)))
 
 (defun org-truss-how-child-p (model member)
   "Non-nil when MEMBER says how to do the member it is nested under."
@@ -784,29 +885,46 @@ reaches an assumption or a question."
   (and (eq (org-truss-kind model member) 'claim)
        (org-truss--rests-on-open-p model member nil)))
 
-(defun org-truss-conclusion-position (member)
-  "Return where MEMBER comes relative to its support: `first', `last' or `prep'.
-`prep' is first, and again at the end.  Its telling pattern says so;
-failing that its logic pattern does; failing that, first."
-  (or (plist-get (org-truss-pattern (org-truss-member-telling member)) :conclusion)
-      (plist-get (org-truss-pattern (org-truss-member-logic member)) :conclusion)
-      'first))
+(defun org-truss--loose (chunk)
+  "Return what is right under CHUNK that fills no place of its telling pattern.
+What argues against a member is not counted: it is told after the rest."
+  (let ((places (mapcar #'car (org-truss--slots chunk))))
+    (seq-remove (lambda (c)
+                  (or (and (org-truss-member-p c) (org-truss-against-p c))
+                      (seq-intersection (org-truss--chunk-roles c) places)))
+                (org-truss--chunk-children chunk))))
 
 (defun org-truss-gaps (chunk)
   "Return the roles CHUNK's patterns ask for and what is right under it lacks.
-CHUNK is a member or a section, a cluster; its logic and its telling
-pattern may each ask.  Each gap is (ROLE . SHORT-BY).  Only what is right
-under it counts: deeper down, a role is filled for that cluster, not this
-one -- the situation inside a remedy is the remedy's."
-  (let ((at-least (append (plist-get (org-truss-pattern (org-truss--chunk-logic chunk)) :at-least)
-                          (plist-get (org-truss-pattern (org-truss--chunk-telling chunk)) :at-least)))
-        (under (org-truss--chunk-children chunk)))
+CHUNK is a member or a section, a cluster; its logic, its aspects and its
+telling pattern may each ask.  Each gap is (ROLE . SHORT-BY).  A place of
+the telling pattern that takes anything, as SDS's details do, is filled by
+what fills no other.  Only what is right under it counts: deeper down, a
+role is filled for that cluster, not this one."
+  (let* ((at-least (plist-get (org-truss-pattern (org-truss--chunk-logic chunk)) :at-least))
+         (under (org-truss--chunk-children chunk))
+         (slots (org-truss--slots chunk))
+         (loose (length (org-truss--loose chunk))))
     (delq nil
           (mapcar (lambda (role)
                     (let ((need (or (alist-get role at-least) 1))
-                          (have (seq-count (lambda (c) (memq role (org-truss--chunk-roles c))) under)))
+                          (have (+ (seq-count (lambda (c) (memq role (org-truss--chunk-roles c)))
+                                              under)
+                                   (if (memq :any (cdr (assq role slots))) loose 0))))
                       (and (< have need) (cons role (- need have)))))
-                  (org-truss-member-roles chunk)))))
+                  (org-truss-asked-roles chunk)))))
+
+(defun org-truss-unsorted (chunk)
+  "Return what is right under CHUNK that covers none of the aspects it must.
+A breakdown by aspects sorts all that is under it, each piece into one, so
+what covers none is outside it.  What argues against a member is not
+counted."
+  (let ((aspects (org-truss-aspect-roles chunk)))
+    (and aspects
+         (seq-remove (lambda (c)
+                       (or (and (org-truss-member-p c) (org-truss-against-p c))
+                           (seq-intersection (org-truss--chunk-roles c) aspects)))
+                     (org-truss--chunk-children chunk)))))
 
 (defun org-truss-unanswered-p (model member)
   "Non-nil when MEMBER objects to a claim and nothing but a question answers it.
@@ -828,6 +946,13 @@ is not itself an objection counts."
   (let ((root (org-truss-model-structure model)))
     (and root (org-truss--section-descendants root))))
 
+(defun org-truss-chunk-at (model pos)
+  "Return the member or the section of MODEL whose heading is at POS, or nil."
+  (or (seq-find (lambda (m) (= (org-truss-member-pos m) pos)) (org-truss-model-all model))
+      (let ((root (org-truss-model-structure model)))
+        (and root (seq-find (lambda (s) (= (org-truss-section-pos s) pos))
+                            (cons root (org-truss-sections model)))))))
+
 (defun org-truss-section-wording (section ref)
   "Return the words SECTION tells the member REF in, or nil for its own.
 They are the description of the link that lists it: what the reader is
@@ -848,10 +973,30 @@ told there, while the member's heading stays what it asserts."
   (sort (copy-sequence members)
         (lambda (a b) (< (org-truss-member-pos a) (org-truss-member-pos b)))))
 
+(defun org-truss-document-p (model)
+  "Non-nil when the structure of MODEL tells something.
+It does once it has a pattern, a section or a link.  Until then there is
+no document yet: the file holds what was found and what is made of it, as
+a talk worked out with someone does, and nothing is placed or left out."
+  (let ((root (org-truss-model-structure model)))
+    (and root
+         (or (org-truss-section-logic root) (org-truss-section-telling root)
+             (org-truss-section-links root) (org-truss-section-children root))
+         t)))
+
 (defun org-truss-usage (model)
   "Return (PLACED . IN-USE) for MODEL, both in document order.
 PLACED is what the structure links, with what is nested under it.  IN-USE adds
-everything those rest on through TRUSS_GROUNDS, followed all the way down."
+everything those rest on through TRUSS_GROUNDS, followed all the way down.
+Before the structure tells anything, nothing is placed and every member is
+in use, so what is asked of a member is asked of each; see
+`org-truss-document-p'."
+  (if (not (org-truss-document-p model))
+      (cons nil (copy-sequence (org-truss-model-all model)))
+    (org-truss--usage model)))
+
+(defun org-truss--usage (model)
+  "Return (PLACED . IN-USE) for MODEL as its structure uses its members."
   (let* ((root (org-truss-model-structure model))
          (sections (and root (cons root (org-truss-sections model))))
          (linked (delq nil (mapcar (lambda (ref) (org-truss-member-by-ref model ref))
@@ -902,18 +1047,23 @@ reads as an interpretation.  The brief is not judged."
 
 (defun org-truss-checks (model)
   "Return what MODEL leaves undone, as a plist of lists.
+What is in use is as `org-truss-usage' says: before the structure tells
+anything, every member, and nothing is placed, left out, or owed to the
+reader.
 :unplaced      top members of the members part that nothing uses
 :grounds-only  top members of the members part used only as grounds
 :section-gaps  (SECTION . GAPS) for the structure and the sections short of
-               their patterns: the reader's questions a proposal, say,
-               asks for and no section right below answers.  Premises are
+               their patterns: the places Sky, Rain, Umbrella, say,
+               asks for and no section right below fills.  Premises are
                asked of the structure as soon as an assumption is in use
+               in a document
 :unmet         statements under the subject's constraints the document does
                not use: nothing of the cluster each heads is placed, or
                the ground of anything placed
 :bare :assumptions :unanswered   members in use of that sort
 :questions     questions in use, and every question in the subject
 :gaps          (MEMBER . GAPS) for clusters of members short of their pattern
+:unsorted      members under a cluster with aspects that cover none of them
 :misplaced     (MEMBER . WHY) for members in the wrong part
 :broken        (SECTION . REF) for links to no member
 :broken-grounds  (MEMBER . REF) for grounds that name no member
@@ -921,14 +1071,17 @@ reads as an interpretation.  The brief is not judged."
   (let* ((usage (org-truss-usage model))
          (placed (car usage))
          (in-use (cdr usage))
+         (document (org-truss-document-p model))
          (root (org-truss-model-structure model))
          (sections (and root (cons root (org-truss-sections model))))
-         (assumed (seq-some (lambda (m) (eq (org-truss-kind model m) 'assumption)) in-use))
+         (assumed (and document
+                       (seq-some (lambda (m) (eq (org-truss-kind model m) 'assumption)) in-use)))
          (of-kind (lambda (kind)
                     (seq-filter (lambda (m) (eq (org-truss-kind model m) kind)) in-use))))
     (list :unplaced (seq-remove (lambda (m) (memq m in-use)) (org-truss-model-members model))
-          :grounds-only (seq-filter (lambda (m) (and (memq m in-use) (not (memq m placed))))
-                                    (org-truss-model-members model))
+          :grounds-only (and document
+                             (seq-filter (lambda (m) (and (memq m in-use) (not (memq m placed))))
+                                         (org-truss-model-members model)))
           :section-gaps
           (delq nil (mapcar (lambda (s)
                               (let ((gaps (org-truss-gaps s)))
@@ -954,6 +1107,8 @@ reads as an interpretation.  The brief is not judged."
                                     (let ((gaps (org-truss-gaps m)))
                                       (and gaps (cons m gaps))))
                                   in-use))
+          :unsorted (org-truss--by-position
+                     (mapcan (lambda (m) (copy-sequence (org-truss-unsorted m))) in-use))
           :misplaced (org-truss-misplaced model)
           :broken (mapcan (lambda (s)
                             (mapcar (lambda (ref) (cons s ref))
@@ -979,7 +1134,9 @@ reads as an interpretation.  The brief is not judged."
     ("Misplaced"
      . "members written in the wrong part: facts, and questions to find out, go in Subject; interpretations and decisions in Members")
     ("Pattern gaps"
-     . "roles the TRUSS_LOGIC or TRUSS_TELLING of a cluster asks for that no heading right under it fills by its TRUSS_ROLE; the Structure asks for premises too once an assumption is in use")
+     . "roles the TRUSS_LOGIC, TRUSS_ASPECTS or TRUSS_TELLING of a cluster asks for that no heading right under it fills by its TRUSS_ROLE; the Structure asks for premises too once an assumption is in use")
+    ("No aspect"
+     . "members under a cluster with TRUSS_ASPECTS whose TRUSS_ROLE covers none of them: outside the breakdown")
     ("No source"
      . "members of Subject in use with no TRUSS_SOURCE and nothing nested under them to sum up")
     ("Bare (no source, no support)"
@@ -989,9 +1146,9 @@ reads as an interpretation.  The brief is not judged."
     ("Unmet constraints"
      . "statements under Subject's Constraints of which nothing is placed, nor the ground of anything placed")
     ("Not placed"
-     . "members right under Members that no section lists and no member stands on")
+     . "members right under Members that no section lists and no member stands on, once the Structure has a pattern, a section or a link")
     ("Only as grounds"
-     . "members right under Members that no section lists, used only as grounds")
+     . "members right under Members that no section lists, used only as grounds, once the Structure has a pattern, a section or a link")
     ("Open questions"
      . "members tagged :question:, whose answers are not known yet")
     ("Assumptions"
@@ -1022,8 +1179,11 @@ of the file MODEL was read from."
                         (funcall at (org-truss-member-pos m)
                                  (concat (org-truss-member-label m) (if more (concat " -- " more) "")))))
          (pattern-of (lambda (chunk)
-                       (let ((asks (or (org-truss--chunk-logic chunk) (org-truss--chunk-telling chunk))))
-                         (if asks (org-truss-pattern-label asks) "an assumption is in use"))))
+                       (let ((asks (delq nil (list (org-truss--chunk-logic chunk)
+                                                   (org-truss--chunk-aspects chunk)
+                                                   (org-truss--chunk-telling chunk)))))
+                         (if asks (mapconcat #'org-truss-pattern-label asks ", ")
+                           "an assumption is in use"))))
          ;; Roles by the value TRUSS_ROLE takes, so what lacks one can be
          ;; written straight from here.
          (gap-text (lambda (chunk gaps)
@@ -1064,6 +1224,7 @@ of the file MODEL was read from."
                                             (format "%s -- %s" (org-truss-section-label (car g))
                                                     (funcall gap-text (car g) (cdr g)))))
                                  (plist-get checks :section-gaps))))
+           (cons "No aspect" (mapcar member-line (plist-get checks :unsorted)))
            (cons "No source" (mapcar member-line material))
            (cons "Bare (no source, no support)"
                  (mapcar member-line (seq-remove (lambda (m) (memq m material))
@@ -1132,7 +1293,7 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
             :children (mapcar #'org-truss--snapshot (org-truss--children pos))))))
 
 (defun org-truss--snapshot-roles (snapshot)
-  "Return the reader's questions SNAPSHOT's TRUSS_ROLE names."
+  "Return the roles SNAPSHOT's TRUSS_ROLE names."
   (mapcar #'intern (split-string (or (cdr (assoc "TRUSS_ROLE" (plist-get snapshot :props))) ""))))
 
 (defun org-truss--drawer (props)
@@ -1192,22 +1353,20 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
       rest)))
 
 (defun org-truss--slot-snapshot (slot)
-  "Return a snapshot of a new, empty section for SLOT of a structure pattern."
-  (list :heading (org-truss--pick (nth 0 slot) (nth 1 slot))
-        :props (list (cons "TRUSS_ROLE" (mapconcat #'symbol-name (nthcdr 2 slot) " ")))
+  "Return a snapshot of a new, empty section for SLOT of a telling pattern."
+  (list :heading (org-truss-role-label (car slot))
+        :props (list (cons "TRUSS_ROLE" (symbol-name (car slot))))
         :drawers "" :notes "" :public-raw "" :links nil :children nil))
 
-(defun org-truss-apply-structure-pattern (pos pattern)
-  "Give the section at POS the sections the structure PATTERN describes.
-A section already there that shares questions with one of the pattern's
-sections takes that section's place as it is -- heading, questions and all
-it holds -- so nothing written is changed; the pattern's own sections, named
-in `org-truss-language', are added only where none does.  A section that
-shares no question, or questions with more than one, is kept after the rest
--- outside the pattern, to be moved by hand.  Links on the section itself
-stay on it."
-  (let* ((slots (mapcar #'org-truss--slot-snapshot
-                        (plist-get (org-truss-pattern pattern) :slots)))
+(defun org-truss-apply-section-telling (pos pattern)
+  "Give the section at POS the telling PATTERN, and a section for each place.
+A section already there that shares a role with one of the pattern's places
+takes that place as it is -- heading, roles and all it holds -- so nothing
+written is changed; a section for the place, named in `org-truss-language',
+is added only where none does.  A section that shares no role, or roles
+with more than one place, is kept after the rest -- outside the pattern, to
+be moved by hand.  Links on the section itself stay on it."
+  (let* ((slots (mapcar #'org-truss--slot-snapshot (org-truss-pattern-slots pattern)))
          (snapshot (org-truss--snapshot pos))
          (olds (plist-get snapshot :children))
          (slot-of (lambda (old)
@@ -1420,6 +1579,30 @@ Return the pattern written, or nil."
   (if pattern
       (org-entry-put pos "TRUSS_TELLING" (symbol-name pattern))
     (org-entry-delete pos "TRUSS_TELLING")))
+
+(defun org-truss-set-aspects (pos pattern)
+  "Give the cluster at POS the aspects PATTERN, or none when PATTERN is nil."
+  (if pattern
+      (org-entry-put pos "TRUSS_ASPECTS" (symbol-name pattern))
+    (org-entry-delete pos "TRUSS_ASPECTS")))
+
+(defun org-truss-add-places (pos gaps section)
+  "Put under the heading at POS a heading for each place GAPS names.
+GAPS are (ROLE . SHORT-BY), as `org-truss-gaps' gives them: as many
+headings for a role as it is short by, each named for its role in
+`org-truss-language' and filling it, after what is there.  They are
+sections when SECTION is non-nil, and members, to be written over, when it
+is not.  A pattern asks for places a writer cannot be expected to make
+by hand; this makes them.  Return the number made."
+  (let ((n 0))
+    (pcase-dolist (`(,role . ,short) gaps)
+      (dotimes (_ short)
+        (setq n (1+ n))
+        (if section
+            (org-truss-add-section pos (org-truss-role-label role) (list role))
+          (org-truss-add-member pos (org-truss-role-label role)
+                                (list (cons "TRUSS_ROLE" (symbol-name role)))))))
+    n))
 
 (defun org-truss-add-member (parent label &optional props)
   "Write a member LABEL, with PROPS, as the last heading under PARENT.
@@ -1720,8 +1903,17 @@ the checks show it as broken.  Return the number of references changed."
 (defconst org-truss--preamble-text
   '("\
 # This truss.org makes one document: x on the board, or M-x org-truss-export,
-# writes it to out/.  M-x org-truss-board opens the board, keys at its foot.
+# writes it to OUT/.  M-x org-truss-board opens the board, keys at its foot.
 # How to write each part is in its :GUIDE: drawer (TAB opens it).
+#
+# Beside this file
+#   SOURCES/   what was read, kept: a file for each source, a page, a PDF,
+#              an extract.  A fact's TRUSS_SOURCE names its file here too
+#   NOTES/     what is ours and not a source: memos, slides, minutes
+#   ATTACH/    what C-c C-a attaches to a heading, a picture or a file.
+#              ~[[attachment:NAME]]~ is NAME in the directory under ATTACH/
+#              named by the heading's ID
+#   OUT/       the document, written from this file; not edited by hand
 #
 # Parts, filled from the top
 #   Brief      the reader: who, and what they expect
@@ -1753,12 +1945,16 @@ the checks show it as broken.  Return the number of references changed."
 #   TRUSS_SOURCE      its source; makes it a fact
 #   TRUSS_GROUNDS     support from outside its cluster: ~[[#m3]] [[#m7]]~
 #   TRUSS_CONFIRM     whom to confirm an assumption with
-#   TRUSS_LOGIC       why: reasons induction deduction; how: parts steps
-#                     6w1h 5w1h proposal report explanation
-#   TRUSS_TELLING     sections: sky-rain-umbrella scqa problem-solving;
-#                     members: first last prep
-#   TRUSS_ROLE        role in the pattern above: a reader's question, who,
-#                     minor, ...  The check names those missing
+#   TRUSS_LOGIC       how what is under it is joined to it.  why: reasons
+#                     deduction induction; how: steps parts
+#   TRUSS_ASPECTS     what must all be there, on reasons, steps or parts:
+#                     what-why-how pros-cons short-long past-present-future
+#                     5w1h 6w1h
+#   TRUSS_TELLING     how it is told: first last prep sds scqa
+#                     sky-rain-umbrella.  With none, as first
+#   TRUSS_ROLE        its places in the patterns of the heading above:
+#                     minor, who, reason, sky, ...  The check names those
+#                     missing
 #   TRUSS_PART, TRUSS_FIELD  mark the parts and fields; leave them be
 #   :against: objection  :assumption: assumed  :question: open
 #   :noexport: not written out
@@ -1770,8 +1966,17 @@ the checks show it as broken.  Return the number of references changed."
 "
     "\
 # この truss.org から文書を一つ作ります。盤面の x か M-x org-truss-export で
-# out/ に書き出します。盤面は M-x org-truss-board で開き、キーは盤面の下に
+# OUT/ に書き出します。盤面は M-x org-truss-board で開き、キーは盤面の下に
 # 出ます。各部の書き方は、その部の :GUIDE:（TAB で開く）にあります。
+#
+# このファイルの隣
+#   SOURCES/   読んだ資料の控え。資料一つにファイル一つ（ページ、PDF、
+#              抜き書き）。事実の TRUSS_SOURCE にはこのファイルも書く
+#   NOTES/     出典ではない手元の資料：メモ、自分たちのスライド、議事録
+#   ATTACH/    C-c C-a で見出しに付けたもの（画像、ファイル）。
+#              ~[[attachment:名前]]~ は ATTACH/ の下の、見出しの ID の
+#              名前のディレクトリにある
+#   OUT/       このファイルから書き出した文書。手で直さない
 #
 # 部（上から順に埋める）
 #   Brief      読み手のこと：誰か、何を期待するか
@@ -1801,12 +2006,15 @@ the checks show it as broken.  Return the number of references changed."
 #   TRUSS_SOURCE      出典。書くと事実になる
 #   TRUSS_GROUNDS     入れ子の外の根拠を ~[[#m3]] [[#m7]]~ と並べる
 #   TRUSS_CONFIRM     前提を誰に確かめるか
-#   TRUSS_LOGIC       塊のすぐ下が何か。why：reasons induction deduction、
-#                     how：parts steps 6w1h 5w1h proposal report explanation
-#   TRUSS_TELLING     書き出す順。節：sky-rain-umbrella scqa problem-solving、
-#                     部材：first last prep
-#   TRUSS_ROLE        型の中の役割。節は読み手の問い、部材は who・minor など。
-#                     足りない役割は検査が名前で出す
+#   TRUSS_LOGIC       つなぎ方：塊のすぐ下が上にとって何か。
+#                     why：reasons deduction induction、how：steps parts
+#   TRUSS_ASPECTS     観点：すぐ下に揃っているべきもの。reasons・steps・
+#                     parts に付ける。what-why-how pros-cons short-long
+#                     past-present-future 5w1h 6w1h
+#   TRUSS_TELLING     語り口：first last prep sds scqa sky-rain-umbrella。
+#                     付けなければ first（結論が先、下は書いた順）
+#   TRUSS_ROLE        上の見出しの型の中で占める場所。minor、who、reason、
+#                     sky など。足りない場所は検査が名前で出す
 #   TRUSS_PART, TRUSS_FIELD  部と項目の印。変えない
 #   :against: 反論  :assumption: 前提  :question: 未解決  :noexport: 書き出さない
 #
@@ -1819,10 +2027,12 @@ the checks show it as broken.  Return the number of references changed."
 It holds the rules of the file, the same for whoever edits it -- a person,
 or a model working in the file: what each part holds, what a member and a
 cluster are, how one member points to another, what is written out, and
-what each property means.  How to work in each part is in its guide; the
-board's keys are at the board's foot; what each check means is printed
-with it.  ORG-TRUSS-DIR and FILE stand for where org-truss is loaded from
-and `org-truss-file-name'; see `org-truss--preamble'.")
+what each property means, and what goes in the directories beside it.
+How to work in each part is in its guide; the board's keys are at the
+board's foot; what each check means is printed with it.  ORG-TRUSS-DIR
+and FILE stand for where org-truss is loaded from and
+`org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the
+directories beside the file; see `org-truss--preamble'.")
 
 (defconst org-truss--guides
   '((brief
@@ -1876,9 +2086,11 @@ stand on the heads of the subject's clusters it reads by pointing to them
 in TRUSS_GROUNDS, ~[[#m3]] [[#m7]]~ (b on the board).  Nest under a claim
 the members that support it, with TRUSS_LOGIC reasons (c on the board
 writes it), and tag one that argues against it :against:.  Give a member
-that says what to do a how pattern -- how › steps, how › parts, how › 6W1H
-(p on the board) -- and what is under it is its steps or parts instead of
-its support.  Tag :assumption: what you take as given without checking.
+that says what to do how › steps or how › parts (p on the board), and what
+is under it is its steps or parts instead of its support; aspects, as
+6W1H, ask that nothing be left out.  A telling pattern, as PREP, says in
+what order it is written out.  Tag :assumption: what you take as given
+without checking.
 Facts and what is still to find out go in the subject.
 Write each heading to make sense pulled out on its own: no \"the
 following\", no \"above\".  Words fitted to the reader belong to the
@@ -1889,30 +2101,35 @@ written out; tag :noexport: a member that should not be."
 塊の頭を TRUSS_GROUNDS に ~[[#m3]] [[#m7]]~ と書いて根拠にする（盤面の b）。
 主張を支える部材はその下に入れ子にし、主張には TRUSS_LOGIC: reasons を
 付ける（盤面の c が書く）。反論には :against: を付ける。やることを言う部材に
-how の型（盤面の p で how › steps、how › parts、how › 6W1H）を付けると、下の
-部材は根拠ではなく手順や部分になる。確かめずに置くものには :assumption:
+how › steps か how › parts を付けると（盤面の p）、下の部材は根拠ではなく手順
+や部分になる。6W1H などの観点を付けると、抜け漏れがないかを見る。PREP など
+の語り口は、書き出す順を決める。確かめずに置くものには :assumption:
 を付ける。事実と、まだ調べていることは Subject に書く。
 見出しは、抜き出して読んでも通じるように書く（「次の」「上記の」を使わ
 ない）。読み手に合わせた言い方は、載せる節の側で書く（盤面の S）。見出しの
 下の本文は書き出されない。書き出したくない部材には :noexport: を付ける。")
     (structure
-     "The sections of the document.  Each answers one or more of the
-reader's questions (TRUSS_ROLE) and lists the members it shows as links,
-as ~- [[#m7]]~ with m7 the member's CUSTOM_ID (a on the board).  The
-TRUSS_LOGIC here, or on a section, names the questions the sections right
-below must answer -- proposal, report, explanation, or any other logic
-pattern (p on the board); what none answers is listed under Pattern gaps.
+     "The sections of the document.  Leave it empty while there is no
+document to make, as when a question is only being worked out: until it
+has a pattern, a section or a link, every member is checked, and none is
+listed as not placed.  A section lists the members it shows as links, as
+~- [[#m7]]~ with m7 the member's CUSTOM_ID (a on the board).  A telling
+pattern here, or on a section -- Sky, Rain, Umbrella, SCQA, PREP (p on
+the board) -- gives the sections right below their places, each filled by
+a section's TRUSS_ROLE; a place none fills is listed under Pattern gaps.
 A section's heading becomes a heading of the document, and the text of
 its #+begin_public, the section's opening.  A link's description, as in
 ~- [[#m7][words]]~, is written out in place of the member's heading (S on
 the board).  Write here only what guides the
 reader; put facts and claims in members, which are what the board's checks
 read.  Sections nest as deep as the document needs."
-     "書き出す文書の節。節は読み手の問い（TRUSS_ROLE）のどれかに答え、載せる
-部材をリンクの箇条 ~- [[#m7]]~ で並べる（m7 は部材の CUSTOM_ID。盤面の a）。
-ここや節の TRUSS_LOGIC は、すぐ下の節が答えるべき問いを決める（proposal、
-report、explanation、ほかの論理の型も付けられる。盤面の p）。どの節も答えて
-いない問いは Pattern gaps に出る。節の見出しは文書の見出しになり、節に
+     "書き出す文書の節。相談して考えをまとめるだけなど、文書を作らないうちは
+空のままにしておく。型も節もリンクもないあいだは、すべての部材が検査され、
+未配置（Not placed）とは言われない。節は、載せる部材をリンクの箇条
+~- [[#m7]]~ で並べる（m7 は部材の CUSTOM_ID。盤面の a）。ここや節に語り口
+（Sky, Rain, Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節に
+場所が決まり、節は TRUSS_ROLE でその場所を埋める。どの節も埋めていない場所
+は Pattern gaps に出る。節の見出しは文書の見出しになり、節に
 書いた #+begin_public の中身は節の最初の文になる。リンクに説明を付けて
 ~- [[#m7][言い方]]~ とすると、部材の見出しの代わりにその説明が出る（盤面の
 S）。ここには読み手を案内する言葉だけを書き、事実や主張は Members の部材に
@@ -1923,13 +2140,44 @@ Keyed by a part, or by (PART FIELD) for a field of the brief or the subject.")
 (defun org-truss--preamble ()
   "Return the comment block at the head of a truss file, in `org-truss-language'.
 The command that checks the file is written as it runs here: with the
-directory org-truss is loaded from, and the name of a truss file."
-  (let ((library (locate-library "org-truss")))
-    (string-replace
-     "ORG-TRUSS-DIR"
-     (if library (directory-file-name (abbreviate-file-name (file-name-directory library))) "DIR")
-     (string-replace "FILE" org-truss-file-name
-                     (apply #'org-truss--pick org-truss--preamble-text)))))
+directory org-truss is loaded from, and the name of a truss file.  The
+directories beside it are named as they are set here."
+  (let ((library (locate-library "org-truss"))
+        (text (apply #'org-truss--pick org-truss--preamble-text)))
+    (pcase-dolist (`(,placeholder . ,value)
+                   `(("ORG-TRUSS-DIR"
+                      . ,(if library
+                             (directory-file-name
+                              (abbreviate-file-name (file-name-directory library)))
+                           "DIR"))
+                     ("FILE" . ,org-truss-file-name)
+                     ("SOURCES/" . ,(file-name-as-directory org-truss-sources-directory))
+                     ("NOTES/" . ,(file-name-as-directory org-truss-notes-directory))
+                     ("ATTACH/" . ,(file-name-as-directory org-truss-attach-directory))
+                     ("OUT/" . ,(file-name-as-directory org-truss-output-directory))))
+      (setq text (string-replace placeholder value text)))
+    text))
+
+(defun org-truss--file-variables ()
+  "Return the first line of a truss file, which sets its file variables.
+It sends what `org-attach' attaches to the file's headings to
+`org-truss-attach-directory', beside the file, written as
+`modify-file-local-variable-prop-line' writes it."
+  (format "# -*- org-attach-id-dir: %S; -*-\n"
+          (file-name-as-directory org-truss-attach-directory)))
+
+(defun org-truss-put-file-variables ()
+  "Give the truss file in this buffer the line that keeps attachments beside it.
+The first line, as `org-truss--file-variables' writes it.  Where the
+first line sets `org-attach-id-dir' already, it is left alone;
+where it sets other variables, this one is added among them.  The buffer
+takes the value at once, as visiting the file would give it."
+  (org-with-wide-buffer
+   (goto-char (point-min))
+   (unless (looking-at-p ".*-\\*-.*org-attach-id-dir:.*-\\*-")
+     (let ((dir (file-name-as-directory org-truss-attach-directory)))
+       (modify-file-local-variable-prop-line 'org-attach-id-dir dir 'add-or-replace)
+       (setq-local org-attach-id-dir dir)))))
 
 (defun org-truss--guide (key)
   "Return the guide drawer for KEY, a part or (PART FIELD), or nil for none."
@@ -1939,9 +2187,11 @@ directory org-truss is loaded from, and the name of a truss file."
 
 (defun org-truss-skeleton (title)
   "Return the text of a new truss file titled TITLE.
-Its headings are English whatever `org-truss-language' says: they name the
-parts and fields, are not rewritten, and never reach the reader.  The
-guidance is in `org-truss-language'."
+Its first line keeps what is attached to its headings beside it; see
+`org-truss--file-variables'.  Its headings are English whatever
+`org-truss-language' says: they name the parts and fields, are not
+rewritten, and never reach the reader.  The guidance is in
+`org-truss-language'."
   (let ((part (lambda (part heading &optional props)
                 (format "* %s\n:PROPERTIES:\n:TRUSS_PART: %s\n%s:END:\n%s\n"
                         heading part (or props "") (org-truss--guide part))))
@@ -1949,6 +2199,7 @@ guidance is in `org-truss-language'."
                  (format "** %s\n:PROPERTIES:\n:TRUSS_FIELD: %s\n:END:\n%s\n"
                          heading field (org-truss--guide (list part field))))))
     (concat
+     (org-truss--file-variables)
      (format "#+title: %s\n\n" title)
      (org-truss--preamble) "\n"
      (funcall part 'brief "Brief")
@@ -1961,7 +2212,7 @@ guidance is in `org-truss-language'."
      (funcall field 'subject 'issue "Issue")
      (funcall field 'subject 'constraints "Constraints")
      (funcall part 'members "Members")
-     (string-remove-suffix "\n" (funcall part 'structure "Structure" ":TRUSS_LOGIC: proposal\n")))))
+     (string-remove-suffix "\n" (funcall part 'structure "Structure")))))
 
 (defconst org-truss--guide-drawer-re
   "^[ \t]*:GUIDE:[ \t]*\n\\(?:.*\n\\)*?[ \t]*:END:[ \t]*\\(?:\n\\|\\'\\)"
@@ -1991,9 +2242,13 @@ no guide, such as a field of your own."
   "Put the current guidance back into the truss file in this buffer.
 The comment block at its head, and the :GUIDE: drawer of each part and of
 each field of the brief and the subject, are written anew, or added where
-they were deleted.  Nothing else is read or moved."
+they were deleted.  A file without the first line that keeps its
+attachments beside it is given one; see `org-truss-put-file-variables'.
+Nothing else is read or moved."
+  (org-truss-put-file-variables)
   (org-with-wide-buffer
    (goto-char (point-min))
+   (when (looking-at-p ".*-\\*-.*-\\*-") (forward-line 1))
    (while (looking-at "#\\+") (forward-line 1))
    (let ((start (point)))
      (while (and (not (eobp)) (looking-at "\\(?:#\\(?: .*\\)?\\)?$"))

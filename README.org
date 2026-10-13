@@ -20,8 +20,8 @@ So this package keeps the three apart:
 
 - *members* -- every statement, written once
 - *arguments* -- members joined, so that a claim rests on what supports it
-- *structure* -- sections that answer the reader's questions, showing those
-  arguments in order
+- *structure* -- sections that show those arguments in the order they are
+  told
 
 The structure can be rearranged as often as you like without touching a
 member, and the board says, at every point, which claims stand on nothing,
@@ -42,8 +42,8 @@ a model can help fill it, but the structure is yours.
 | Members   | what is made of it: interpretations and decisions, each written once                     | ~TRUSS_PART: members~     |
 | Clusters  | a heading and what is right under it: a claim and its support, a section and its own     | any heading with headings |
 |           | sections; the structure is the largest                                                   | under it                  |
-| Structure | a tree of sections, each answering some of the reader's questions                        | ~TRUSS_PART: structure~   |
-| Patterns  | logic patterns for any cluster; telling patterns for members and sections                | ~org-truss-patterns~      |
+| Structure | a tree of sections, each a place in how the document is told                             | ~TRUSS_PART: structure~   |
+| Patterns  | three kinds, each a property of its own, for any cluster: logic, aspects, telling        | ~org-truss-patterns~      |
 
 The brief is the architect's brief: the conditions the design has to meet.
 Every check is measured against it.
@@ -69,16 +69,17 @@ The work on a document goes in three steps, one part each.
   sum them up in clusters: the head of a cluster says in one sentence what
   the facts nested under it say together, and no more.  Its ~TRUSS_LOGIC~
   says that what is under it is its breakdown -- ~how › parts~, which ~c~
-  on the board writes, or another how pattern, a 6W1H of what a law asks,
-  say -- and the head holds as its parts do.  What is still to find out is
-  a question written here.
+  on the board writes, or ~how › steps~ -- and the head holds as its parts
+  do.  Aspects, a 6W1H of what a law asks, say, check that the breakdown
+  leaves nothing out.  What is still to find out is a question written
+  here.
 - /Make sense/, in the members.  Say what the facts mean here -- an
   interpretation -- and what is to be done -- a decision.  Each stands on
   the heads of the clusters it reads, through ~TRUSS_GROUNDS~, and on the
   interpretations it follows from; a decision says how it is done, in
-  steps or a 6W1H nested under it.
-- /Tell/, in the structure.  Sections, each answering some of the reader's
-  questions, list the members the reader is shown, from either part.
+  steps or parts nested under it.
+- /Tell/, in the structure.  Sections, each a place in how the document
+  is told, list the members the reader is shown, from either part.
 
 So a fact belongs in the subject, and an interpretation among the members.
 The board lists what is written in the other part as /misplaced/: a fact
@@ -166,13 +167,15 @@ tagged ~:against:~, and is neither.
 
 Whether a set of members leaves nothing out and says nothing twice -- is
 MECE -- is for you to read, as so what is.  It can be checked in part when
-the set is cut along a known line.  6W1H is one -- who does it, to whom,
-when, where, what, why and how -- and its parts are labelled with the role
-each fills; the board lists the roles not filled yet, as it lists a
-deduction's missing premise.  A document is written for someone, and what
-it asks done is mostly done by someone to someone, so 6W1H is the cut to
-reach for; 5W1H, without /whom/, is there for what is done to no one.  A
-notice reads naturally cut this way, with its steps inside its /how/:
+the set is cut along a known line, its /aspects/: pros and cons; past,
+present and future; who does it, to whom, when, where, what, why and how.
+Each member covers the aspect its ~TRUSS_ROLE~ names, and the board lists
+an aspect none covers, as it lists a deduction's missing premise, and a
+member that covers none.  A document is written for someone, and what it
+asks done is mostly done by someone to someone, so 6W1H is the cut to
+reach for when nothing smaller does; 5W1H, without /whom/, is there for
+what is done to no one.  A notice reads naturally cut this way, with its
+steps inside its /how/:
 
 #+begin_example
 Check before every test
@@ -194,102 +197,93 @@ section with its sections.  The structure is a cluster too, the largest:
 its sections are the parts of the whole document.  Clusters hold clusters,
 and each is read and checked alone, by its own patterns.
 
-A cluster's ~TRUSS_LOGIC~ says what is right under it is to it, and so what
-it asks for: a deduction asks for its two premises, a 6W1H for its seven
-parts, a proposal for the reader's questions a proposal answers.  Any
-cluster takes any pattern, in any part.  Nothing is read into a cluster
+A cluster's patterns say what is right under it is to it, and so what it
+asks for: a deduction asks for its two premises, aspects for each of
+theirs, a telling pattern for each of its places.  Any cluster takes any
+pattern, in any part.  Nothing is read into a cluster
 from the part it is written in: with no ~TRUSS_LOGIC~, what is under a
 member supports it, everywhere, and a section asks for nothing.  What
 differs by part is only the pattern the board writes when a member starts
 a cluster -- when ~c~ or ~f~ puts the first member under it: ~parts~ in the
 subject and the brief, ~reasons~ in the members.  A new file's structure
-starts with ~proposal~.  So what a cluster is can always be read in the
-file, and changed there or with ~p~.
+starts with none, as there may be no document to make yet; ~p~ gives it
+one when there is.  So what a cluster is can always be read in the file,
+and changed there or with ~p~.
 
 What a cluster asks for is filled by what is right under it, each by its
 ~TRUSS_ROLE~, and the board lists what is not filled as a /gap/, under the
 cluster's line and under /Pattern gaps/.  Deeper down a role is filled for
 that cluster, not this one: the situation inside a remedy is the remedy's.
 
-** Members have no roles
+** Members have no roles of their own
 
-The same member can be the situation in one document and the grounds in
-another.  Its role belongs to the section that shows it, not to the member,
-which is why a section's questions live on the section.
+The same member can be the sky in one document and the grounds in
+another.  Its place belongs to the cluster it is under, not to the member,
+which is why a section's place lives on the section.
 
-The one exception is under a member whose pattern names roles: a member
-nested under a deduction is its major or its minor premise, and a part of
-a 6W1H says which of the seven it is, in ~TRUSS_ROLE~.  A role is a place
-in the cluster above, for a section as for a member.
+So ~TRUSS_ROLE~ says where a heading stands in the patterns of the one
+above: a member nested under a deduction is its major or its minor
+premise, a part of a 6W1H says which of the seven it covers, a section
+under a Sky, Rain, Umbrella which of the three it is.  A heading fills one
+place for each pattern that asks -- a major premise told as a reason is
+~major reason~ -- for a section as for a member.
 
-** The reader's questions
+** Three kinds of pattern
 
-Every section answers one or more of these.  They are the same at every
-depth; nested inside a remedy, the situation is the situation that remedy
-works in.
+A cluster's patterns are of three kinds, each answering its own question
+and written as its own property, so each can be chosen without the others.
 
-| Id             | Name           | The question                                   |
-|----------------+----------------+------------------------------------------------|
-| situation      | Situation      | What is the case now?                          |
-| problem        | Problem        | What is wrong, and why now?                    |
-| cause          | Cause          | Why is it so?                                  |
-| interpretation | Interpretation | What do the facts mean here?                   |
-| conclusion     | Conclusion     | So what do we do?  In short?                   |
-| effect         | Effect         | Why would that make it better?                 |
-| plan           | Plan           | Who does what, by when?                        |
-| cost           | Cost           | What does it cost, and what could go wrong?    |
-| premises       | Premises       | What does it assume, and how far does it hold? |
-| alternatives   | Alternatives   | Why not something else?                        |
-| ask            | Ask            | What should I do?                              |
+| Kind    | Property        | Says                               | Checked                                          |
+|---------+-----------------+------------------------------------+--------------------------------------------------|
+| logic   | ~TRUSS_LOGIC~   | how what is under it joins it      | each member's kind and support; premises, cases  |
+| aspects | ~TRUSS_ASPECTS~ | what must all be under it          | an aspect none covers; a member that covers none |
+| telling | ~TRUSS_TELLING~ | the order it is told in, by places | a place none fills; a section that fits no place |
 
-Which of them a document must answer is the purpose of the document, and a
-purpose is a how pattern like any other: the logic of the structure, whose
-roles are reader's questions.  The sections right below the structure
-answer them.
+The logic pattern is the truss itself: how its members are joined.  Why
+answers with support -- reasons that each hold it up alone, the two
+premises of a deduction held together, the cases an induction generalises
+-- and how with what it is made of, steps in order or parts in none.
+These five are the joints every argument is made of; a premise that needs
+proving is itself the head of a deduction nested under it, so a chain of
+reasoning is a tree of them.
 
-| Purpose     | The sections right below must answer                                            |
-|-------------+---------------------------------------------------------------------------------|
-| proposal    | situation, problem, cause, conclusion, effect, plan, cost, alternatives, ask    |
-| report      | situation, problem, cause, conclusion, plan                                     |
-| explanation | situation, cause, conclusion, premises                                          |
+Aspects are a breakdown that can be checked: a set of what must be there,
+so that nothing is left out -- MECE's collectively exhaustive half -- and
+each member under the cluster covers one of them, the other half.  They go
+with reasons, steps and parts, the joints that are sets; a deduction's
+premises and an induction's cases are what they are by their places, and
+take none.  A part covering an aspect is written out labelled with it, in
+the order of the aspects.
 
-A section can take one too, asking the sections below it, and the
-structure can take any other pattern: a 5W1H on the structure asks its
-sections who, when, where, what, why and how, which is the shape of a
-notice.  On a member a purpose asks the members under it, labelled with
-the questions they answer.  Premises are asked of the structure as soon as
-an assumption is in use, whatever its pattern: a reader is owed what the
-argument takes for granted.
+A telling pattern is a framework of telling, which says nothing of what is
+told: its places in order.  On a member, the place that is its point --
+PREP's point, SCQA's answer, the umbrella -- is the member itself, the
+claim at the head of the pyramid, and the rest are filled by what is under
+it; PREP and SDS say the point again at the end.  A section says nothing
+itself, so on a section every place is a section.  /Conclusion first/
+tells a member as it is written, itself and then what is under it, the
+pyramid read top down; /conclusion last/ turns it over.  A member with no
+telling pattern is told conclusion first.
 
-** Patterns
-
-A pattern is of one of two families.  A /logic/ pattern says what is right
-under a cluster is to it -- why it holds, or what it is made of -- and is
-written as ~TRUSS_LOGIC~, on any cluster.  A /telling/ pattern says in what
-order the reader is told it, and is written as ~TRUSS_TELLING~: on a
-section, the sections it is told in; on a member, where it comes against
-what is under it.  A cluster can have one of each, a deduction told as
-PREP, a proposal told as Sky, Rain, Umbrella.  ~p~ on the board offers them
-all, each by where it stands.
-
-| On the board               | Family, for       | Gives                                                 |
-|----------------------------+-------------------+-------------------------------------------------------|
-| why › reasons              | logic, any        | reasons that each hold it up alone; also no pattern   |
-| why › induction            | logic, any        | two cases or more; conclusion last                    |
-| why › deduction            | logic, any        | major premise, minor premise; conclusion last         |
-| how › steps                | logic, any        | what to do, in order: a numbered list                 |
-| how › parts                | logic, any        | what it is made of, in no order: a bulleted list      |
-| how › 6W1H                 | logic, any        | parts labelled who, whom, when, where, what, why, how |
-| how › 5W1H                 | logic, any        | the same without whom, for what is done to no one     |
-| how › proposal             | logic, any        | the reader's questions a proposal answers             |
-| how › report               | logic, any        | the reader's questions a report answers               |
-| how › explanation          | logic, any        | the reader's questions an explanation answers         |
-| tell › conclusion first    | telling, member   | it, then what is under it                             |
-| tell › conclusion last     | telling, member   | what is under it, then it                             |
-| tell › PREP                | telling, member   | point, reasons, examples, the point again             |
-| tell › Sky, Rain, Umbrella | telling, section  | situation / interpretation / conclusion               |
-| tell › SCQA                | telling, section  | situation / complication / answer                     |
-| tell › Problem solving     | telling, section  | situation / problem / cause / remedy / plan / effect  |
+| On the board                    | Kind    | Gives                                                        |
+|---------------------------------+---------+--------------------------------------------------------------|
+| why › reasons                   | logic   | reasons that each hold it up alone; also no pattern          |
+| why › deduction                 | logic   | a major and a minor premise, together                        |
+| why › induction                 | logic   | two cases or more, that it generalises                       |
+| how › steps                     | logic   | what to do, in order: a numbered list                        |
+| how › parts                     | logic   | what it is made of, in no order: a bulleted list             |
+| aspects › What, Why, How        | aspects | what it is, why, and how                                     |
+| aspects › Pros and cons         | aspects | what is for it, what is against it                           |
+| aspects › Short and long term   | aspects | what holds soon, what holds later                            |
+| aspects › Past, present, future | aspects | what was, what is, what will be                              |
+| aspects › 5W1H                  | aspects | who, when, where, what, why, how                             |
+| aspects › 6W1H                  | aspects | who, whom, when, where, what, why, how                       |
+| tell › conclusion first         | telling | it, then what is under it; also no pattern                   |
+| tell › conclusion last          | telling | what is under it, then it                                    |
+| tell › PREP                     | telling | point, reason, example, the point again                      |
+| tell › SDS                      | telling | summary, details, the summary again                          |
+| tell › SCQA                     | telling | situation, complication, question, answer                    |
+| tell › Sky, Rain, Umbrella      | telling | sky, rain, umbrella: what is seen, what it means, what to do |
 
 Steps and parts differ by whether order matters.  /Keep a record of each
 check/, in parts: the name of whoever checked, the driver, the time, the
@@ -298,37 +292,64 @@ every test/, in steps: meet the driver, then read the checker; in another
 order, it is another procedure.
 
 Sky, Rain, Umbrella is fact, interpretation, action: the sky is clouding
-over; it will rain, then; take an umbrella.  Its rain is what the facts
-mean here, which is not always a problem or its cause; when it is, ~r~
-says so.
+over; it will rain, then; take an umbrella.  It is a way of thinking as
+much as of telling, and it tells the umbrella last.
 
-A structure pattern can be applied to any section, so patterns nest: the
-umbrella of one Sky, Rain, Umbrella can hold another.
+Patterns nest: the umbrella of one Sky, Rain, Umbrella can hold another,
+and a deduction can stand where SCQA puts its answer.
 
-A pattern says what is needed as well as what goes where.  Most structure
-patterns have no place for cost, premises or alternatives -- which is where a
-proposal is usually attacked -- and with the structure's proposal the board
-says so.  A deduction asks for both its premises, PREP for a reason and an
-example, 6W1H for each of its seven, a structure pattern for each of its
-places.
+~p~ on the board offers every pattern the cluster can take, of each kind,
+and takes one of a kind off.  What the pattern asks for and is not there
+is put in, a heading for each place named for it, to be written over: a
+deduction's premises, a PREP's reason and example, a 6W1H's seven.  On a
+section, a telling pattern first takes the sections there into its places
+by their roles.  ~o~ tells a member last, or one told last first.
 
-A logic pattern says where a member is told against what is under it
-unless a telling pattern does: a deduction or an induction last, the rest
-first.  ~o~ on the board turns a member over, first or last; the rest of
-the telling patterns are on ~p~.
+Premises are asked of the structure as soon as an assumption is in use in
+a document, whatever its patterns: a reader is owed what the argument
+takes for granted.
 
-~org-truss-patterns~ takes patterns of your own: a cut of your own, like
-6W1H with the roles it labels from ~org-truss-member-roles~, or a structure
-for a kind of document you write.
+~org-truss-patterns~ takes patterns of your own, of any kind -- a set of
+aspects from ~org-truss-roles~, a framework of telling -- and
+~org-truss-roles~ the places they name.
 
 * The file
 
-There is one ~truss.org~ per document.  ~M-x org-truss-init~ writes one.  A
-comment block at its head holds the rules of the file, the same for
+There is one ~truss.org~ per document, in a directory of its own.
+~M-x org-truss-init~ sets the directory up; run on one set up before, it
+adds what is missing and leaves what is there.
+
+| ~truss.org~ | the manuscript; the rest is written from it or for it                  |
+| ~sources/~  | what was read, a file for each source: a page, a PDF, an extract       |
+| ~notes/~    | what is ours and not a source: memos, slides, minutes                  |
+| ~attach/~   | what ~org-attach~ (~C-c C-a~) attaches to a heading: a picture, a file |
+| ~out/~      | the document, written by ~x~ on the board or ~M-x org-truss-export~    |
+| ~CLAUDE.md~ | for a coding agent: where the rules are, and when to read them         |
+
+So the directory can be moved, or handed over, whole.  A fact's
+~TRUSS_SOURCE~ names its file in ~sources/~ as well as where it came from.
+The first line of
+~truss.org~ sets ~org-attach-id-dir~ to ~attach/~, so what ~org-attach~ puts
+on its headings is kept there, not where attachments go elsewhere, each
+heading's in a directory named by its ~ID~; it is a file variable Org
+declares safe, so it holds whether org-truss is loaded or not.  The board
+and the document read a link to an attachment, ~[[attachment:NAME]]~, as a
+link to its file.
+
+~CLAUDE.md~ does not repeat the rules.  They are in the comment block at
+the head of ~truss.org~, which an agent reads as it reads the file; the
+agent file says only to read it before working there, to read a part's
+~:GUIDE:~ before writing in it, and to run the check after.  So the rules
+have one home, kept current by ~org-truss-refresh-guides~, and what is
+loaded into every session stays a few lines.  ~org-truss-agent-file~ names
+the file, or is ~nil~ for none.
+
+A comment block at the head of ~truss.org~ holds the rules of the file, the same for
 whoever edits it, by hand, on the board, or as a language model working in
 the file: what each part holds, what a member and a cluster are, how one
 member points to another, what is written out, what each property and tag
-means, and the command that checks the file.  A folded ~:GUIDE:~ drawer
+means, what goes in the directories beside it, and the command that checks
+the file.  A folded ~:GUIDE:~ drawer
 under each part and field says how to work there.  The board's keys are at
 its foot, and what each check finds is said where it is reported.  Its headings are English whatever
 ~org-truss-language~ says: they name the parts and the fields, you do not
@@ -340,6 +361,7 @@ block and every drawer, adding those that were deleted -- and touches
 nothing else.
 
 #+begin_src org
+# -*- org-attach-id-dir: "attach/"; -*-
 ,#+title: Fortnightly reviews
 
 ,* Brief
@@ -434,18 +456,17 @@ Hold the review every other week.
 ,* Structure
 :PROPERTIES:
 :TRUSS_PART: structure
-:TRUSS_LOGIC: proposal
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 ,** Sky
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_ROLE: sky
 :END:
 - [[#m1]]
 
 ,** Rain
 :PROPERTIES:
-:TRUSS_ROLE: interpretation
+:TRUSS_ROLE: rain
 :END:
 ,#+begin_public Why it drags
 ,#+end_public
@@ -453,7 +474,7 @@ Hold the review every other week.
 
 ,** Umbrella
 :PROPERTIES:
-:TRUSS_ROLE: conclusion
+:TRUSS_ROLE: umbrella
 :END:
 ,#+begin_public What we propose
 ,#+end_public
@@ -494,7 +515,8 @@ The check runs as follows.
 
 The joins between members are seldom the structure's to write either: a
 member's pattern says how what is under it joins it -- steps numbered,
-6W1H's parts labelled -- and the document is written so.  Whatever could be
+parts labelled with the aspects they cover -- and the document is written
+so.  Whatever could be
 wrong is a member, where the checks reach it.
 
 A member told with the one above it -- a step, a part, a reason -- has no
@@ -610,16 +632,16 @@ This is the board of the file above:
 
  Members  what is made of it: interpretations and decisions
    hypothesis ····· Half the items repeat                   → Why it drags
-   (why › reasons, conclusion first)
+   (why › reasons)
    │ ⬑ summary ···· Reviews run long
    │ ⬑ fact ······· Six of twelve items each week come back from the week before
    ├ assumption ··· Items need a week to move
    └ x objection ·· Some items are urgent
-     (why › reasons, conclusion first)
+     (why › reasons)
      └ x claim ···· Urgent items need no review
          ⬑ fact ··· Urgent items are raised in the team chat
    hypothesis ····· Move to fortnightly                     → What we propose
-   (how › steps, conclusion first)
+   (how › steps)
    │ ⬑ hypothesis · Half the items repeat
    ├ step ········· Cancel every second review in the calendar
    └ step ········· Carry what is still open to the next one
@@ -627,32 +649,25 @@ This is the board of the file above:
    assumption ····· Items need a week to move               We assume most items need more than a week to change.
 
  Structure  how it is told: sections, listing members
- (how › proposal, tell › Sky, Rain, Umbrella)
- ├ Situation ······ Sky                                     Sky
+ (tell › Sky, Rain, Umbrella)
+ ├ Sky ············ Sky                                     Sky
  │   summary ······ Reviews run long                        Reviews ran past the hour eight times this quarter.
- ├ Interpretation · Rain                                    Why it drags
+ ├ Rain ··········· Rain                                    Why it drags
  │   hypothesis ··· Half the items repeat                   Most items come back unchanged
- │   (why › reasons, conclusion first)
+ │   (why › reasons)
  │   ├ assumption · Items need a week to move               We assume most items need more than a week to change.
  │   └ x objection  Some items are urgent                   Some items are urgent
- │     (why › reasons, conclusion first)
+ │     (why › reasons)
  │     └ x claim ·· Urgent items need no review             Urgent items need no review
- └ Conclusion ····· Umbrella                                What we propose
+ └ Umbrella ······· Umbrella                                What we propose
      hypothesis ··· Move to fortnightly                     Hold the review every other week.
-     (how › steps, conclusion first)
+     (how › steps)
      ├ step ······· Cancel every second review in the cal…  1. Cancel every second review in the calendar
      └ step ······· Carry what is still open to the next …  2. Carry what is still open to the next one
-   Problem —
-   Cause —
-   Effect —
-   Plan —
-   Cost —
-   Alternatives —
-   Ask —
    Premises —
 
  Pattern gaps
-   Structure ······ how › proposal                          Problem, Cause, Effect, Plan, Cost, Alternatives, Ask, Premises
+   Structure ······ tell › Sky, Rain, Umbrella              Premises
 #+end_example
 
 Each line has three columns.  On the left is what the board says the line
@@ -687,9 +702,9 @@ with nothing there is not used yet.  Under a member there, a line marked
 with its kind: the arrow points up to what it supports, as =x= marks what
 argues against.  ~RET~ on it goes to that member.  A place a member's
 pattern asks for and it lacks -- /Minor premise —/ -- follows what it
-holds.  So does a question the structure's or a section's pattern asks
-for and no section right below answers -- /Problem —/ -- and ~s~ on it
-adds a section that answers it.
+holds.  So does a place the structure's or a section's pattern asks for
+and no section right below fills -- /Premises —/ -- and ~s~ on it adds a
+section that fills it.
 
 In the structure the right is what the reader sees of the line, so the
 document can be read down the page, and a member brings with it only what
@@ -699,14 +714,25 @@ lacks are drawn where it is worked on, among the members.
 
 Each part is followed by what is left to do in it.  Under the subject:
 /Unmet constraints/; facts with /No source/; its /Open questions/ and
-/Assumptions/; /Pattern gaps/; and what is /Misplaced/ there.  Under the
+/Assumptions/; /Pattern gaps/; members with /No aspect/ of the cluster
+above; and what is /Misplaced/ there.  Under the
 members: what is /Not placed/, or used /Only as grounds/; /Bare/ members;
 their /Open questions/, /Assumptions/ and /Unanswered objections/;
-/Pattern gaps/; what is /Misplaced/ there; and /Broken grounds/.  Under
-the structure: its /Pattern gaps/ -- the structure, or a section, with the
-questions its pattern asks for and no section right below answers --
-/Broken links/, and /Duplicate ids/.  The mouse on the name of a check
+/Pattern gaps/; /No aspect/; what is /Misplaced/ there; and /Broken
+grounds/.  Under the structure: its /Pattern gaps/ -- the structure, or a
+section, with the places its patterns ask for and no section right below
+fills -- /Broken links/, and /Duplicate ids/.  The mouse on the name of a check
 says what it finds.
+
+A member is checked when the document uses it: placed in a section, or
+the ground of one placed.  Until the structure tells anything -- a
+pattern, a section, a link -- there is no document, and every member is
+checked as if used, and none is /Not placed/.  So a file can hold a
+question being worked out, with a colleague or with Claude, as facts,
+assumptions, open questions and decisions, each checked as it is written,
+and become a document only when one is wanted: ~p~ on the /Structure/
+line gives it a telling pattern and its sections, or ~s~ a section.  A new
+file's structure tells nothing.
 
 The patterns a cluster follows go on the line just below it, in
 parentheses, where the sections or members they arrange branch off: a section's
@@ -751,14 +777,14 @@ then the document, near enough, beside the tree and the notes it was
 built from:
 
 #+begin_example
- ├ Interpretation · Rain                                                   Why it drags
+ ├ Rain ··········· Rain                                                   Why it drags
  │   hypothesis ··· Half the items repeat                                  Most items come back unchanged
- │   (why › reasons, conclusion first)                                     Half of each agenda repeats the week before.
+ │   (why › reasons)                                                       Half of each agenda repeats the week before.
  │   │              Robin keeps raising the same items.  Not something to
  │   │              put in writing.
  │   ├ assumption · Items need a week to move                              We assume most items need more than a week to change.
  │   └ x objection  Some items are urgent                                  Some items are urgent
- │     (why › reasons, conclusion first)
+ │     (why › reasons)
  │     └ x claim ·· Urgent items need no review                            Urgent items need no review
 #+end_example
 
@@ -767,6 +793,13 @@ a line each and one line read through: a member with its notes, a ground,
 a field.  ~w~ again, on any of its lines, puts it back on one.  While ~E~
 shows every line whole, ~w~ puts the line at point on one line instead,
 and ~E~ again draws every line the same way.
+
+A picture linked on a line of its own -- an attachment, or a file by a
+relative path -- is drawn on a line drawn whole, in its column: as wide as
+the column and no taller than ~org-truss-board-image-height~ lines, on the
+lines it takes, so the tree beside it runs on down and the reader's column
+stays where it is.  On one line, and where Emacs shows no pictures, a link
+to a file reads as the file's name.
 
 The board's words are English whatever ~org-truss-language~ says, so in a
 file written in another language the two sides read apart at a glance.
@@ -809,14 +842,13 @@ foot of the board lists them in the same four lines.
 | place | ~a~         | place a member in it                              | place it in a section, or move it to another      |
 |       | ~d~         | take it out, handing what it places up            | take it out of its section; it stays in the file  |
 |       | ~M-↑~ ~M-↓~ | move it among its siblings                        | move it within its section                        |
-| shape | ~s~         | add a section under it; on a gap, answering it    |                                                   |
+| shape | ~s~         | add a section under it; on a gap, filling it      |                                                   |
 |       | ~S~         | write its lead                                    | write the words it is told in                     |
 |       | ~u~         | take the sections below away, keeping their links |                                                   |
-|       | ~p~         | apply a logic or a telling pattern                | apply a logic or a telling pattern; in the        |
-|       |             |                                                   | subject, a logic pattern only                     |
-|       | ~r~         | set the questions it answers, or its role in the  | set its role, if the one above names roles        |
-|       |             | pattern of the section above                      |                                                   |
-|       | ~o~         |                                                   | tell it first or last                             |
+|       | ~p~         | apply a pattern of any kind, or take one off      | same; in the subject, no telling pattern          |
+|       | ~r~         | set its places in the patterns of the section     | set its places in the patterns of the member      |
+|       |             | above                                             | above, if they name places                        |
+|       | ~o~         |                                                   | tell it last, or first                            |
 | see   | ~RET~       | go to it                                          | same                                              |
 |       | ~TAB~       | go to it in the other window                      | same                                              |
 |       | ~SPC~       | show it in the other window, staying on the board | same                                              |
@@ -864,11 +896,11 @@ one takes it away; any other is added, and given a ~CUSTOM_ID~ when it has
 none.  On a ground's own line, the one marked =⬑=, ~b~ takes that ground
 away at once.
 
-On the /Structure/ line, ~p~ sets the purpose of the document -- ~how ›
-proposal~, ~how › report~, ~how › explanation~ -- or any other logic pattern,
-or a telling pattern that gives it its sections; the two stand side by
-side.  ~no logic~ takes the logic pattern of a section or the structure
-off, and nothing is asked of the sections below.
+On the /Structure/ line, ~p~ gives the document a telling pattern -- Sky,
+Rain, Umbrella, SCQA, PREP -- and with it its sections, or aspects its
+sections must cover; on a section, the same for the sections below it.
+~no telling~, ~no aspects~ and ~no logic~ take each off, and nothing is
+asked of the sections below for it.
 
 The foot of the board lists the keys as they are bound where it is drawn,
 so a key moved -- by an Evil configuration, say -- shows as it is.
@@ -961,6 +993,9 @@ pandoc, when it is installed, to make ~out/truss.md~.
   rest of its support, and then once more, as a paragraph: its public
   text, or its heading.
 - A link to no member is written as /(broken link: …)/, where it will be seen.
+- A link to a file by a relative path -- a picture in ~attach/~, a source --
+  is written relative to ~out/~, so the document still finds it, and pandoc
+  makes a picture an image.  ~P~ shows the pictures where they are.
 
 pandoc is given ~org+east_asian_line_breaks~, so a filled paragraph of
 Chinese, Japanese or Korean does not gain a space at every line break.
@@ -974,11 +1009,16 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-language~            | ~en~                          | ~ja~ for Japanese guidance and section names  |
 | ~org-truss-file-name~           | ~"truss.org"~                 |                                               |
 | ~org-truss-patterns~            | those above                   | add your own                                  |
-| ~org-truss-member-roles~        | major, minor, ..., who, whom  | roles a pattern of your own can name          |
+| ~org-truss-roles~               | major, who, sky, premises ... | places a pattern of your own can name         |
 | ~org-truss-output-directory~    | ~"out"~                       |                                               |
+| ~org-truss-sources-directory~   | ~"sources"~                   | what was read, beside the truss file          |
+| ~org-truss-notes-directory~     | ~"notes"~                     | what is ours and not a source                 |
+| ~org-truss-attach-directory~    | ~"attach"~                    | what ~org-attach~ attaches to its headings    |
+| ~org-truss-agent-file~          | ~"CLAUDE.md"~                 | for a coding agent; ~nil~ for none            |
 | ~org-truss-pandoc-program~      | ~"pandoc"~                    |                                               |
 | ~org-truss-board-heading-width~ | ~nil~, half the window        | room for the file's words before the reader's |
 | ~org-truss-board-reader-width~  | ~nil~, the window's edge      | where entry text breaks what the reader sees  |
+| ~org-truss-board-image-height~  | 15                            | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~    | 5                             | members a field shows before it starts folded |
 
 The language is that of what org-truss writes for you to read or to

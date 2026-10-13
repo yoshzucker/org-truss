@@ -23,11 +23,6 @@
 
 (require 'org-truss-core)
 
-(defcustom org-truss-output-directory "out"
-  "Directory the document is written to, relative to the truss file."
-  :type 'directory
-  :group 'org-truss)
-
 (defcustom org-truss-pandoc-program "pandoc"
   "The pandoc executable.  When it cannot be found, only the Org file is written."
   :type 'string
@@ -59,38 +54,77 @@ text as a paragraph, or its title when that is all there is."
 (defun org-truss--flow (member depth &optional wording)
   "Return (DEPTH SHOWN AFTER-SUPPORT) items for MEMBER and what is under it.
 SHOWN is what the reader sees of it: WORDING when given, the words the
-section listing it tells it in, or else its own.  A conclusion that comes
-last follows what supports it; told PREP, it comes first and again at the
-end, its reasons before its examples.  What argues against it follows what
-supports it, since an objection needs the claim it answers.  What says how
-to do it is one item, a list.  A member tagged :noexport: gives nothing,
-and nor does what is nested under it.  A member of the subject or the brief
-gives itself alone: what is nested under it is the breakdown it was found
-with, which a section lists by itself if the reader is to see it."
+section listing it tells it in, or else its own.  It is told in the order
+of its telling pattern's places, and with none as conclusion first tells
+it, as it is written: it, and then what is under it; see
+`org-truss--told'.  What says how to do it is one item, a list.  A member
+tagged :noexport: gives nothing, and nor does what is nested under it.  A
+member of the subject or the brief gives itself alone: what is nested
+under it is the breakdown it was found with, which a section lists by
+itself if the reader is to see it."
   (unless (org-truss-noexport-p member)
-    (if (org-truss-material-p member)
-        (list (list depth (if wording (cons nil wording) (org-truss-member-shown member)) nil))
-      (let* ((position (org-truss-conclusion-position member))
-             (shown (if wording (cons nil wording) (org-truss-member-shown member)))
-             (self (list (list depth shown (eq position 'last))))
-             (children (org-truss-member-children member))
-             (below (lambda (ms) (mapcan (lambda (m) (org-truss--flow m (1+ depth))) ms)))
-             (against (funcall below (seq-filter #'org-truss-against-p children)))
-             (support
-              (if (org-truss-how-p member)
-                  (let ((list (org-truss--how-text member)))
-                    (and (not (string-empty-p list))
-                         (list (list (1+ depth) (cons nil list) nil))))
-                (let ((support (seq-remove #'org-truss-against-p children)))
-                  (funcall below (if (eq position 'prep)
-                                     (org-truss--by-role support '(reason example))
-                                   support))))))
-        (pcase position
-          ('last (append support self against))
-          ('prep (append self support against (org-truss--restatement shown (1+ depth))))
-          (_ (if (org-truss-how-p member)
-                 (append self support against)
-               (append self (funcall below children)))))))))
+    (let ((shown (if wording (cons nil wording) (org-truss-member-shown member))))
+      (if (org-truss-material-p member)
+          (list (list depth shown nil))
+        (org-truss--told member
+                         (or (org-truss-pattern-slots (or (org-truss-member-telling member) 'first))
+                             '((conclusion :point) (body :any :optional)))
+                         shown depth)))))
+
+(defun org-truss--how-items (member depth)
+  "Return what says how to do MEMBER as flow items at DEPTH below it: one list."
+  (let ((list (org-truss--how-text member)))
+    (and (not (string-empty-p list))
+         (list (list (1+ depth) (cons nil list) nil)))))
+
+(defun org-truss--told (member slots shown depth)
+  "Return the flow of MEMBER, at DEPTH and seen as SHOWN, told by SLOTS.
+The slots of its telling pattern, each in turn: the one that is the member,
+it; the one that says it again, it once more; each other, what fills it --
+for a member that says how, its list, all at the first.  What fills no
+place comes with the place that takes anything, or else after the last
+place.  What argues against it comes after the rest, before a closing
+restatement, since an objection needs the claim it answers."
+  (let* ((children (org-truss-member-children member))
+         (support (seq-remove #'org-truss-against-p children))
+         (own (lambda (slot) (or (memq :point (cdr slot)) (memq :again (cdr slot)))))
+         (places (seq-remove own slots))
+         (loose (seq-remove (lambda (c) (seq-intersection (org-truss-member-roles c)
+                                                          (mapcar #'car places)))
+                            support))
+         (catch-all (or (seq-find (lambda (slot) (memq :any (cdr slot))) places)
+                        (car (last places))))
+         (below (lambda (ms) (mapcan (lambda (m) (org-truss--flow m (1+ depth))) ms)))
+         (said nil)
+         (listed nil)
+         (parts nil))
+    (dolist (slot slots)
+      (cond
+       ((memq :point (cdr slot))
+        (push (cons 'self (list (list depth shown said))) parts))
+       ((memq :again (cdr slot))
+        (push (cons 'again (org-truss--restatement shown (1+ depth))) parts))
+       ((org-truss-how-p member)
+        (unless listed
+          (setq listed t)
+          (let ((items (org-truss--how-items member depth)))
+            (when items (setq said t))
+            (push (cons 'place items) parts))))
+       (t
+        (let ((filling (append (seq-filter (lambda (c) (memq (car slot) (org-truss-member-roles c)))
+                                           support)
+                               (and (eq slot catch-all) loose))))
+          (when filling (setq said t))
+          (push (cons 'place (funcall below filling)) parts)))))
+    (let* ((parts (nreverse parts))
+           (closing (let ((n 0))
+                      (while (and (< n (length parts))
+                                  (eq (car (nth (- (length parts) n 1) parts)) 'again))
+                        (setq n (1+ n)))
+                      n)))
+      (append (mapcan (lambda (part) (copy-sequence (cdr part))) (butlast parts closing))
+              (funcall below (seq-filter #'org-truss-against-p children))
+              (mapcan (lambda (part) (copy-sequence (cdr part))) (last parts closing))))))
 
 (defun org-truss--indent (text column)
   "Return TEXT with every line after the first indented COLUMN columns.
@@ -111,19 +145,18 @@ A heading cannot sit in a list, so a title opens its block in bold."
 
 (defun org-truss--list-marker (member child n)
   "Return (BULLET . LABEL) for CHILD, the Nth item of what says how to do MEMBER.
-BULLET opens the list item; LABEL, when the parts are labelled, names
-CHILD's role in `org-truss-language' before what it says."
-  (pcase (org-truss-how-list member)
-    ('numbered (cons (format "%d. " n) ""))
-    ('labelled (cons "- " (let ((role (org-truss-member-role child)))
-                            (if role
-                                (format (org-truss--pick "%s: " "%s：") (org-truss-role-label role))
-                              ""))))
-    (_ (cons "- " ""))))
+BULLET opens the list item, a number for a step; LABEL, when MEMBER has
+aspects, names the one CHILD covers in `org-truss-language' before what
+it says."
+  (cons (if (eq (org-truss-how-list member) 'numbered) (format "%d. " n) "- ")
+        (let ((aspect (org-truss-aspect-of member child)))
+          (if aspect
+              (format (org-truss--pick "%s: " "%s：") (org-truss-role-label aspect))
+            ""))))
 
 (defun org-truss--how-text (member)
   "Return what says how to do MEMBER as an Org list.
-Steps are numbered and parts are not; labelled parts open with their role.
+Steps are numbered and parts are not; a part covering an aspect opens with it.
 Each item is what the reader sees of it.  What is nested under it goes
 inside its item: how to do it, as a list again, or what supports it and
 argues against it as paragraphs.  One tagged :noexport: is left out, and
@@ -238,14 +271,42 @@ The structure's own lead, the text of its public block, opens it."
       (unless (eq status 0)
         (string-trim (buffer-string))))))
 
+(defconst org-truss--file-link-re
+  "\\[\\[\\(file:\\|\\.\\.?/\\)\\([^]:][^]]*\\)\\]"
+  "The start of a link to a file by a relative path: how it is written, the path.")
+
+(defun org-truss--relink (text from to)
+  "Return TEXT with each link to a file by a relative path made relative to TO.
+The paths are read from FROM, the directory the truss file is in, so a
+picture or a source it links to is found from TO, where the document is
+written.  A path past `::', a search in the file, is kept as it is."
+  (replace-regexp-in-string
+   org-truss--file-link-re
+   (lambda (link)
+     (let* ((how (match-string 1 link))
+            (written (concat (if (equal how "file:") "" how) (match-string 2 link)))
+            (search (string-search "::" written)))
+       (save-match-data
+         (let ((path (org-link-unescape (substring written 0 search))))
+           (if (file-name-absolute-p path)
+               link
+             (format "[[file:%s%s]"
+                     (org-link-escape (file-relative-name (expand-file-name path from) to))
+                     (if search (substring written search) "")))))))
+   text t t))
+
 (defun org-truss-export-buffer (buffer)
   "Write the document of the truss file in BUFFER.  Return the files written.
-The Org file always; the pandoc output when pandoc is found and succeeds."
+The Org file always; the pandoc output when pandoc is found and succeeds.
+A link to a file by a relative path -- a picture -- is written relative to
+where the document is, so it still finds the file."
   (let* ((file (or (buffer-file-name buffer) (user-error "The truss buffer has no file")))
          (base (org-truss--output-base file))
          (org-file (concat base ".org"))
          (out-file (concat base "." org-truss-output-extension))
-         (text (org-truss-render (org-truss-read buffer))))
+         (text (org-truss--relink (org-truss-render (org-truss-read buffer))
+                                  (file-name-directory file)
+                                  (file-name-directory org-file))))
     (make-directory (file-name-directory org-file) t)
     (with-temp-file org-file
       (insert text))
