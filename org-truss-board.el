@@ -58,6 +58,24 @@ line while it is shown.")
 (defvar-local org-truss--view nil
   "The buffer showing this board's document, if one has been opened.")
 
+(defcustom org-truss-board-highlight t
+  "Non-nil to light the line at point on the board, and the lines like it.
+The line at point with `hl-line-mode'; the other lines naming the member
+on it -- where it is written, where it is called, wherever else it shows
+-- in the face `org-truss-same'."
+  :type 'boolean
+  :group 'org-truss)
+
+(defface org-truss-same '((t :inherit hl-line))
+  "Face for the lines naming the member on the line at point."
+  :group 'org-truss)
+
+(defvar-local org-truss--same-overlays nil
+  "The overlays lighting the lines naming the member at point.")
+
+(defvar-local org-truss--same-item nil
+  "The item of the line the lines lit were lit for.")
+
 ;;;; The board's buffer
 
 (defconst org-truss--board-help
@@ -73,7 +91,8 @@ shape  \\[org-truss-board-new-section] section  \\[org-truss-board-say] say  \
 \\[org-truss-board-pattern] pattern  \\[org-truss-board-roles] roles  \
 \\[org-truss-board-flip] first/last
 see    \\[org-truss-board-visit] visit  \\[org-truss-board-visit-other-window] other window  \
-\\[org-truss-board-show] show  \\[org-truss-board-entry-text] entry text  \
+\\[org-truss-board-show] show  \\[org-truss-board-same] written/called  \
+\\[org-truss-board-entry-text] entry text  \
 \\[org-truss-board-wrap] wrap  \\[org-truss-board-fold] fold  \
 \\[org-truss-board-view] view  \\[org-truss-board-export] export  \
 \\[org-truss-board-redraw] redraw  \\[org-truss-board-save] save"
@@ -138,7 +157,12 @@ command acts on the file as it is, and a key pressed once is enough."
       (if found
           (goto-char (prop-match-beginning found))
         (goto-char (point-min))
-        (forward-line (1- line))))))
+        (forward-line (1- line))))
+    ;; The lines lit went with the text; light them again.
+    (setq org-truss--same-overlays nil
+          org-truss--same-item nil)
+    (when org-truss-board-highlight
+      (org-truss--light-same))))
 
 (defvar org-truss-board-mode-map
   (let ((map (make-sparse-keymap)))
@@ -169,6 +193,7 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "P") #'org-truss-board-view)
     (define-key map (kbd "x") #'org-truss-board-export)
     (define-key map (kbd "g") #'org-truss-board-redraw)
+    (define-key map (kbd "=") #'org-truss-board-same)
     (define-key map [remap save-buffer] #'org-truss-board-save)
     map)
   "Keys of the board.")
@@ -203,7 +228,10 @@ width, so a new width wants a new drawing."
   (setq-local truncate-lines t)
   (add-hook 'window-selection-change-functions #'org-truss--catch-up nil t)
   (add-hook 'pre-command-hook #'org-truss--before-command nil t)
-  (add-hook 'window-size-change-functions #'org-truss--refit nil t))
+  (add-hook 'window-size-change-functions #'org-truss--refit nil t)
+  (when org-truss-board-highlight
+    (hl-line-mode 1)
+    (add-hook 'post-command-hook #'org-truss--light-same nil t)))
 
 (declare-function org-truss-init "org-truss" (directory))
 
@@ -406,6 +434,114 @@ As SPC does in the agenda: pressed again, it scrolls that window."
       (let ((shown (selected-window)))
         (select-window board)
         (setq org-truss--show-window shown)))))
+
+;;;; The same member, where it is written and where it is called
+
+(defun org-truss--member-pos (item)
+  "Return the position of the member the line with ITEM names, or nil."
+  (and (eq (plist-get item :type) 'member) (plist-get item :pos)))
+
+(defun org-truss--head-p (item)
+  "Non-nil when ITEM is a member's own line, not one it takes below it."
+  (let ((key (plist-get item :key)))
+    (and (plist-get item :label) (equal (org-truss--owner key) key))))
+
+(defun org-truss--written-p (item)
+  "Non-nil when ITEM is the line of a member where it is written.
+In the subject or the members, as the member itself, not called."
+  (and (org-truss--head-p item)
+       (not (plist-get item :link)) (not (plist-get item :ground))
+       (memq (car (plist-get item :key)) '(member field))))
+
+(defun org-truss--call-p (item)
+  "Non-nil when ITEM is the line of a call to a member: a link, a ground."
+  (and (org-truss--head-p item)
+       (or (plist-get item :link) (plist-get item :ground))))
+
+(defun org-truss--lines-naming (pos)
+  "Return (START . ITEM) for each line of the board naming the member at POS."
+  (save-excursion
+    (goto-char (point-min))
+    (let (found)
+      (while (not (eobp))
+        (let ((item (get-text-property (point) 'org-truss-item)))
+          (when (eql (org-truss--member-pos item) pos)
+            (push (cons (point) item) found)))
+        (forward-line 1))
+      (nreverse found))))
+
+(defun org-truss--open-folds-over (pos)
+  "Unfold every folded line of the board that hides the member at POS.
+Return non-nil when one was."
+  (let ((opened nil))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let* ((item (get-text-property (point) 'org-truss-item))
+               (at (plist-get item :pos)))
+          (when (and (plist-get item :folded) at (< at pos)
+                     (< pos (with-current-buffer org-truss--source
+                              (org-with-wide-buffer
+                               (goto-char at) (org-end-of-subtree t t) (point)))))
+            (setf (alist-get (plist-get item :fold) org-truss--folds nil nil #'equal) 'open)
+            (setq opened t)))
+        (forward-line 1)))
+    (when opened (org-truss-board-redraw))
+    opened))
+
+(defvar-local org-truss--last-call nil
+  "The key of the call `org-truss-board-same' last went from to a member.")
+
+(defun org-truss-board-same ()
+  "Go to the same member: where it is written, or where it is called.
+On a line that calls a member -- a section's link, [[#m9]], or a ground --
+or that shows it anywhere else, go to where it is written, #m9, in the
+subject or the members, unfolding what hides it.  There, go to the next
+line that calls it, after the one come from, and round again."
+  (interactive)
+  (let* ((item (org-truss--item))
+         (pos (or (org-truss--member-pos item) (user-error "No member on this line")))
+         (lines (org-truss--lines-naming pos))
+         (written (seq-find (lambda (line) (org-truss--written-p (cdr line))) lines)))
+    (if (and written (= (car written) (line-beginning-position)))
+        (let* ((calls (seq-filter (lambda (line) (org-truss--call-p (cdr line))) lines))
+               (last (seq-position calls org-truss--last-call
+                                   (lambda (line key) (equal (plist-get (cdr line) :key) key))))
+               (next (if last (mod (1+ last) (max 1 (length calls))) 0))
+               (call (nth next calls)))
+          (unless call
+            (user-error "Nothing calls %s" (plist-get item :label)))
+          (setq org-truss--last-call (plist-get (cdr call) :key))
+          (goto-char (car call))
+          (message "Call %d of %d" (1+ next) (length calls)))
+      (when (org-truss--call-p item)
+        (setq org-truss--last-call (plist-get item :key)))
+      (unless (or written (not (org-truss--open-folds-over pos)))
+        (setq written (seq-find (lambda (line) (org-truss--written-p (cdr line)))
+                                (org-truss--lines-naming pos))))
+      (goto-char (car (or written (user-error "%s is not written on the board"
+                                              (plist-get item :label))))))))
+
+;;;; Lines lit with the line at point
+
+(defun org-truss--light-same ()
+  "Light the lines naming the member on the line at point, but that line.
+Nothing is done while point stays on the line they were lit for."
+  (let ((item (org-truss--item)))
+    (unless (and item (eq item org-truss--same-item))
+      (setq org-truss--same-item item)
+      (mapc #'delete-overlay org-truss--same-overlays)
+      (setq org-truss--same-overlays nil)
+      (let ((pos (org-truss--member-pos item))
+            (here (line-beginning-position)))
+        (when pos
+          (dolist (line (org-truss--lines-naming pos))
+            (unless (= (car line) here)
+              (let ((overlay (make-overlay (car line)
+                                           (save-excursion (goto-char (car line))
+                                                           (min (point-max) (1+ (line-end-position)))))))
+                (overlay-put overlay 'face 'org-truss-same)
+                (push overlay org-truss--same-overlays)))))))))
 
 (defconst org-truss--taking-off
   '((logic . "take the logic pattern off: a member's support is its reasons")

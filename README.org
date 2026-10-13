@@ -916,6 +916,7 @@ foot of the board lists them in the same four lines.
 | see   | ~RET~       | go to it                                          | same                                              |
 |       | ~TAB~       | go to it in the other window                      | same                                              |
 |       | ~SPC~       | show it in the other window, staying on the board | same                                              |
+|       | ~=~         |                                                   | go to where it is written, or there, to a call    |
 |       | ~E~         | show the text under every heading, or stop        |                                                   |
 |       | ~w~         | show it whole, with the text under it, or stop    | same                                              |
 |       | ~z~         | fold what is under it, or unfold it               | fold what is nested under it, or unfold it        |
@@ -941,6 +942,15 @@ public block beside the board as ~e~ opens an entry -- a section's lead, a
 step's words -- writing an empty one first if there is none; a block left
 empty is taken away again when the entry is finished.  On the /Structure/
 line, it writes the document's opening.
+
+~=~ goes between where a member is written and where it is called.  On a
+line calling it -- a section's link, =[[#m9]]=, or a ground -- or showing
+it under a member a section calls, it goes to where it is written, =#m9=,
+unfolding what hides it.  There, it goes to the next call after the one
+come from, and round, saying which of how many it is.  The line at point
+is lit, and so are the other lines naming the member on it -- where it is
+written, where it is called -- in the face ~org-truss-same~; set
+~org-truss-board-highlight~ to nil for neither.
 
 ~z~ folds what is under a line into the line, which then says how many
 it hides: a field's members, or what is nested under a member.  On a line
@@ -1086,6 +1096,8 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-right-width~   | ~nil~, the window's edge      | where a line drawn whole breaks its right     |
 | ~org-truss-board-image-height~  | 15                            | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~    | 5                             | members a field shows before it starts folded |
+| ~org-truss-board-highlight~     | ~t~                           | light the line at point, and the lines naming |
+|                                 |                               | the same member                               |
 
 The language is that of what org-truss writes for you to read or to
 rewrite: a new file's guidance, the sections a pattern adds, and what the

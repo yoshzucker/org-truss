@@ -1732,6 +1732,49 @@ starts in the same column all the same."
       (should (= (org-truss-test--column-of "^   hypothesis ·+ #half" "Half the items repeat")
                  (org-truss-test--column-of "^   bare ·+ Lone remark" "Lone remark"))))))
 
+(ert-deftest org-truss-test-board-goes-to-the-same-member ()
+  "= on a line calling a member goes to where it is written; there, to the
+next call after the one come from, and round; on a member shown under one
+a section calls, to where it is written as well."
+  (org-truss-test--with-board org-truss-test--file
+    (org-truss-test--goto-told-line-with "hypothesis ·+ \\[\\[#half\\]\\]")
+    (org-truss-board-same)
+    (should (looking-at "   hypothesis ·+ #half Half the items repeat"))
+    (org-truss-board-same)
+    (should (looking-at "   │ ⬑ hypothesis ·+ \\[\\[#half\\]\\]"))
+    (org-truss-board-same)
+    (should (looking-at "   hypothesis ·+ #half"))
+    (org-truss-board-same)
+    (should (looking-at " │   hypothesis ·+ \\[\\[#half\\]\\]"))
+    (org-truss-test--goto-told-line-with "fact ·+ Agenda diff")
+    (org-truss-board-same)
+    (should (looking-at "   ├ fact ·+ #diff Agenda diff"))))
+
+(ert-deftest org-truss-test-board-unfolds-to-the-same-member ()
+  "= unfolds a field that hides where the member is written."
+  (let ((org-truss-board-fold-limit 0))
+    (org-truss-test--with-board org-truss-test--conditions-file
+      (should-not (string-match-p "#budget No budget" (buffer-string)))
+      (org-truss-test--goto-told-line-with "\\[\\[#budget\\]\\]")
+      (org-truss-board-same)
+      (should (looking-at " +fact ·+ #budget No budget this year")))))
+
+(ert-deftest org-truss-test-board-lights-the-same-member ()
+  "The lines naming the member on the line at point are lit, but that line:
+where it is written, where it is called, the lines it takes below its own."
+  (org-truss-test--with-board org-truss-test--file
+    (org-truss-test--goto-told-line-with "hypothesis ·+ \\[\\[#half\\]\\]")
+    (org-truss--light-same)
+    (let ((lit (mapcar (lambda (overlay)
+                         (buffer-substring (overlay-start overlay) (1- (overlay-end overlay))))
+                       org-truss--same-overlays)))
+      (should (seq-some (lambda (line) (string-match-p "#half Half the items repeat" line)) lit))
+      (should (seq-some (lambda (line) (string-match-p "⬑ hypothesis ·+ \\[\\[#half\\]\\]" line)) lit))
+      (should-not (seq-some (lambda (line) (string-match-p "^ │   hypothesis" line)) lit)))
+    (org-truss-test--goto-line-with "^ Title")
+    (org-truss--light-same)
+    (should-not org-truss--same-overlays)))
+
 (provide 'org-truss-board-test)
 
 ;;; org-truss-board-test.el ends here
