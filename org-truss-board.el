@@ -392,8 +392,9 @@ Its entry is shown, and the blocks in it open: a heading is gone to so its
 text can be read, and the public block and the quotation are part of that
 text, though `org-hide-block-startup' folds them.  The headings under it
 are left as they were.  CENTER leaves a mark where point was in the file
-and puts the heading mid-window."
-  (let ((item (org-truss--want (org-truss--item) 'section 'member 'broken 'brief)))
+and puts the heading mid-window.  On a line marked =→=, where the member
+is used, that is the section or the member that uses it."
+  (let ((item (org-truss--want (org-truss--item) 'section 'member 'broken 'brief 'use)))
     (funcall display org-truss--source)
     (widen)
     (when center (push-mark))
@@ -1002,7 +1003,7 @@ stays out of the way.  As in a capture buffer, \\<org-truss-edit-mode-map>\
 it, and \\[org-truss-edit-abort] puts back what was there and closes it.
 Back on the board, it draws again."
   (interactive)
-  (org-truss--edit (plist-get (org-truss--want (org-truss--item) 'section 'member 'broken 'brief)
+  (org-truss--edit (plist-get (org-truss--want (org-truss--item) 'section 'member 'broken 'brief 'use)
                               :pos)))
 
 (defvar-local org-truss--edit-session nil

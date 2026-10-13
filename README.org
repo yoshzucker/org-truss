@@ -692,32 +692,39 @@ This is the board of the file above:
  Subject  what was found: facts, summed up in clusters
  (aspects › Premises, Issue, Constraints)
  ├ Premises
- │   summary ········· #m1 Reviews run long                        → Sky
+ │   summary ········· #m1 Reviews run long                        Reviews ran past the hour eight times this quarter.
  │   (how › parts)
+ │   │ → Sky ············· Sky
+ │   │ → hypothesis ······ Half the items repeat
  │   ├ fact ·············· Eight of twelve reviews ran past the hour
  │   └ fact ·············· The longest ran forty minutes over
- │   fact ············ #m2 Six of twelve items each week come ba…  ground of Half the items repeat
- │   fact ············ #m3 Urgent items are raised in the team c…  ground of Urgent items need no review
+ │   fact ············ #m2 Six of twelve items each week come ba…  Six of twelve items each week come back from the week before
+ │     → hypothesis ······ Half the items repeat
+ │   fact ············ #m3 Urgent items are raised in the team c…  Urgent items are raised in the team chat
+ │     → claim ··········· Urgent items need no review
  └ Issue ················· The weekly review costs the team more time than it gives back.
    Constraints —
  Pattern gaps
    Subject ··············· aspects › Premises, Issue, Constraints  Constraints
 
  Members  what is made of it: interpretations and decisions
-   hypothesis ········ #m4 Half the items repeat                   → Why it drags
+   hypothesis ········ #m4 Half the items repeat                   Most items come back unchanged
    (why › reasons)
+   │ → Rain ·············· Rain
+   │ → hypothesis ········ Move to fortnightly
    │ ⬑ summary ··· [[#m1]] Reviews run long
-   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come back from the week before
-   ├ assumption ·········· Items need a week to move
-   └ x objection ········· Some items are urgent
+   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come ba…
+   ├ assumption ·········· Items need a week to move               We assume most items need more than a week to change.
+   └ x objection ········· Some items are urgent                   Some items are urgent
      (why › reasons)
-     └ x claim ··········· Urgent items need no review
-         ⬑ fact ·· [[#m3]] Urgent items are raised in the team chat
-   hypothesis ········ #m5 Move to fortnightly                     → What we propose
+     └ x claim ··········· Urgent items need no review             Urgent items need no review
+         ⬑ fact ·· [[#m3]] Urgent items are raised in the team c…
+   hypothesis ········ #m5 Move to fortnightly                     Hold the review every other week.
    (how › steps)
+   │ → Umbrella ·········· Umbrella
    │ ⬑ hypothesis  [[#m4]] Half the items repeat
-   ├ step ················ Cancel every second review in the calendar
-   └ step ················ Carry what is still open to the next one
+   ├ step ················ Cancel every second review in the cal…  1. Cancel every second review in the calendar
+   └ step ················ Carry what is still open to the next …  2. Carry what is still open to the next one
  Assumptions
    assumption ············ Items need a week to move               We assume most items need more than a week to change.
 
@@ -775,27 +782,42 @@ notes -- so each cluster is held by it as far down as it goes.  The members' tre
 ~org-truss-branch~, faint by default, so where it meets the sections' tree
 in the structure the two read apart.
 
-The right says something different in each part, as the work there is
-different.  In the subject and the members it says where a member is used:
-=→= and the sections that list it, or else the first member it is a ground
-of, and how many more.  A head of a cluster or a member of the members
-with nothing there is not used yet.  Under a member there, a line marked
-=⬑= is one member it stands on through ~TRUSS_GROUNDS~, written elsewhere,
-with its kind: the arrow points up to what it supports, as =x= marks what
-argues against.  ~RET~ on it goes to that member.  A place a member's
-pattern asks for and it lacks -- /Minor premise —/ -- follows what it
-holds.  So does a place the structure's or a section's pattern asks for
-and no section right below fills -- /Premises —/ -- and ~s~ on it adds a
-section that fills it.
+The three columns say the same in every part.  The left is where a line
+stands in the logic; the middle, what is asserted, so whether the logic
+holds -- or, in the structure, whether the story does -- is read down it;
+the right, what the reader is told, so whether it reads as prose is read
+down that.  A member's right is the same where it is written and where a
+section shows it: the words the section tells it in, its public block, or
+its heading; a step with its number, a part with the aspect it covers.
+In the subject and the members it is in the face ~org-truss-untold~ while
+no section places the member, nor one it is nested under, and empty under
+a member of the subject, whose parts the document never tells.  So a
+cluster can be read through as prose beside its logic where it is
+written.
 
-In the structure the right is what the reader sees of the line, so the
-document can be read down the page, and a member brings with it only what
-the document tells: what is nested under a member of the members, and
-nothing under a member of the subject.  A member PREP or SDS tells again
-has a line /again/ after what is under it, with the words it closes with.
-A member told after what is under it -- conclusion last, SCQA's answer,
-the umbrella -- has its words there too, on a line named for its place,
-and a line runs down the right to them from its own line:
+The links run both ways where a member is written, as lines in the middle
+under it, and the reader is told nothing on them.  A line marked =→= is
+where it is used: a section that lists it, by the place it fills and its
+heading, then a member it is a ground of, by its kind and its heading.  A
+line marked =⬑= is a member it stands on through ~TRUSS_GROUNDS~, written
+elsewhere, with its kind: the arrow points up to what it supports, as =x=
+marks what argues against.  Either is cut to the middle, its whole heading
+in the tooltip, and ~RET~ on it goes to what it names; ~=~ goes between a
+member and its calls.  A member with no line marked =→= is not used.  A
+place a member's pattern asks for and it lacks -- /Minor premise —/ --
+follows what it holds.  So does a place the structure's or a section's
+pattern asks for and no section right below fills -- /Premises —/ -- and
+~s~ on it adds a section that fills it.
+
+In the structure the document can be read down the right, and a member
+brings with it only what the document tells: what is nested under a
+member of the members, and nothing under a member of the subject; not its
+uses, its grounds or its gaps.  A member PREP or SDS tells again has a
+line /again/ after what is under it, with the words it closes with,
+wherever it is drawn.  A member told after what is under it -- conclusion
+last, SCQA's answer, the umbrella -- has its words there too, on a line
+named for its place, and a line runs down the right to them from its own
+line:
 
 #+begin_example
    claim ················· 会議を隔週にする               ┐
