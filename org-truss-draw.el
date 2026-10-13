@@ -152,6 +152,15 @@ ground of, each in the order of the file.")
 Those its sections list, with what is nested under them; see
 `org-truss-usage'.")
 
+(defvar org-truss--order 'written
+  "Where a board opens a member a section lists: `written' or `told'.
+As written, where it is written, with what is nested under it, and the
+structure lists it on one line.  As told, under the section, with all it
+brings where it is written -- its uses, its grounds, its gaps -- and
+where it is written it is one line.  Either can be unfolded where it is
+one line; a member of the subject is always opened where it is written,
+since the document tells only its own words.")
+
 (defvar org-truss--model nil
   "The model of the board being drawn.")
 
@@ -515,11 +524,12 @@ under the heading; this breaks the rest: a ground, what a check lists."
                                      '(:bare t)))))))
 
 (defun org-truss--use-lines (model member stem key)
-  "Return a line for each use of MEMBER of MODEL, outside the structure.
+  "Return a line for each use of MEMBER of MODEL.
 Marked =→=, each section that lists it, by its roles and its heading, and
 then each member it is a ground of, by its kind and its heading: the other
-end of a link, as a line marked ⬑ is of a ground.  STEM starts each; KEY
-is MEMBER's line's.  Each goes to what it names."
+end of a link, as a line marked ⬑ is of a ground.  In the structure, where
+it is drawn under the section, the section goes without saying.  STEM
+starts each; KEY is MEMBER's line's.  Each goes to what it names."
   (let ((use (and org-truss--uses (gethash member org-truss--uses)))
         (arrow (propertize "→ " 'face 'org-truss-dim))
         (root (org-truss-model-structure model)))
@@ -534,7 +544,7 @@ is MEMBER's line's.  Each goes to what it names."
                  nil
                  (list :type 'use :pos (org-truss-section-pos section)
                        :key (append key (list 'use (org-truss-section-pos section))))))
-              (car use))
+              (and (not org-truss--in-structure) (car use)))
       (mapcar (lambda (user)
                 (org-truss--line
                  (concat stem arrow (org-truss--kind-word model user))
@@ -637,10 +647,12 @@ has its heading in the face of what wants doing.
 
 The right is what the document tells of it: what its telling pattern
 tells it in where it comes, and, when the pattern closes with it again, a
-line after what is under it.  In the structure, `org-truss--in-structure',
-only what the document tells comes with it.  Elsewhere where it is used
-follows it, marked =→=, then its grounds, marked ⬑, and the places its
-pattern asks for and it lacks; its right is in the face of what is not
+line after what is under it.  Where it is opened, as `org-truss--order'
+says, where it is used follows it, marked =→=, then its grounds, marked
+⬑, and the places its pattern asks for and it lacks; where it is not, it
+starts folded, to one line.  In the structure, `org-truss--in-structure',
+only what the document tells comes with it besides: nothing under a
+member of the subject.  Elsewhere its right is in the face of what is not
 told while the document does not tell it, and empty under a member of the
 subject, whose parts it never tells.  A member the file has below one its
 parent's telling pattern tells after it is marked."
@@ -666,11 +678,30 @@ parent's telling pattern tells after it is marked."
                                      (cdr lines)))
                      lines)))
          (first (org-truss-told-first-p member))
+         (children (and (not (and in-structure finding)) (org-truss-member-children member)))
+         (nested (length (mapcan #'org-truss--subtree children)))
+         ;; It is opened in one place, by the order the board is drawn
+         ;; in, and starts folded in the other; see `org-truss--order'.
+         (elsewhere (if (eq org-truss--order 'told)
+                        (and (not in-structure) (not finding)
+                             (car (and org-truss--uses (gethash member org-truss--uses))))
+                      (and in-structure link)))
+         (folded (and (> nested 0) (org-truss--folded-p key (and elsewhere t))))
+         (shown (and (not folded) children))
+         ;; What it brings where it is written -- its uses, its grounds, its
+         ;; gaps -- it brings where it is opened, as told under its section
+         ;; but for a member of the subject, of which the document tells its
+         ;; words alone; not where it is one line, nor a line it is drawn
+         ;; on with nothing under it to fold.
+         (full (and (not folded) (not elsewhere)
+                    (or (not in-structure)
+                        (and (eq org-truss--order 'told) (not finding)))))
          ;; A member told after what is under it is told, in the document,
          ;; below it: the right shows its words there, a line running
          ;; down to them from its own line.  Not a step or a part, whose
-         ;; list item opens with it whatever its telling pattern.
-         (last-told (and (not first) (not finding)
+         ;; list item opens with it whatever its telling pattern; nor one
+         ;; folded, whose words go on its own line.
+         (last-told (and (not first) (not finding) (not folded)
                          (not (org-truss-noexport-p member))
                          (not (org-truss-how-child-p model member))))
          ;; Where it is written, the words the section placing it tells it
@@ -684,19 +715,21 @@ parent's telling pattern tells after it is marked."
                        (last-told
                         (list (propertize "┐" 'face 'org-truss-branch)))
                        (t
-                        (let ((org-truss--right-width (- org-truss--right-width hang)))
+                        ;; Folded, one told after what is under it has the
+                        ;; words it is told in there on its own line.
+                        (let ((org-truss--right-width (- org-truss--right-width hang))
+                              (where (if (and folded (not first) (not finding)
+                                              (not (org-truss-how-child-p model member)))
+                                         'after
+                                       'before)))
                           (funcall untold
-                                   (funcall marked (org-truss--member-reader member wording 'before)))))))
+                                   (funcall marked (org-truss--member-reader member wording where)))))))
          (answer (and last-told
                       (let ((org-truss--right-width (- org-truss--right-width hang 2)))
                         (funcall untold
                                  (funcall marked (org-truss--member-reader member wording 'after))))))
          (how (org-truss-how-children member))
          (n 0)
-         (children (and (not (and in-structure finding)) (org-truss-member-children member)))
-         (nested (length (mapcan #'org-truss--subtree children)))
-         (folded (and (> nested 0) (org-truss--folded-p key nil)))
-         (shown (and (not folded) children))
          ;; What comes between its pattern and the members branching off
          ;; below -- its notes, its grounds -- has the tree's line run past.
          (stem (concat under (if shown (propertize "│ " 'face 'org-truss-branch) "  ")))
@@ -752,7 +785,7 @@ parent's telling pattern tells after it is marked."
               nil nil (list :type 'member :pos (org-truss-member-pos member)
                             :key (append key '(pattern)))))
         stem)
-       (and (not in-structure) (not folded) (org-truss--use-lines model member stem key))
+       (and full (org-truss--use-lines model member stem key))
        (mapcar (lambda (ref)
                  (let ((ground (org-truss-member-by-ref model ref)))
                    (append
@@ -770,7 +803,7 @@ parent's telling pattern tells after it is marked."
                                 :key (append key (list 'ground ref))))
                      (and ground (org-truss--id-text ground ref)))
                     (list :under stem :cut t))))
-               (and (not in-structure) (not folded) (org-truss-member-grounds member)))
+               (and full (org-truss-member-grounds member)))
        ;; Under that line, what is under the member leaves its columns at
        ;; the start of the right.
        (let ((i 0)
@@ -819,7 +852,7 @@ parent's telling pattern tells after it is marked."
                   nil nil (list :type 'member :pos (org-truss-member-pos member)
                                 :gap (car gap)
                                 :key (append key (list 'gap (car gap))))))
-               (and (not in-structure) (not folded) (org-truss-gaps member))))
+               (and full (org-truss-gaps member))))
       answer
       (concat under "  " (propertize (downcase (org-truss--point-name member)) 'face 'org-truss-dim))
       under

@@ -680,77 +680,111 @@ saves a buffer, saves it from the board, and the title line says
 This is the board of the file above:
 
 #+begin_example
- Title ··················· Fortnightly reviews                     Fortnightly reviews
+ Title ···················· Fortnightly reviews                     Fortnightly reviews
 
  Brief  what the document must satisfy
  (aspects › Reader, Question, Response, Constraints)
- ├ Reader ················ The team leads.
- ├ Question ·············· Should the review stay weekly?
- ├ Response wanted ······· Agree to try fortnightly reviews next quarter.
- └ Constraints ··········· One page.
+ ├ Reader ················· The team leads.
+ ├ Question ··············· Should the review stay weekly?
+ ├ Response wanted ········ Agree to try fortnightly reviews next quarter.
+ └ Constraints ············ One page.
 
  Subject  what was found: facts, summed up in clusters
  (aspects › Premises, Issue, Constraints)
  ├ Premises
- │   summary ········· #m1 Reviews run long                        Reviews ran past the hour eight times this quarter.
+ │   summary ·········· #m1 Reviews run long                        Reviews ran past the hour eight times this quarter.
  │   (how › parts)
- │   │ → Sky ············· Sky
- │   │ → hypothesis ······ Half the items repeat
- │   ├ fact ·············· Eight of twelve reviews ran past the hour
- │   └ fact ·············· The longest ran forty minutes over
- │   fact ············ #m2 Six of twelve items each week come ba…  Six of twelve items each week come back from the week before
- │     → hypothesis ······ Half the items repeat
- │   fact ············ #m3 Urgent items are raised in the team c…  Urgent items are raised in the team chat
- │     → claim ··········· Urgent items need no review
- └ Issue ················· The weekly review costs the team more time than it gives back.
+ │   │ → Sky ·············· Sky
+ │   │ → hypothesis ······· Half the items repeat
+ │   ├ fact ··············· Eight of twelve reviews ran past the hour
+ │   └ fact ··············· The longest ran forty minutes over
+ │   fact ············· #m2 Six of twelve items each week come ba…  Six of twelve items each week come back from the week before
+ │     → hypothesis ······· Half the items repeat
+ │   fact ············· #m3 Urgent items are raised in the team c…  Urgent items are raised in the team chat
+ │     → claim ············ Urgent items need no review
+ └ Issue ·················· The weekly review costs the team more time than it gives back.
    Constraints —
  Pattern gaps
-   Subject ··············· aspects › Premises, Issue, Constraints  Constraints
+   Subject ················ aspects › Premises, Issue, Constraints  Constraints
 
  Members  what is made of it: interpretations and decisions
-   hypothesis ········ #m4 Half the items repeat                   Most items come back unchanged
+   hypothesis ········· #m4 Half the items repeat                   Most items come back unchanged
    (why › reasons)
-   │ → Rain ·············· Rain
-   │ → hypothesis ········ Move to fortnightly
-   │ ⬑ summary ··· [[#m1]] Reviews run long
-   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come ba…
-   ├ assumption ·········· Items need a week to move               We assume most items need more than a week to change.
-   └ x objection ········· Some items are urgent                   Some items are urgent
+   │ → Rain ··············· Rain
+   │ → hypothesis ········· Move to fortnightly
+   │ ⬑ summary ···· [[#m1]] Reviews run long
+   │ ⬑ fact ······· [[#m2]] Six of twelve items each week come ba…
+   ├ assumption ··········· Items need a week to move               We assume most items need more than a week to change.
+   └ x objection ·········· Some items are urgent                   Some items are urgent
      (why › reasons)
-     └ x claim ··········· Urgent items need no review             Urgent items need no review
-         ⬑ fact ·· [[#m3]] Urgent items are raised in the team c…
-   hypothesis ········ #m5 Move to fortnightly                     Hold the review every other week.
+     └ x claim ············ Urgent items need no review             Urgent items need no review
+         ⬑ fact ··· [[#m3]] Urgent items are raised in the team c…
+   hypothesis ········· #m5 Move to fortnightly                     Hold the review every other week.
    (how › steps)
-   │ → Umbrella ·········· Umbrella
-   │ ⬑ hypothesis  [[#m4]] Half the items repeat
-   ├ step ················ Cancel every second review in the cal…  1. Cancel every second review in the calendar
-   └ step ················ Carry what is still open to the next …  2. Carry what is still open to the next one
+   │ → Umbrella ··········· Umbrella
+   │ ⬑ hypothesis · [[#m4]] Half the items repeat
+   ├ step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+   └ step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
  Assumptions
-   assumption ············ Items need a week to move               We assume most items need more than a week to change.
+   assumption ············· Items need a week to move               We assume most items need more than a week to change.
 
  Structure  how it is told: sections, listing members
  (tell › Sky, Rain, Umbrella)
- ├ Sky ··················· Sky                                     Sky
- │   summary ····· [[#m1]] Reviews run long                        Reviews ran past the hour eight times this quarter.
- ├ Rain ·················· Rain                                    Why it drags
- │   hypothesis ·· [[#m4]] Half the items repeat                   Most items come back unchanged
- │   (why › reasons)
- │   ├ assumption ········ Items need a week to move               We assume most items need more than a week to change.
- │   └ x objection ······· Some items are urgent                   Some items are urgent
- │     (why › reasons)
- │     └ x claim ········· Urgent items need no review             Urgent items need no review
- └ Umbrella ·············· Umbrella                                What we propose
-     hypothesis ·· [[#m5]] Move to fortnightly                     Hold the review every other week.
-     (how › steps)
-     ├ step ·············· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-     └ step ·············· Carry what is still open to the next …  2. Carry what is still open to the next one
+ ├ Sky ···················· Sky                                     Sky
+ │   summary ······ [[#m1]] Reviews run long                        Reviews ran past the hour eight times this quarter.
+ ├ Rain ··················· Rain                                    Why it drags
+ │   hypothesis ▸3  [[#m4]] Half the items repeat                   Most items come back unchanged
+ └ Umbrella ··············· Umbrella                                What we propose
+     hypothesis ▸2  [[#m5]] Move to fortnightly                     Hold the review every other week.
    Premises —
 
  Pattern gaps
-   Structure ············· tell › Sky, Rain, Umbrella              Premises
+   Structure ·············· tell › Sky, Rain, Umbrella              Premises
  Placeholders
-   Sky ··················· Sky                                     Sky
+   Sky ···················· Sky                                     Sky
 #+end_example
+
+~O~ opens the members a section lists where they are told instead: under
+the section, with what is nested under them, where they are used, what
+they stand on and what their patterns lack, and where they are written
+each is one line.  The structure then reads as the document, the right
+down the page, beside the logic each sentence rests on:
+
+#+begin_example
+ Members  what is made of it: interpretations and decisions
+   hypothesis ▸3 ······· #m4 Half the items repeat                   Most items come back unchanged
+   hypothesis ▸2 ······· #m5 Move to fortnightly                     Hold the review every other week.
+ ...
+ Structure  how it is told: sections, listing members
+ (tell › Sky, Rain, Umbrella)
+ ├ Sky ····················· Sky                                     Sky
+ │   summary ······· [[#m1]] Reviews run long                        Reviews ran past the hour eight times this quarter.
+ ├ Rain ···················· Rain                                    Why it drags
+ │   hypothesis ···· [[#m4]] Half the items repeat                   Most items come back unchanged
+ │   (why › reasons)
+ │   │ → hypothesis ········ Move to fortnightly
+ │   │ ⬑ summary ··· [[#m1]] Reviews run long
+ │   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come ba…
+ │   ├ assumption ·········· Items need a week to move               We assume most items need more than a week to change.
+ │   └ x objection ········· Some items are urgent                   Some items are urgent
+ │     (why › reasons)
+ │     └ x claim ··········· Urgent items need no review             Urgent items need no review
+ │         ⬑ fact ·· [[#m3]] Urgent items are raised in the team c…
+ └ Umbrella ················ Umbrella                                What we propose
+     hypothesis ···· [[#m5]] Move to fortnightly                     Hold the review every other week.
+     (how › steps)
+     │ ⬑ hypothesis  [[#m4]] Half the items repeat
+     ├ step ················ Cancel every second review in the cal…  1. Cancel every second review in the calendar
+     └ step ················ Carry what is still open to the next …  2. Carry what is still open to the next one
+   Premises —
+#+end_example
+
+A member of the subject stays open where it is written either way, since
+the document tells its words alone.  ~O~ again opens them where they are
+written.  Point stays on the member it was on, where it is opened now;
+what was folded or unfolded by hand starts again; the mode line says
+/Truss told/ while they are opened where told.  Either way ~z~ opens a
+member where it is one line.
 
 Each line has three columns.  On the left is what the board says the line
 is: the questions a section answers, the place a field fills, the kind of
@@ -809,15 +843,16 @@ follows what it holds.  So does a place the structure's or a section's
 pattern asks for and no section right below fills -- /Premises —/ -- and
 ~s~ on it adds a section that fills it.
 
-In the structure the document can be read down the right, and a member
-brings with it only what the document tells: what is nested under a
-member of the members, and nothing under a member of the subject; not its
-uses, its grounds or its gaps.  A member PREP or SDS tells again has a
-line /again/ after what is under it, with the words it closes with,
-wherever it is drawn.  A member told after what is under it -- conclusion
-last, SCQA's answer, the umbrella -- has its words there too, on a line
-named for its place, and a line runs down the right to them from its own
-line:
+In the structure a member a section lists is one line, as written, the
+words it is told in on its right; opened there, as told (~O~), it brings
+with it only what the document tells -- what is nested under a member of
+the members, and nothing under a member of the subject -- beside its uses,
+its grounds and its gaps, so the document can be read down the right.  A
+member PREP or SDS tells again has a line /again/ after what is under it,
+with the words it closes with, wherever it is opened.  A member told after
+what is under it -- conclusion last, SCQA's answer, the umbrella -- has
+its words there too, on a line named for its place, and a line runs down
+the right to them from its own line; folded, its line has them:
 
 #+begin_example
    claim ················· 会議を隔週にする               ┐
@@ -909,20 +944,25 @@ short, since the board is now for reading, and so is every other line: a
 field's text, a ground, what a check lists.  The line naming a cluster's
 pattern stays right under its line, on the left of what follows it; when
 the pattern is too wide for the left it takes the line after the heading's
-words, and the notes start below it.  Read down the right, the board is
-then the document, near enough, beside the tree and the notes it was
-built from:
+words, and the notes start below it.  Read down the right, with the
+members opened where told, the board is then the document, near enough,
+beside the tree and the notes it was built from:
 
 #+begin_example
- ├ Rain ··········· Rain                                                   Why it drags
- │   hypothesis ··· Half the items repeat                                  Most items come back unchanged
- │   (why › reasons)                                                       Half of each agenda repeats the week before.
- │   │              Robin keeps raising the same items.  Not something to
- │   │              put in writing.
- │   ├ assumption · Items need a week to move                              We assume most items need more than a week to change.
- │   └ x objection  Some items are urgent                                  Some items are urgent
+ ├ Rain ···················· Rain                                    Why it drags
+ │   hypothesis ···· [[#m4]] Half the items repeat                   Most items come back unchanged
+ │   (why › reasons)         Robin keeps raising the same items.     Half of each agenda repeats the week before.
+ │   │                       Not something to put in writing.
+ │   │ → hypothesis ········ Move to fortnightly
+ │   │ ⬑ summary ··· [[#m1]] Reviews run long
+ │   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come
+ │   │                       back from the week before
+ │   ├ assumption ·········· Items need a week to move               We assume most items need more than a week to change.
+ │   └ x objection ········· Some items are urgent                   Some items are urgent
  │     (why › reasons)
- │     └ x claim ·· Urgent items need no review                            Urgent items need no review
+ │     └ x claim ··········· Urgent items need no review             Urgent items need no review
+ │         ⬑ fact ·· [[#m3]] Urgent items are raised in the team
+ │                           chat
 #+end_example
 
 ~w~ does the same for the line at point alone, so the board can be scanned
@@ -990,6 +1030,8 @@ foot of the board lists them in the same four lines.
 |       | ~TAB~       | go to it in the other window                      | same                                              |
 |       | ~SPC~       | show it in the other window, staying on the board | same                                              |
 |       | ~=~         |                                                   | go to where it is written, or there, to a call    |
+|       | ~O~         | open the members sections list where told, or     | same                                              |
+|       |             | where written                                     |                                                   |
 |       | ~E~         | show the text under every heading, or stop        |                                                   |
 |       | ~w~         | show it whole, with the text under it, or stop    | same                                              |
 |       | ~z~         | fold what is under it, or unfold it               | fold what is nested under it, or unfold it        |
@@ -1030,7 +1072,8 @@ it hides: a field's members, or what is nested under a member.  On a line
 with nothing under it, ~z~ folds what it is under, so anywhere among a
 field's members it folds the field.  A field holding more than
 ~org-truss-board-fold-limit~ members, five unless set, starts folded, so
-the conditions at the top of the board stay short as they fill.
+the conditions at the top of the board stay short as they fill; a member
+a section lists starts folded where it is not opened, as ~O~ says.
 
 A fact keeps the words of its source with it, in a ~#+begin_quote~ block in
 its own text, which stays in the file as notes do.  Copy the passage, in

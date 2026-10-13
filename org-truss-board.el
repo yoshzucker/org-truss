@@ -59,6 +59,10 @@ line while it is shown.")
 (defvar-local org-truss--view nil
   "The buffer showing this board's document, if one has been opened.")
 
+(defvar-local org-truss--board-order 'written
+  "Where this board opens a member a section lists: `written' or `told'.
+See `org-truss--order'.")
+
 (defcustom org-truss-board-highlight t
   "Non-nil to light the line at point on the board, and the lines like it.
 The line at point with `hl-line-mode'; the other lines naming the member
@@ -93,7 +97,7 @@ shape  \\[org-truss-board-new-section] section  \\[org-truss-board-say] say  \
 \\[org-truss-board-flip] first/last
 see    \\[org-truss-board-visit] visit  \\[org-truss-board-visit-other-window] other window  \
 \\[org-truss-board-show] show  \\[org-truss-board-same] written/called  \
-\\[org-truss-board-entry-text] entry text  \
+\\[org-truss-board-order] written/told order  \\[org-truss-board-entry-text] entry text  \
 \\[org-truss-board-wrap] wrap  \\[org-truss-board-fold] fold  \
 \\[org-truss-board-view] view  \\[org-truss-board-export] export  \
 \\[org-truss-board-redraw] redraw  \\[org-truss-board-save] save"
@@ -142,6 +146,7 @@ command acts on the file as it is, and a key pressed once is enough."
     (setq org-truss--drawn-width (and window (window-body-width window)))
     (erase-buffer)
     (insert (let ((org-truss--folding org-truss--folds)
+                  (org-truss--order org-truss--board-order)
                   (org-truss--wrapping org-truss--wraps)
                   (org-truss--images (display-images-p (and window (window-frame window)))))
               (org-truss-board-text model org-truss--entry-text org-truss--drawn-width))
@@ -195,6 +200,7 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "x") #'org-truss-board-export)
     (define-key map (kbd "g") #'org-truss-board-redraw)
     (define-key map (kbd "=") #'org-truss-board-same)
+    (define-key map (kbd "O") #'org-truss-board-order)
     (define-key map [remap save-buffer] #'org-truss-board-save)
     map)
   "Keys of the board.")
@@ -544,6 +550,50 @@ Nothing is done while point stays on the line they were lit for."
                                                            (min (point-max) (1+ (line-end-position)))))))
                 (overlay-put overlay 'face 'org-truss-same)
                 (push overlay org-truss--same-overlays)))))))))
+
+;;;; Members opened where written, or where told
+
+(defun org-truss--name-order ()
+  "Say in the mode line where the board opens the members a section lists."
+  (setq mode-name (if (eq org-truss--board-order 'told) "Truss told" "Truss"))
+  (force-mode-line-update))
+
+(defun org-truss--goto-opened (pos)
+  "Put point on the line where the member at POS is opened, if there is one.
+As told, in the structure; as written, where it is written."
+  (let ((opened (seq-find (lambda (line)
+                            (let ((item (cdr line)))
+                              (and (org-truss--head-p item)
+                                   (if (eq org-truss--board-order 'told)
+                                       (eq (car (plist-get item :key)) 'link)
+                                     (org-truss--written-p item)))))
+                          (org-truss--lines-naming pos))))
+    (when opened
+      (goto-char (car opened)))))
+
+(defun org-truss-board-order ()
+  "Open the members a section lists where they are told, or where written.
+As written, the board's first way, a member is opened where it is written
+-- with what is nested under it, where it is used and what it stands on
+-- and the structure lists it on one line, so the story reads down the
+middle.  As told, it is opened under its section instead, with all of
+that, so the document reads down the right beside the logic it rests on,
+and where it is written it is one line.  A member of the subject stays
+open where it is written, since the document tells its words alone.
+What was folded or unfolded by hand starts again; point stays on the
+member it was on, where it is opened now.  The mode line says which way
+the board is drawn."
+  (interactive)
+  (let ((pos (org-truss--member-pos (org-truss--item))))
+    (setq org-truss--board-order (if (eq org-truss--board-order 'told) 'written 'told)
+          org-truss--folds (seq-remove (lambda (fold) (memq (car-safe (car fold)) '(member link)))
+                                       org-truss--folds))
+    (org-truss--name-order)
+    (org-truss-board-redraw)
+    (when pos
+      (org-truss--goto-opened pos))
+    (message "Members a section lists are opened where they are %s"
+             (if (eq org-truss--board-order 'told) "told" "written"))))
 
 (defconst org-truss--taking-off
   '((logic . "take the logic pattern off: a member's support is its reasons")

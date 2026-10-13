@@ -29,11 +29,11 @@
              ,@body))
        (kill-buffer source))))
 
-(defun org-truss-test--goto-line-with (regexp)
-  "Put point on the first board line matching REGEXP.
+(defun org-truss-test--goto-line-with (regexp &optional from)
+  "Put point on the first board line matching REGEXP, after FROM if given.
 Not on a line marked →, where a member is used, which names it as its own
 line does, unless REGEXP asks for the arrow."
-  (goto-char (point-min))
+  (goto-char (or from (point-min)))
   (let ((found nil))
     (while (and (not found) (re-search-forward regexp nil t))
       (setq found (or (string-match-p "→" regexp)
@@ -54,14 +54,20 @@ line does, unless REGEXP asks for the arrow."
                ((symbol-function 'y-or-n-p) (lambda (&rest _) (pop queue))))
        ,@body)))
 
+(defun org-truss-test--told ()
+  "Draw the board with the members a section lists opened where told."
+  (unless (eq org-truss--board-order 'told)
+    (setq org-truss--board-order 'told)
+    (org-truss-board-redraw)))
+
 (defun org-truss-test--goto-told-line-with (regexp)
   "Put point on the first line of the board's structure matching REGEXP.
 Members are drawn above it too, where they are worked on; in the structure
-they are drawn as the document tells them."
+they are drawn as the document tells them, opened there once the board
+opens them where they are told, as this does."
+  (org-truss-test--told)
   (org-truss-test--goto-line-with "^ Structure ")
-  (unless (re-search-forward regexp nil t)
-    (error "No line in the structure matching %s" regexp))
-  (beginning-of-line))
+  (org-truss-test--goto-line-with regexp (point)))
 
 (defun org-truss-test--column-of (regexp text &optional told)
   "Return the column TEXT starts at, after a gap, on the first line matching REGEXP.
@@ -361,8 +367,6 @@ the line naming its pattern."
   (org-truss-test--with-board org-truss-test--file
     (let ((text (buffer-string)))
       (should (string-match-p "^ ├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky .*\n │   fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long" text))
-      (should (string-match-p "^ │   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n │   (why › reasons)\n │   ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff" text))
-      (should (string-match-p "^ │   └ x objection[ ·]+\\(?:\\[*#[^] ]+]* \\)?Some items are urgent .*\n │     (why › reasons)\n │     ├ x fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Urgent items go to chat .*\n │     └ x question" text))
       (should (string-match-p (concat "^   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
                                       "   (why › reasons)\n"
                                       "   │ → Rain[ ·]+Rain\n"
@@ -375,7 +379,16 @@ the line naming its pattern."
       (re-search-forward "^   \\(├\\) fact")
       (should (eq (get-text-property (match-beginning 1) 'face) 'org-truss-branch))
       (re-search-forward "^ \\(├\\) Rain")
-      (should-not (get-text-property (match-beginning 1) 'face)))))
+      (should-not (get-text-property (match-beginning 1) 'face)))
+    (org-truss-test--told)
+    (let ((text (buffer-string)))
+      (should (string-match-p (concat "^ │   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
+                                      " │   (why › reasons)\n"
+                                      " │   │ → hypothesis[ ·]+Move to fortnightly\n"
+                                      " │   │ ⬑ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
+                                      " │   ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff")
+                              text))
+      (should (string-match-p "^ │   └ x objection[ ·]+\\(?:\\[*#[^] ]+]* \\)?Some items are urgent .*\n │     (why › reasons)\n │     ├ x fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Urgent items go to chat .*\n │     └ x question" text)))))
 
 (ert-deftest org-truss-test-board-aligns-the-files-words ()
   "The file's words start in one column, however much the board says first."
@@ -588,6 +601,7 @@ and every line any of them is broken onto."
   "On the right, what becomes a heading looks like one; what becomes body text
 looks like the notes, with or without entry text."
   (org-truss-test--with-board org-truss-test--file
+    (org-truss-test--told)
     (progn
       (dolist (entries '(nil t))
         (unless (eq org-truss--entry-text entries) (org-truss-board-entry-text))
@@ -1785,6 +1799,19 @@ So we hold the review every other week.
 - [[#move]]
 "))
     (org-truss-test--with-board text
+      ;; Where it is written, it is told the same, with where it is used
+      ;; beside what is under it; the structure lists it on one line, its
+      ;; words on its own.
+      (let ((text (buffer-string)))
+        (should (string-match-p
+                 (concat "We move to fortnightly reviews +┐\n"
+                         ".*(why › reasons, tell › SCQA) +│\n"
+                         ".*→ Structure +│\n"
+                         ".*Reviews are weekly +│ Reviews are weekly\n")
+                 text))
+        (should (string-match-p " +answer +└ So we hold the review every other week\\.\n" text))
+        (should (string-match-p "claim ▸3[ ·]+\\[\\[#move\\]\\] We move to fortnightly reviews +So we hold the review every other week\\.\n"
+                                text)))
       (org-truss-test--goto-told-line-with "claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?We move")
       (let ((told (buffer-substring (point) (point-max))))
         (should (string-match-p
@@ -1795,20 +1822,41 @@ So we hold the review every other week.
                          ".*(why › reasons, tell › conclusion last) +│ │\n"
                          ".*The agenda diff shows it +│ │ The agenda diff shows it\n"
                          " +conclusion +│ └ Half the items repeat\n"
+                         " +Question — +│\n"
                          " +answer +└ So we hold the review every other week\\.\n")
-                 told)))
-      ;; Where it is written, it is told the same, with where it is used
-      ;; beside what is under it.
-      (let ((written (buffer-substring (point-min) (progn (org-truss-test--goto-line-with "^ S")
-                                                          (point)))))
-        (should (string-match-p
-                 (concat "We move to fortnightly reviews +┐\n"
-                         ".*(why › reasons, tell › SCQA) +│\n"
-                         ".*→ Structure +│\n"
-                         ".*Reviews are weekly +│ Reviews are weekly\n")
-                 written))
-        (should (string-match-p " +answer +└ So we hold the review every other week\\.\n"
-                                written))))))
+                 told))))))
+
+(ert-deftest org-truss-test-board-opens-members-where-told ()
+  "O opens the members a section lists under it, with their uses, grounds
+and gaps, and folds them where they are written; O again opens them where
+written and lists them on one line in the structure.  Point stays on the
+member, where it is opened; a member of the subject stays open where it
+is written.  The mode line says which."
+  (org-truss-test--with-board org-truss-test--file
+    (org-truss-test--goto-line-with "^   hypothesis ·+ #half")
+    (org-truss-board-fold)
+    (org-truss-board-order)
+    (should (equal mode-name "Truss told"))
+    (should (looking-at " │   hypothesis[ ·]+\\[\\[#half\\]\\] Half the items repeat"))
+    (should (string-match-p "^   hypothesis ▸5[ ·]+#half Half the items repeat +Most items come back unchanged$"
+                            (buffer-string)))
+    (should (string-match-p (concat "^ └ Umbrella.*\n"
+                                    "     hypothesis[ ·]+\\[\\[#move\\]\\] Move to fortnightly.*\n"
+                                    "     (why › deduction)\n"
+                                    "     │ ⬑ hypothesis[ ·]+\\[\\[#half\\]\\] Half the items repeat\n"
+                                    "     └ bare  \\[Major premise\\].*\n"
+                                    "       Minor premise —\n")
+                            (buffer-string)))
+    (org-truss-board-order)
+    (should (equal mode-name "Truss"))
+    (should (looking-at "   hypothesis[ ·]+#half Half the items repeat"))
+    (should (string-match-p "^ │   hypothesis ▸5[ ·]+\\[\\[#half\\]\\]" (buffer-string))))
+  (org-truss-test--with-board org-truss-test--clusters-file
+    (org-truss-test--told)
+    (should (string-match-p "^     summary[ ·]+#rule The manager checks every driver.*\n     (how › parts)\n"
+                            (buffer-string)))
+    (should (string-match-p "^ │   summary[ ·]+\\[\\[#rule\\]\\] The manager checks every driver.*\n └ Conclusion"
+                            (buffer-string)))))
 
 (ert-deftest org-truss-test-board-tells-where-it-is-written ()
   "Where a member is written, its right is what the document tells of it:
@@ -1838,7 +1886,7 @@ take them for the member."
         (should (equal (org-get-heading t t t t) "Half the items repeat")))))
   (let ((org-truss-board-middle-width 24))
     (org-truss-test--with-board org-truss-test--clusters-file
-      (should (string-match-p "^   │ ⬑ summary  \\[\\[#rule\\]\\] The manager checks ev…$" (buffer-string)))
+      (should (string-match-p "^   │ ⬑ summary[ ·]+\\[\\[#rule\\]\\] The manager checks ev…$" (buffer-string)))
       (should (string-match-p "step[ ·]+The driver blows into…  1\\. The driver blows into the tester$"
                               (org-truss-test--top))))))
 
@@ -1852,11 +1900,14 @@ starts in the same column all the same."
     (let ((text (buffer-string)))
       (should (string-match-p "^   hypothesis ·+ #half Half the items repeat " text))
       (should (string-match-p "^   │ ⬑ fact ·+ \\[\\[#long\\]\\] Reviews run long$" text))
-      (should (string-match-p "^ │   hypothesis ·+ \\[\\[#half\\]\\] Half the items repeat " text))
-      (should (string-match-p "^ │   ├ fact ·+ Agenda diff " text))
+      (should (string-match-p "^ │   hypothesis ▸5[ ·]+\\[\\[#half\\]\\] Half the items repeat " text))
       (should (string-match-p "^   bare ·+ Lone remark +Lone remark$" text))
       (should (= (org-truss-test--column-of "^   hypothesis ·+ #half" "Half the items repeat")
-                 (org-truss-test--column-of "^   bare ·+ Lone remark" "Lone remark"))))))
+                 (org-truss-test--column-of "^   bare ·+ Lone remark" "Lone remark"))))
+    (org-truss-test--told)
+    (let ((text (buffer-string)))
+      (should (string-match-p "^ │   hypothesis ·+ \\[\\[#half\\]\\] Half the items repeat " text))
+      (should (string-match-p "^ │   ├ fact ·+ Agenda diff " text)))))
 
 (ert-deftest org-truss-test-board-goes-to-the-same-member ()
   "= on a line calling a member goes to where it is written; there, to the
@@ -1865,13 +1916,15 @@ a section calls, to where it is written as well."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-told-line-with "hypothesis ·+ \\[\\[#half\\]\\]")
     (org-truss-board-same)
-    (should (looking-at "   hypothesis ·+ #half Half the items repeat"))
+    (should (looking-at "   hypothesis ▸5 ·+ #half Half the items repeat"))
     (org-truss-board-same)
-    (should (looking-at "   │ ⬑ hypothesis ·+ \\[\\[#half\\]\\]"))
+    (should (looking-at "     │ ⬑ hypothesis[ ·]+\\[\\[#half\\]\\]"))
     (org-truss-board-same)
-    (should (looking-at "   hypothesis ·+ #half"))
+    (should (looking-at "   hypothesis ▸5 ·+ #half"))
     (org-truss-board-same)
     (should (looking-at " │   hypothesis ·+ \\[\\[#half\\]\\]"))
+    ;; Where it is written is folded into the member it is nested under,
+    ;; which is opened where told; it is unfolded.
     (org-truss-test--goto-told-line-with "fact ·+ Agenda diff")
     (org-truss-board-same)
     (should (looking-at "   ├ fact ·+ #diff Agenda diff"))))
@@ -1895,7 +1948,7 @@ where it is written, where it is called, the lines it takes below its own."
                          (buffer-substring (overlay-start overlay) (1- (overlay-end overlay))))
                        org-truss--same-overlays)))
       (should (seq-some (lambda (line) (string-match-p "#half Half the items repeat" line)) lit))
-      (should (seq-some (lambda (line) (string-match-p "⬑ hypothesis ·+ \\[\\[#half\\]\\]" line)) lit))
+      (should (seq-some (lambda (line) (string-match-p "⬑ hypothesis[ ·]+\\[\\[#half\\]\\]" line)) lit))
       (should-not (seq-some (lambda (line) (string-match-p "^ │   hypothesis" line)) lit)))
     (org-truss-test--goto-line-with "^ Title")
     (org-truss--light-same)
