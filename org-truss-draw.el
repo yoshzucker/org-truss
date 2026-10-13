@@ -546,9 +546,9 @@ Answer, umbrella, conclusion: the place it fills in its own pattern."
 TOLD is nil when the member is told above them, and LINES come back as
 they are.  Else TOLD is what the reader is told of it, as lines, and they
 come after LINES: the first starting with LEFT, the rest with UNDER, the
-tree on the left going on down.  An arrow runs down the start of the
-right of LINES, from the member's own line, and points at them.  ITEM is
-what they stand for."
+tree on the left going on down.  A line runs down the start of the right
+of LINES, from the member's own line, and turns into the first of them,
+so the words it holds line up with theirs.  ITEM is what they stand for."
   (if (null told)
       lines
     (let ((bar (propertize "│" 'face 'org-truss-branch))
@@ -563,7 +563,7 @@ what they stand for."
                      (org-truss--line
                       (if (= i 0) left under)
                       nil
-                      (concat (if (= i 0) (propertize "└→ " 'face 'org-truss-branch) "   ") text)
+                      (concat (if (= i 0) (propertize "└ " 'face 'org-truss-branch) "  ") text)
                       (if (= i 0)
                           item
                         (plist-put (copy-sequence item) :key
@@ -617,7 +617,7 @@ one its parent's telling pattern tells after it is marked."
                      lines)))
          (first (org-truss-told-first-p member))
          ;; A member told after what is under it is told, in the document,
-         ;; below it: the right shows its words there, an arrow running
+         ;; below it: the right shows its words there, a line running
          ;; down to them from its own line.  Not a step or a part, whose
          ;; list item opens with it whatever its telling pattern.
          (last-told (and in-structure (not first) (not finding)
@@ -632,7 +632,7 @@ one its parent's telling pattern tells after it is marked."
                         (org-truss--break (org-truss--use-text member) org-truss--right-width))
                        (t (list (org-truss--use-text member)))))
          (answer (and last-told
-                      (let ((org-truss--right-width (- org-truss--right-width hang 3)))
+                      (let ((org-truss--right-width (- org-truss--right-width hang 2)))
                         (funcall marked (org-truss--member-reader member wording 'after)))))
          (how (org-truss-how-children member))
          (n 0)
@@ -706,8 +706,8 @@ one its parent's telling pattern tells after it is marked."
                                :key (append key (list 'ground ref))))
                     (list :under stem))))
                (and (not in-structure) (not folded) (org-truss-member-grounds member)))
-       ;; Under an arrow, what is under the member leaves the arrow's
-       ;; columns at the start of the right.
+       ;; Under that line, what is under the member leaves its columns at
+       ;; the start of the right.
        (let ((i 0)
              (org-truss--right-width (if last-told (- org-truss--right-width 2) org-truss--right-width)))
          (mapcan (lambda (child)
@@ -807,18 +807,29 @@ answers that role."
                              item)))
           (cdr (assq section (plist-get org-truss--checks :section-gaps)))))
 
-(defun org-truss--section-lines (model section prefix last path parent-pattern)
+(defun org-truss--section-word (section &optional parent)
+  "Return the board's word for SECTION, on the left of its line: its roles.
+With none, `no role' in the face of what wants doing when the patterns of
+PARENT, the section above it, name places to fill; else `section'."
+  (let ((roles (org-truss-section-roles section)))
+    (cond (roles (org-truss-role-names roles))
+          ((and parent (org-truss-named-roles parent))
+           (propertize "no role" 'face 'org-truss-attention))
+          (t "section"))))
+
+(defun org-truss--section-lines (model section prefix last path parent)
   "Return board lines for SECTION and the sections below it.
 PREFIX draws the tree to the left; LAST says SECTION ends its siblings.
 PATH is the labels from the root, which identifies the line across redraws.
-PARENT-PATTERN is the telling pattern of the section above.  A section
-that does not fit it, or that comes below one it tells after, is marked."
+PARENT is the section above.  A section that does not fit its telling
+pattern, or that comes below one the pattern tells after, is marked."
   (let* ((path (append path (list (org-truss-section-label section))))
          (inner (concat prefix (if last "  " "│ ")))
          (children (org-truss-section-children section))
          ;; Its notes and links have the line to the sections below run past.
          (stem (concat inner (if children "│ " "  ")))
          (roles (org-truss-section-roles section))
+         (parent-pattern (org-truss-section-telling parent))
          (misfit (and parent-pattern (org-truss--misfit roles parent-pattern)))
          (above (cdr (assq section (plist-get org-truss--checks :out-of-order))))
          (late (and above
@@ -842,8 +853,7 @@ that does not fit it, or that comes below one it tells after, is marked."
                      :key (list 'section path))))
     (append
      (list (org-truss--line (concat prefix (if last "└ " "├ ")
-                                    (if roles (org-truss-role-names roles)
-                                      (propertize "no role" 'face 'org-truss-attention))
+                                    (org-truss--section-word section parent)
                                     (if misfit (propertize " ⚠" 'face 'org-truss-attention) ""))
                             (car label)
                             (car reader)
@@ -856,8 +866,7 @@ that does not fit it, or that comes below one it tells after, is marked."
      (let ((n (length children)) (i 0))
        (mapcan (lambda (child)
                  (setq i (1+ i))
-                 (org-truss--section-lines model child inner (= i n) path
-                                           (org-truss-section-telling section)))
+                 (org-truss--section-lines model child inner (= i n) path section))
                children))
      (org-truss--section-gap-lines section (concat inner "  ") item))))
 
@@ -895,8 +904,7 @@ the title the reader is given.  HEADING names a check, as for
     (cons (org-truss--check-heading heading)
           (mapcar (lambda (s)
                     (org-truss--line
-                     (concat "   " (let ((roles (org-truss-section-roles s)))
-                                     (if roles (org-truss-role-names roles) "no role")))
+                     (concat "   " (org-truss--section-word s))
                      (org-truss-section-label s)
                      (if right
                          (funcall right s)
@@ -1012,8 +1020,7 @@ AT gives the item for a place in the file."
          (let* ((children (org-truss-section-children root)) (n (length children)) (i 0))
            (mapcan (lambda (child)
                      (setq i (1+ i))
-                     (org-truss--section-lines model child " " (= i n) '(root)
-                                               (org-truss-section-telling root)))
+                     (org-truss--section-lines model child " " (= i n) '(root) root))
                    children))
          (org-truss--section-gap-lines root "   " item))))))
 
@@ -1163,9 +1170,7 @@ and ids more than one member has, which break links."
                 (mapcar (lambda (g)
                           (let ((root (eq (car g) (org-truss-model-structure model))))
                             (org-truss--line
-                             (concat "   " (if root "Structure"
-                                               (let ((roles (org-truss-section-roles (car g))))
-                                                 (if roles (org-truss-role-names roles) "no role"))))
+                             (concat "   " (if root "Structure" (org-truss--section-word (car g))))
                              ;; The Structure's heading is not the document's; the
                              ;; pattern that asks is named in its place.
                              (if root

@@ -511,10 +511,10 @@ and every line any of them is broken onto."
                              "   └ ")
                      board))
             (should (string-match-p
-                     (concat "^ └ no role[ ·]+Now.*\n"
+                     (concat "^ └ section[ ·]+Now.*\n"
                              "   │ fact[ ·]+A fact, long enough to.*\n"
                              (if entries "   │ +in a column this narrow\n" "")
-                             "   └ no role[ ·]+Later")
+                             "   └ section[ ·]+Later")
                      board))))))))
 
 (ert-deftest org-truss-test-board-colours-the-reader-s-text ()
@@ -1633,7 +1633,11 @@ structure, a member placeholder under the members, its heading marked."
       (should (string-match-p "^ Out of order\n   Sky[ ·]+空 +below Rain$" text))
       (should (string-match-p "^ Placeholders\n   Rain[ ·]+Rain +Rain\n   Umbrella[ ·]+Umbrella +Umbrella$"
                               text))
-      (should (string-match-p "^ Empty sections\n   Sky[ ·]+空 +Where we stand\n   no role[ ·]+Notes for later" text))
+      (should (string-match-p "^ Empty sections\n   Sky[ ·]+空 +Where we stand\n   section[ ·]+Notes for later" text))
+      ;; Under a pattern that names places, a section with none wants one.
+      (should (string-match-p "^ └ no role[ ·]+Notes for later" text))
+      (should (eq (get-text-property (string-match "no role[ ·]+Notes for later" text) 'face text)
+                  'org-truss-attention))
       (should (string-match-p "^ Placeholders\n   bare[ ·]+Reason +Reason\n   bare[ ·]+Example" text))
       (should (eq (get-text-property (string-match "Reason +Reason" text) 'face text)
                   'org-truss-attention)))))
@@ -1666,9 +1670,9 @@ the reader is told it."
 
 (ert-deftest org-truss-test-board-tells-a-conclusion-last ()
   "In the structure, a member told after what is under it has its words on
-a line below it, named for its place, as the document tells it; an arrow
-runs down to them from its own line, beside what is under it.  An arrow
-inside another keeps both."
+a line below it, named for its place, as the document tells it; a line
+runs down to them from its own line, beside what is under it, so they
+line up with what is under it.  One inside another keeps both."
   (let ((text "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -1707,8 +1711,8 @@ So we hold the review every other week.
                          ".*Half the items repeat +│ ┐\n"
                          ".*(why › reasons, tell › conclusion last) +│ │\n"
                          ".*The agenda diff shows it +│ │ The agenda diff shows it\n"
-                         " +conclusion +│ └→ Half the items repeat\n"
-                         " +answer +└→ So we hold the review every other week\\.\n")
+                         " +conclusion +│ └ Half the items repeat\n"
+                         " +answer +└ So we hold the review every other week\\.\n")
                  told))))))
 
 (provide 'org-truss-board-test)

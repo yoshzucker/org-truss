@@ -963,6 +963,15 @@ its public block, or its heading.  Nil when it is tagged :noexport:."
         (wording (cons nil wording))
         (t (org-truss-member-shown member))))
 
+(defun org-truss-named-roles (cluster)
+  "Return the roles CLUSTER's patterns name for what is right under it, in order.
+The places its logic pattern names, the aspects it must cover, and the
+places of its telling pattern that what is under it fills, asked for or
+not."
+  (seq-uniq (append (plist-get (org-truss-pattern (org-truss-cluster-logic cluster)) :roles)
+                    (org-truss-aspect-roles cluster)
+                    (mapcar #'car (org-truss-places-under cluster)))))
+
 (defun org-truss-asked-roles (cluster)
   "Return the roles CLUSTER's patterns ask of what is right under it, in order.
 The places its logic pattern names, the aspects it must cover, and the
@@ -1024,10 +1033,7 @@ PARENT, the cluster above it, name.  For a section, what is compared is
 the title the reader is given; for a member, its heading."
   (org-truss-role-name-p
    (append (org-truss-cluster-roles cluster)
-           (and parent
-                (append (plist-get (org-truss-pattern (org-truss-cluster-logic parent)) :roles)
-                        (org-truss-aspect-roles parent)
-                        (mapcar #'car (org-truss-places-under parent)))))
+           (and parent (org-truss-named-roles parent)))
    (if (org-truss-section-p cluster)
        (org-truss-section-title cluster)
      (org-truss-member-label cluster))))

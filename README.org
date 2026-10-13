@@ -742,7 +742,7 @@ nothing under a member of the subject.  A member PREP or SDS tells again
 has a line /again/ after what is under it, with the words it closes with.
 A member told after what is under it -- conclusion last, SCQA's answer,
 the umbrella -- has its words there too, on a line named for its place,
-and an arrow runs down the right to them from its own line:
+and a line runs down the right to them from its own line:
 
 #+begin_example
    claim ················· 会議を隔週にする               ┐
@@ -750,8 +750,12 @@ and an arrow runs down the right to them from its own line:
    ├ bare  [Situation] ··· 毎週レビュー会議をしている     │ 毎週レビュー会議をしている
    ├ bare  [Complication]  議題の半分が前週の繰り返し     │ 議題の半分が前週の繰り返し
    └ bare  [Question] ···· 頻度を変えるべきか             │ 頻度を変えるべきか
-     answer                                               └→ 会議を隔週にする
+     answer                                               └ 会議を隔週にする
 #+end_example
+
+A section with no role is marked /no role/ in the warning face where the
+patterns of the section above name places for it to fill; elsewhere its
+line says /section/.
 
 What it stands on and what it lacks are drawn where it is worked on,
 among the members.
