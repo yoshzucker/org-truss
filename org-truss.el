@@ -46,6 +46,8 @@
 ;;; Code:
 
 (require 'org-truss-core)
+(require 'org-truss-edit)
+(require 'org-truss-guide)
 (require 'org-truss-export)
 (require 'org-truss-board)
 

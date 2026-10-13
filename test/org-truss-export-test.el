@@ -285,10 +285,10 @@ We move to fortnightly reviews.
               (kill-buffer buffer))))
       (delete-directory dir t))))
 
-(ert-deftest org-truss-test-export-relinks-files ()
+(ert-deftest org-truss-test-export-rebases-file-links ()
   "A link to a file by a relative path is written relative to where the
 document goes; its words, a search in the file, and any other link stay."
-  (should (equal (org-truss--relink
+  (should (equal (org-truss--rebase-file-links
                   (concat "[[file:attach/a b.png]]\n[[./sources/x.pdf][the law]]\n"
                           "[[file:/abs/y.png]] [[https://e.x/z.png]] [[#m7]]\n"
                           "[[file:notes/n.org::*Head]]")

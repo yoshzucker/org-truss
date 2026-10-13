@@ -1,4 +1,4 @@
-;;; org-truss-core-test.el --- Tests for org-truss-core  -*- lexical-binding: t; -*-
+;;; org-truss-core-test.el --- Tests for org-truss-core, -edit and -guide  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,6 +8,8 @@
 
 (require 'ert)
 (require 'org-truss-core)
+(require 'org-truss-edit)
+(require 'org-truss-guide)
 
 (defconst org-truss-test--file "#+title: Fortnightly reviews
 
@@ -422,7 +424,7 @@ how, so they are not asked for support and do not support it.  What argues
 against it is still an objection, and what is under a step supports the step."
   (org-truss-test--with org-truss-test--steps-file
     (let* ((model (org-truss-read))
-           (kind (lambda (label) (org-truss-kind model (org-truss-test--m model label)))))
+           (kind (lambda (label) (org-truss-member-kind model (org-truss-test--m model label)))))
       (should (eq (funcall kind "Meet the driver face to face") 'step))
       (should (eq (funcall kind "Note the reading") 'step))
       (should (eq (funcall kind "The only step") 'step))
@@ -446,7 +448,7 @@ beside a logic pattern and asks for the places what is under it fills: not
 its point, which is the member itself, nor the point said again."
   (org-truss-test--with org-truss-test--how-file
     (let* ((model (org-truss-read))
-           (kind (lambda (label) (org-truss-kind model (org-truss-test--m model label))))
+           (kind (lambda (label) (org-truss-member-kind model (org-truss-test--m model label))))
            (check (org-truss-test--m model "Check before every test"))
            (safer (org-truss-test--m model "Tests are safer checked")))
       (should (eq (funcall kind "The driver's manager") 'part))
@@ -499,9 +501,9 @@ place for each pattern that asks."
            (move (org-truss-test--m model "Move to fortnightly")))
       (should (equal (org-truss-member-roles (org-truss-test--m model "Less time in meetings"))
                      '(pros reason)))
-      (should (equal (org-truss-test--labels (org-truss-unsorted move)) '("Robin likes it")))
+      (should (equal (org-truss-test--labels (org-truss-no-aspect move)) '("Robin likes it")))
       (should (equal (org-truss-gaps move) '((example . 1))))
-      (should (equal (org-truss-test--labels (plist-get (org-truss-checks model) :unsorted))
+      (should (equal (org-truss-test--labels (plist-get (org-truss-checks model) :no-aspect))
                      '("Robin likes it"))))))
 
 (defun org-truss-test--section-labels (section)
@@ -566,13 +568,13 @@ judged like one, but never asked to be placed.  The field's text is apart."
       (should (equal (org-truss-model-subject model)
                      '((issue . "") (constraints . "Finance said so at the October meeting."))))
       (should (equal (org-truss-test--labels
-                      (alist-get '(subject constraints) (org-truss-model-conditions model)
+                      (alist-get '(subject constraints) (org-truss-model-field-members model)
                                  nil nil #'equal))
                      '("No budget this year" "The schedule is fixed")))
-      (should (eq (org-truss-kind model budget) 'fact))
+      (should (eq (org-truss-member-kind model budget) 'fact))
       (should (equal (org-truss-test--labels (car (org-truss-usage model)))
                      '("No budget this year")))
-      (should (equal (org-truss-test--labels (plist-get (org-truss-checks model) :unplaced))
+      (should (equal (org-truss-test--labels (plist-get (org-truss-checks model) :not-placed))
                      '("Check with a breathalyser")))
       (should (equal (org-truss-test--labels (org-truss-model-all model))
                      '("Nobody checks before a test" "No budget this year"
@@ -592,7 +594,7 @@ judged like one, but never asked to be placed.  The field's text is apart."
                       ("Move to fortnightly" . claim)
                       ("A meeting that repeats itself can meet less" . bare)
                       ("Lone remark" . bare)))
-        (should (eq (org-truss-kind model (org-truss-test--m model (car case)))
+        (should (eq (org-truss-member-kind model (org-truss-test--m model (car case)))
                     (cdr case)))))))
 
 (ert-deftest org-truss-test-objections-do-not-support ()
@@ -677,7 +679,7 @@ judged like one, but never asked to be placed.  The field's text is apart."
   (org-truss-test--with org-truss-test--file
     (let* ((model (org-truss-read))
            (checks (org-truss-checks model)))
-      (should (equal (org-truss-test--labels (plist-get checks :unplaced))
+      (should (equal (org-truss-test--labels (plist-get checks :not-placed))
                      '("Unused aside" "Lone remark")))
       (should (null (plist-get checks :grounds-only)))
       (should (equal (mapcar (lambda (g) (cons (org-truss-section-label (car g)) (mapcar #'car (cdr g))))
@@ -691,9 +693,9 @@ judged like one, but never asked to be placed.  The field's text is apart."
                      '("Items need a week to move")))
       (should (null (plist-get checks :unanswered)))
       (should (equal (mapcar (lambda (g) (org-truss-member-label (car g)))
-                             (plist-get checks :gaps))
+                             (plist-get checks :member-gaps))
                      '("Move to fortnightly")))
-      (should (equal (mapcar #'cdr (plist-get checks :broken)) '("none")))
+      (should (equal (mapcar #'cdr (plist-get checks :broken-links)) '("none")))
       (should (null (plist-get checks :broken-grounds)))))
   (org-truss-test--with (replace-regexp-in-string
                          ":TRUSS_GROUNDS: \\[\\[#half\\]\\]" ":TRUSS_GROUNDS: [[#half]] [[#gone]]"
@@ -837,7 +839,7 @@ the file's language."
 "
     (let ((checks (org-truss-checks (org-truss-read))))
       (should (equal (org-truss-test--labels (plist-get checks :grounds-only)) '("Behind")))
-      (should (null (plist-get checks :unplaced))))))
+      (should (null (plist-get checks :not-placed))))))
 
 (ert-deftest org-truss-test-duplicates ()
   "Two members with one id are reported, since a link cannot tell them apart;
@@ -936,16 +938,20 @@ as it is; the pattern adds the rest, and what fits no place stays at the end."
                      '("inner"))))))
 
 (ert-deftest org-truss-test-unwrap ()
-  "Unwrapping refuses to lose writing unless forced, and keeps every link."
+  "Unwrapping refuses to lose writing unless forced, and keeps every link.
+The section's patterns go, of every kind, since what they asked was asked
+of the sections taken away."
   (org-truss-test--with org-truss-test--file
     (let ((root (org-truss--part-pos "structure")))
       (should (equal (org-truss-unwrap root) '("Rain")))
       (should (= 3 (length (org-truss-section-children
                             (org-truss-model-structure (org-truss-read))))))
+      (org-truss-set-pattern root 'logic 'parts)
+      (org-truss-set-pattern root 'aspects '5w1h)
       (should (null (org-truss-unwrap root t)))
       (let ((section (org-truss-model-structure (org-truss-read))))
         (should (null (org-truss-section-children section)))
-        (should (null (org-truss-section-telling section)))
+        (should (null (org-truss-cluster-patterns section)))
         (should (equal (org-truss-section-links section)
                        '("long" "half" "move" "none")))))))
 
@@ -1086,7 +1092,7 @@ by its id, and still find it.  A label another member has is refused."
   "A tagged member keeps its tags when relabelled."
   (org-truss-test--with org-truss-test--file
     (org-truss-rename (org-truss-test--heading-pos "Items need a week to move") "Items are slow")
-    (should (eq (org-truss-kind (org-truss-read)
+    (should (eq (org-truss-member-kind (org-truss-read)
                                 (org-truss-test--m (org-truss-read) "Items are slow"))
                 'assumption))))
 
@@ -1263,20 +1269,20 @@ placed."
              (checks (org-truss-checks model))
              (labels (lambda (key) (org-truss-test--labels (plist-get checks key)))))
         (should-not (org-truss-document-p model))
-        (should-not (plist-get checks :unplaced))
+        (should-not (plist-get checks :not-placed))
         (should-not (plist-get checks :grounds-only))
         (should-not (plist-get checks :unmet))
         (should-not (plist-get checks :section-gaps))
         (should (equal (funcall labels :bare) '("Keep it short" "A loose remark")))
         (should (equal (funcall labels :assumptions) '("Items need a week to move")))
         (should (member "Who decides what is urgent" (funcall labels :questions)))
-        (should (equal (mapcar (lambda (g) (org-truss-member-label (car g))) (plist-get checks :gaps))
+        (should (equal (mapcar (lambda (g) (org-truss-member-label (car g))) (plist-get checks :member-gaps))
                        '("We should move to fortnightly")))))
     (org-truss-test--with (concat text "** Now\n")
       (let* ((model (org-truss-read))
              (checks (org-truss-checks model)))
         (should (org-truss-document-p model))
-        (should (equal (org-truss-test--labels (plist-get checks :unplaced))
+        (should (equal (org-truss-test--labels (plist-get checks :not-placed))
                        '("We should move to fortnightly" "Items need a week to move"
                          "A loose remark" "Who decides what is urgent")))
         (should-not (plist-get checks :bare))))))
@@ -1343,16 +1349,16 @@ found, never a step or a part of what to do."
            (part (org-truss-test--m model "The check may be made by video")))
       (should (eq (org-truss-member-home head) 'subject))
       (should (eq (org-truss-member-home (org-truss-test--m model "The rule may apply to us")) 'members))
-      (should (org-truss-material-p part))
+      (should (org-truss-finding-p part))
       (should (eq (org-truss-member-logic head) 'parts))
       (should (null (org-truss-member-logic part)))
-      (should (eq (org-truss-kind model head) 'summary))
-      (should (eq (org-truss-kind model part) 'fact))
+      (should (eq (org-truss-member-kind model head) 'summary))
+      (should (eq (org-truss-member-kind model part) 'fact))
       (should (equal (org-truss-test--labels (org-truss-supports model head))
                      '("The rule asks for a check before driving"
                        "The rule asks for a check after driving"
                        "The check may be made by video")))
-      (should (eq (org-truss-kind model (org-truss-test--m model "The driver blows into the tester"))
+      (should (eq (org-truss-member-kind model (org-truss-test--m model "The driver blows into the tester"))
                   'step)))))
 
 (ert-deftest org-truss-test-logic-is-what-is-written ()
@@ -1366,7 +1372,7 @@ and the board says so."
     (let* ((model (org-truss-read))
            (head (org-truss-test--m model "The manager checks every driver before and after driving")))
       (should (null (org-truss-member-logic head)))
-      (should (eq (org-truss-kind model head) 'claim))
+      (should (eq (org-truss-member-kind model head) 'claim))
       (should (string-match-p "no TRUSS_LOGIC.*how › parts"
                               (cdr (assq head (org-truss-misplaced model)))))))
   (should (eq (org-truss-default-logic 'subject) 'parts))
@@ -1419,7 +1425,7 @@ open whether or not anything uses it."
                      '("The law binds us, so we must check")))
       (should (equal (org-truss-test--labels (plist-get checks :questions))
                      '("How many cars we run")))
-      (should (equal (org-truss-test--labels (plist-get checks :unplaced))
+      (should (equal (org-truss-test--labels (plist-get checks :not-placed))
                      '("The tester reads zero when sober"))))))
 
 (provide 'org-truss-core-test)

@@ -178,7 +178,7 @@ lines below instead of cut short."
   "Entry text breaks what the reader sees at the window's edge, or at a width
 set for it; without entry text nothing is broken."
   (let ((org-truss-language 'en)
-        (org-truss-board-reader-width nil)
+        (org-truss-board-right-width nil)
         (whole "Reviews ran past the hour eight times this quarter\\.$"))
     (org-truss-test--with org-truss-test--file
       (let ((model (org-truss-read)))
@@ -186,10 +186,10 @@ set for it; without entry text nothing is broken."
         (should (string-match-p "Reviews ran past the hour eight times this\n.* quarter\\.$"
                                 (org-truss-board-text model t 120)))
         (should (string-match-p whole (org-truss-board-text model t 200)))
-        (let ((org-truss-board-reader-width 20)
-              (org-truss-board-heading-width 40))
+        (let ((org-truss-board-right-width 20)
+              (org-truss-board-middle-width 40))
           (should (equal (org-truss-board-text model t 120) (org-truss-board-text model t 300))))
-        (let ((org-truss-board-heading-width 40))
+        (let ((org-truss-board-middle-width 40))
           (should (equal (org-truss-board-text model nil 100) (org-truss-board-text model nil 300))))
         (should (string-match-p whole (org-truss-board-text model nil 100)))))))
 
@@ -198,8 +198,8 @@ set for it; without entry text nothing is broken."
 text, a ground, where a member is used, a title, whom to confirm with, a
 labelled part and what a check lists are broken too, and nothing is cut."
   (let* ((org-truss-language 'en)
-         (org-truss-board-heading-width nil)
-         (org-truss-board-reader-width nil)
+         (org-truss-board-middle-width nil)
+         (org-truss-board-right-width nil)
          (long "long enough to run past any column of a board drawn this narrow")
          (text (replace-regexp-in-string "LONG" long "#+title: T
 * Subject
@@ -256,7 +256,7 @@ The constraints, LONG.
   "Right of the board's own words, the file's words and what the reader sees
 take half of the window each; a width set for the file's words fixes it."
   (let ((org-truss-language 'en)
-        (org-truss-board-reader-width nil))
+        (org-truss-board-right-width nil))
     (org-truss-test--with org-truss-test--file
       (let* ((model (org-truss-read))
              (reader-column
@@ -277,7 +277,7 @@ take half of the window each; a width set for the file's words fixes it."
         (should (= (- (funcall reader-column 200) file-column)
                    (/ (+ (- 200 1 file-column) 2) 2)))
         (should (= (- (funcall reader-column 40) file-column) 20))
-        (let ((org-truss-board-heading-width 40))
+        (let ((org-truss-board-middle-width 40))
           (should (= (- (funcall reader-column 200) file-column) 40)))))))
 
 (ert-deftest org-truss-test-board-views-the-document ()
@@ -397,7 +397,7 @@ right under its member's line, beside the rest of its heading and notes; a
 wider one waits for the heading to end.  The members' tree runs on down
 past what is under a member."
   (let* ((org-truss-language 'en)
-         (org-truss-board-heading-width 30)
+         (org-truss-board-middle-width 30)
          (long "long enough to break in a column this narrow")
          (text (replace-regexp-in-string "LONG" long "#+title: T
 * Subject
@@ -464,7 +464,7 @@ or its line when it names none, and runs down past whatever comes before
 what branches off: its notes, its grounds, the members a section lists,
 and every line any of them is broken onto."
   (let* ((org-truss-language 'en)
-         (org-truss-board-heading-width 30)
+         (org-truss-board-middle-width 30)
          (long "long enough to break in a column this narrow")
          (text (replace-regexp-in-string "LONG" long "#+title: T
 * Subject
@@ -569,7 +569,7 @@ picture can be shown, and on one line, a link to a file is its name."
           (should (eq (plist-get (cddr asked) :ascent) 'center))
           (should (equal (mapcar (lambda (line) (car (get-text-property 0 'display line))) slices)
                          '((slice 0 0 150 10) (slice 0 10 150 10) (slice 0 20 150 10))))
-          (let* ((org-truss--heading-width 20)
+          (let* ((org-truss--middle-width 20)
                  (line (org-truss--lay-out (org-truss--line "" (car slices) "said") 10)))
             ;; Ten columns to the file's words, the slice, then the gap.
             (should (equal (get-text-property 11 'display line) '(space :align-to 30)))
@@ -661,7 +661,7 @@ them as what the reader sees; on a section it opens its lead to be written."
             (insert "Where we are.")
             (org-truss-edit-finish))
           (org-truss-board-redraw)
-          (let ((org-truss--entries t))
+          (let ((org-truss--whole t))
             (should (equal (org-truss-section-public
                             (car (org-truss-section-children
                                   (org-truss-model-structure (org-truss-read org-truss--source)))))
@@ -851,7 +851,7 @@ s on a gap adds a section that fills it; r on a section offers the roles of
 the patterns above, those still open first."
   (org-truss-test--with-board org-truss-test--file
     (with-current-buffer source
-      (org-truss-set-aspects (org-truss-test--heading-pos "Umbrella") '5w1h))
+      (org-truss-set-pattern (org-truss-test--heading-pos "Umbrella") 'aspects '5w1h))
     (org-truss-board-redraw)
     (should (string-match-p "└ Umbrella[ ·]+Umbrella.*\n   (aspects › 5W1H)\n" (buffer-string)))
     (should (string-match-p "^     Who —$" (buffer-string)))
@@ -1004,7 +1004,7 @@ what would make it another."
   (org-truss-test--with-board org-truss-test--file
     (let ((kind (lambda (label)
                   (let ((model (org-truss-read source)))
-                    (org-truss-kind model (org-truss-member-by-label model label))))))
+                    (org-truss-member-kind model (org-truss-member-by-label model label))))))
       (org-truss-test--goto-line-with "bare[ ·]+Lone remark")
       (org-truss-test--answering '("assumption" "Robin")
         (org-truss-board-kind))
@@ -1120,16 +1120,16 @@ off.  What a pattern asks for and is not there is put in, a heading for each
 place.  o tells a member last, or as written."
   (org-truss-test--with org-truss-test--file
     (let* ((model (org-truss-read))
-           (choices (lambda (chunk) (mapcar #'cdr (org-truss--pattern-choices chunk)))))
+           (choices (lambda (cluster) (mapcar #'cdr (org-truss--pattern-choices cluster)))))
       (should (equal (funcall choices (org-truss-test--m model "Lone remark"))
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        first last prep sds scqa sky-rain-umbrella)))
       (should (equal (funcall choices (org-truss-test--m model "Move to fortnightly"))
                      '(reasons deduction induction steps parts
-                       first last prep sds scqa sky-rain-umbrella :no-logic)))
+                       first last prep sds scqa sky-rain-umbrella (none . logic))))
       (should (equal (seq-drop (funcall choices (org-truss-model-structure model)) 11)
-                     '(first last prep sds scqa sky-rain-umbrella :no-telling)))
+                     '(first last prep sds scqa sky-rain-umbrella (none . telling))))
       (should (equal (car (rassq 'prep (org-truss--pattern-choices
                                         (org-truss-test--m model "Lone remark"))))
                      "tell › PREP"))))
@@ -1612,7 +1612,7 @@ asks for a field, and on a fact of a cluster writes the next one."
                                     (org-truss-test--m model "The manager checks every driver before and after driving")))
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
-                       :no-logic)))))
+                       (none . logic))))))
   (org-truss-test--with-board org-truss-test--clusters-file
     (org-truss-test--goto-line-with "^ Subject ")
     (should-error (org-truss-board-new) :type 'user-error)

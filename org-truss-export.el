@@ -55,21 +55,16 @@ text as a paragraph, or its title when that is all there is."
   "Return (DEPTH SHOWN AFTER-SUPPORT) items for MEMBER and what is under it.
 SHOWN is what the reader sees of it: WORDING when given, the words the
 section listing it tells it in, or else its own.  It is told in the order
-of its telling pattern's places, and with none as conclusion first tells
-it, as it is written: it, and then what is under it; see
-`org-truss--told'.  What says how to do it is one item, a list.  A member
-tagged :noexport: gives nothing, and nor does what is nested under it.  A
-member of the subject or the brief gives itself alone: what is nested
-under it is the breakdown it was found with, which a section lists by
-itself if the reader is to see it."
+of its telling pattern's places; see `org-truss--tell'.  What says how to
+do it is one item, a list.  A member tagged :noexport: gives nothing, and
+nor does what is nested under it.  A finding gives itself alone: what is
+nested under it is the breakdown it was found with, which a section lists
+by itself if the reader is to see it."
   (unless (org-truss-noexport-p member)
     (let ((shown (if wording (cons nil wording) (org-truss-member-shown member))))
-      (if (org-truss-material-p member)
+      (if (org-truss-finding-p member)
           (list (list depth shown nil))
-        (org-truss--told member
-                         (or (org-truss-pattern-slots (or (org-truss-member-telling member) 'first))
-                             '((conclusion :point) (body :any :optional)))
-                         shown depth)))))
+        (org-truss--tell member shown depth)))))
 
 (defun org-truss--how-items (member depth)
   "Return what says how to do MEMBER as flow items at DEPTH below it: one list."
@@ -77,32 +72,32 @@ itself if the reader is to see it."
     (and (not (string-empty-p list))
          (list (list (1+ depth) (cons nil list) nil)))))
 
-(defun org-truss--told (member slots shown depth)
-  "Return the flow of MEMBER, at DEPTH and seen as SHOWN, told by SLOTS.
-The slots of its telling pattern, each in turn: the one that is the member,
-it; the one that says it again, it once more; each other, what fills it --
-for a member that says how, its list, all at the first.  What fills no
-place comes with the place that takes anything, or else after the last
-place.  What argues against it comes after the rest, before a closing
-restatement, since an objection needs the claim it answers."
-  (let* ((children (org-truss-member-children member))
-         (support (seq-remove #'org-truss-against-p children))
-         (own (lambda (slot) (or (memq :point (cdr slot)) (memq :again (cdr slot)))))
-         (places (seq-remove own slots))
-         (loose (seq-remove (lambda (c) (seq-intersection (org-truss-member-roles c)
-                                                          (mapcar #'car places)))
-                            support))
-         (catch-all (or (seq-find (lambda (slot) (memq :any (cdr slot))) places)
-                        (car (last places))))
+(defun org-truss--tell (member shown depth)
+  "Return the flow of MEMBER, at DEPTH and seen as SHOWN, as it is told.
+The places of its telling pattern -- with none, of `first' -- each in
+turn: the one that is the member, it; the one that says it again, it once
+more; each other, what fills it -- for a member that says how, its list,
+all at the first.  What fills no place comes with the place that takes
+anything, or else after the last place.  What argues against it comes
+after the rest, before a closing restatement, since an objection needs
+the claim it answers."
+  (let* ((places (org-truss-pattern-places (or (org-truss-member-telling member) 'first)))
+         (others (seq-remove #'org-truss--own-place-p places))
+         (joined (org-truss--joined-under member))
+         (outside (seq-remove (lambda (c) (seq-intersection (org-truss-member-roles c)
+                                                            (mapcar #'car others)))
+                              joined))
+         (catch-all (or (seq-find (lambda (place) (memq :any (cdr place))) others)
+                        (car (last others))))
          (below (lambda (ms) (mapcan (lambda (m) (org-truss--flow m (1+ depth))) ms)))
          (said nil)
          (listed nil)
          (parts nil))
-    (dolist (slot slots)
+    (dolist (place places)
       (cond
-       ((memq :point (cdr slot))
+       ((memq :point (cdr place))
         (push (cons 'self (list (list depth shown said))) parts))
-       ((memq :again (cdr slot))
+       ((memq :again (cdr place))
         (push (cons 'again (org-truss--restatement shown (1+ depth))) parts))
        ((org-truss-how-p member)
         (unless listed
@@ -111,9 +106,9 @@ restatement, since an objection needs the claim it answers."
             (when items (setq said t))
             (push (cons 'place items) parts))))
        (t
-        (let ((filling (append (seq-filter (lambda (c) (memq (car slot) (org-truss-member-roles c)))
-                                           support)
-                               (and (eq slot catch-all) loose))))
+        (let ((filling (append (seq-filter (lambda (c) (memq (car place) (org-truss-member-roles c)))
+                                           joined)
+                               (and (eq place catch-all) outside))))
           (when filling (setq said t))
           (push (cons 'place (funcall below filling)) parts)))))
     (let* ((parts (nreverse parts))
@@ -123,7 +118,7 @@ restatement, since an objection needs the claim it answers."
                         (setq n (1+ n)))
                       n)))
       (append (mapcan (lambda (part) (copy-sequence (cdr part))) (butlast parts closing))
-              (funcall below (seq-filter #'org-truss-against-p children))
+              (funcall below (seq-filter #'org-truss-against-p (org-truss-member-children member)))
               (mapcan (lambda (part) (copy-sequence (cdr part))) (last parts closing))))))
 
 (defun org-truss--indent (text column)
@@ -275,7 +270,7 @@ The structure's own lead, the text of its public block, opens it."
   "\\[\\[\\(file:\\|\\.\\.?/\\)\\([^]:][^]]*\\)\\]"
   "The start of a link to a file by a relative path: how it is written, the path.")
 
-(defun org-truss--relink (text from to)
+(defun org-truss--rebase-file-links (text from to)
   "Return TEXT with each link to a file by a relative path made relative to TO.
 The paths are read from FROM, the directory the truss file is in, so a
 picture or a source it links to is found from TO, where the document is
@@ -304,7 +299,7 @@ where the document is, so it still finds the file."
          (base (org-truss--output-base file))
          (org-file (concat base ".org"))
          (out-file (concat base "." org-truss-output-extension))
-         (text (org-truss--relink (org-truss-render (org-truss-read buffer))
+         (text (org-truss--rebase-file-links (org-truss-render (org-truss-read buffer))
                                   (file-name-directory file)
                                   (file-name-directory org-file))))
     (make-directory (file-name-directory org-file) t)

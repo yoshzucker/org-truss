@@ -959,6 +959,8 @@ fills.  So switching patterns changes the order and the marks, never a
 heading.  A section that shares no question, or questions with more than
 one place, is kept after the rest, and the board says which.  ~a~, ~r~ and
 ~d~ sort it out.  ~u~ and ~d~ ask before discarding a title or notes.
+~u~ takes the section's patterns off too, of every kind, since what they
+asked for was asked of the sections it takes away.
 
 * The document
 
@@ -1016,8 +1018,8 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-attach-directory~    | ~"attach"~                    | what ~org-attach~ attaches to its headings    |
 | ~org-truss-agent-file~          | ~"CLAUDE.md"~                 | for a coding agent; ~nil~ for none            |
 | ~org-truss-pandoc-program~      | ~"pandoc"~                    |                                               |
-| ~org-truss-board-heading-width~ | ~nil~, half the window        | room for the file's words before the reader's |
-| ~org-truss-board-reader-width~  | ~nil~, the window's edge      | where entry text breaks what the reader sees  |
+| ~org-truss-board-middle-width~  | ~nil~, half the window        | room for the file's words before the right    |
+| ~org-truss-board-right-width~   | ~nil~, the window's edge      | where a line drawn whole breaks its right     |
 | ~org-truss-board-image-height~  | 15                            | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~    | 5                             | members a field shows before it starts folded |
 
