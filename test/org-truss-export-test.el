@@ -183,15 +183,16 @@ follows the list."
     (should (string-match-p "^1\\. Meet[^\0]*\n\nCheck before every test\n\nThe checker" out))))
 
 (ert-deftest org-truss-test-render-parts-and-prep ()
-  "Parts are a bulleted list, those covering aspects opening with the aspect
-in the order of the aspects, and what a part holds goes inside it.  PREP
-tells the point, the reasons, the examples, and the point again."
+  "Parts are a bulleted list in the order of the file, those covering
+aspects opening with the aspect, and what a part holds goes inside it.
+PREP tells the point, what is under it as the file has it, and the point
+again."
   (let ((out (org-truss-test--render org-truss-test--how-file)))
     (should (string-match-p
              (concat "^Check before every test\n\n"
                      "- Who: The driver's manager\n"
-                     "- When: Before the first run of the day\n"
                      "- Where: In the office or by video call\n"
+                     "- When: Before the first run of the day\n"
                      "- How: As follows\n\n"
                      "  1\\. Meet the driver\n"
                      "  2\\. Read the checker\n\n"
@@ -199,8 +200,8 @@ tells the point, the reasons, the examples, and the point again."
                      "- A checker that works\n"
                      "- Someone to check\n\n"
                      "Tests are safer checked\n\n"
-                     "Alcohol slows reactions\n\n"
                      "A drunk driver crashed last year\n\n"
+                     "Alcohol slows reactions\n\n"
                      "Tests are safer checked\n")
              out)))
   (let* ((org-truss-language 'ja)
@@ -211,14 +212,51 @@ tells the point, the reasons, the examples, and the point again."
                  "^\\*\\*\\* Before the first run"
                  "*** Whoever drives\n:PROPERTIES:\n:TRUSS_ROLE: whom\n:END:\n*** Before the first run"
                  org-truss-test--how-file)))))
-    (should (string-match-p "^- 誰が：The driver's manager\n- 誰に：Whoever drives\n- いつ：" out))))
+    (should (string-match-p (concat "^- 誰が：The driver's manager\n- どこで：In the office or by video call\n"
+                                    "- 誰に：Whoever drives\n- いつ：")
+                            out))))
 
-(ert-deftest org-truss-test-render-a-telling-on-a-member ()
-  "A telling pattern on a member tells what is under it in the order of its
-places, and the member itself at its own: SCQA's answer last, its title in
-bold since its support comes first; what fills no place comes with the
-last place.  SDS says the member, the details, and the member again."
-  (let* ((text "* M
+(ert-deftest org-truss-test-render-aspects-of-reasons ()
+  "Reasons covering aspects open with the aspect, as parts do, whatever the
+logic: the reader is told which part of the breakdown each is.  What
+covers none is told as written."
+  (let ((text "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** We move to fortnightly reviews
+:PROPERTIES:
+:CUSTOM_ID: move
+:TRUSS_ASPECTS: pros-cons
+:END:
+*** Less time in meetings
+:PROPERTIES:
+:TRUSS_ROLE: pros
+:END:
+*** Items wait longer
+:PROPERTIES:
+:TRUSS_ROLE: cons
+:END:
+#+begin_public Slower answers
+Some items wait a week more.
+#+end_public
+*** Robin likes it
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+- [[#move]]
+"))
+    (should (string-match-p
+             (concat "^We move to fortnightly reviews\n\n"
+                     "Pros: Less time in meetings\n\n"
+                     "\\* Cons: Slower answers\nSome items wait a week more\\.\n\n"
+                     "Robin likes it\n")
+             (org-truss-test--render text)))
+    (let ((org-truss-language 'ja))
+      (should (string-match-p "^メリット：Less time in meetings$" (org-truss-test--render text))))))
+
+(defconst org-truss-test--telling-text "* M
 :PROPERTIES:
 :TRUSS_PART: members
 :END:
@@ -249,19 +287,59 @@ We move to fortnightly reviews.
 :END:
 ** Now
 - [[#move]]
-")
-         (out (org-truss-test--render text)))
+"
+  "A member told by SCQA, what is under it written out of the pattern's order.")
+
+(ert-deftest org-truss-test-render-a-telling-on-a-member ()
+  "What is under a member is told in the order of the file, whatever its
+telling pattern; the pattern puts the member itself before it or after:
+SCQA's answer after, its title in bold since its support comes first.
+What comes below one the pattern tells after it is out of order, for the
+file to be put right.  SDS tells the member, the details, and the member
+again."
+  (let ((out (org-truss-test--render org-truss-test--telling-text)))
     (should (string-match-p
-             (concat "^Reviews are weekly\n\nHalf the items repeat\n\nShould we keep meeting weekly\n\n"
-                     "Robin agrees\n\n\\*Fortnightly\\*\nWe move to fortnightly reviews\\.\n")
+             (concat "^Should we keep meeting weekly\n\nHalf the items repeat\n\nRobin agrees\n\n"
+                     "Reviews are weekly\n\n\\*Fortnightly\\*\nWe move to fortnightly reviews\\.\n")
              out))
-    (should-not (string-match-p "^\\*+ Fortnightly" out))
-    (let ((out (org-truss-test--render (replace-regexp-in-string "scqa" "sds" text))))
-      (should (string-match-p
-               (concat "^\\*\\* Fortnightly\nWe move to fortnightly reviews\\.\n\n"
-                       "Should we keep meeting weekly\n\nHalf the items repeat\n\nRobin agrees\n\n"
-                       "Reviews are weekly\n\nWe move to fortnightly reviews\\.\n")
-               out)))))
+    (should-not (string-match-p "^\\*+ Fortnightly" out)))
+  (org-truss-test--with org-truss-test--telling-text
+    (should (equal (mapcar (lambda (o) (org-truss-member-label (car o)))
+                           (plist-get (org-truss-checks (org-truss-read)) :out-of-order))
+                   '("Half the items repeat" "Reviews are weekly"))))
+  (let ((out (org-truss-test--render
+              (replace-regexp-in-string "scqa" "sds" org-truss-test--telling-text))))
+    (should (string-match-p
+             (concat "^\\*\\* Fortnightly\nWe move to fortnightly reviews\\.\n\n"
+                     "Should we keep meeting weekly\n\nHalf the items repeat\n\nRobin agrees\n\n"
+                     "Reviews are weekly\n\nWe move to fortnightly reviews\\.\n")
+             out))))
+
+(ert-deftest org-truss-test-render-opening-and-closing ()
+  "A member PREP or SDS opens with and closes with again is told in its
+opening block where it opens, and in its closing block where it closes;
+where it has neither, in its public block, which is so told in both."
+  (let ((told (lambda (blocks)
+                (let ((out (org-truss-test--render
+                            (replace-regexp-in-string
+                             "#\\+begin_public Fortnightly\nWe move to fortnightly reviews\\.\n#\\+end_public\n"
+                             blocks
+                             (replace-regexp-in-string "scqa" "sds" org-truss-test--telling-text)
+                             t t))))
+                  (and (string-match "\\* Now\n\n\\(\\(?:.\\|\n\\)*?\\)\n\nShould we" out)
+                       (list (match-string 1 out)
+                             (car (last (split-string (string-trim out) "\n\n")))))))))
+    (should (equal (funcall told "#+begin_public\nWe move.\n#+end_public\n")
+                   '("We move." "We move.")))
+    (should (equal (funcall told (concat "#+begin_opening\nIn short, we move.\n#+end_opening\n"
+                                         "#+begin_closing\nSo we move.\n#+end_closing\n"))
+                   '("In short, we move." "So we move.")))
+    (should (equal (funcall told (concat "#+begin_opening\nIn short, we move.\n#+end_opening\n"
+                                         "#+begin_public\nWe move.\n#+end_public\n"))
+                   '("In short, we move." "We move.")))
+    (should (equal (funcall told (concat "#+begin_public\nWe move.\n#+end_public\n"
+                                         "#+begin_closing\nSo we move.\n#+end_closing\n"))
+                   '("We move." "So we move.")))))
 
 (ert-deftest org-truss-test-export-writes-files ()
   "The Org file is always written; the Markdown one when pandoc is there."

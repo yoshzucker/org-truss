@@ -1621,6 +1621,96 @@ asks for a field, and on a fact of a cluster writes the next one."
       (should (equal (org-truss-test--parent-label source "The check may be made by phone")
                      '("The manager checks every driver before and after driving" . 4))))))
 
+(ert-deftest org-truss-test-board-shows-what-is-unfinished ()
+  "A section the file has too late is marked, saying which it is below; it
+is listed with the placeholders and the empty sections under the
+structure, a member placeholder under the members, its heading marked."
+  (org-truss-test--with-board org-truss-test--unfinished-file
+    (let ((text (buffer-string)))
+      (should (string-match-p "^ ├ Sky ⚠[ ·]+空 " text))
+      (should (equal (get-text-property (string-match "^ ├ Sky ⚠" text) 'help-echo text)
+                     "Sky, Rain, Umbrella tells it before Rain, which is above it in the file"))
+      (should (string-match-p "^ Out of order\n   Sky[ ·]+空 +below Rain$" text))
+      (should (string-match-p "^ Placeholders\n   Rain[ ·]+Rain +Rain\n   Umbrella[ ·]+Umbrella +Umbrella$"
+                              text))
+      (should (string-match-p "^ Empty sections\n   Sky[ ·]+空 +Where we stand\n   no role[ ·]+Notes for later" text))
+      (should (string-match-p "^ Placeholders\n   bare[ ·]+Reason +Reason\n   bare[ ·]+Example" text))
+      (should (eq (get-text-property (string-match "Reason +Reason" text) 'face text)
+                  'org-truss-attention)))))
+
+(ert-deftest org-truss-test-board-tells-aspects-of-reasons ()
+  "In the structure a reason covering an aspect shows it on the right, as
+the reader is told it."
+  (org-truss-test--with-board "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** We move
+:PROPERTIES:
+:CUSTOM_ID: move
+:TRUSS_ASPECTS: pros-cons
+:END:
+*** Less time in meetings
+:PROPERTIES:
+:TRUSS_ROLE: pros
+:END:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+- [[#move]]
+"
+    (org-truss-test--goto-told-line-with "Less time in meetings")
+    (should (string-match-p "Less time in meetings +Pros: Less time in meetings$"
+                            (buffer-substring (point) (line-end-position))))))
+
+(ert-deftest org-truss-test-board-tells-a-conclusion-last ()
+  "In the structure, a member told after what is under it has its words on
+a line below it, named for its place, as the document tells it; an arrow
+runs down to them from its own line, beside what is under it.  An arrow
+inside another keeps both."
+  (let ((text "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** We move to fortnightly reviews
+:PROPERTIES:
+:CUSTOM_ID: move
+:TRUSS_TELLING: scqa
+:END:
+#+begin_closing
+So we hold the review every other week.
+#+end_closing
+*** Reviews are weekly
+:PROPERTIES:
+:TRUSS_ROLE: situation
+:END:
+*** Half the items repeat
+:PROPERTIES:
+:TRUSS_ROLE: complication
+:TRUSS_TELLING: last
+:END:
+**** The agenda diff shows it
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+- [[#move]]
+"))
+    (org-truss-test--with-board text
+      (org-truss-test--goto-told-line-with "claim[ ·]+We move")
+      (let ((told (buffer-substring (point) (point-max))))
+        (should (string-match-p
+                 (concat "We move to fortnightly reviews +┐\n"
+                         ".*(why › reasons, tell › SCQA) +│\n"
+                         ".*Reviews are weekly +│ Reviews are weekly\n"
+                         ".*Half the items repeat +│ ┐\n"
+                         ".*(why › reasons, tell › conclusion last) +│ │\n"
+                         ".*The agenda diff shows it +│ │ The agenda diff shows it\n"
+                         " +conclusion +│ └→ Half the items repeat\n"
+                         " +answer +└→ So we hold the review every other week\\.\n")
+                 told))))))
+
 (provide 'org-truss-board-test)
 
 ;;; org-truss-board-test.el ends here

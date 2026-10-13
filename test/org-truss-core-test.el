@@ -442,10 +442,12 @@ against it is still an objection, and what is under a step supports the step."
       (should-not (plist-get (org-truss-checks model) :bare)))))
 
 (ert-deftest org-truss-test-how-and-telling ()
-  "Parts and steps say how.  Parts that cover aspects are told in the order
-of the aspects, and an aspect none covers is a gap.  A telling pattern sits
-beside a logic pattern and asks for the places what is under it fills: not
-its point, which is the member itself, nor the point said again."
+  "Parts and steps say how, in the order of the file, aspects or not, and
+an aspect none covers is a gap.  A telling pattern sits beside a logic
+pattern and asks for the places what is under it fills: not its point,
+which is the member itself, nor the point told again.  What fills them is
+told in the order of the file, and what comes below one the pattern tells
+after it is out of order."
   (org-truss-test--with org-truss-test--how-file
     (let* ((model (org-truss-read))
            (kind (lambda (label) (org-truss-member-kind model (org-truss-test--m model label))))
@@ -456,11 +458,17 @@ its point, which is the member itself, nor the point said again."
       (should (eq (funcall kind "Meet the driver") 'step))
       (should (eq (funcall kind "As follows") 'part))
       (should (equal (org-truss-test--labels (org-truss-how-children check))
-                     '("The driver's manager" "Before the first run of the day"
-                       "In the office or by video call" "As follows")))
+                     '("The driver's manager" "In the office or by video call"
+                       "Before the first run of the day" "As follows")))
       (should (equal (org-truss-gaps check) '((what . 1) (why . 1))))
       (should (equal (org-truss-asked-roles safer) '(reason example)))
-      (should-not (org-truss-gaps safer))))
+      (should-not (org-truss-gaps safer))
+      (should (org-truss-told-first-p safer))
+      (should (org-truss-told-again-p safer))
+      (should (equal (mapcar (lambda (o) (cons (org-truss-member-label (car o))
+                                               (org-truss-member-label (cdr o))))
+                             (plist-get (org-truss-checks model) :out-of-order))
+                     '(("Alcohol slows reactions" . "A drunk driver crashed last year"))))))
   (org-truss-test--with (replace-regexp-in-string
                          ":TRUSS_TELLING: prep" ":TRUSS_LOGIC: deduction\n:TRUSS_TELLING: prep"
                          org-truss-test--how-file)
@@ -508,6 +516,90 @@ place for each pattern that asks."
 
 (defun org-truss-test--section-labels (section)
   (mapcar #'org-truss-section-label (org-truss-section-children section)))
+
+(defconst org-truss-test--unfinished-file "#+title: T
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Move to fortnightly
+:PROPERTIES:
+:CUSTOM_ID: m1
+:TRUSS_TELLING: prep
+:END:
+*** Reason
+:PROPERTIES:
+:TRUSS_ROLE: reason
+:END:
+*** 理由は会議が短くなること
+:PROPERTIES:
+:TRUSS_ROLE: reason
+:END:
+*** Example
+** Example
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:TRUSS_TELLING: sky-rain-umbrella
+:END:
+** Rain
+:PROPERTIES:
+:TRUSS_ROLE: rain
+:END:
+- [[#m1]]
+** 空
+:PROPERTIES:
+:TRUSS_ROLE: sky
+:END:
+#+begin_public Where we stand
+#+end_public
+** Umbrella
+:PROPERTIES:
+:TRUSS_ROLE: umbrella
+:END:
+#+begin_public
+Meet every other week.
+#+end_public
+** Notes for later
+"
+  "A file part written: a placeholder or two, sections out of order, one empty.")
+
+(ert-deftest org-truss-test-placeholders ()
+  "A heading still called what its place is called, in either language, is
+a placeholder: one it fills, or one the pattern above it names.  A
+section is judged by the title the reader is given.  A heading that only
+happens to be a role's name elsewhere is not."
+  (org-truss-test--with org-truss-test--unfinished-file
+    (let* ((model (org-truss-read))
+           (checks (org-truss-checks model)))
+      (should (equal (mapcar (lambda (c) (if (org-truss-section-p c)
+                                             (org-truss-section-label c)
+                                           (org-truss-member-label c)))
+                             (plist-get checks :placeholders))
+                     '("Reason" "Example" "Rain" "Umbrella"))))))
+
+(ert-deftest org-truss-test-sections-out-of-order ()
+  "A section the file has below one its parent's telling pattern tells after
+it is out of order, since the document follows the file.  A section in no
+place is not judged."
+  (org-truss-test--with org-truss-test--unfinished-file
+    (let ((late (plist-get (org-truss-checks (org-truss-read)) :out-of-order)))
+      (should (equal (mapcar (lambda (o) (cons (org-truss-section-label (car o))
+                                               (org-truss-section-label (cdr o))))
+                             late)
+                     '(("空" . "Rain"))))))
+  (should (string-match-p
+           "Out of order --.*\n.*: 空 -- below Rain, which TRUSS_TELLING tells after it"
+           (org-truss-test--with org-truss-test--unfinished-file
+             (org-truss-check-report (org-truss-read) "truss.org")))))
+
+(ert-deftest org-truss-test-empty-sections ()
+  "A section with no lead, no member listed and no section below gives the
+reader its title alone.  A public title is not a lead."
+  (org-truss-test--with org-truss-test--unfinished-file
+    (should (equal (mapcar #'org-truss-section-label
+                           (plist-get (org-truss-checks (org-truss-read)) :empty-sections))
+                   '("空" "Notes for later")))))
 
 ;;;; Reading
 

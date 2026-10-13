@@ -252,18 +252,47 @@ so that nothing is left out -- MECE's collectively exhaustive half -- and
 each member under the cluster covers one of them, the other half.  They go
 with reasons, steps and parts, the joints that are sets; a deduction's
 premises and an induction's cases are what they are by their places, and
-take none.  A part covering an aspect is written out labelled with it, in
-the order of the aspects.
+take none.  A member covering an aspect is written out labelled with it --
+/Pros:/, /Who:/ -- whatever the logic.
 
 A telling pattern is a framework of telling, which says nothing of what is
 told: its places in order.  On a member, the place that is its point --
 PREP's point, SCQA's answer, the umbrella -- is the member itself, the
 claim at the head of the pyramid, and the rest are filled by what is under
-it; PREP and SDS say the point again at the end.  A section says nothing
-itself, so on a section every place is a section.  /Conclusion first/
-tells a member as it is written, itself and then what is under it, the
-pyramid read top down; /conclusion last/ turns it over.  A member with no
-telling pattern is told conclusion first.
+it; PREP and SDS tell the point again at the end.  A section says nothing
+itself, so on a section every place is a section.
+
+What fills the places is told in the order of the file, as everything in
+the document is: the order the headings are written in is the order the
+reader meets them, and the board shows it so.  What the file has below a
+heading the pattern tells after it is marked =⚠= and listed /Out of
+order/, to be moved in the file.  The one thing a pattern does that the
+file cannot is put a member after what is nested under it, since an
+outline always has a heading above what is under it: /conclusion first/
+tells a member and then what is under it, the pyramid read top down, as
+PREP, SDS and a member with no telling pattern do; /conclusion last/,
+SCQA and Sky, Rain, Umbrella tell it after.
+
+Where PREP or SDS tells the point again, the words can differ: a member's
+=#+begin_opening= block says what it is told in where it opens, and its
+=#+begin_closing= block where it closes.  Each, when it is not written,
+is the public block -- or the words the section listing the member tells
+it in, or its heading -- so with neither, the point is told twice in the
+same words.  A conclusion told last is told in its closing block, one
+told first in its opening block, when it has one.
+
+#+begin_src org
+,** We move to fortnightly reviews
+:PROPERTIES:
+:TRUSS_TELLING: prep
+:END:
+,#+begin_opening
+We should hold the review every other week.
+,#+end_opening
+,#+begin_closing
+So: every other week, starting next month.
+,#+end_closing
+#+end_src
 
 | On the board                    | Kind    | Gives                                                        |
 |---------------------------------+---------+--------------------------------------------------------------|
@@ -303,7 +332,8 @@ and takes one of a kind off.  What the pattern asks for and is not there
 is put in, a heading for each place named for it, to be written over: a
 deduction's premises, a PREP's reason and example, a 6W1H's seven.  On a
 section, a telling pattern first takes the sections there into its places
-by their roles.  ~o~ tells a member last, or one told last first.
+by their roles, and puts them in its order in the file.  ~o~ tells a
+member last, or one told last first.
 
 Premises are asked of the structure as soon as an assumption is in use in
 a document, whatever its patterns: a reader is owed what the argument
@@ -515,8 +545,7 @@ The check runs as follows.
 
 The joins between members are seldom the structure's to write either: a
 member's pattern says how what is under it joins it -- steps numbered,
-parts labelled with the aspects they cover -- and the document is written
-so.  Whatever could be
+what covers an aspect labelled with it -- and the document is written so.  Whatever could be
 wrong is a member, where the checks reach it.
 
 A member told with the one above it -- a step, a part, a reason -- has no
@@ -709,20 +738,43 @@ section that fills it.
 In the structure the right is what the reader sees of the line, so the
 document can be read down the page, and a member brings with it only what
 the document tells: what is nested under a member of the members, and
-nothing under a member of the subject.  What it stands on and what it
-lacks are drawn where it is worked on, among the members.
+nothing under a member of the subject.  A member PREP or SDS tells again
+has a line /again/ after what is under it, with the words it closes with.
+A member told after what is under it -- conclusion last, SCQA's answer,
+the umbrella -- has its words there too, on a line named for its place,
+and an arrow runs down the right to them from its own line:
+
+#+begin_example
+   claim ················· 会議を隔週にする               ┐
+   (why › reasons, tell › SCQA)                           │
+   ├ bare  [Situation] ··· 毎週レビュー会議をしている     │ 毎週レビュー会議をしている
+   ├ bare  [Complication]  議題の半分が前週の繰り返し     │ 議題の半分が前週の繰り返し
+   └ bare  [Question] ···· 頻度を変えるべきか             │ 頻度を変えるべきか
+     answer                                               └→ 会議を隔週にする
+#+end_example
+
+What it stands on and what it lacks are drawn where it is worked on,
+among the members.
 
 Each part is followed by what is left to do in it.  Under the subject:
 /Unmet constraints/; facts with /No source/; its /Open questions/ and
 /Assumptions/; /Pattern gaps/; members with /No aspect/ of the cluster
-above; and what is /Misplaced/ there.  Under the
+above; /Placeholders/; and what is /Misplaced/ there.  Under the
 members: what is /Not placed/, or used /Only as grounds/; /Bare/ members;
 their /Open questions/, /Assumptions/ and /Unanswered objections/;
-/Pattern gaps/; /No aspect/; what is /Misplaced/ there; and /Broken
-grounds/.  Under the structure: its /Pattern gaps/ -- the structure, or a
-section, with the places its patterns ask for and no section right below
-fills -- /Broken links/, and /Duplicate ids/.  The mouse on the name of a check
-says what it finds.
+/Pattern gaps/; /No aspect/; members /Out of order/; /Placeholders/; what
+is /Misplaced/ there; and /Broken grounds/.  Under the structure: its /Pattern gaps/ -- the
+structure, or a section, with the places its patterns ask for and no
+section right below fills -- sections /Out of order/, /Placeholders/,
+/Empty sections/, /Broken links/, and /Duplicate ids/.  The mouse on the
+name of a check says what it finds.
+
+A placeholder is a heading still called what its place is called -- the
+name ~p~ gave a heading it put in for a place, /Reason/, /雨/ -- which the
+reader would meet as it is.  An empty section has no text in its public
+block, no member listed and no section below: the document would show its
+title alone.  The checks only say so; what to do about either is written
+in the file.
 
 A member is checked when the document uses it: placed in a section, or
 the ground of one placed.  Until the structure tells anything -- a
@@ -740,19 +792,21 @@ logic and telling patterns, as ~p~ offers them; a member's logic pattern
 and where it is told.  A member with members under it always has the
 line, so what they are to it shows even where no ~TRUSS_LOGIC~ is written
 -- /why › reasons/, whose tooltip says it is not written.  A step or a part shows on the right the number, the
-bullet or the label the reader will see it with.  A
-section marked =⚠= does not fit its parent's pattern: none of the pattern's
-places asks its questions, or more than one does.  The mark's tooltip, or
-~C-h .~ on the line, says which.
+bullet or the label the reader will see it with, and a reason the label
+of the aspect it covers.  A section marked =⚠= does not fit its parent's
+pattern: none of the pattern's places asks its questions, or more than one
+does -- or it comes below a section the pattern tells after it.  The
+document gives sections in the order of the file, so the order is put
+right there.  The mark's tooltip, or ~C-h .~ on the line, says which.
 
 What the reader sees is the words the section tells a member in, when it
 has some; else the title of the line's public block, or the start of the
 block's text when it has no title, or else its heading -- for a section,
 its heading in the document; /noexport/ when the reader sees nothing of it.
-A section whose title is still the name its parent's pattern gave the
-place -- /Rain/, /雨/ -- is drawn there in the warning face, since the
-reader would meet the pattern's word for it rather than a title; its
-tooltip says so.  On the /Structure/ line is the structure's own lead.  What becomes a heading in the document -- a section's title,
+A placeholder is drawn in the warning face, since the reader would meet
+the pattern's word for its place rather than words of its own: a section's
+title on the right, a member's heading in the middle; its tooltip says
+so.  On the /Structure/ line is the structure's own lead.  What becomes a heading in the document -- a section's title,
 a member's public title -- is drawn as one; what becomes body text, in the
 faint face the notes in the middle take.  The brief is the reader's only
 through the title.  Under the title come the fields of the

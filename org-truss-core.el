@@ -226,13 +226,16 @@ for the board, what it asks for.  A pattern is of one of three kinds, its
            out -- on reasons, steps or parts.  Each part is labelled with
            the aspect it covers, and comes in the order they are listed.
 `telling'  TRUSS_TELLING: how it is told, as the places of a framework, in
-           order, its :places.  A place is (ROLE . FLAGS).  On a member
-           the place flagged :point is the member itself, and one flagged
-           :again is it said once more; on a section, which says nothing
-           itself, each is a section.  A place flagged :any takes, besides
-           its own, what has no place in the pattern; one flagged
-           :optional is not asked for.  A member with no telling pattern
-           is told as `first' tells it.
+           order, its :places.  A place is (ROLE . FLAGS).  What fills
+           the places is told in the order of the file, which is checked
+           against theirs.  On a member the place flagged :point is the
+           member itself, told before or after what is under it as the
+           place comes, and one flagged :again is it told once more, at
+           the end; see `org-truss-member-told'.  On a section, which
+           says nothing itself, each place is a section's.  A place
+           flagged :any takes, besides its own, what has no place in the
+           pattern; one flagged :optional is not asked for.  A member
+           with no telling pattern is told as `first' tells it.
 
 A pattern lists the :roles what is right under the cluster fills, the
 TRUSS_ROLE of each, and :at-least for roles that need more than one; a
@@ -282,14 +285,14 @@ The label of a part covering it, or the heading of a section made for it."
   "Return the places of the telling pattern ID, each (ROLE . FLAGS)."
   (plist-get (org-truss-pattern id) :places))
 
-(defun org-truss-place-name-p (id name)
-  "Non-nil when NAME is what the telling pattern ID calls one of its places.
-In either language: the heading the pattern gave a section it made, which
-names the place in the pattern, not what the reader finds there."
-  (seq-some (lambda (place)
-              (let ((entry (alist-get (car place) org-truss-roles)))
+(defun org-truss-role-name-p (roles name)
+  "Non-nil when NAME is what one of ROLES is called, in either language.
+That is the heading a pattern gives a place it puts in, which names the
+place in the pattern, not what the reader finds there."
+  (seq-some (lambda (role)
+              (let ((entry (alist-get role org-truss-roles)))
                 (and entry (member name (list (nth 0 entry) (nth 1 entry))))))
-            (org-truss-pattern-places id)))
+            roles))
 
 (defun org-truss-patterns-of-kind (kind)
   "Return the ids of the patterns of KIND: `logic', `aspects' or `telling'.
@@ -335,6 +338,12 @@ cases are what they are by their places, and cover nothing besides."
 (defconst org-truss--public-begin-re
   "^[ \t]*#\\+begin_public\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$")
 (defconst org-truss--public-end-re "^[ \t]*#\\+end_public[ \t]*$")
+(defconst org-truss--reader-block-re
+  "^[ \t]*#\\+begin_\\(public\\|opening\\|closing\\)\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$"
+  "The first line of a block of what the reader is told: its name, its title.
+A public block says what the reader sees of the heading.  On a member, an
+opening block says it where its telling pattern opens with the member,
+and a closing block where it closes with it again, as PREP and SDS do.")
 (defconst org-truss--properties-re "^[ \t]*:PROPERTIES:[ \t]*$")
 (defconst org-truss--drawer-re "^[ \t]*:[[:alnum:]_-]+:[ \t]*$")
 (defconst org-truss--end-re "^[ \t]*:END:[ \t]*$")
@@ -379,16 +388,23 @@ Own text runs from the line after the heading to the next heading of any level."
 Return a plist:
   :props   property drawer as an ordered alist
   :public  (TITLE . BODY) of the first public block, or nil
-  :public-raw  that block as written
-  :links   references of every link to a member outside drawers and the
-           public block; see `org-truss--ref'
+  :opening, :closing  the same of the first opening and closing block
+  :public-raw  those blocks as written
+  :links   references of every link to a member outside drawers and those
+           blocks; see `org-truss--ref'
   :items   references of the link-only list items, the ones edits move
   :wordings  (REF . DESCRIPTION) for those items whose link has a description
   :drawers drawers other than the property drawer, as written
   :notes   everything else, as written"
-  (let ((case-fold-search t)
-        (state 'text)
-        props public title body public-raw links items wordings drawers notes)
+  (let* ((case-fold-search t)
+         (state 'text)
+         props blocks block title body public-raw links items wordings drawers notes
+         ;; The block read so far, as (NAME TITLE . BODY); one left open
+         ;; runs to the end of the own text.
+         (closed (lambda ()
+                   (cons (intern block)
+                         (cons title (string-trim (string-join (reverse body) "\n")
+                                                  "\n*" "[ \t\n]*"))))))
     (save-excursion
       (goto-char start)
       (while (< (point) end)
@@ -405,20 +421,22 @@ Return a plist:
              (push raw drawers)
              (when (string-match-p org-truss--end-re line)
                (setq state 'text)))
-            ('public
+            ('block
              (push raw public-raw)
-             (if (string-match-p org-truss--public-end-re line)
-                 (setq state 'text)
+             (if (string-match-p (format "^[ \t]*#\\+end_%s[ \t]*$" block) line)
+                 (progn (push (funcall closed) blocks)
+                        (setq state 'text body nil))
                (push line body)))
             (_
              (cond
               ((string-match-p org-truss--properties-re line)
                (setq state 'properties))
-              ((and (not public) (string-match org-truss--public-begin-re line))
-               (setq title (let ((s (match-string 1 line)))
+              ((and (string-match org-truss--reader-block-re line)
+                    (not (assq (intern (match-string 1 line)) blocks)))
+               (setq block (match-string 1 line)
+                     title (let ((s (match-string 2 line)))
                              (and s (not (string-blank-p s)) (string-trim s)))
-                     public t
-                     state 'public)
+                     state 'block)
                (push raw public-raw))
               ((and (string-match-p org-truss--drawer-re line)
                     (not (string-match-p org-truss--end-re line)))
@@ -435,12 +453,13 @@ Return a plist:
                (push raw notes)
                (dolist (ref (org-truss--refs-in line))
                  (push ref links))))))
-          (forward-line 1))))
+          (forward-line 1)))
+      (when (eq state 'block)
+        (push (funcall closed) blocks)))
     (list :props (nreverse props)
-          :public (and public
-                       (cons title
-                             (string-trim (string-join (nreverse body) "\n")
-                                          "\n*" "[ \t\n]*")))
+          :public (cdr (assq 'public blocks))
+          :opening (cdr (assq 'opening blocks))
+          :closing (cdr (assq 'closing blocks))
           :public-raw (apply #'concat (nreverse public-raw))
           :links (nreverse links)
           :items (nreverse items)
@@ -491,12 +510,12 @@ A link stays as it is where the heading has no attachments to find."
                      words))))
        text t t))))
 
-(defun org-truss--read-public (own)
-  "Return the public block of OWN, a parse of the heading at point, as read.
-Its body with links to attachments as file links; see
-`org-truss--attachments-as-files'."
-  (let ((public (plist-get own :public)))
-    (and public (cons (car public) (org-truss--attachments-as-files (cdr public))))))
+(defun org-truss--read-block (own key)
+  "Return the block KEY of OWN, a parse of the heading at point, as read.
+KEY is :public, :opening or :closing.  Its body with links to attachments
+as file links; see `org-truss--attachments-as-files'."
+  (let ((block (plist-get own key)))
+    (and block (cons (car block) (org-truss--attachments-as-files (cdr block))))))
 
 (defun org-truss--read-notes (own)
   "Return the notes of OWN, a parse of the heading at point, as read.
@@ -586,8 +605,11 @@ the sections below a section."
 HOME is the part it is written in: `members', or `subject' or `brief' for
 one written under a field of theirs.  ID is its CUSTOM_ID, by which links
 and grounds point to it, or nil when nothing has pointed to it yet.
-GROUNDS are the references of its TRUSS_GROUNDS."
-  id tags source grounds confirm home)
+GROUNDS are the references of its TRUSS_GROUNDS.  OPENING and CLOSING are
+what its opening and closing blocks say, (TITLE . BODY): the words it is
+told in where its telling pattern opens with it, and where it closes with
+it again."
+  id tags source grounds confirm home opening closing)
 
 (cl-defstruct (org-truss-section (:include org-truss-cluster)
                                  (:constructor org-truss--make-section)
@@ -633,7 +655,9 @@ none written, its support."
        :telling (org-truss--intern (org-entry-get nil "TRUSS_TELLING"))
        :roles (org-truss--roles (org-entry-get nil "TRUSS_ROLE"))
        :confirm (org-entry-get nil "TRUSS_CONFIRM")
-       :public (org-truss--read-public own)
+       :public (org-truss--read-block own :public)
+       :opening (org-truss--read-block own :opening)
+       :closing (org-truss--read-block own :closing)
        :notes (org-truss--read-notes own)
        :home home
        :children (mapcar (lambda (child) (org-truss--read-member child home)) children)))))
@@ -650,7 +674,7 @@ none written, its support."
        :logic (org-truss--intern (org-entry-get nil "TRUSS_LOGIC"))
        :aspects (org-truss--intern (org-entry-get nil "TRUSS_ASPECTS"))
        :telling (org-truss--intern (org-entry-get nil "TRUSS_TELLING"))
-       :public (org-truss--read-public own)
+       :public (org-truss--read-block own :public)
        :notes (org-truss--read-notes own)
        :links (plist-get own :links)
        :wordings (plist-get own :wordings)
@@ -800,11 +824,9 @@ its support, why › reasons."
 (defun org-truss-how-children (member)
   "Return what says how to do MEMBER, in the order the reader is told it.
 That is what is nested under it, but for what argues against it, when it
-says how; parts that cover aspects come in the order of the aspects."
+says how, in the order of the file."
   (when (org-truss-how-p member)
-    (let ((how (org-truss--joined-under member))
-          (aspects (org-truss-aspect-roles member)))
-      (if aspects (org-truss--by-role how aspects) how))))
+    (org-truss--joined-under member)))
 
 (defun org-truss-aspect-of (member child)
   "Return the aspect CHILD covers of those MEMBER must cover, or nil."
@@ -910,6 +932,37 @@ a section's."
         places
       (seq-remove #'org-truss--own-place-p places))))
 
+(defun org-truss-told-first-p (member)
+  "Non-nil when MEMBER is told before what is under it.
+Its telling pattern says where its point goes: before the places what is
+under it fills, as conclusion first, PREP and SDS put it, or after them,
+as conclusion last, SCQA and Sky, Rain, Umbrella do.  That is all a
+telling pattern changes in the order of the file, which cannot put a
+heading after what is nested under it.  With no telling pattern, first."
+  (let* ((places (org-truss-pattern-places (or (org-truss-member-telling member) 'first)))
+         (point (cl-position-if (lambda (place) (memq :point (cdr place))) places))
+         (other (cl-position-if (lambda (place) (not (org-truss--own-place-p place))) places)))
+    (or (null point) (null other) (< point other))))
+
+(defun org-truss-told-again-p (member)
+  "Non-nil when MEMBER's telling pattern closes by telling it again.
+As PREP and SDS do, after what is under it."
+  (seq-some (lambda (place) (memq :again (cdr place)))
+            (org-truss-pattern-places (org-truss-member-telling member))))
+
+(defun org-truss-member-told (member where &optional wording)
+  "Return what the reader is told of MEMBER, as (TITLE . BODY), or nil.
+WHERE is `before' or `after' what is under it, as its telling pattern puts
+it; it is told after once more when the pattern closes with it again.  Its
+opening block before, and its closing block after, when it has them; else
+WORDING, the words the section listing it tells it in, when given; else
+its public block, or its heading.  Nil when it is tagged :noexport:."
+  (cond ((org-truss-noexport-p member) nil)
+        ((and (eq where 'before) (org-truss-member-opening member)))
+        ((and (eq where 'after) (org-truss-member-closing member)))
+        (wording (cons nil wording))
+        (t (org-truss-member-shown member))))
+
 (defun org-truss-asked-roles (cluster)
   "Return the roles CLUSTER's patterns ask of what is right under it, in order.
 The places its logic pattern names, the aspects it must cover, and the
@@ -919,17 +972,6 @@ the pattern does not ask for."
                     (org-truss-aspect-roles cluster)
                     (mapcar #'car (seq-remove (lambda (place) (memq :optional (cdr place)))
                                               (org-truss-places-under cluster))))))
-
-(defun org-truss--by-role (clusters roles)
-  "Return CLUSTERS ordered by where the first of their roles comes in ROLES.
-Those with none of ROLES come after; clusters of one place keep their order."
-  (let ((rank (lambda (m)
-                (or (seq-min (or (delq nil (mapcar (lambda (r) (seq-position roles r))
-                                                   (org-truss-cluster-roles m)))
-                                 (list (length roles))))
-                    (length roles)))))
-    (sort (copy-sequence clusters)
-          (lambda (a b) (< (funcall rank a) (funcall rank b))))))
 
 (defun org-truss--joined-under (cluster)
   "Return what is right under CLUSTER that its logic joins to it.
@@ -974,6 +1016,22 @@ what covers none is outside it."
          (seq-remove (lambda (c) (seq-intersection (org-truss-cluster-roles c) aspects))
                      (org-truss--joined-under cluster)))))
 
+(defun org-truss-placeholder-p (cluster parent)
+  "Non-nil when CLUSTER is still called what its place is called.
+That is how `org-truss-add-places' names a heading it puts in: the name,
+in either language, of a role CLUSTER fills or of a place the patterns of
+PARENT, the cluster above it, name.  For a section, what is compared is
+the title the reader is given; for a member, its heading."
+  (org-truss-role-name-p
+   (append (org-truss-cluster-roles cluster)
+           (and parent
+                (append (plist-get (org-truss-pattern (org-truss-cluster-logic parent)) :roles)
+                        (org-truss-aspect-roles parent)
+                        (mapcar #'car (org-truss-places-under parent)))))
+   (if (org-truss-section-p cluster)
+       (org-truss-section-title cluster)
+     (org-truss-member-label cluster))))
+
 ;;;; The structure
 
 (defun org-truss-sections (model)
@@ -993,6 +1051,41 @@ what covers none is outside it."
 They are the description of the link that lists it: what the reader is
 told there, while the member's heading stays what it asserts."
   (cdr (assoc ref (org-truss-section-wordings section))))
+
+(defun org-truss-section-title (section)
+  "Return the title SECTION is written under: its public title, or its heading."
+  (let ((title (car (org-truss-section-public section))))
+    (if (and title (not (string-blank-p title)))
+        title
+      (org-truss-section-label section))))
+
+(defun org-truss-out-of-order (cluster)
+  "Return what is right under CLUSTER that comes too late in the file.
+Its telling pattern tells what is under it in the order of its places,
+and the document gives it in the order of the file, so the file is to
+follow the pattern.  Each is (CHILD . ABOVE): ABOVE is a heading above
+CHILD in the file whose place the pattern puts after CHILD's.  A heading
+in no place is not judged here; one in more than one, by the first."
+  (let ((places (mapcar #'car (org-truss-places-under cluster)))
+        (latest nil)
+        (out nil))
+    (dolist (child (org-truss-cluster-children cluster))
+      (let ((at (car (sort (delq nil (mapcar (lambda (role) (seq-position places role))
+                                             (org-truss-cluster-roles child)))
+                           #'<))))
+        (when at
+          (cond ((and latest (< at (car latest)))
+                 (push (cons child (cdr latest)) out))
+                ((or (null latest) (> at (car latest)))
+                 (setq latest (cons at child)))))))
+    (nreverse out)))
+
+(defun org-truss-empty-section-p (section)
+  "Non-nil when SECTION gives the reader nothing but its title.
+No text in its #+begin_public, no member listed, no section below."
+  (and (null (org-truss-section-links section))
+       (null (org-truss-section-children section))
+       (string-blank-p (or (cdr (org-truss-section-public section)) ""))))
 
 (defun org-truss--section-descendants (section)
   "Return the sections below SECTION, depth first."
@@ -1101,6 +1194,11 @@ reader.
                  patterns
 :no-aspect       members under a cluster with aspects that cover none of
                  them
+:out-of-order    (CHILD . ABOVE) for members and sections the file has
+                 below one their parent's telling pattern tells after them
+:placeholders    members and sections still called what their place is
+                 called, as the pattern that put them in named them
+:empty-sections  sections that give the reader nothing but their title
 :misplaced       (MEMBER . WHY) for members in the wrong part
 :broken-links    (SECTION . REF) for links to no member
 :broken-grounds  (MEMBER . REF) for grounds that name no member
@@ -1145,6 +1243,16 @@ reader.
                                          in-use))
           :no-aspect (org-truss--by-position
                       (mapcan (lambda (m) (copy-sequence (org-truss-no-aspect m))) in-use))
+          :out-of-order (append (mapcan #'org-truss-out-of-order (org-truss-model-all model))
+                                (mapcan #'org-truss-out-of-order sections))
+          :placeholders (append (seq-filter (lambda (m)
+                                              (org-truss-placeholder-p m (org-truss-parent model m)))
+                                            (org-truss-model-all model))
+                                (mapcan (lambda (s)
+                                          (seq-filter (lambda (c) (org-truss-placeholder-p c s))
+                                                      (org-truss-section-children s)))
+                                        sections))
+          :empty-sections (seq-filter #'org-truss-empty-section-p (cdr sections))
           :misplaced (org-truss-misplaced model)
           :broken-links (mapcan (lambda (s)
                                   (mapcar (lambda (ref) (cons s ref))
@@ -1173,6 +1281,12 @@ reader.
      . "roles the TRUSS_LOGIC, TRUSS_ASPECTS or TRUSS_TELLING of a cluster asks for that no heading right under it fills by its TRUSS_ROLE; the Structure asks for premises too once an assumption is in use")
     ("No aspect"
      . "members under a cluster with TRUSS_ASPECTS whose TRUSS_ROLE covers none of them: outside the breakdown")
+    ("Out of order"
+     . "headings the file has below one that the TRUSS_TELLING of the heading above tells after them; the document follows the file, so move them there")
+    ("Placeholders"
+     . "headings still called what their place in a pattern is called, as p named them: rewrite a member's heading, or a section's title, in words of its own")
+    ("Empty sections"
+     . "sections with no text in #+begin_public, no member listed and no section below: the document would show their title alone")
     ("No source"
      . "members of Subject in use with no TRUSS_SOURCE and nothing nested under them to sum up")
     ("Bare (no source, no support)"
@@ -1214,6 +1328,11 @@ of the file MODEL was read from."
          (member-line (lambda (m &optional more)
                         (funcall at (org-truss-member-pos m)
                                  (concat (org-truss-member-label m) (if more (concat " -- " more) "")))))
+         (section-line (lambda (s &optional more)
+                         (funcall at (org-truss-section-pos s)
+                                  (concat (org-truss-section-label s) (if more (concat " -- " more) "")))))
+         (cluster-line (lambda (c &optional more)
+                         (funcall (if (org-truss-section-p c) section-line member-line) c more)))
          ;; Roles by the value TRUSS_ROLE takes, so what lacks one can be
          ;; written straight from here.
          (gap-text (lambda (cluster gaps)
@@ -1249,12 +1368,17 @@ of the file MODEL was read from."
            (cons "Pattern gaps"
                  (append (mapcar (lambda (g) (funcall member-line (car g) (funcall gap-text (car g) (cdr g))))
                                  (plist-get checks :member-gaps))
-                         (mapcar (lambda (g)
-                                   (funcall at (org-truss-section-pos (car g))
-                                            (format "%s -- %s" (org-truss-section-label (car g))
-                                                    (funcall gap-text (car g) (cdr g)))))
+                         (mapcar (lambda (g) (funcall section-line (car g) (funcall gap-text (car g) (cdr g))))
                                  (plist-get checks :section-gaps))))
            (cons "No aspect" (mapcar member-line (plist-get checks :no-aspect)))
+           (cons "Out of order"
+                 (mapcar (lambda (o)
+                           (funcall cluster-line (car o)
+                                    (format "below %s, which TRUSS_TELLING tells after it"
+                                            (org-truss-cluster-label (cdr o)))))
+                         (plist-get checks :out-of-order)))
+           (cons "Placeholders" (mapcar cluster-line (plist-get checks :placeholders)))
+           (cons "Empty sections" (mapcar section-line (plist-get checks :empty-sections)))
            (cons "No source" (mapcar member-line findings))
            (cons "Bare (no source, no support)"
                  (mapcar member-line (seq-remove (lambda (m) (memq m findings))

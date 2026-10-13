@@ -45,26 +45,35 @@ do to Chinese, Japanese and Korean text."
 ;;;; Members
 
 (defun org-truss--restatement (shown depth)
-  "Return SHOWN said again, as the last item of a PREP, at DEPTH.
-SHOWN is what the reader sees of the conclusion, as (TITLE . BODY): its
-text as a paragraph, or its title when that is all there is."
+  "Return SHOWN told again, as the last item of a PREP or an SDS, at DEPTH.
+SHOWN is what the reader is told of the member there, as (TITLE . BODY):
+its text as a paragraph, or its title when that is all there is."
   (let ((text (if (string-empty-p (or (cdr shown) "")) (car shown) (cdr shown))))
     (and text (list (list depth (cons nil text) nil)))))
 
-(defun org-truss--flow (member depth &optional wording)
+(defun org-truss--labelled (shown label)
+  "Return SHOWN, (TITLE . BODY), opened with LABEL: its title, else its body."
+  (cond ((or (null label) (string-empty-p label)) shown)
+        ((and (car shown) (not (string-blank-p (car shown))))
+         (cons (concat label (car shown)) (cdr shown)))
+        (t (cons (car shown) (concat label (or (cdr shown) ""))))))
+
+(defun org-truss--flow (member depth &optional wording label)
   "Return (DEPTH SHOWN AFTER-SUPPORT) items for MEMBER and what is under it.
-SHOWN is what the reader sees of it: WORDING when given, the words the
-section listing it tells it in, or else its own.  It is told in the order
-of its telling pattern's places; see `org-truss--tell'.  What says how to
-do it is one item, a list.  A member tagged :noexport: gives nothing, and
-nor does what is nested under it.  A finding gives itself alone: what is
-nested under it is the breakdown it was found with, which a section lists
-by itself if the reader is to see it."
+SHOWN is what the reader sees: of MEMBER, as `org-truss-member-told' says,
+WORDING being the words the section listing it tells it in, and opened
+with LABEL when given, the aspect it covers.  It is told as
+`org-truss--tell' says.  What says how to do it is one item, a list.  A
+member tagged :noexport: gives nothing, and nor does what is nested under
+it.  A finding gives itself alone: what is nested under it is the
+breakdown it was found with, which a section lists by itself if the
+reader is to see it."
   (unless (org-truss-noexport-p member)
-    (let ((shown (if wording (cons nil wording) (org-truss-member-shown member))))
-      (if (org-truss-finding-p member)
-          (list (list depth shown nil))
-        (org-truss--tell member shown depth)))))
+    (if (org-truss-finding-p member)
+        (list (list depth (org-truss--labelled (org-truss-member-told member 'before wording)
+                                               label)
+                    nil))
+      (org-truss--tell member depth wording label))))
 
 (defun org-truss--how-items (member depth)
   "Return what says how to do MEMBER as flow items at DEPTH below it: one list."
@@ -72,54 +81,37 @@ by itself if the reader is to see it."
     (and (not (string-empty-p list))
          (list (list (1+ depth) (cons nil list) nil)))))
 
-(defun org-truss--tell (member shown depth)
-  "Return the flow of MEMBER, at DEPTH and seen as SHOWN, as it is told.
-The places of its telling pattern -- with none, of `first' -- each in
-turn: the one that is the member, it; the one that says it again, it once
-more; each other, what fills it -- for a member that says how, its list,
-all at the first.  What fills no place comes with the place that takes
-anything, or else after the last place.  What argues against it comes
-after the rest, before a closing restatement, since an objection needs
-the claim it answers."
-  (let* ((places (org-truss-pattern-places (or (org-truss-member-telling member) 'first)))
-         (others (seq-remove #'org-truss--own-place-p places))
-         (joined (org-truss--joined-under member))
-         (outside (seq-remove (lambda (c) (seq-intersection (org-truss-member-roles c)
-                                                            (mapcar #'car others)))
-                              joined))
-         (catch-all (or (seq-find (lambda (place) (memq :any (cdr place))) others)
-                        (car (last others))))
-         (below (lambda (ms) (mapcan (lambda (m) (org-truss--flow m (1+ depth))) ms)))
-         (said nil)
-         (listed nil)
-         (parts nil))
-    (dolist (place places)
-      (cond
-       ((memq :point (cdr place))
-        (push (cons 'self (list (list depth shown said))) parts))
-       ((memq :again (cdr place))
-        (push (cons 'again (org-truss--restatement shown (1+ depth))) parts))
-       ((org-truss-how-p member)
-        (unless listed
-          (setq listed t)
-          (let ((items (org-truss--how-items member depth)))
-            (when items (setq said t))
-            (push (cons 'place items) parts))))
-       (t
-        (let ((filling (append (seq-filter (lambda (c) (memq (car place) (org-truss-member-roles c)))
-                                           joined)
-                               (and (eq place catch-all) outside))))
-          (when filling (setq said t))
-          (push (cons 'place (funcall below filling)) parts)))))
-    (let* ((parts (nreverse parts))
-           (closing (let ((n 0))
-                      (while (and (< n (length parts))
-                                  (eq (car (nth (- (length parts) n 1) parts)) 'again))
-                        (setq n (1+ n)))
-                      n)))
-      (append (mapcan (lambda (part) (copy-sequence (cdr part))) (butlast parts closing))
-              (funcall below (seq-filter #'org-truss-against-p (org-truss-member-children member)))
-              (mapcan (lambda (part) (copy-sequence (cdr part))) (last parts closing))))))
+(defun org-truss--tell (member depth &optional wording label)
+  "Return the flow of MEMBER at DEPTH, as it is told.
+What is under it comes in the order of the file -- for a member that
+says how, as one list -- and what argues against it after the rest,
+since an objection needs the claim it answers.  The member itself comes
+before all of it or after, as its telling pattern puts it, in the words
+`org-truss-member-told' gives it there, WORDING among them, and opened
+with LABEL.  A pattern that closes with it again, as PREP and SDS do,
+tells it once more at the end, in the words it is told in after."
+  (let* ((first (org-truss-told-first-p member))
+         (self (org-truss--labelled (org-truss-member-told member (if first 'before 'after) wording)
+                                    label))
+         (below (lambda (ms)
+                  (mapcan (lambda (m)
+                            (org-truss--flow m (1+ depth) nil (org-truss--aspect-label member m)))
+                          ms)))
+         (under (if (org-truss-how-p member)
+                    (org-truss--how-items member depth)
+                  (funcall below (org-truss--joined-under member))))
+         (against (funcall below (seq-filter #'org-truss-against-p
+                                             (org-truss-member-children member)))))
+    (if first
+        (append (list (list depth self nil))
+                under
+                against
+                (and (org-truss-told-again-p member)
+                     (org-truss--restatement (org-truss-member-told member 'after wording)
+                                             (1+ depth))))
+      (append under
+              (list (list depth self (and under t)))
+              against))))
 
 (defun org-truss--indent (text column)
   "Return TEXT with every line after the first indented COLUMN columns.
@@ -138,16 +130,22 @@ A heading cannot sit in a list, so a title opens its block in bold."
                         (and shown (not (string-empty-p text)) text)))
                     items)))
 
+(defun org-truss--aspect-label (member child)
+  "Return what opens CHILD where it is told under MEMBER, or \"\" for nothing.
+When MEMBER has aspects, the one CHILD covers, named in
+`org-truss-language': whatever MEMBER's logic, the reader is told which
+part of the breakdown each piece is."
+  (let ((aspect (org-truss-aspect-of member child)))
+    (if aspect
+        (format (org-truss--pick "%s: " "%s：") (org-truss-role-label aspect))
+      "")))
+
 (defun org-truss--list-marker (member child n)
   "Return (BULLET . LABEL) for CHILD, the Nth item of what says how to do MEMBER.
-BULLET opens the list item, a number for a step; LABEL, when MEMBER has
-aspects, names the one CHILD covers in `org-truss-language' before what
-it says."
+BULLET opens the list item, a number for a step; LABEL is the aspect it
+covers, as `org-truss--aspect-label' gives it."
   (cons (if (eq (org-truss-how-list member) 'numbered) (format "%d. " n) "- ")
-        (let ((aspect (org-truss-aspect-of member child)))
-          (if aspect
-              (format (org-truss--pick "%s: " "%s：") (org-truss-role-label aspect))
-            ""))))
+        (org-truss--aspect-label member child)))
 
 (defun org-truss--how-text (member)
   "Return what says how to do MEMBER as an Org list.
@@ -160,13 +158,15 @@ the numbers close over it."
     (mapconcat
      (lambda (child)
        (let* ((marker (org-truss--list-marker member child (setq n (1+ n))))
-              (shown (org-truss-member-shown child))
+              (shown (org-truss-member-told child 'before))
               (own (string-trim (concat (cdr marker)
                                         (or (car shown) "")
                                         (if (car shown) "\n" "")
                                         (or (cdr shown) ""))))
               (children (org-truss-member-children child))
-              (flow (lambda (ms) (mapcan (lambda (m) (org-truss--flow m 1)) ms)))
+              (flow (lambda (ms)
+                      (mapcan (lambda (m) (org-truss--flow m 1 nil (org-truss--aspect-label child m)))
+                              ms)))
               (nested (if (org-truss-how-p child)
                           (cons (org-truss--how-text child)
                                 (org-truss--blocks
@@ -207,18 +207,11 @@ its paragraph in bold instead."
 
 ;;;; Sections
 
-(defun org-truss--section-title (section)
-  "Return the title SECTION is written under: its public title, or its heading."
-  (let ((title (car (org-truss-section-public section))))
-    (if (and title (not (string-blank-p title)))
-        title
-      (org-truss-section-label section))))
-
 (defun org-truss--render-section (model section level)
   "Return Org text for SECTION of MODEL at LEVEL, then the sections below it."
   (let ((body (cdr (org-truss-section-public section))))
     (concat
-     (format "%s %s\n" (make-string level ?*) (org-truss--section-title section))
+     (format "%s %s\n" (make-string level ?*) (org-truss-section-title section))
      (if (or (null body) (string-empty-p body)) "" (concat body "\n"))
      "\n"
      (org-truss--render-links model section level)

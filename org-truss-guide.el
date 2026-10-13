@@ -58,6 +58,8 @@
 #                       document's)
 #   ~- [[#m7][words]]~  member m7: the words, else its #+begin_public, else
 #                       its heading; a member of Members brings its own
+#   #+begin_opening     a member's words where its TRUSS_TELLING opens with
+#   #+begin_closing     it, and where it closes with it; else as above
 #   Notes under a heading, outside #+begin_public, are not written out
 #
 # Properties and tags
@@ -71,7 +73,9 @@
 #                     what-why-how pros-cons short-long past-present-future
 #                     5w1h 6w1h
 #   TRUSS_TELLING     how it is told: first last prep sds scqa
-#                     sky-rain-umbrella.  With none, as first
+#                     sky-rain-umbrella.  With none, as first.  What is
+#                     under it is told in the file's order; the check
+#                     lists what is out of the pattern's
 #   TRUSS_ROLE        its places in the patterns of the heading above:
 #                     minor, who, reason, sky, ...  The check names those
 #                     missing
@@ -119,6 +123,8 @@
 #   #+begin_public            節の最初の文（Structure 直下なら文書の最初の文）
 #   節の ~- [[#m7][言い方]]~  部材 m7。言い方、なければ部材の #+begin_public、
 #                             なければ見出し。Members の部材は下の部材も出る
+#   #+begin_opening           語り口が部材で始まるところでの部材の言い方、
+#   #+begin_closing           部材で結ぶところでの言い方。なければ上と同じ
 #   見出しの下のメモ（#+begin_public の外）は書き出さない
 #
 # プロパティとタグ
@@ -132,7 +138,8 @@
 #                     parts に付ける。what-why-how pros-cons short-long
 #                     past-present-future 5w1h 6w1h
 #   TRUSS_TELLING     語り口：first last prep sds scqa sky-rain-umbrella。
-#                     付けなければ first（結論が先、下は書いた順）
+#                     付けなければ first（結論が先）。下の見出しはどの語り口
+#                     でも書いた順に出る。語り口の順と違えば検査が出す
 #   TRUSS_ROLE        上の見出しの型の中で占める場所。minor、who、reason、
 #                     sky など。足りない場所は検査が名前で出す
 #   TRUSS_PART, TRUSS_FIELD  部と項目の印。変えない
