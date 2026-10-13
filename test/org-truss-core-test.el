@@ -19,7 +19,7 @@
 :END:
 ** Reader
 :PROPERTIES:
-:TRUSS_FIELD: reader
+:TRUSS_ROLE: reader
 :END:
 :GUIDE:
 Who reads it.
@@ -122,33 +122,35 @@ Hold the review every other week.
 * Brief
 :PROPERTIES:
 :TRUSS_PART: brief
+:TRUSS_ASPECTS: reader-question-response-constraints
 :END:
 ** Reader
 :PROPERTIES:
-:TRUSS_FIELD: reader
+:TRUSS_ROLE: reader
 :END:
 The safety board.
 ** Their question
 :PROPERTIES:
-:TRUSS_FIELD: question
+:TRUSS_ROLE: question
 :END:
 ** Response wanted
 :PROPERTIES:
-:TRUSS_FIELD: response
+:TRUSS_ROLE: response
 :END:
 
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
+:TRUSS_ASPECTS: premises-issue-constraints
 :END:
 ** Issue
 :PROPERTIES:
-:TRUSS_FIELD: issue
+:TRUSS_ROLE: issue
 :END:
 *** Nobody checks before a test
 ** Constraints
 :PROPERTIES:
-:TRUSS_FIELD: constraints
+:TRUSS_ROLE: constraints
 :END:
 Finance said so at the October meeting.
 *** No budget this year
@@ -189,12 +191,12 @@ Finance said so at the October meeting.
 :END:
 ** Premises
 :PROPERTIES:
-:TRUSS_FIELD: premises
+:TRUSS_ROLE: premises
 :END:
 *** How many cars we run                                           :question:
 ** Constraints
 :PROPERTIES:
-:TRUSS_FIELD: constraints
+:TRUSS_ROLE: constraints
 :END:
 *** The manager checks every driver before and after driving
 :PROPERTIES:
@@ -644,25 +646,40 @@ headings, as files once wrote them: each shows as broken."
                                     ":CUSTOM_ID: m6\n:TRUSS_SOURCE: team agreement\n:END:\n")
                             (buffer-string)))))
 
+(defun org-truss-test--fields (part)
+  "Return the fields of PART as (ROLES . TEXT)."
+  (mapcar (lambda (field) (cons (org-truss-field-roles field) (org-truss-field-notes field)))
+          (org-truss-part-children part)))
+
 (ert-deftest org-truss-test-brief ()
-  "A brief field is its text, without the guidance drawer."
+  "A brief field is its text, without the guidance drawer, and fills the
+place its TRUSS_ROLE names."
   (org-truss-test--with org-truss-test--file
     (let ((model (org-truss-read)))
       (should (equal (org-truss-model-title model) "Fortnightly reviews"))
-      (should (equal (org-truss-model-brief model) '((reader . "The team leads.")))))))
+      (should (equal (org-truss-test--fields (org-truss-model-brief model))
+                     '(((reader) . "The team leads.")))))))
 
 (ert-deftest org-truss-test-conditions ()
   "A heading under a field of the brief or the subject is a member: linked and
-judged like one, but never asked to be placed.  The field's text is apart."
+judged like one, but never asked to be placed.  The field's text is apart.
+The parts are clusters of their fields: what their aspects ask for and no
+field fills is a gap."
   (org-truss-test--with org-truss-test--conditions-file
     (let* ((model (org-truss-read))
-           (budget (org-truss-test--m model "No budget this year")))
-      (should (equal (org-truss-model-subject model)
-                     '((issue . "") (constraints . "Finance said so at the October meeting."))))
+           (budget (org-truss-test--m model "No budget this year"))
+           (subject (org-truss-model-subject model)))
+      (should (equal (org-truss-test--fields subject)
+                     '(((issue) . "") ((constraints) . "Finance said so at the October meeting."))))
       (should (equal (org-truss-test--labels
-                      (alist-get '(subject constraints) (org-truss-model-field-members model)
-                                 nil nil #'equal))
+                      (org-truss-field-children (cadr (org-truss-part-children subject))))
                      '("No budget this year" "The schedule is fixed")))
+      (should (eq (org-truss-field-of model (org-truss-test--m model "The schedule is fixed"))
+                  (cadr (org-truss-part-children subject))))
+      (should (equal (plist-get (org-truss-checks model) :part-gaps)
+                     (list (cons (org-truss-model-brief model) '((constraints . 1)))
+                           (cons subject '((premises . 1))))))
+      (should (eq (org-truss-cluster-at model (org-truss-part-pos subject)) subject))
       (should (eq (org-truss-member-kind model budget) 'fact))
       (should (equal (org-truss-test--labels (car (org-truss-usage model)))
                      '("No budget this year")))
@@ -1240,7 +1257,7 @@ directories there."
         (dolist (dir '("^#   sources/ " "^#   notes/ " "^#   attach/ " "^#   out/ "))
           (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries (lambda () (org-get-heading t t t t)))
-                       '("Brief" "Reader" "Their question" "Response wanted" "Constraints"
+                       '("Brief" "Reader" "Question" "Response wanted" "Constraints"
                          "Subject" "Premises" "Issue" "Constraints" "Members" "Structure")))
         (should (string-match-p (if (eq org-truss-language 'ja)
                                     "^# この truss\\.org から文書を一つ作ります。"
@@ -1250,13 +1267,18 @@ directories there."
                                     "^この文書が満たすべき条件。"
                                   "^What the document must satisfy\\.")
                                 (buffer-string)))
-        (should (equal (mapcar #'car (org-truss-model-brief model))
-                       '(reader question response constraints)))
-        (should (equal (mapcar #'car (org-truss-model-subject model))
-                       '(premises issue constraints)))
+        (should (eq (org-truss-part-aspects (org-truss-model-brief model))
+                    'reader-question-response-constraints))
+        (should (eq (org-truss-part-aspects (org-truss-model-subject model))
+                    'premises-issue-constraints))
+        (should (equal (mapcar #'car (org-truss-test--fields (org-truss-model-brief model)))
+                       '((reader) (question) (response) (constraints))))
+        (should (equal (mapcar #'car (org-truss-test--fields (org-truss-model-subject model)))
+                       '((premises) (issue) (constraints))))
         (should (seq-every-p (lambda (f) (string-empty-p (cdr f)))
-                             (append (org-truss-model-brief model)
-                                     (org-truss-model-subject model))))
+                             (append (org-truss-test--fields (org-truss-model-brief model))
+                                     (org-truss-test--fields (org-truss-model-subject model)))))
+        (should-not (plist-get (org-truss-checks model) :part-gaps))
         (should (org-truss-model-structure model))
         (should (null (org-truss-model-members model)))))))
 
@@ -1264,7 +1286,9 @@ directories there."
   "Refreshing puts the current guidance back, adds it where it was deleted,
 and leaves everything else as it was, a guide of your own included.  A
 file without the first line that keeps its attachments beside it is given
-it, and the buffer takes it at once."
+it, and the buffer takes it at once.  Fields marked TRUSS_FIELD, as files
+once marked them, fill their places by TRUSS_ROLE, and their part is
+given the aspects a new file's has."
   (let ((org-truss-language 'ja))
     (org-truss-test--with "#+title: T
 
@@ -1307,12 +1331,16 @@ Not a part's.
                                  text))
         (should (equal org-attach-id-dir "attach/"))
         (should-not (string-match-p "Old wording\\|An old preamble" text))
-        (should (string-match-p (concat ":END:\n:GUIDE:\nこの文書が満たすべき条件。\\(?:.*\n\\)*?:END:\n"
+        (should (string-match-p (concat ":TRUSS_PART: brief\n"
+                                        ":TRUSS_ASPECTS: reader-question-response-constraints\n"
+                                        ":END:\n:GUIDE:\nこの文書が満たすべき条件。\\(?:.*\n\\)*?:END:\n"
                                         "Notes on the brief\\.")
                                 text))
-        (should (string-match-p (concat ":TRUSS_FIELD: reader\n:END:\n:GUIDE:\n"
+        (should (string-match-p (concat ":TRUSS_ROLE: reader\n:END:\n:GUIDE:\n"
                                         "誰が読むか。.*\n:END:\nThe board\\.")
                                 text))
+        (should (string-match-p ":TRUSS_ROLE: mine\n:END:\n:GUIDE:\nMy own\\." text))
+        (should-not (string-match-p "TRUSS_FIELD" text))
         (should (string-match-p ":TRUSS_PART: members\n:END:\n:GUIDE:\n考えたこと：" text))
         (should (string-match-p ":GUIDE:\nMy own\\.\n:END:" text))
         (should (string-match-p ":GUIDE:\nNot a part's\\.\n:END:" text))
@@ -1332,7 +1360,7 @@ placed."
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_FIELD: constraints
+:TRUSS_ROLE: constraints
 :END:
 *** Keep it short
 * Members

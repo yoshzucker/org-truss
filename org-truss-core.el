@@ -138,8 +138,13 @@ the directory attachments go in elsewhere."
     (sky      "Sky"           "空")
     (rain     "Rain"          "雨")
     (umbrella "Umbrella"      "傘")
-    ;; What the structure asks for once an assumption is in use.
-    (premises "Premises"      "前提"))
+    ;; Fields: what the brief and the subject must hold.  The structure
+    ;; asks for premises too, once an assumption is in use.
+    (reader   "Reader"        "読み手")
+    (response "Response wanted" "求める反応")
+    (premises "Premises"      "前提")
+    (issue    "Issue"         "課題")
+    (constraints "Constraints" "制約"))
   "Places what is under a cluster can fill, each the value of a TRUSS_ROLE.
 Each is (ID ENGLISH JAPANESE): the board calls it by its English name; the
 file and the document, as the label of a part or the heading of a section
@@ -184,6 +189,14 @@ made for it, in `org-truss-language'.  A pattern of your own in
     (6w1h
      :kind aspects :name "6W1H" :roles (who whom when where what why how)
      :about "who, to whom, when, where, what, why and how")
+    (reader-question-response-constraints
+     :kind aspects :name "Reader, Question, Response, Constraints"
+     :roles (reader question response constraints)
+     :about "who reads it, what they ask, what they are to do, what it keeps to")
+    (premises-issue-constraints
+     :kind aspects :name "Premises, Issue, Constraints"
+     :roles (premises issue constraints)
+     :about "what is taken as given, what the problem is, what cannot move")
     (first
      :kind telling :name "conclusion first"
      :places ((conclusion :point) (body :any :optional))
@@ -211,10 +224,11 @@ made for it, in `org-truss-language'.  A pattern of your own in
   "Patterns that can be applied to a cluster: a heading, with what is under it.
 
 A cluster is a member and the members nested under it, or a section and the
-sections below it; the structure is the largest, the whole document.  Each
-entry is (ID . PLIST).  :name is what the board calls it, and :about says,
-for the board, what it asks for.  A pattern is of one of three kinds, its
-:kind, and a cluster takes one of each, each its own property:
+sections below it; the structure is the largest, the whole document.  The
+brief and the subject are clusters too, of their fields.  Each entry is
+\(ID . PLIST).  :name is what the board calls it, and :about says, for the
+board, what it asks for.  A pattern is of one of three kinds, its :kind,
+and a cluster takes one of each, each its own property:
 
 `logic'    TRUSS_LOGIC: how what is under it is joined to it.  Its
            :question is `why' -- what is under it is its support -- or
@@ -223,8 +237,10 @@ for the board, what it asks for.  A pattern is of one of three kinds, its
            how its parts are written as a :list, `numbered' or `bulleted'.
            Deduction and induction name the places of what is under them.
 `aspects'  TRUSS_ASPECTS: what must all be there, so that nothing is left
-           out -- on reasons, steps or parts.  Each part is labelled with
-           the aspect it covers, and comes in the order they are listed.
+           out -- on reasons, steps or parts, and on the brief and the
+           subject, whose fields are what must be there.  Each part is
+           labelled with the aspect it covers, and comes in the order they
+           are listed.
 `telling'  TRUSS_TELLING: how it is told, as the places of a framework, in
            order, its :places.  A place is (ROLE . FLAGS).  What fills
            the places is told in the order of the file, which is checked
@@ -242,6 +258,17 @@ TRUSS_ROLE of each, and :at-least for roles that need more than one; a
 telling pattern asks for the roles of its places.  The board lists a role
 asked for and not filled as a gap."
   :type '(alist :key-type symbol :value-type plist)
+  :group 'org-truss)
+
+(defcustom org-truss-part-aspects
+  '((brief . reader-question-response-constraints)
+    (subject . premises-issue-constraints))
+  "The aspects a new file gives its brief and its subject, as (PART . PATTERN).
+Each place the pattern names is a field of the part, a heading that fills
+it; `org-truss-init' writes one for each, and `org-truss-refresh-guides'
+gives a file written before fields were places the pattern it lacks.
+PATTERN is an aspects pattern of `org-truss-patterns'."
+  :type '(alist :key-type symbol :value-type symbol)
   :group 'org-truss)
 
 (defconst org-truss-against-tag "against"
@@ -588,14 +615,16 @@ into a link."
 
 (cl-defstruct (org-truss-cluster (:constructor nil)
                                  (:copier nil))
-  "A heading, with what is right under it: a member or a section.
+  "A heading, with what is right under it: a member, a section, or a part
+with its fields.
 POS is where its heading is, LABEL its words and LEVEL its level, in the
 file.  LOGIC, ASPECTS and TELLING are its patterns, one of each kind.
 ROLES are the places it fills in the patterns of the heading above, from
 its TRUSS_ROLE: one for each pattern that asks.  PUBLIC is what its public
 block says, (TITLE . BODY); NOTES, what else is written under it.
 CHILDREN are what is right under it: the members nested under a member,
-the sections below a section."
+the sections below a section, the fields of a part, the members written
+under a field."
   pos label level roles logic aspects telling public notes children)
 
 (cl-defstruct (org-truss-member (:include org-truss-cluster)
@@ -619,17 +648,32 @@ LINKS are the references of the members it lists, WORDINGS the words it
 tells some of them in, (REF . WORDS)."
   links wordings)
 
+(cl-defstruct (org-truss-part (:include org-truss-cluster)
+                              (:constructor org-truss--make-part)
+                              (:copier nil))
+  "The brief or the subject, NAME: a cluster whose CHILDREN are its fields.
+Its pattern names the places they fill: the reader and their question,
+the premises and the issue, as a new file's aspects do."
+  name)
+
+(cl-defstruct (org-truss-field (:include org-truss-cluster)
+                               (:constructor org-truss--make-field)
+                               (:copier nil))
+  "A field: a heading right under the brief or the subject, PART.
+It fills its ROLES, from TRUSS_ROLE, in the pattern of its part.  Its NOTES
+are its text, and its CHILDREN the members written under it.  Its heading
+names its place, is not told, and is not rewritten."
+  part)
+
 (cl-defstruct (org-truss-model (:constructor org-truss--make-model)
                                (:copier nil))
   "Everything read from one truss file.
-BRIEF and SUBJECT are the text of their fields, (FIELD . TEXT), and
-FIELD-MEMBERS the members written under the fields, ((PART FIELD) .
-MEMBERS).  MEMBERS are the members part's own, ALL every member, in the
-order of the file.  LOCATIONS say where the title, the parts and the
-fields are, keyed (title), (PART) and (PART FIELD).  INDEX finds a member
-by its CUSTOM_ID, and PARENTS the member one is nested under.  STRUCTURE
-is the root section."
-  buffer title brief subject field-members locations members all index parents
+BRIEF and SUBJECT are those parts, each with its fields and the members
+written under them.  MEMBERS are the members part's own, ALL every member,
+in the order of the file.  LOCATIONS say where the title and the parts
+are, keyed (title) and (PART).  INDEX finds a member by its CUSTOM_ID, and
+PARENTS the member one is nested under.  STRUCTURE is the root section."
+  buffer title brief subject locations members all index parents
   duplicates structure)
 
 (defun org-truss--read-member (pos &optional home)
@@ -680,20 +724,36 @@ none written, its support."
        :wordings (plist-get own :wordings)
        :children (mapcar #'org-truss--read-section (org-truss--children pos))))))
 
-(defun org-truss--fields (pos)
-  "Return the fields of the brief or the subject at POS, as (FIELD . POSITION)."
-  (delq nil (mapcar (lambda (child)
-                      (let ((field (org-truss--intern (org-entry-get child "TRUSS_FIELD"))))
-                        (and field (cons field child))))
-                    (org-truss--children pos))))
+(defun org-truss--read-field (pos part)
+  "Read the field at POS of PART, and the members written under it."
+  (let ((own (org-truss--own pos)))
+    (org-with-point-at pos
+      (org-truss--make-field
+       :pos pos
+       :label (org-truss--heading-text)
+       :level (org-current-level)
+       :roles (org-truss--roles (org-entry-get nil "TRUSS_ROLE"))
+       :notes (org-truss--read-notes own)
+       :part part
+       :children (mapcar (lambda (child) (org-truss--read-member child part))
+                         (org-truss--children pos))))))
 
-(defun org-truss--read-brief (pos)
-  "Return the fields of the brief or the subject at POS, as (FIELD . TEXT).
-TEXT is what is written under the field's heading, above any heading below it."
-  (mapcar (lambda (field)
-            (cons (car field) (org-with-point-at (cdr field)
-                                (org-truss--read-notes (org-truss--own (cdr field))))))
-          (org-truss--fields pos)))
+(defun org-truss--read-part (pos name)
+  "Read the part NAME at POS, `brief' or `subject': its fields, and what
+is written under them.  Every heading right under it is a field."
+  (let ((own (org-truss--own pos)))
+    (org-with-point-at pos
+      (org-truss--make-part
+       :pos pos
+       :label (org-truss--heading-text)
+       :level (org-current-level)
+       :logic (org-truss--intern (org-entry-get nil "TRUSS_LOGIC"))
+       :aspects (org-truss--intern (org-entry-get nil "TRUSS_ASPECTS"))
+       :telling (org-truss--intern (org-entry-get nil "TRUSS_TELLING"))
+       :notes (org-truss--read-notes own)
+       :name name
+       :children (mapcar (lambda (child) (org-truss--read-field child name))
+                         (org-truss--children pos))))))
 
 (defun org-truss--flatten (members)
   "Return MEMBERS and everything nested under them, in document order."
@@ -709,27 +769,19 @@ among its duplicates, and its index finds the first.  See
 `org-truss-model'."
   (with-current-buffer (or buffer (current-buffer))
     (org-with-wide-buffer
-     (let* ((brief (org-truss--part-pos "brief"))
-            (subject (org-truss--part-pos "subject"))
-            (members (org-truss--part-pos "members"))
+     (let* ((members (org-truss--part-pos "members"))
             (structure (org-truss--part-pos "structure"))
-            (parts (seq-filter #'cdr (list (cons 'brief brief) (cons 'subject subject))))
-            (fields (mapcan (lambda (part)
-                              (mapcar (lambda (field)
-                                        (cons (list (car part) (car field)) (cdr field)))
-                                      (org-truss--fields (cdr part))))
-                            parts))
-            (field-members (mapcar (lambda (field)
-                                     (cons (car field)
-                                           (mapcar (lambda (pos)
-                                                     (org-truss--read-member pos (caar field)))
-                                                   (org-truss--children (cdr field)))))
-                                   fields))
+            (parts (seq-filter #'cdr (mapcar (lambda (name)
+                                               (cons name (org-truss--part-pos (symbol-name name))))
+                                             '(brief subject))))
+            (brief (let ((pos (alist-get 'brief parts))) (and pos (org-truss--read-part pos 'brief))))
+            (subject (let ((pos (alist-get 'subject parts))) (and pos (org-truss--read-part pos 'subject))))
             (tops (and members (mapcar #'org-truss--read-member
                                        (org-truss--children members))))
             (all (org-truss--by-position
-                  (org-truss--flatten (append (mapcan (lambda (c) (copy-sequence (cdr c)))
-                                                      field-members)
+                  (org-truss--flatten (append (mapcan (lambda (field)
+                                                        (copy-sequence (org-truss-field-children field)))
+                                                      (org-truss--part-fields brief subject))
                                               tops))))
             (index (make-hash-table :test #'equal))
             (parents (make-hash-table :test #'eq))
@@ -745,21 +797,41 @@ among its duplicates, and its index finds the first.  See
        (org-truss--make-model
         :buffer (current-buffer)
         :title (cadr (assoc "TITLE" (org-collect-keywords '("TITLE"))))
-        :brief (and brief (org-truss--read-brief brief))
-        :subject (and subject (org-truss--read-brief subject))
-        :field-members field-members
+        :brief brief
+        :subject subject
         :locations (append (let ((case-fold-search t))
                              (goto-char (point-min))
                              (and (re-search-forward "^[ \t]*#\\+title:" nil t)
                                   (list (cons '(title) (line-beginning-position)))))
-                           (mapcar (lambda (part) (cons (list (car part)) (cdr part))) parts)
-                           fields)
+                           (mapcar (lambda (part) (cons (list (car part)) (cdr part))) parts))
         :members tops
         :all all
         :index index
         :parents parents
         :duplicates (nreverse duplicates)
         :structure (and structure (org-truss--read-section structure)))))))
+
+(defun org-truss--part-fields (&rest parts)
+  "Return the fields of PARTS, those not nil, in order."
+  (mapcan (lambda (part) (and part (copy-sequence (org-truss-part-children part)))) parts))
+
+(defun org-truss-fields (model)
+  "Return the fields of MODEL's brief and subject, in the order of the file."
+  (org-truss--part-fields (org-truss-model-brief model) (org-truss-model-subject model)))
+
+(defun org-truss-field-of (model member)
+  "Return the field MEMBER of MODEL is written under, however deep, or nil."
+  (let ((top member))
+    (while (org-truss-parent model top)
+      (setq top (org-truss-parent model top)))
+    (seq-find (lambda (field) (memq top (org-truss-field-children field)))
+              (org-truss-fields model))))
+
+(defun org-truss-field-name (field)
+  "Return what the board calls FIELD: the places it fills, or its heading."
+  (if (org-truss-field-roles field)
+      (org-truss-role-names (org-truss-field-roles field))
+    (org-truss-field-label field)))
 
 ;;;; What a member is
 
@@ -1046,11 +1118,15 @@ the title the reader is given; for a member, its heading."
     (and root (org-truss--section-descendants root))))
 
 (defun org-truss-cluster-at (model pos)
-  "Return the member or the section of MODEL whose heading is at POS, or nil."
+  "Return the cluster of MODEL whose heading is at POS, or nil.
+A member, a section, the brief or the subject, or a field of theirs."
   (or (seq-find (lambda (m) (= (org-truss-member-pos m) pos)) (org-truss-model-all model))
       (let ((root (org-truss-model-structure model)))
         (and root (seq-find (lambda (s) (= (org-truss-section-pos s) pos))
-                            (cons root (org-truss-sections model)))))))
+                            (cons root (org-truss-sections model)))))
+      (seq-find (lambda (c) (= (org-truss-cluster-pos c) pos))
+                (append (delq nil (list (org-truss-model-brief model) (org-truss-model-subject model)))
+                        (org-truss-fields model)))))
 
 (defun org-truss-section-wording (section ref)
   "Return the words SECTION tells the member REF in, or nil for its own.
@@ -1191,6 +1267,9 @@ reader.
                  asks for and no section right below fills.  Premises are
                  asked of the structure as soon as an assumption is in use
                  in a document
+:part-gaps       (PART . GAPS) for the brief and the subject short of
+                 their patterns: the fields their aspects ask for and
+                 none fills
 :unmet           statements under the subject's constraints the document
                  does not use: nothing of the cluster each heads is placed,
                  or the ground of anything placed
@@ -1231,11 +1310,18 @@ reader.
                                   (setq gaps (append gaps (list (cons 'premises 1)))))
                                 (and gaps (cons s gaps))))
                             sections))
+          :part-gaps (delq nil (mapcar (lambda (part)
+                                         (let ((gaps (and part (org-truss-gaps part))))
+                                           (and gaps (cons part gaps))))
+                                       (list (org-truss-model-brief model)
+                                             (org-truss-model-subject model))))
           :unmet (seq-remove (lambda (m)
                                (or (eq (org-truss-member-kind model m) 'question)
                                    (seq-some (lambda (x) (memq x in-use)) (org-truss--subtree m))))
-                             (alist-get '(subject constraints) (org-truss-model-field-members model)
-                                        nil nil #'equal))
+                             (mapcan (lambda (field)
+                                       (and (memq 'constraints (org-truss-field-roles field))
+                                            (copy-sequence (org-truss-field-children field))))
+                                     (org-truss--part-fields (org-truss-model-subject model))))
           :bare (funcall of-kind 'bare)
           :questions (seq-filter (lambda (m)
                                    (and (eq (org-truss-member-kind model m) 'question)
@@ -1338,7 +1424,8 @@ of the file MODEL was read from."
                          (funcall at (org-truss-section-pos s)
                                   (concat (org-truss-section-label s) (if more (concat " -- " more) "")))))
          (cluster-line (lambda (c &optional more)
-                         (funcall (if (org-truss-section-p c) section-line member-line) c more)))
+                         (funcall at (org-truss-cluster-pos c)
+                                  (concat (org-truss-cluster-label c) (if more (concat " -- " more) "")))))
          ;; Roles by the value TRUSS_ROLE takes, so what lacks one can be
          ;; written straight from here.
          (gap-text (lambda (cluster gaps)
@@ -1372,7 +1459,9 @@ of the file MODEL was read from."
                  (mapcar (lambda (c) (funcall member-line (car c) (cdr c)))
                          (plist-get checks :misplaced)))
            (cons "Pattern gaps"
-                 (append (mapcar (lambda (g) (funcall member-line (car g) (funcall gap-text (car g) (cdr g))))
+                 (append (mapcar (lambda (g) (funcall cluster-line (car g) (funcall gap-text (car g) (cdr g))))
+                                 (plist-get checks :part-gaps))
+                         (mapcar (lambda (g) (funcall member-line (car g) (funcall gap-text (car g) (cdr g))))
                                  (plist-get checks :member-gaps))
                          (mapcar (lambda (g) (funcall section-line (car g) (funcall gap-text (car g) (cdr g))))
                                  (plist-get checks :section-gaps))))

@@ -42,6 +42,8 @@
 #   Structure  the document's outline: sections, each listing members
 #
 # Rules
+#   Field      a heading right under Brief or Subject.  Its TRUSS_ROLE is
+#              the place it fills in the part's TRUSS_ASPECTS
 #   Member     a heading under a field of Brief or Subject, or under Members:
 #              one fact, claim, assumption or question, in a sentence that
 #              reads alone
@@ -71,15 +73,17 @@
 #                     deduction induction; how: steps parts
 #   TRUSS_ASPECTS     what must all be there, on reasons, steps or parts:
 #                     what-why-how pros-cons short-long past-present-future
-#                     5w1h 6w1h
+#                     5w1h 6w1h.  On Brief and Subject, the fields:
+#                     reader-question-response-constraints,
+#                     premises-issue-constraints
 #   TRUSS_TELLING     how it is told: first last prep sds scqa
 #                     sky-rain-umbrella.  With none, as first.  What is
 #                     under it is told in the file's order; the check
 #                     lists what is out of the pattern's
 #   TRUSS_ROLE        its places in the patterns of the heading above:
-#                     minor, who, reason, sky, ...  The check names those
-#                     missing
-#   TRUSS_PART, TRUSS_FIELD  mark the parts and fields; leave them be
+#                     minor, who, reason, sky, issue, ...  The check names
+#                     those missing
+#   TRUSS_PART        marks a part; leave it be
 #   :against: objection  :assumption: assumed  :question: open
 #   :noexport: not written out
 #
@@ -109,6 +113,8 @@
 #   Structure  生成文書の構成：節ごとに載せる部材を並べる
 #
 # 規則
+#   項目  Brief・Subject のすぐ下の見出し。部の TRUSS_ASPECTS の中で
+#         埋める場所を TRUSS_ROLE に書く
 #   部材  Brief・Subject の項目の下と、Members の下の見出し。事実・主張・
 #         前提・問いを一つ、抜き出しても通じる一文で書く
 #   塊    下に見出しを持つ見出し。TRUSS_LOGIC が why なら下は根拠、how なら
@@ -136,13 +142,15 @@
 #                     why：reasons deduction induction、how：steps parts
 #   TRUSS_ASPECTS     観点：すぐ下に揃っているべきもの。reasons・steps・
 #                     parts に付ける。what-why-how pros-cons short-long
-#                     past-present-future 5w1h 6w1h
+#                     past-present-future 5w1h 6w1h。Brief・Subject では
+#                     項目：reader-question-response-constraints、
+#                     premises-issue-constraints
 #   TRUSS_TELLING     語り口：first last prep sds scqa sky-rain-umbrella。
 #                     付けなければ first（結論が先）。下の見出しはどの語り口
 #                     でも書いた順に出る。語り口の順と違えば検査が出す
 #   TRUSS_ROLE        上の見出しの型の中で占める場所。minor、who、reason、
-#                     sky など。足りない場所は検査が名前で出す
-#   TRUSS_PART, TRUSS_FIELD  部と項目の印。変えない
+#                     sky、issue など。足りない場所は検査が名前で出す
+#   TRUSS_PART        部の印。変えない
 #   :against: 反論  :assumption: 前提  :question: 未解決  :noexport: 書き出さない
 #
 # 編集したら確かめる（残りの作業を行番号付きで出す）
@@ -164,9 +172,11 @@ directories beside the file; see `org-truss--preamble'.")
 (defconst org-truss--guides
   '((brief
      "What the document must satisfy.  None of it is written out; a member
-under a field is, when a section lists it."
+under a field is, when a section lists it.  The fields are the places of
+TRUSS_ASPECTS; p on the board's Brief line changes it."
      "この文書が満たすべき条件。ここは書き出されない。項目の下の部材は、節に
-載せれば書き出される。")
+載せれば書き出される。項目は TRUSS_ASPECTS の場所で、盤面の Brief の行の
+p で替えられる。")
     ((brief reader)
      "Who reads it, and what do they already know?"
      "誰が読むか。何をすでに知っているか。")
@@ -188,7 +198,8 @@ no more, with TRUSS_LOGIC parts -- they are its parts, how › parts; c on
 the board writes it.  Tag :question: what is
 still to find out.  What the facts mean, and what to do, go in the
 members.  None of this is written out; a member a section lists is, alone,
-without its parts."
+without its parts.  The fields are the places of TRUSS_ASPECTS; p on the
+board's Subject line changes it."
      "調べたこと。事実は一つずつ、合う項目の下に部材として書き、出典を
 TRUSS_SOURCE に（盤面の t）、出典の原文を本文に #+begin_quote で残す（Q）。
 事実は塊にまとめる。下の事実が合わせて言っていることを一文で書いた部材の
@@ -196,7 +207,8 @@ TRUSS_SOURCE に（盤面の t）、出典の原文を本文に #+begin_quote �
 部材には TRUSS_LOGIC: parts を付ける（how › parts、下は上の内訳。盤面の c
 が書く）。まだ調べていることには
 :question: を付ける。事実の意味と、することは Members に書く。ここは書き
-出されない。節に載せた部材は、その一文だけが出て、内訳は出ない。")
+出されない。節に載せた部材は、その一文だけが出て、内訳は出ない。項目は
+TRUSS_ASPECTS の場所で、盤面の Subject の行の p で替えられる。")
     ((subject premises)
      "What is taken as given: what of the situation will not be argued."
      "何を前提とするか。現状のうち、議論せずに受け入れるもの。")
@@ -262,7 +274,8 @@ read.  Sections nest as deep as the document needs."
 S）。ここには読み手を案内する言葉だけを書き、事実や主張は Members の部材に
 する。盤面のチェックが読むのは部材だけだから。節はいくらでも入れ子にできる。"))
   "Guidance written into a truss file, in English and Japanese.
-Keyed by a part, or by (PART FIELD) for a field of the brief or the subject.")
+Keyed by a part, or by (PART ROLE) for a field of the brief or the subject
+that fills ROLE.")
 
 (defun org-truss--preamble ()
   "Return the comment block at the head of a truss file, in `org-truss-language'.
@@ -307,37 +320,65 @@ takes the value at once, as visiting the file would give it."
        (setq-local org-attach-id-dir dir)))))
 
 (defun org-truss--guide (key)
-  "Return the guide drawer for KEY, a part or (PART FIELD), or nil for none."
+  "Return the guide drawer for KEY, a part or (PART ROLE), or nil for none."
   (let ((entry (alist-get key org-truss--guides nil nil #'equal)))
     (and entry
          (format ":GUIDE:\n%s\n:END:\n" (org-truss--pick (nth 0 entry) (nth 1 entry))))))
 
+(defun org-truss--field-entry (part role level)
+  "Return a new field of PART filling ROLE, a heading at LEVEL, as text.
+Named for its place in English, whatever `org-truss-language' says, and
+with its guide, followed by a blank line."
+  (format "%s %s\n:PROPERTIES:\n:TRUSS_ROLE: %s\n:END:\n%s\n"
+          (make-string level ?*) (org-truss-role-name role) role
+          (or (org-truss--guide (list part role)) "")))
+
+(defun org-truss-add-field (pos role)
+  "Write a field filling ROLE under the part at POS, the brief or the subject.
+Among the fields there, where the part's aspects list ROLE: before the
+first that fills a place they list after it, or else last.  Return a
+marker at the new heading."
+  (let* ((part (intern (org-entry-get pos "TRUSS_PART")))
+         (roles (plist-get (org-truss-pattern (org-truss--intern (org-entry-get pos "TRUSS_ASPECTS")))
+                           :roles))
+         (rank (lambda (r) (or (seq-position roles r) most-positive-fixnum)))
+         (before (seq-find (lambda (child)
+                             (let ((theirs (org-truss--roles (org-entry-get child "TRUSS_ROLE"))))
+                               (and theirs (> (apply #'min (mapcar rank theirs)) (funcall rank role)))))
+                           (org-truss--children pos))))
+    (save-excursion
+      (if before
+          (goto-char before)
+        (goto-char pos)
+        (org-end-of-subtree t t)
+        (unless (bolp) (insert "\n")))
+      (let ((at (point-marker)))
+        (insert (org-truss--field-entry part role (1+ (org-with-point-at pos (org-current-level)))))
+        at))))
+
 (defun org-truss-skeleton (title)
   "Return the text of a new truss file titled TITLE.
 Its first line keeps what is attached to its headings beside it; see
-`org-truss--file-variables'.  Its headings are English whatever
-`org-truss-language' says: they name the parts and fields, are not
-rewritten, and never reach the reader.  The guidance is in
-`org-truss-language'."
-  (let ((part (lambda (part heading &optional props)
-                (format "* %s\n:PROPERTIES:\n:TRUSS_PART: %s\n%s:END:\n%s\n"
-                        heading part (or props "") (org-truss--guide part))))
-        (field (lambda (part field heading)
-                 (format "** %s\n:PROPERTIES:\n:TRUSS_FIELD: %s\n:END:\n%s\n"
-                         heading field (org-truss--guide (list part field))))))
+`org-truss--file-variables'.  The brief and the subject are given the
+aspects `org-truss-part-aspects' names, and a field for each.  Its
+headings are English whatever `org-truss-language' says: they name the
+parts and fields, are not rewritten, and never reach the reader.  The
+guidance is in `org-truss-language'."
+  (let ((part (lambda (part heading)
+                (let ((aspects (alist-get part org-truss-part-aspects)))
+                  (concat
+                   (format "* %s\n:PROPERTIES:\n:TRUSS_PART: %s\n%s:END:\n%s\n"
+                           heading part
+                           (if aspects (format ":TRUSS_ASPECTS: %s\n" aspects) "")
+                           (org-truss--guide part))
+                   (mapconcat (lambda (role) (org-truss--field-entry part role 2))
+                              (plist-get (org-truss-pattern aspects) :roles) ""))))))
     (concat
      (org-truss--file-variables)
      (format "#+title: %s\n\n" title)
      (org-truss--preamble) "\n"
      (funcall part 'brief "Brief")
-     (funcall field 'brief 'reader "Reader")
-     (funcall field 'brief 'question "Their question")
-     (funcall field 'brief 'response "Response wanted")
-     (funcall field 'brief 'constraints "Constraints")
      (funcall part 'subject "Subject")
-     (funcall field 'subject 'premises "Premises")
-     (funcall field 'subject 'issue "Issue")
-     (funcall field 'subject 'constraints "Constraints")
      (funcall part 'members "Members")
      (string-remove-suffix "\n" (funcall part 'structure "Structure")))))
 
@@ -365,13 +406,34 @@ no guide, such as a field of your own."
           (insert guide)
           (set-marker end nil))))))
 
+(defun org-truss--convert-fields (pos part)
+  "Make the fields of PART, the part at POS, fill places, if they do not yet.
+A field marked TRUSS_FIELD, as files once marked them, fills that place by
+TRUSS_ROLE instead; and the part, if it has no aspects, is given those
+`org-truss-part-aspects' names for it.  Nothing is done to a part none of
+whose fields was marked so."
+  (let ((marked nil))
+    ;; From the last field up, so what is changed lies below what is still
+    ;; to change and positions stay good.
+    (dolist (child (reverse (org-truss--children pos)))
+      (let ((field (org-entry-get child "TRUSS_FIELD")))
+        (when field
+          (unless (org-entry-get child "TRUSS_ROLE")
+            (org-entry-put child "TRUSS_ROLE" field))
+          (org-entry-delete child "TRUSS_FIELD")
+          (setq marked t))))
+    (let ((aspects (alist-get part org-truss-part-aspects)))
+      (when (and marked aspects (not (org-entry-get pos "TRUSS_ASPECTS")))
+        (org-entry-put pos "TRUSS_ASPECTS" (symbol-name aspects))))))
+
 (defun org-truss-refresh-guides-in-buffer ()
   "Put the current guidance back into the truss file in this buffer.
 The comment block at its head, and the :GUIDE: drawer of each part and of
 each field of the brief and the subject, are written anew, or added where
 they were deleted.  A file without the first line that keeps its
 attachments beside it is given one; see `org-truss-put-file-variables'.
-Nothing else is read or moved."
+Fields marked as files once marked them are made to fill places; see
+`org-truss--convert-fields'.  Nothing else is read or moved."
   (org-truss-put-file-variables)
   (org-with-wide-buffer
    (goto-char (point-min))
@@ -387,8 +449,12 @@ Nothing else is read or moved."
    (dolist (part '(brief subject members structure))
      (let ((pos (org-truss--part-pos (symbol-name part))))
        (when pos
-         (dolist (field (reverse (org-truss--fields pos)))
-           (org-truss--replace-guide (cdr field) (list part (car field))))
+         (when (memq part '(brief subject))
+           (org-truss--convert-fields pos part)
+           (dolist (field (reverse (org-truss--children pos)))
+             (let ((role (car (org-truss--roles (org-entry-get field "TRUSS_ROLE")))))
+               (when role
+                 (org-truss--replace-guide field (list part role))))))
          (org-truss--replace-guide pos part))))))
 
 (provide 'org-truss-guide)

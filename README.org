@@ -41,7 +41,7 @@ a model can help fill it, but the structure is yours.
 | Subject   | what was found: premises, issue, constraints -- facts, summed up in clusters             | ~TRUSS_PART: subject~     |
 | Members   | what is made of it: interpretations and decisions, each written once                     | ~TRUSS_PART: members~     |
 | Clusters  | a heading and what is right under it: a claim and its support, a section and its own     | any heading with headings |
-|           | sections; the structure is the largest                                                   | under it                  |
+|           | sections, the brief or the subject and its fields; the structure is the largest          | under it                  |
 | Structure | a tree of sections, each a place in how the document is told                             | ~TRUSS_PART: structure~   |
 | Patterns  | three kinds, each a property of its own, for any cluster: logic, aspects, telling        | ~org-truss-patterns~      |
 
@@ -53,6 +53,16 @@ subject is about what the document takes up -- what is taken as given, what
 the problem is taken to be, what cannot move.  A proposal is held to both:
 the document has to move its reader, and what it proposes has to solve the
 problem within its constraints.
+
+The brief and the subject are clusters, as a claim with its support is.
+Each has an aspects pattern, which a new file writes --
+/Reader, Question, Response, Constraints/ on the brief, /Premises, Issue,
+Constraints/ on the subject -- and its fields are the headings right under
+it, each filling one of the pattern's places by its ~TRUSS_ROLE~.  A
+place no field fills is a gap, as a place no section fills is in the
+structure.  Another pattern, of your own in ~org-truss-patterns~ or one
+of the aspects there, gives a part other fields: ~p~ on its line on the
+board puts it on, and puts in a field for each place it lacks.
 
 What is written under a field stays in the file, as notes do.  A field can
 also hold statements, as headings under it, and those are members like any
@@ -253,7 +263,9 @@ each member under the cluster covers one of them, the other half.  They go
 with reasons, steps and parts, the joints that are sets; a deduction's
 premises and an induction's cases are what they are by their places, and
 take none.  A member covering an aspect is written out labelled with it --
-/Pros:/, /Who:/ -- whatever the logic.
+/Pros:/, /Who:/ -- whatever the logic.  On the brief and the subject the
+aspects are their fields, and nothing there is written out; the brief and
+the subject take aspects alone, since nothing of them is argued or told.
 
 A telling pattern is a framework of telling, which says nothing of what is
 told: its places in order.  On a member, the place that is its point --
@@ -388,7 +400,9 @@ rewrite them, and the reader never sees them.
 The guidance learns, and a file keeps the wording it was written with.
 ~M-x org-truss-refresh-guides~ puts the current wording back -- the comment
 block and every drawer, adding those that were deleted -- and touches
-nothing else.
+nothing else you wrote.  A file from before fields were places, its fields
+marked ~TRUSS_FIELD~, has them fill their places by ~TRUSS_ROLE~ instead,
+and its brief and subject given the aspects a new file's have.
 
 #+begin_src org
 # -*- org-attach-id-dir: "attach/"; -*-
@@ -397,20 +411,37 @@ nothing else.
 ,* Brief
 :PROPERTIES:
 :TRUSS_PART: brief
+:TRUSS_ASPECTS: reader-question-response-constraints
 :END:
 ,** Reader
 :PROPERTIES:
-:TRUSS_FIELD: reader
+:TRUSS_ROLE: reader
 :END:
 The team leads.
+,** Question
+:PROPERTIES:
+:TRUSS_ROLE: question
+:END:
+Should the review stay weekly?
+,** Response wanted
+:PROPERTIES:
+:TRUSS_ROLE: response
+:END:
+Agree to try fortnightly reviews next quarter.
+,** Constraints
+:PROPERTIES:
+:TRUSS_ROLE: constraints
+:END:
+One page.
 
 ,* Subject
 :PROPERTIES:
 :TRUSS_PART: subject
+:TRUSS_ASPECTS: premises-issue-constraints
 :END:
 ,** Premises
 :PROPERTIES:
-:TRUSS_FIELD: premises
+:TRUSS_ROLE: premises
 :END:
 ,*** Reviews run long
 :PROPERTIES:
@@ -440,7 +471,7 @@ Reviews ran past the hour eight times this quarter.
 :END:
 ,** Issue
 :PROPERTIES:
-:TRUSS_FIELD: issue
+:TRUSS_ROLE: issue
 :END:
 The weekly review costs the team more time than it gives back.
 
@@ -571,13 +602,16 @@ in step by hand.
 
 Each part is found by its ~TRUSS_PART~, at whatever level and in whatever
 order the parts sit, so the file can be laid out as suits you.  Within the
-parts, the outline carries meaning in two places only:
+parts, the outline carries meaning in these places only:
 
 - Under /Members/, nesting is what the ~TRUSS_LOGIC~ of the member above
   says: support -- a member nested under another stands under it -- or,
   under a member whose logic is how, one of its steps or parts, and the
   order of steps is theirs.  The order of the members, and of the top ones
   especially, means nothing; the board and the document follow the links.
+- Right under the /Brief/ or the /Subject/, a heading is a field: it fills
+  a place of the part's aspects by its ~TRUSS_ROLE~, and its text says what
+  fills it.
 - Under a field of the /Brief/ or the /Subject/, a heading is a member that
   states the field, and nesting below it means what it means under
   /Members/: a cluster of facts says ~how › parts~.  The board never asks
@@ -646,62 +680,75 @@ saves a buffer, saves it from the board, and the title line says
 This is the board of the file above:
 
 #+begin_example
- Title ············ Fortnightly reviews                     Fortnightly reviews
- Reader ··········· The team leads.
+ Title ··················· Fortnightly reviews                     Fortnightly reviews
+
+ Brief  what the document must satisfy
+ (aspects › Reader, Question, Response, Constraints)
+ ├ Reader ················ The team leads.
+ ├ Question ·············· Should the review stay weekly?
+ ├ Response wanted ······· Agree to try fortnightly reviews next quarter.
+ └ Constraints ··········· One page.
 
  Subject  what was found: facts, summed up in clusters
+ (aspects › Premises, Issue, Constraints)
  ├ Premises
- │   summary ······ Reviews run long                        → Sky
+ │   summary ········· #m1 Reviews run long                        → Sky
  │   (how › parts)
- │   ├ fact ······· Eight of twelve reviews ran past the hour
- │   └ fact ······· The longest ran forty minutes over
- │   fact ········· Six of twelve items each week come ba…  ground of Half the items repeat
- │   fact ········· Urgent items are raised in the team c…  ground of Urgent items need no review
- └ Issue ·········· The weekly review costs the team more time than it gives back.
+ │   ├ fact ·············· Eight of twelve reviews ran past the hour
+ │   └ fact ·············· The longest ran forty minutes over
+ │   fact ············ #m2 Six of twelve items each week come ba…  ground of Half the items repeat
+ │   fact ············ #m3 Urgent items are raised in the team c…  ground of Urgent items need no review
+ └ Issue ················· The weekly review costs the team more time than it gives back.
+   Constraints —
+ Pattern gaps
+   Subject ··············· aspects › Premises, Issue, Constraints  Constraints
 
  Members  what is made of it: interpretations and decisions
-   hypothesis ····· Half the items repeat                   → Why it drags
+   hypothesis ········ #m4 Half the items repeat                   → Why it drags
    (why › reasons)
-   │ ⬑ summary ···· Reviews run long
-   │ ⬑ fact ······· Six of twelve items each week come back from the week before
-   ├ assumption ··· Items need a week to move
-   └ x objection ·· Some items are urgent
+   │ ⬑ summary ··· [[#m1]] Reviews run long
+   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come back from the week before
+   ├ assumption ·········· Items need a week to move
+   └ x objection ········· Some items are urgent
      (why › reasons)
-     └ x claim ···· Urgent items need no review
-         ⬑ fact ··· Urgent items are raised in the team chat
-   hypothesis ····· Move to fortnightly                     → What we propose
+     └ x claim ··········· Urgent items need no review
+         ⬑ fact ·· [[#m3]] Urgent items are raised in the team chat
+   hypothesis ········ #m5 Move to fortnightly                     → What we propose
    (how › steps)
-   │ ⬑ hypothesis · Half the items repeat
-   ├ step ········· Cancel every second review in the calendar
-   └ step ········· Carry what is still open to the next one
+   │ ⬑ hypothesis  [[#m4]] Half the items repeat
+   ├ step ················ Cancel every second review in the calendar
+   └ step ················ Carry what is still open to the next one
  Assumptions
-   assumption ····· Items need a week to move               We assume most items need more than a week to change.
+   assumption ············ Items need a week to move               We assume most items need more than a week to change.
 
  Structure  how it is told: sections, listing members
  (tell › Sky, Rain, Umbrella)
- ├ Sky ············ Sky                                     Sky
- │   summary ······ Reviews run long                        Reviews ran past the hour eight times this quarter.
- ├ Rain ··········· Rain                                    Why it drags
- │   hypothesis ··· Half the items repeat                   Most items come back unchanged
+ ├ Sky ··················· Sky                                     Sky
+ │   summary ····· [[#m1]] Reviews run long                        Reviews ran past the hour eight times this quarter.
+ ├ Rain ·················· Rain                                    Why it drags
+ │   hypothesis ·· [[#m4]] Half the items repeat                   Most items come back unchanged
  │   (why › reasons)
- │   ├ assumption · Items need a week to move               We assume most items need more than a week to change.
- │   └ x objection  Some items are urgent                   Some items are urgent
+ │   ├ assumption ········ Items need a week to move               We assume most items need more than a week to change.
+ │   └ x objection ······· Some items are urgent                   Some items are urgent
  │     (why › reasons)
- │     └ x claim ·· Urgent items need no review             Urgent items need no review
- └ Umbrella ······· Umbrella                                What we propose
-     hypothesis ··· Move to fortnightly                     Hold the review every other week.
+ │     └ x claim ········· Urgent items need no review             Urgent items need no review
+ └ Umbrella ·············· Umbrella                                What we propose
+     hypothesis ·· [[#m5]] Move to fortnightly                     Hold the review every other week.
      (how › steps)
-     ├ step ······· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-     └ step ······· Carry what is still open to the next …  2. Carry what is still open to the next one
+     ├ step ·············· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+     └ step ·············· Carry what is still open to the next …  2. Carry what is still open to the next one
    Premises —
 
  Pattern gaps
-   Structure ······ tell › Sky, Rain, Umbrella              Premises
+   Structure ············· tell › Sky, Rain, Umbrella              Premises
+ Placeholders
+   Sky ··················· Sky                                     Sky
 #+end_example
 
 Each line has three columns.  On the left is what the board says the line
-is: the questions a section answers, the kind of a member -- marked =x= when
-it argues against the one above -- and the tree that joins them.  At the
+is: the questions a section answers, the place a field fills, the kind of
+a member -- marked =x= when it argues against the one above -- and the
+tree that joins them.  At the
 end of the left, just before its heading, a member is named by its
 ~CUSTOM_ID~ as the file names it: =#m9= where it is written, in the
 subject and the members, and =[[#m9]]= where a section's link or a ground
@@ -819,12 +866,16 @@ title on the right, a member's heading in the middle; its tooltip says
 so.  On the /Structure/ line is the structure's own lead.  What becomes a heading in the document -- a section's title,
 a member's public title -- is drawn as one; what becomes body text, in the
 faint face the notes in the middle take.  The brief is the reader's only
-through the title.  Under the title come the fields of the
-brief, and those of the subject under it, each with its text, so what the
-structure has to meet stays in view: the reader, their question and the
-issue always, the other fields once they hold something.  The members
-written under a field are drawn below it, cluster by cluster, and are gone
-to and placed from there.  An
+through the title.  Under the title come the brief, then the subject,
+each drawn as the structure is: its line, the pattern it follows, and its
+fields as a tree, each named by the place it fills and followed by its
+text, so what the structure has to meet stays in view.  A place the
+pattern asks for and no field fills -- /Constraints —/ -- follows them,
+and ~s~ on it puts in a field that fills it, where the pattern lists it;
+the subject's are listed under /Pattern gaps/ too.  A field that fills
+none of the pattern's places is named in the warning face, and ~r~ gives
+it one.  The members written under a field are drawn below it, cluster
+by cluster, and are gone to and placed from there.  An
 assumption with a ~TRUSS_CONFIRM~ adds whom to confirm it with.  Whether a
 member has a source needs no mark: that is what makes it a /fact/.
 
@@ -973,8 +1024,10 @@ away at once.
 On the /Structure/ line, ~p~ gives the document a telling pattern -- Sky,
 Rain, Umbrella, SCQA, PREP -- and with it its sections, or aspects its
 sections must cover; on a section, the same for the sections below it.
-~no telling~, ~no aspects~ and ~no logic~ take each off, and nothing is
-asked of the sections below for it.
+On the /Brief/ or the /Subject/ line, it offers aspects alone, and puts in
+a field for each place they name that none fills.  ~no telling~, ~no
+aspects~ and ~no logic~ take each off, and nothing is asked of what is
+below for it.
 
 The foot of the board lists the keys as they are bound where it is drawn,
 so a key moved -- by an Evil configuration, say -- shows as it is.
@@ -996,7 +1049,7 @@ line at point:
   ~TRUSS_LOGIC~ first, the usual one for its part: ~parts~ in the subject,
   so it becomes the head of a cluster of facts, ~reasons~ in the members;
 - on a field of the brief or the subject, under the field -- on the
-  subject's own line it asks for a field instead;
+  brief's or the subject's own line it asks for a field instead;
 - on a section, at the top of the members, and listed in the section;
 - anywhere else, at the top of the members, where order means nothing.
   The board lists it as not placed until something uses it.
@@ -1086,6 +1139,8 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-file-name~           | ~"truss.org"~                 |                                               |
 | ~org-truss-patterns~            | those above                   | add your own                                  |
 | ~org-truss-roles~               | major, who, sky, premises ... | places a pattern of your own can name         |
+| ~org-truss-part-aspects~        | the brief's and the subject's | the aspects a new file's brief and subject    |
+|                                 | above                         | are given, and a field for each               |
 | ~org-truss-output-directory~    | ~"out"~                       |                                               |
 | ~org-truss-sources-directory~   | ~"sources"~                   | what was read, beside the truss file          |
 | ~org-truss-notes-directory~     | ~"notes"~                     | what is ours and not a source                 |

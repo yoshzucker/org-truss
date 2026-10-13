@@ -111,23 +111,29 @@ are named in `org-truss-language'."
                    "Structure"))))
 
 (ert-deftest org-truss-test-board-shows-the-fields ()
-  "Under the title come the fields of the brief and the subject, each with its
-text and the members written under it.  The reader, their question and the
-issue are drawn even while empty; the rest once they hold something."
+  "Under the title come the brief and the subject, each with its pattern and
+its fields, named by the places they fill: each field with its text and
+the members written under it, empty or not.  A place the pattern asks for
+and no field fills follows them; the subject's is listed too."
   (org-truss-test--with-board org-truss-test--conditions-file
     (should (string-match-p
-             (concat "^ Reader[ ·]+\\(?:\\[*#[^] ]+]* \\)?The safety board\\.\n"
-                     " Their question\n\n"
+             (concat "^ Brief  .*\n"
+                     " (aspects › Reader, Question, Response, Constraints)\n"
+                     " ├ Reader[ ·]+\\(?:\\[*#[^] ]+]* \\)?The safety board\\.\n"
+                     " ├ Question\n"
+                     " └ Response wanted\n"
+                     "   Constraints —\n\n"
                      " Subject  .*\n"
+                     " (aspects › Premises, Issue, Constraints)\n"
                      " ├ Issue\n"
                      " │   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Nobody checks before a test\n"
                      " └ Constraints[ ·]+\\(?:\\[*#[^] ]+]* \\)?Finance said so at the October meeting\\.\n"
                      "     fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year +→ Premises\n"
-                     "     bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed\n")
+                     "     bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed\n"
+                     "   Premises —\n")
              (buffer-string)))
-    (should-not (string-match-p "^ \\(Response wanted\\|Document constraints\\)"
-                                (buffer-string)))
-    (should-not (string-match-p "^ [├└] Premises$" (buffer-string)))
+    (should (string-match-p "^ Pattern gaps\n   Subject[ ·]+aspects › Premises, Issue, Constraints +Premises$"
+                            (buffer-string)))
     (org-truss-test--goto-line-with "^ ├ Issue")
     (save-window-excursion
       (org-truss-board-visit)
@@ -143,6 +149,48 @@ issue are drawn even while empty; the rest once they hold something."
     (should (equal (with-current-buffer source
                      (org-entry-get (org-truss-test--heading-pos "The schedule is fixed") "CUSTOM_ID"))
                    "m1"))))
+
+(ert-deftest org-truss-test-board-parts-take-patterns ()
+  "The brief and the subject are clusters of their fields.  s on a place
+their pattern asks for and no field fills puts in a field filling it,
+where the pattern lists it; p gives the part other aspects, and a field
+for each; a field filling none of them is marked, and r gives it a place."
+  (org-truss-test--with-board org-truss-test--conditions-file
+    (let ((headings (lambda ()
+                      (with-current-buffer source
+                        (org-map-entries (lambda () (org-get-heading t t t t)) "LEVEL=2"))))
+          (property (lambda (heading name)
+                      (with-current-buffer source
+                        (org-entry-get (org-truss-test--heading-pos heading) name)))))
+      (org-truss-test--goto-line-with "^   Premises —")
+      (org-truss-board-new-section)
+      (should (equal (seq-take (seq-drop (funcall headings) 3) 3)
+                     '("Premises" "Issue" "Constraints")))
+      (should (equal (funcall property "Premises" "TRUSS_ROLE") "premises"))
+      (should (string-match-p "^ ├ Premises\n ├ Issue\n" (buffer-string)))
+      (with-current-buffer source
+        (goto-char (org-truss-test--heading-pos "Premises"))
+        (should (re-search-forward ":GUIDE:\nWhat is taken as given" nil t)))
+      (org-truss-test--goto-line-with "^ Subject ")
+      (should (equal (mapcar #'cdr (org-truss--pattern-choices
+                                    (org-truss-model-subject (org-truss-read source))))
+                     '(what-why-how pros-cons short-long past-present-future 5w1h 6w1h
+                       reader-question-response-constraints premises-issue-constraints
+                       (none . aspects))))
+      (org-truss-test--answering '("aspects › Pros and cons")
+        (org-truss-board-pattern))
+      (should (equal (funcall property "Subject" "TRUSS_ASPECTS") "pros-cons"))
+      (should (equal (seq-drop (funcall headings) 3)
+                     '("Pros" "Cons" "Premises" "Issue" "Constraints" "Check with a breathalyser"
+                       "Premises")))
+      (org-truss-test--goto-line-with "^ ├ Issue")
+      (should (eq (get-text-property (+ (point) 3) 'face) 'org-truss-attention))
+      (should (string-prefix-p "Fills no place of aspects › Pros and cons"
+                               (get-text-property (point) 'help-echo)))
+      (org-truss-test--answering '(("Cons"))
+        (org-truss-board-roles))
+      (should (equal (funcall property "Issue" "TRUSS_ROLE") "cons"))
+      (should (= (count-matches "^ [├└] Cons *$" (point-min) (point-max)) 2)))))
 
 (ert-deftest org-truss-test-board-cuts-long-headings ()
   "A heading too long for its room is cut short, so what the reader sees
@@ -209,7 +257,7 @@ labelled part and what a check lists are broken too, and nothing is cut."
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_FIELD: constraints
+:TRUSS_ROLE: constraints
 :END:
 The constraints, LONG.
 - An item, LONG
@@ -407,7 +455,7 @@ past what is under a member."
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_FIELD: constraints
+:TRUSS_ROLE: constraints
 :END:
 *** A summary, LONG
 :PROPERTIES:
@@ -474,7 +522,7 @@ and every line any of them is broken onto."
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_FIELD: constraints
+:TRUSS_ROLE: constraints
 :END:
 *** A fact, LONG
 :PROPERTIES:
@@ -814,10 +862,14 @@ folded; the blocks of the headings under it stay as they were."
 (ert-deftest org-truss-test-board-visits-the-brief ()
   "RET on the brief's lines goes to the brief, or to the field the line shows."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "^ Reader")
+    (org-truss-test--goto-line-with "^ └ Reader")
     (save-window-excursion
       (org-truss-board-visit)
       (should (equal (org-get-heading t t t t) "Reader")))
+    (org-truss-test--goto-line-with "^ Brief ")
+    (save-window-excursion
+      (org-truss-board-visit)
+      (should (equal (org-get-heading t t t t) "Brief")))
     (org-truss-test--goto-line-with "^ Title")
     (save-window-excursion
       (org-truss-board-visit)
@@ -1125,11 +1177,12 @@ place.  o tells a member last, or as written."
       (should (equal (funcall choices (org-truss-test--m model "Lone remark"))
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
+                       reader-question-response-constraints premises-issue-constraints
                        first last prep sds scqa sky-rain-umbrella)))
       (should (equal (funcall choices (org-truss-test--m model "Move to fortnightly"))
                      '(reasons deduction induction steps parts
                        first last prep sds scqa sky-rain-umbrella (none . logic))))
-      (should (equal (seq-drop (funcall choices (org-truss-model-structure model)) 11)
+      (should (equal (seq-drop (funcall choices (org-truss-model-structure model)) 13)
                      '(first last prep sds scqa sky-rain-umbrella (none . telling))))
       (should (equal (car (rassq 'prep (org-truss--pattern-choices
                                         (org-truss-test--m model "Lone remark"))))
@@ -1613,6 +1666,7 @@ asks for a field, and on a fact of a cluster writes the next one."
                                     (org-truss-test--m model "The manager checks every driver before and after driving")))
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
+                       reader-question-response-constraints premises-issue-constraints
                        (none . logic))))))
   (org-truss-test--with-board org-truss-test--clusters-file
     (org-truss-test--goto-line-with "^ Subject ")

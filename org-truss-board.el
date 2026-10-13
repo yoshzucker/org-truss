@@ -24,6 +24,7 @@
 
 (require 'org-truss-core)
 (require 'org-truss-edit)
+(require 'org-truss-guide)
 (require 'org-truss-export)
 (require 'org-truss-draw)
 
@@ -563,11 +564,15 @@ ID is a pattern, or (none . KIND) for taking off the one of KIND."
   "Return (LABEL . ID) for the patterns CLUSTER can take, or take off.
 Every logic pattern; the aspects, when its logic pattern is one that takes
 them; and a telling pattern, unless it is a finding, which is not told,
-only listed.  Each kind it has can be taken off, as (none . KIND)."
-  (let ((logic (org-truss-cluster-logic cluster))
-        (told (or (org-truss-section-p cluster) (not (org-truss-finding-p cluster)))))
+only listed.  The brief and the subject take aspects alone: their fields
+are what must be there, and nothing of them is told or argued.  Each kind
+it has can be taken off, as (none . KIND)."
+  (let* ((part (org-truss-part-p cluster))
+         (logic (org-truss-cluster-logic cluster))
+         (told (and (not part)
+                    (or (org-truss-section-p cluster) (not (org-truss-finding-p cluster))))))
     (append (mapcar (lambda (id) (cons (org-truss-pattern-label id) id))
-                    (append (org-truss-patterns-of-kind 'logic)
+                    (append (and (not part) (org-truss-patterns-of-kind 'logic))
                             (and (org-truss-aspects-allowed-p logic)
                                  (org-truss-patterns-of-kind 'aspects))
                             (and told (org-truss-patterns-of-kind 'telling))))
@@ -579,19 +584,22 @@ only listed.  Each kind it has can be taken off, as (none . KIND)."
                               '(logic aspects telling))))))
 
 (defun org-truss-board-pattern ()
-  "Apply a pattern to the cluster at point: a member, a section, the structure.
+  "Apply a pattern to the cluster at point: a member, a section, the structure,
+the brief or the subject.
 A logic pattern says how what is right under it is joined to it -- why it
 holds, or what it is made of; aspects say what must all be there; a
 telling pattern, how it is told.  What the pattern asks for and is not
 there is put in, a heading for each place, to be written over: a
-deduction's premises, a 6W1H's aspects, a PREP's reasons and examples.  A
-telling pattern on a section takes the sections there into its places
-first.  Logic that takes no aspects takes them off."
+deduction's premises, a 6W1H's aspects, a PREP's reasons and examples; on
+the brief or the subject, a field.  A telling pattern on a section takes
+the sections there into its places first.  Logic that takes no aspects
+takes them off."
   (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'section 'member))
+  (let* ((item (org-truss--want (org-truss--item) 'section 'member 'brief))
          (section (eq (plist-get item :type) 'section))
          (pos (plist-get item :pos))
-         (cluster (or (org-truss-cluster-at (org-truss-read org-truss--source) pos)
+         (cluster (or (let ((cluster (org-truss-cluster-at (org-truss-read org-truss--source) pos)))
+                        (and (not (org-truss-field-p cluster)) cluster))
                       (user-error "Nothing to apply a pattern to here")))
          (choices (org-truss--pattern-choices cluster))
          (id (org-truss--read-choice
@@ -609,30 +617,38 @@ first.  Logic that takes no aspects takes them off."
           (let* ((cluster (org-truss-cluster-at (org-truss-read) pos))
                  (asks (if (eq kind 'telling)
                            (mapcar #'car (org-truss-places-under cluster))
-                         (plist-get (org-truss-pattern id) :roles))))
-            (org-truss-add-places pos (seq-filter (lambda (gap) (memq (car gap) asks))
-                                                  (org-truss-gaps cluster))
-                                  section)))))))
+                         (plist-get (org-truss-pattern id) :roles)))
+                 (gaps (seq-filter (lambda (gap) (memq (car gap) asks))
+                                   (org-truss-gaps cluster))))
+            (if (org-truss-part-p cluster)
+                (pcase-dolist (`(,role . ,short) gaps)
+                  (dotimes (_ short)
+                    (set-marker (org-truss-add-field pos role) nil)))
+              (org-truss-add-places pos gaps section))))))))
 
 (defun org-truss-board-new-section ()
   "Add a section under the section at point.
 On a gap -- a place the section's pattern asks for and no section below
-fills -- the new section fills it."
+fills -- the new section fills it.  On a gap of the brief or the subject,
+a field their pattern asks for and none fills, a new field fills it."
   (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'section))
-         (gap (plist-get item :gap))
-         (roles (if gap (list gap)
-                  (org-truss--read-roles "Answers (empty for none): " nil
-                                         (org-truss--section-at item))))
-         (name (read-string "Label: " (and roles (org-truss-role-label (car roles))))))
-    (org-truss--editing
-      (org-truss-add-section (plist-get item :pos) name roles))))
+  (let ((item (org-truss--item)))
+    (if (and (eq (plist-get item :type) 'brief) (plist-get item :gap))
+        (org-truss--editing
+          (set-marker (org-truss-add-field (plist-get item :pos) (plist-get item :gap)) nil))
+      (let* ((item (org-truss--want item 'section))
+             (gap (plist-get item :gap))
+             (roles (if gap (list gap)
+                      (org-truss--read-roles "Answers (empty for none): " nil
+                                             (org-truss--section-at item))))
+             (name (read-string "Label: " (and roles (org-truss-role-label (car roles))))))
+        (org-truss--editing
+          (org-truss-add-section (plist-get item :pos) name roles))))))
 
-(defun org-truss--field-name (key)
-  "Return the board's name for the field KEY, (PART FIELD), with its part."
-  (format "%s › %s" (capitalize (symbol-name (car key)))
-          (string-trim (or (nth 1 (assoc key org-truss--board-fields))
-                           (capitalize (symbol-name (cadr key)))))))
+(defun org-truss--field-path (field)
+  "Return FIELD as the start of a path, with its part: Subject › Issue."
+  (format "%s › %s" (capitalize (symbol-name (org-truss-field-part field)))
+          (org-truss-field-name field)))
 
 (defun org-truss--path-segment (model member short)
   "Return MEMBER as one step of a path, cut short when SHORT.
@@ -660,9 +676,8 @@ whole.  A heading is what names a member; the path says where it is."
     (while (org-truss-parent model top)
       (setq top (org-truss-parent model top))
       (push (org-truss--path-segment model top t) segments))
-    (let ((field (car (seq-find (lambda (c) (memq top (cdr c)))
-                                (org-truss-model-field-members model)))))
-      (string-join (cons (if field (org-truss--field-name field) "Members") segments) " › "))))
+    (let ((field (org-truss-field-of model member)))
+      (string-join (cons (if field (org-truss--field-path field) "Members") segments) " › "))))
 
 (defun org-truss--member-choices (model)
   "Return (PATH . POSITION) for every member of MODEL, those not placed first."
@@ -829,19 +844,24 @@ Its patterns go with them; see `org-truss-unwrap'."
 
 (defun org-truss-board-roles ()
   "Set the places the line at point fills in the patterns of the one above.
-For a section, under the section above; for a member, under the member it
-is nested under, when that one's patterns name places.  Those still empty
-are offered first, then the rest those patterns name, then every role.  A
-heading can fill one place for each pattern that asks: a major premise
-that is also told as a reason."
+For a section, under the section above; for a field, under the brief or
+the subject; for a member, under the member it is nested under, when that
+one's patterns name places.  Those still empty are offered first, then the
+rest those patterns name, then every role.  A heading can fill one place
+for each pattern that asks: a major premise that is also told as a reason."
   (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'section 'member))
+  (let* ((item (org-truss--want (org-truss--item) 'section 'member 'brief))
          (pos (plist-get item :pos))
          (model (org-truss-read org-truss--source))
          (cluster (org-truss-cluster-at model pos))
-         (parent (if (eq (plist-get item :type) 'section)
-                     (org-truss--section-at item t)
-                   (org-truss-parent model cluster))))
+         (parent (cond ((eq (plist-get item :type) 'section)
+                        (org-truss--section-at item t))
+                       ((org-truss-field-p cluster)
+                        (seq-find (lambda (part) (and part (memq cluster (org-truss-part-children part))))
+                                  (list (org-truss-model-brief model) (org-truss-model-subject model))))
+                       ((org-truss-member-p cluster)
+                        (org-truss-parent model cluster))
+                       (t (user-error "Put point on a section, a field or a member")))))
     (when (and (org-truss-member-p cluster) (not (and parent (org-truss-asked-roles parent))))
       (user-error "A member takes a role only under one whose patterns name places"))
     (let ((roles (org-truss--read-roles "Fills: " (org-truss-cluster-roles cluster) parent)))
@@ -1126,8 +1146,9 @@ when that one is a step or a part: support for one step, say.  The entry
 opens as `org-truss-board-edit' opens one, and aborting it takes the new
 member away."
   (interactive "P")
-  (when (eq (plist-get (org-truss--item) :part) 'subject)
-    (user-error "Put point on a field of the subject to write a member under it"))
+  (when (plist-get (org-truss--item) :part)
+    (user-error "Put point on a field of the %s to write a member under it"
+                (plist-get (org-truss--item) :part)))
   (when (and (eq (plist-get (org-truss--item) :type) 'section) (plist-get (org-truss--item) :gap))
     (user-error (substitute-command-keys
                  "A section answers this; \\[org-truss-board-new-section] adds one")))
@@ -1255,9 +1276,8 @@ with its part; a member by its path, `org-truss--member-path'."
          (inside (org-truss--subtree member))
          (places (append
                   (and members (list (cons members "Members")))
-                  (mapcar (lambda (place) (cons (cdr place) (org-truss--field-name (car place))))
-                          (seq-filter (lambda (place) (cdr (car place)))
-                                      (org-truss-model-locations model)))
+                  (mapcar (lambda (field) (cons (org-truss-field-pos field) (org-truss--field-path field)))
+                          (org-truss-fields model))
                   (mapcar (lambda (m) (cons (org-truss-member-pos m) (org-truss--member-path model m)))
                           (seq-remove (lambda (m) (memq m inside)) (org-truss-model-all model)))))
          out)
