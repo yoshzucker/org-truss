@@ -701,7 +701,13 @@ This is the board of the file above:
 
 Each line has three columns.  On the left is what the board says the line
 is: the questions a section answers, the kind of a member -- marked =x= when
-it argues against the one above -- and the tree that joins them.  In the
+it argues against the one above -- and the tree that joins them.  At the
+end of the left, just before its heading, a member is named by its
+~CUSTOM_ID~ as the file names it: =#m9= where it is written, in the
+subject and the members, and =[[#m9]]= where a section's link or a ground
+calls it.  So what the structure shows can be found where it is written,
+and a member nested under one a section calls, which is not called
+itself, has none.  In the
 middle, from one column the same on every line, are the file's own words --
 headings, labels, the title, the brief -- as written, with dots leading to
 them.  A member's heading is in the face Org gives a heading of its level,

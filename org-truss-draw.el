@@ -158,6 +158,20 @@ if any, is the line's help."
         :right (and right (not (string-empty-p right)) right)
         :item item))
 
+(defun org-truss--with-id (line id)
+  "Return LINE naming a member by ID, at the end of its left, or LINE as it is.
+ID is how a call to the member is written, [[#m9]], or the member itself
+is pointed to, #m9; see `org-truss--id-text'."
+  (if id (append line (list :id (propertize id 'face 'org-truss-dim))) line))
+
+(defun org-truss--id-text (member &optional ref)
+  "Return how the board names MEMBER by its CUSTOM_ID, or nil when it has none.
+REF, when the line calls it -- a section's link, a ground -- as the call
+is written, [[#m9]]; else as anything points to it, #m9, where it is
+written."
+  (cond (ref (format "[[%s]]" (org-truss--target ref)))
+        ((org-truss-member-id member) (concat "#" (org-truss-member-id member)))))
+
 (defun org-truss--leader (width)
   "Return WIDTH columns that lead the eye from the board's words to the file's.
 A space at each end; dots between, when there is room for one."
@@ -170,8 +184,10 @@ A space at each end; dots between, when there is room for one."
 (defun org-truss--lay-out (line column)
   "Return LINE as text, with its middle starting at COLUMN.
 When something follows on the right, the middle is cut short to leave it
-its column."
+its column.  The member the line names by its id, if any, has it at the
+end of the left, just before the middle."
   (let* ((left (plist-get line :left))
+         (id (plist-get line :id))
          (right (plist-get line :right))
          (room (- org-truss--middle-width 2))
          (middle (let ((middle (plist-get line :middle)))
@@ -180,12 +196,13 @@ its column."
                                    'help-echo middle)
                      middle)))
          (why (plist-get (plist-get line :item) :why))
-         (gap (- column (string-width left)))
+         (gap (- column (string-width left) (if id (1+ (string-width id)) 0)))
          (out (if (and middle (or right (not (string-empty-p middle))))
                   (concat left
                           (if (or (plist-get line :bare) (string-blank-p left))
                               (make-string gap ?\s)
                             (org-truss--leader gap))
+                          (if id (concat id " ") "")
                           middle)
                 left)))
     (when right
@@ -657,18 +674,23 @@ one its parent's telling pattern tells after it is marked."
                                                      (org-truss--placeholder-why))))
                            ". ")))
     (cons
-     (org-truss--line
-      (concat indent
-              (if (org-truss-against-p member) "x " "")
-              (org-truss--kind-word model member)
-              (if folded (org-truss--fold-mark nested) "")
-              (if roles
-                  (propertize (format "  [%s]" (org-truss-role-names roles)) 'face 'org-truss-dim)
-                "")
-              (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
-      (car label)
-      (car reader)
-      (if (string-empty-p why) item (append item (list :why why))))
+     ;; Called from the structure, it names the member as the link does;
+     ;; where it is written, by its id.  Nested under a member called
+     ;; there, it is not called itself, and names nothing.
+     (org-truss--with-id
+      (org-truss--line
+       (concat indent
+               (if (org-truss-against-p member) "x " "")
+               (org-truss--kind-word model member)
+               (if folded (org-truss--fold-mark nested) "")
+               (if roles
+                   (propertize (format "  [%s]" (org-truss-role-names roles)) 'face 'org-truss-dim)
+                 "")
+               (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
+       (car label)
+       (car reader)
+       (if (string-empty-p why) item (append item (list :why why))))
+      (and (or link (not in-structure)) (org-truss--id-text member link)))
      (org-truss--told-below
       (append
        (org-truss--lines-under-heading
@@ -693,17 +715,19 @@ one its parent's telling pattern tells after it is marked."
        (mapcar (lambda (ref)
                  (let ((ground (org-truss-member-by-ref model ref)))
                    (append
-                    (org-truss--line
-                     (concat stem (propertize "⬑ " 'face 'org-truss-dim)
-                             (if ground (org-truss--kind-word model ground)
-                               (propertize "broken ground" 'face 'org-truss-attention)))
-                     (propertize (if ground (org-truss-member-label ground)
-                                   (format "[[%s]]" (org-truss--target ref)))
-                                 'face 'org-truss-dim)
-                     nil (list :type 'member :pos (org-truss-member-pos (or ground member))
-                               :label (and ground (org-truss-member-label ground))
-                               :claim (org-truss-member-pos member) :ground ref
-                               :key (append key (list 'ground ref))))
+                    (org-truss--with-id
+                     (org-truss--line
+                      (concat stem (propertize "⬑ " 'face 'org-truss-dim)
+                              (if ground (org-truss--kind-word model ground)
+                                (propertize "broken ground" 'face 'org-truss-attention)))
+                      (propertize (if ground (org-truss-member-label ground)
+                                    (format "[[%s]]" (org-truss--target ref)))
+                                  'face 'org-truss-dim)
+                      nil (list :type 'member :pos (org-truss-member-pos (or ground member))
+                                :label (and ground (org-truss-member-label ground))
+                                :claim (org-truss-member-pos member) :ground ref
+                                :key (append key (list 'ground ref))))
+                     (and ground (org-truss--id-text ground ref)))
                     (list :under stem))))
                (and (not in-structure) (not folded) (org-truss-member-grounds member)))
        ;; Under that line, what is under the member leaves its columns at
@@ -727,14 +751,26 @@ one its parent's telling pattern tells after it is marked."
                  shown))
        ;; A pattern that closes with the member again tells it once more
        ;; after what is under it.
+       ;; Drawn whole, its words are broken here, so the lines they go on
+       ;; carry the tree on the left down.
        (and in-structure first (not folded) (org-truss-told-again-p member)
             (not (org-truss-noexport-p member))
             (let* ((told (org-truss-member-told member 'after wording))
-                   (text (if (string-empty-p (or (cdr told) "")) (car told) (cdr told))))
-              (list (org-truss--line (concat under "  " (propertize "again" 'face 'org-truss-dim))
-                                     nil (org-truss--reader-text (cons nil text))
-                                     (list :type 'member :pos (org-truss-member-pos member)
-                                           :key (append key '(again)))))))
+                   (said (org-truss--reader-text
+                          (cons nil (if (string-empty-p (or (cdr told) "")) (car told) (cdr told)))))
+                   (i -1))
+              (mapcar (lambda (words)
+                        (setq i (1+ i))
+                        (org-truss--line (concat under "  " (if (= i 0)
+                                                                (propertize "again" 'face 'org-truss-dim)
+                                                              ""))
+                                         nil words
+                                         (list :type 'member :pos (org-truss-member-pos member)
+                                               :key (append key (if (= i 0) '(again)
+                                                                  (list 'again 'wrap i))))))
+                      (cond ((null said) nil)
+                            (org-truss--whole (org-truss--break said org-truss--right-width))
+                            (t (list said))))))
        (mapcar (lambda (gap)
                  (org-truss--line
                   (concat under "  " (org-truss--gap-text gap))
@@ -883,15 +919,17 @@ check finds is shown when the mouse is on it."
   (when members
     (cons (org-truss--check-heading heading)
           (mapcar (lambda (m)
-                    (org-truss--line
-                     (concat "   " (org-truss--kind-word model m))
-                     (org-truss--member-words m)
-                     (if right
-                         (funcall right m)
-                       (car (let ((org-truss--whole nil)) (org-truss--member-reader m))))
-                     (list :type 'member :pos (org-truss-member-pos m)
-                           :label (org-truss-member-label m)
-                           :key (list kind (org-truss-member-label m)))))
+                    (org-truss--with-id
+                     (org-truss--line
+                      (concat "   " (org-truss--kind-word model m))
+                      (org-truss--member-words m)
+                      (if right
+                          (funcall right m)
+                        (car (let ((org-truss--whole nil)) (org-truss--member-reader m))))
+                      (list :type 'member :pos (org-truss-member-pos m)
+                            :label (org-truss-member-label m)
+                            :key (list kind (org-truss-member-label m))))
+                     (org-truss--id-text m)))
                   members))))
 
 (defun org-truss--section-list-lines (heading sections kind &optional right)
@@ -1214,10 +1252,13 @@ and ids more than one member has, which break links."
 
 (defun org-truss--column (lines)
   "Return the column the middle starts at on LINES.
-Two past the widest of the board's own words on a line that has any."
+Two past the widest of the board's own words, with the id a line names a
+member by, on a line that has any."
   (+ 2 (seq-reduce (lambda (widest line)
                      (if (plist-get line :middle)
-                         (max widest (string-width (plist-get line :left)))
+                         (max widest (+ (string-width (plist-get line :left))
+                                        (let ((id (plist-get line :id)))
+                                          (if id (1+ (string-width id)) 0))))
                        widest))
                    lines 0)))
 
