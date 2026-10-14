@@ -95,16 +95,18 @@ the column and no taller than this; elsewhere it is its file's name."
   :group 'org-truss)
 
 (defcustom org-truss-board-marks
-  '((ground . "⏚") (built . "↥") (section . "▤"))
-  "The marks of the lines that name the other end of a link, by what it is.
-Each line is under a member and names another, or a section, and its mark
-says what what it names is to the member above: `ground', a ground the
-member above stands on, named in its TRUSS_GROUNDS, drawn below it as a
-ground is; `built', a member standing on the member above, which names it
-in its own -- drawn below it all the same, so the mark points up; and
-`section', the section that lists the member above, where the document
-tells it.  One character each, as wide as a letter where the board is
-drawn, keeps the tree in line."
+  '((ground . "⏚") (built . "↥") (section . "▤") (item . "•"))
+  "The marks of the lines that are an end of a link, by what they name.
+Each line is under a member or a section and names a member, or a
+section, and its mark says what what it names is to the one above:
+`ground', a ground the member above stands on, named in its
+TRUSS_GROUNDS, drawn below it as a ground is; `built', a member standing
+on the member above, which names it in its own -- drawn below it all the
+same, so the mark points up; `section', the section that lists the
+member above, where the document tells it; and `item', in the structure,
+a member the section above lists, as the file writes it, - [[#m7]].  A
+line with no mark is written there.  One character each, as wide as a
+letter where the board is drawn, keeps the tree in line."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
@@ -540,7 +542,8 @@ under the heading; this breaks the rest: a ground, what a check lists."
 (defconst org-truss--mark-help
   '((ground . "Its ground: the member above stands on this one, which its TRUSS_GROUNDS names")
     (built . "Built on it: this member stands on the member above, which its TRUSS_GROUNDS names")
-    (section . "Its section: this section lists the member above, and the document tells it here"))
+    (section . "Its section: this section lists the member above, and the document tells it here")
+    (item . "An item of the section above: it lists this member, - [[#id]], and the document tells it here"))
   "What the mark of each kind of line naming the other end of a link says.")
 
 (defun org-truss--mark (kind)
@@ -782,6 +785,9 @@ parent's telling pattern tells after it is marked."
      (org-truss--with-id
       (org-truss--line
        (concat indent
+               ;; Listed by a section, it is an end of a link, marked as
+               ;; the lines naming one are.
+               (if link (org-truss--mark 'item) "")
                (if (org-truss-against-p member) "x " "")
                (org-truss--kind-word model member)
                (if folded (org-truss--fold-mark nested) "")
@@ -897,7 +903,8 @@ parent's telling pattern tells after it is marked."
                                            (org-truss-section-pos section) nil
                                            (org-truss-section-wording section ref))
                 (list (org-truss--line
-                       (propertize (concat indent "broken link") 'face 'org-truss-attention)
+                       (concat indent (org-truss--mark 'item)
+                               (propertize "broken link" 'face 'org-truss-attention))
                        (propertize (format "[[%s]]" (org-truss--target ref)) 'face 'org-truss-attention)
                        nil (list :type 'broken :pos (org-truss-section-pos section)
                                  :link ref :section (org-truss-section-pos section) :key key))))))

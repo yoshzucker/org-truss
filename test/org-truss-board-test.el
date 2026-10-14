@@ -366,7 +366,7 @@ members under it branch off from the column of its word, as a tree, below
 the line naming its pattern."
   (org-truss-test--with-board org-truss-test--file
     (let ((text (buffer-string)))
-      (should (string-match-p "^ ├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky .*\n │   fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long" text))
+      (should (string-match-p "^ ├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky .*\n │   • fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long" text))
       (should (string-match-p (concat "^   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
                                       "   (why › reasons)\n"
                                       "   │ ▤ Rain[ ·]+Rain\n"
@@ -382,7 +382,7 @@ the line naming its pattern."
       (should-not (get-text-property (match-beginning 1) 'face)))
     (org-truss-test--told)
     (let ((text (buffer-string)))
-      (should (string-match-p (concat "^ │   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
+      (should (string-match-p (concat "^ │   • hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
                                       " │   (why › reasons)\n"
                                       " │   │ ↥ hypothesis[ ·]+Move to fortnightly\n"
                                       " │   │ ⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
@@ -452,12 +452,12 @@ way again."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-told-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-board-wrap)
-    (should (looking-at-p " │   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
+    (should (looking-at-p " │   • hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
     (should (= (how-many "Robin keeps raising" (point-min) (point-max)) 1))
     (should (string-match-p "Robin keeps raising[^├]*\n │   ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff" (buffer-string)))
     (forward-line 1)
     (org-truss-board-wrap)
-    (should (looking-at-p " │   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
+    (should (looking-at-p " │   • hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
     (should-not (string-match-p "Robin" (buffer-string)))
     (org-truss-board-entry-text)
     (should (= (how-many "Robin keeps raising" (point-min) (point-max)) 2))
@@ -592,7 +592,7 @@ and every line any of them is broken onto."
                      board))
             (should (string-match-p
                      (concat "^ └ section[ ·]+\\(?:\\[*#[^] ]+]* \\)?Now.*\n"
-                             "   │ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?A fact, long enough to.*\n"
+                             "   │ • fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?A fact, long enough to.*\n"
                              (if entries "   │ +in a column this narrow\n" "")
                              "   └ section[ ·]+\\(?:\\[*#[^] ]+]* \\)?Later")
                      board))))))))
@@ -1693,7 +1693,7 @@ outside the structure, lines marked ▤ and ↥ say where it is used."
                  (string-match "^ Structure " text)))
       (should (string-match-p "^ Misplaced\n   fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?The tester reads zero when sober +a fact" text))
       (should (string-match-p (concat "├ Situation[ ·]+\\(?:\\[*#[^] ]+]* \\)?Background +Background\n"
-                                      " │   summary[ ·]+\\(?:\\[*#[^] ]+]* \\)?The manager checks.* +The rules ask for a check before and after driving\\.\n"
+                                      " │   • summary[ ·]+\\(?:\\[*#[^] ]+]* \\)?The manager checks.* +The rules ask for a check before and after driving\\.\n"
                                       " └ Conclusion")
                               text))
       (should (string-match-p "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver blows into the tester +1\\. The driver blows" text)))))
@@ -1837,11 +1837,11 @@ is written.  The mode line says which."
     (org-truss-board-fold)
     (org-truss-board-order)
     (should (equal mode-name "Truss told"))
-    (should (looking-at " │   hypothesis[ ·]+\\[\\[#half\\]\\] Half the items repeat"))
+    (should (looking-at " │   • hypothesis[ ·]+\\[\\[#half\\]\\] Half the items repeat"))
     (should (string-match-p "^   hypothesis ▸5[ ·]+#half Half the items repeat +Most items come back unchanged$"
                             (buffer-string)))
     (should (string-match-p (concat "^ └ Umbrella.*\n"
-                                    "     hypothesis[ ·]+\\[\\[#move\\]\\] Move to fortnightly.*\n"
+                                    "     • hypothesis[ ·]+\\[\\[#move\\]\\] Move to fortnightly.*\n"
                                     "     (why › deduction)\n"
                                     "     │ ⏚ hypothesis[ ·]+\\[\\[#half\\]\\] Half the items repeat\n"
                                     "     └ bare  \\[Major premise\\].*\n"
@@ -1850,12 +1850,12 @@ is written.  The mode line says which."
     (org-truss-board-order)
     (should (equal mode-name "Truss"))
     (should (looking-at "   hypothesis[ ·]+#half Half the items repeat"))
-    (should (string-match-p "^ │   hypothesis ▸5[ ·]+\\[\\[#half\\]\\]" (buffer-string))))
+    (should (string-match-p "^ │   • hypothesis ▸5[ ·]+\\[\\[#half\\]\\]" (buffer-string))))
   (org-truss-test--with-board org-truss-test--clusters-file
     (org-truss-test--told)
     (should (string-match-p "^     summary[ ·]+#rule The manager checks every driver.*\n     (how › parts)\n"
                             (buffer-string)))
-    (should (string-match-p "^ │   summary[ ·]+\\[\\[#rule\\]\\] The manager checks every driver.*\n └ Conclusion"
+    (should (string-match-p "^ │   • summary[ ·]+\\[\\[#rule\\]\\] The manager checks every driver.*\n └ Conclusion"
                             (buffer-string)))))
 
 (ert-deftest org-truss-test-board-tells-where-it-is-written ()
@@ -1903,13 +1903,13 @@ starts in the same column all the same."
     (let ((text (buffer-string)))
       (should (string-match-p "^   hypothesis ·+ #half Half the items repeat " text))
       (should (string-match-p "^   │ ⏚ fact ·+ \\[\\[#long\\]\\] Reviews run long$" text))
-      (should (string-match-p "^ │   hypothesis ▸5[ ·]+\\[\\[#half\\]\\] Half the items repeat " text))
+      (should (string-match-p "^ │   • hypothesis ▸5[ ·]+\\[\\[#half\\]\\] Half the items repeat " text))
       (should (string-match-p "^   bare ·+ Lone remark +Lone remark$" text))
       (should (= (org-truss-test--column-of "^   hypothesis ·+ #half" "Half the items repeat")
                  (org-truss-test--column-of "^   bare ·+ Lone remark" "Lone remark"))))
     (org-truss-test--told)
     (let ((text (buffer-string)))
-      (should (string-match-p "^ │   hypothesis ·+ \\[\\[#half\\]\\] Half the items repeat " text))
+      (should (string-match-p "^ │   • hypothesis ·+ \\[\\[#half\\]\\] Half the items repeat " text))
       (should (string-match-p "^ │   ├ fact ·+ Agenda diff " text)))))
 
 (ert-deftest org-truss-test-board-goes-to-the-same-member ()
@@ -1925,7 +1925,7 @@ a section calls, to where it is written as well."
     (org-truss-board-same)
     (should (looking-at "   hypothesis ▸5 ·+ #half"))
     (org-truss-board-same)
-    (should (looking-at " │   hypothesis ·+ \\[\\[#half\\]\\]"))
+    (should (looking-at " │   • hypothesis ·+ \\[\\[#half\\]\\]"))
     ;; Where it is written is folded into the member it is nested under,
     ;; which is opened where told; it is unfolded.
     (org-truss-test--goto-told-line-with "fact ·+ Agenda diff")
@@ -1952,7 +1952,7 @@ where it is written, where it is called, the lines it takes below its own."
                        org-truss--same-overlays)))
       (should (seq-some (lambda (line) (string-match-p "#half Half the items repeat" line)) lit))
       (should (seq-some (lambda (line) (string-match-p "⏚ hypothesis[ ·]+\\[\\[#half\\]\\]" line)) lit))
-      (should-not (seq-some (lambda (line) (string-match-p "^ │   hypothesis" line)) lit)))
+      (should-not (seq-some (lambda (line) (string-match-p "^ │   • hypothesis" line)) lit)))
     (org-truss-test--goto-line-with "^ Title")
     (org-truss--light-same)
     (should-not org-truss--same-overlays)))
