@@ -94,6 +94,18 @@ the column and no taller than this; elsewhere it is its file's name."
   :type 'integer
   :group 'org-truss)
 
+(defcustom org-truss-board-marks
+  '((ground-of . "⏚") (built-on . "⌂") (told-in . "▤"))
+  "The marks of the lines that name the other end of a link, by what it is.
+Each line is under a member and names another, or a section, and its mark
+says what the member above is to it: `ground-of', the ground it stands on,
+named in its TRUSS_GROUNDS; `built-on', standing on it, which the member
+above names in its own; `told-in', listed in that section, where the
+document tells it.  One character each, as wide as a letter where the
+board is drawn, keeps the tree in line."
+  :type '(alist :key-type symbol :value-type string)
+  :group 'org-truss)
+
 (defcustom org-truss-board-fold-limit 5
   "How many members a field of the brief or the subject shows before folding.
 A field holding more starts folded on the board, as one line that says how
@@ -523,22 +535,37 @@ under the heading; this breaks the rest: a ground, what a check lists."
                                                               (list 'wrap i)))))
                                      '(:bare t)))))))
 
+(defconst org-truss--mark-help
+  '((ground-of . "The member above is a ground of this one: this one stands on it, through its TRUSS_GROUNDS")
+    (built-on . "The member above stands on this one, through its TRUSS_GROUNDS: this one is its ground")
+    (told-in . "This section lists the member above: the document tells it here"))
+  "What the mark of each kind of line naming the other end of a link says.")
+
+(defun org-truss--mark (kind)
+  "Return the mark of a line naming the other end of a link of KIND, and a space.
+See `org-truss-board-marks'; the mouse on it says what it means."
+  (concat (propertize (or (alist-get kind org-truss-board-marks) "?")
+                      'face 'org-truss-dim
+                      'help-echo (alist-get kind org-truss--mark-help))
+          " "))
+
 (defun org-truss--use-lines (model member stem key)
   "Return a line for each use of MEMBER of MODEL.
-Marked =→=, each section that lists it, by its roles and its heading, and
-then each member it is a ground of, by its kind and its heading: the other
-end of a link, as a line marked ⬑ is of a ground.  In the structure, where
-it is drawn under the section, the section goes without saying.  STEM
-starts each; KEY is MEMBER's line's.  Each goes to what it names."
+Each section that lists it, by its roles and its heading, marked as where
+it is told in, and then each member it is a ground of, by its kind and
+its heading, marked as standing on it: the other end of a link, as the
+line of a ground it stands on is of one.  In the structure, where it is
+drawn under the section, the section goes without saying.  STEM starts
+each; KEY is MEMBER's line's.  Each goes to what it names."
   (let ((use (and org-truss--uses (gethash member org-truss--uses)))
-        (arrow (propertize "→ " 'face 'org-truss-dim))
         (root (org-truss-model-structure model)))
     (mapcar
      (lambda (line) (append line (list :under stem :cut t)))
      (append
       (mapcar (lambda (section)
                 (org-truss--line
-                 (concat stem arrow (if (eq section root) "Structure" (org-truss--section-word section)))
+                 (concat stem (org-truss--mark 'told-in)
+                         (if (eq section root) "Structure" (org-truss--section-word section)))
                  (and (not (eq section root))
                       (propertize (org-truss-section-label section) 'face 'org-truss-dim))
                  nil
@@ -547,7 +574,7 @@ starts each; KEY is MEMBER's line's.  Each goes to what it names."
               (and (not org-truss--in-structure) (car use)))
       (mapcar (lambda (user)
                 (org-truss--line
-                 (concat stem arrow (org-truss--kind-word model user))
+                 (concat stem (org-truss--mark 'ground-of) (org-truss--kind-word model user))
                  (propertize (org-truss-member-label user) 'face 'org-truss-dim)
                  nil
                  (list :type 'use :pos (org-truss-member-pos user)
@@ -648,9 +675,9 @@ has its heading in the face of what wants doing.
 The right is what the document tells of it: what its telling pattern
 tells it in where it comes, and, when the pattern closes with it again, a
 line after what is under it.  Where it is opened, as `org-truss--order'
-says, where it is used follows it, marked =→=, then its grounds, marked
-⬑, and the places its pattern asks for and it lacks; where it is not, it
-starts folded, to one line.  In the structure, `org-truss--in-structure',
+says, where it is used follows it, then the grounds it stands on, each
+line marked as `org-truss-board-marks' says, and the places its pattern
+asks for and it lacks; where it is not, it starts folded, to one line.  In the structure, `org-truss--in-structure',
 only what the document tells comes with it besides: nothing under a
 member of the subject.  Elsewhere its right is in the face of what is not
 told while the document does not tell it, and empty under a member of the
@@ -791,7 +818,7 @@ parent's telling pattern tells after it is marked."
                    (append
                     (org-truss--with-id
                      (org-truss--line
-                      (concat stem (propertize "⬑ " 'face 'org-truss-dim)
+                      (concat stem (org-truss--mark 'built-on)
                               (if ground (org-truss--kind-word model ground)
                                 (propertize "broken ground" 'face 'org-truss-attention)))
                       (propertize (if ground (org-truss-member-label ground)

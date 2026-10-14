@@ -694,14 +694,14 @@ This is the board of the file above:
  ├ Premises
  │   summary ·········· #m1 Reviews run long                        Reviews ran past the hour eight times this quarter.
  │   (how › parts)
- │   │ → Sky ·············· Sky
- │   │ → hypothesis ······· Half the items repeat
+ │   │ ▤ Sky ·············· Sky
+ │   │ ⏚ hypothesis ······· Half the items repeat
  │   ├ fact ··············· Eight of twelve reviews ran past the hour
  │   └ fact ··············· The longest ran forty minutes over
  │   fact ············· #m2 Six of twelve items each week come ba…  Six of twelve items each week come back from the week before
- │     → hypothesis ······· Half the items repeat
+ │     ⏚ hypothesis ······· Half the items repeat
  │   fact ············· #m3 Urgent items are raised in the team c…  Urgent items are raised in the team chat
- │     → claim ············ Urgent items need no review
+ │     ⏚ claim ············ Urgent items need no review
  └ Issue ·················· The weekly review costs the team more time than it gives back.
    Constraints —
  Pattern gaps
@@ -710,19 +710,19 @@ This is the board of the file above:
  Members  what is made of it: interpretations and decisions
    hypothesis ········· #m4 Half the items repeat                   Most items come back unchanged
    (why › reasons)
-   │ → Rain ··············· Rain
-   │ → hypothesis ········· Move to fortnightly
-   │ ⬑ summary ···· [[#m1]] Reviews run long
-   │ ⬑ fact ······· [[#m2]] Six of twelve items each week come ba…
+   │ ▤ Rain ··············· Rain
+   │ ⏚ hypothesis ········· Move to fortnightly
+   │ ⌂ summary ···· [[#m1]] Reviews run long
+   │ ⌂ fact ······· [[#m2]] Six of twelve items each week come ba…
    ├ assumption ··········· Items need a week to move               We assume most items need more than a week to change.
    └ x objection ·········· Some items are urgent                   Some items are urgent
      (why › reasons)
      └ x claim ············ Urgent items need no review             Urgent items need no review
-         ⬑ fact ··· [[#m3]] Urgent items are raised in the team c…
+         ⌂ fact ··· [[#m3]] Urgent items are raised in the team c…
    hypothesis ········· #m5 Move to fortnightly                     Hold the review every other week.
    (how › steps)
-   │ → Umbrella ··········· Umbrella
-   │ ⬑ hypothesis · [[#m4]] Half the items repeat
+   │ ▤ Umbrella ··········· Umbrella
+   │ ⌂ hypothesis · [[#m4]] Half the items repeat
    ├ step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
    └ step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
  Assumptions
@@ -762,18 +762,18 @@ down the page, beside the logic each sentence rests on:
  ├ Rain ···················· Rain                                    Why it drags
  │   hypothesis ···· [[#m4]] Half the items repeat                   Most items come back unchanged
  │   (why › reasons)
- │   │ → hypothesis ········ Move to fortnightly
- │   │ ⬑ summary ··· [[#m1]] Reviews run long
- │   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come ba…
+ │   │ ⏚ hypothesis ········ Move to fortnightly
+ │   │ ⌂ summary ··· [[#m1]] Reviews run long
+ │   │ ⌂ fact ······ [[#m2]] Six of twelve items each week come ba…
  │   ├ assumption ·········· Items need a week to move               We assume most items need more than a week to change.
  │   └ x objection ········· Some items are urgent                   Some items are urgent
  │     (why › reasons)
  │     └ x claim ··········· Urgent items need no review             Urgent items need no review
- │         ⬑ fact ·· [[#m3]] Urgent items are raised in the team c…
+ │         ⌂ fact ·· [[#m3]] Urgent items are raised in the team c…
  └ Umbrella ················ Umbrella                                What we propose
      hypothesis ···· [[#m5]] Move to fortnightly                     Hold the review every other week.
      (how › steps)
-     │ ⬑ hypothesis  [[#m4]] Half the items repeat
+     │ ⌂ hypothesis  [[#m4]] Half the items repeat
      ├ step ················ Cancel every second review in the cal…  1. Cancel every second review in the calendar
      └ step ················ Carry what is still open to the next …  2. Carry what is still open to the next one
    Premises —
@@ -830,18 +830,39 @@ cluster can be read through as prose beside its logic where it is
 written.
 
 The links run both ways where a member is written, as lines in the middle
-under it, and the reader is told nothing on them.  A line marked =→= is
-where it is used: a section that lists it, by the place it fills and its
-heading, then a member it is a ground of, by its kind and its heading.  A
-line marked =⬑= is a member it stands on through ~TRUSS_GROUNDS~, written
-elsewhere, with its kind: the arrow points up to what it supports, as =x=
-marks what argues against.  Either is cut to the middle, its whole heading
-in the tooltip, and ~RET~ on it goes to what it names; ~=~ goes between a
-member and its calls.  A member with no line marked =→= is not used.  A
-place a member's pattern asks for and it lacks -- /Minor premise —/ --
-follows what it holds.  So does a place the structure's or a section's
-pattern asks for and no section right below fills -- /Premises —/ -- and
-~s~ on it adds a section that fills it.
+under it, and the reader is told nothing on them.  Each names the other
+end of a link, and its mark says what the member above is to it:
+
+| Mark | Names                                  | The member above                                 |
+|------+----------------------------------------+--------------------------------------------------|
+| =▤=  | a section, by its place and heading    | is told in it: the section lists it              |
+| =⏚=  | a member, by its kind and heading      | is a ground of it: it stands on the member above |
+| =⌂=  | a member, by its kind, id and heading  | stands on it, through ~TRUSS_GROUNDS~            |
+
+They are ground and what is built on it, as in a truss.  Each is cut to
+the middle, its whole heading in the tooltip; the mouse on the mark says
+what it means, and ~RET~ on the line goes to what it names.  ~=~ goes
+between a member and its calls.  A member with no line marked =▤= or =⏚=
+is not used.  ~org-truss-board-marks~ sets the marks.  A place a member's
+pattern asks for and it lacks -- /Minor premise —/ -- follows what it
+holds.  So does a place the structure's or a section's pattern asks for
+and no section right below fills -- /Premises —/ -- and ~s~ on it adds a
+section that fills it.
+
+The other marks of the board are not links:
+
+| Mark                | Where                  | Says                                                       |
+|---------------------+------------------------+------------------------------------------------------------|
+| =#m9=               | end of the left        | the member, where it is written                            |
+| =[[#m9]]=           | end of the left        | the member, where a section's link or a ground calls it    |
+| =x=                 | before a kind          | argues against the member above                            |
+| =[Reason]=          | after a kind           | the place it fills in the patterns of the one above        |
+| =(why › reasons)=   | the line below         | the patterns the cluster follows                           |
+| =▸5=                | after a kind           | folded, five hidden; ~z~ opens it                          |
+| =⚠=                 | after a role or a kind | fits no place of the pattern above, or out of its order    |
+| =Premises —=        | below what it holds    | a place the pattern asks for that nothing fills            |
+| =┐= … =└=           | the right              | told after what is under it, on the line =└= reaches       |
+| =again=             | below what it holds    | told again, as PREP and SDS close                          |
 
 In the structure a member a section lists is one line, as written, the
 words it is told in on its right; opened there, as told (~O~), it brings
@@ -953,23 +974,25 @@ beside the tree and the notes it was built from:
  │   hypothesis ···· [[#m4]] Half the items repeat                   Most items come back unchanged
  │   (why › reasons)         Robin keeps raising the same items.     Half of each agenda repeats the week before.
  │   │                       Not something to put in writing.
- │   │ → hypothesis ········ Move to fortnightly
- │   │ ⬑ summary ··· [[#m1]] Reviews run long
- │   │ ⬑ fact ······ [[#m2]] Six of twelve items each week come
+ │   │ ⏚ hypothesis ········ Move to fortnightly
+ │   │ ⌂ summary ··· [[#m1]] Reviews run long
+ │   │ ⌂ fact ······ [[#m2]] Six of twelve items each week come
  │   │                       back from the week before
  │   ├ assumption ·········· Items need a week to move               We assume most items need more than a week to change.
  │   └ x objection ········· Some items are urgent                   Some items are urgent
  │     (why › reasons)
  │     └ x claim ··········· Urgent items need no review             Urgent items need no review
- │         ⬑ fact ·· [[#m3]] Urgent items are raised in the team
+ │         ⌂ fact ·· [[#m3]] Urgent items are raised in the team
  │                           chat
 #+end_example
 
-~w~ does the same for the line at point alone, so the board can be scanned
-a line each and one line read through: a member with its notes, a ground,
-a field.  ~w~ again, on any of its lines, puts it back on one.  While ~E~
-shows every line whole, ~w~ puts the line at point on one line instead,
-and ~E~ again draws every line the same way.
+~i~ does the same for the line at point alone, inline as ~i~ in Dired
+shows a directory, so the board can be scanned a line each and one line
+read through: a member with its notes, a ground, a field.  ~i~ again, on
+any of its lines, puts it back on one.  While ~E~ shows every line whole,
+~i~ puts the line at point on one line instead, and ~E~ again draws every
+line the same way.  ~E~ and ~O~ are capitals, as seldom wanted and
+redrawing the whole board.
 
 A picture linked on a line of its own -- an attachment, or a file by a
 relative path -- is drawn on a line drawn whole, in its column: as wide as
@@ -1033,7 +1056,7 @@ foot of the board lists them in the same four lines.
 |       | ~O~         | open the members sections list where told, or     | same                                              |
 |       |             | where written                                     |                                                   |
 |       | ~E~         | show the text under every heading, or stop        |                                                   |
-|       | ~w~         | show it whole, with the text under it, or stop    | same                                              |
+|       | ~i~         | show it whole, with the text under it, or stop    | same                                              |
 |       | ~z~         | fold what is under it, or unfold it               | fold what is nested under it, or unfold it        |
 |       | ~P~         | show the document in another window, kept current |                                                   |
 |       | ~x~         | write the document                                |                                                   |
@@ -1083,7 +1106,7 @@ asking, in place of the quotation already there.
 A ground supports a member from outside what is nested under it, through
 ~TRUSS_GROUNDS~.  ~b~ on a member offers its grounds first, and choosing
 one takes it away; any other is added, and given a ~CUSTOM_ID~ when it has
-none.  On a ground's own line, the one marked =⬑=, ~b~ takes that ground
+none.  On a ground's own line, the one marked =⌂=, ~b~ takes that ground
 away at once.
 
 On the /Structure/ line, ~p~ gives the document a telling pattern -- Sky,
@@ -1216,6 +1239,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-right-width~   | ~nil~, the window's edge      | where a line drawn whole breaks its right     |
 | ~org-truss-board-image-height~  | 15                            | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~    | 5                             | members a field shows before it starts folded |
+| ~org-truss-board-marks~         | =⏚= =⌂= =▤=                   | marks of the lines that name a link's far end |
 | ~org-truss-board-highlight~     | ~t~                           | light the line at point, and the lines naming |
 |                                 |                               | the same member                               |
 

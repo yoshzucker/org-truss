@@ -177,7 +177,7 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "SPC") #'org-truss-board-show)
     (define-key map (kbd "e") #'org-truss-board-edit)
     (define-key map (kbd "E") #'org-truss-board-entry-text)
-    (define-key map (kbd "w") #'org-truss-board-wrap)
+    (define-key map (kbd "i") #'org-truss-board-wrap)
     (define-key map (kbd "z") #'org-truss-board-fold)
     (define-key map (kbd "c") #'org-truss-board-new)
     (define-key map (kbd "R") #'org-truss-board-rename)
@@ -398,8 +398,8 @@ Its entry is shown, and the blocks in it open: a heading is gone to so its
 text can be read, and the public block and the quotation are part of that
 text, though `org-hide-block-startup' folds them.  The headings under it
 are left as they were.  CENTER leaves a mark where point was in the file
-and puts the heading mid-window.  On a line marked =→=, where the member
-is used, that is the section or the member that uses it."
+and puts the heading mid-window.  On a line where the member above is
+used, that is the section that tells it or the member that stands on it."
   (let ((item (org-truss--want (org-truss--item) 'section 'member 'broken 'brief 'use)))
     (funcall display org-truss--source)
     (widen)
