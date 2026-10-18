@@ -4,7 +4,7 @@
 
 ;; Author: yoshzucker
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "29.1") (org "9.6"))
+;; Package-Requires: ((emacs "29.1") (org "9.6") (org-dock "0.1"))
 ;; Keywords: outlines, wp
 ;; URL: https://github.com/yoshzucker/org-truss
 
@@ -51,10 +51,16 @@
 (require 'org-truss-export)
 (require 'org-truss-board)
 
+;; Sources taken by org-moor, when it is there: a truss file's go beside
+;; it, and a fact can cite one, or take one, from the board.
+(with-eval-after-load 'org-moor
+  (require 'org-truss-moor))
+
 ;; Every command loads this file first, whichever library defines it, so that
 ;; a configuration waiting on `org-truss' is in place before the first one runs.
 ;;;###autoload (autoload 'org-truss-board "org-truss" "Draw the board for the nearest truss file." t)
 ;;;###autoload (autoload 'org-truss-export "org-truss" "Write the document of the nearest truss file." t)
+;;;###autoload (autoload 'org-truss-apply-pattern "org-truss" "Apply a pattern to the heading at point, in any Org file." t)
 
 (defcustom org-truss-agent-file "CLAUDE.md"
   "File `org-truss-init' writes beside the truss file for a coding agent, or nil.
@@ -62,6 +68,17 @@ It tells an agent working in the directory -- Claude Code reads CLAUDE.md
 at the start of each session -- where the rules are: in the comment at the
 head of the truss file, read when it is needed, rather than repeated here
 to be read every time."
+  :type '(choice (const :tag "None" nil) string)
+  :group 'org-truss)
+
+(defcustom org-truss-project-file nil
+  "Empty file `org-truss-init' writes beside the truss file, or nil.
+A file whose name a project tool takes as the mark of a project's root --
+\".project\", say, with `project-vc-extra-root-markers' naming it -- so
+that the directory is a project of its own even outside a repository, and
+what starts at a project's root, a coding agent among them, starts beside
+the truss file and its sources.  Inside a repository it makes the
+directory a project apart from the rest."
   :type '(choice (const :tag "None" nil) string)
   :group 'org-truss)
 
@@ -103,8 +120,9 @@ says to read it, and when.")
 (defun org-truss-set-up-directory (directory)
   "Put beside the truss file in DIRECTORY what is missing of what goes there.
 The directories `org-truss-sources-directory' and
-`org-truss-notes-directory', and `org-truss-agent-file'.  What is there is
-left as it is.  Return the names of what was made."
+`org-truss-notes-directory', `org-truss-agent-file', and
+`org-truss-project-file'.  What is there is left as it is.  Return the
+names of what was made."
   (let (made)
     (dolist (dir (list org-truss-sources-directory org-truss-notes-directory))
       (let ((path (expand-file-name dir directory)))
@@ -116,14 +134,20 @@ left as it is.  Return the names of what was made."
         (unless (file-exists-p path)
           (with-temp-file path (insert (org-truss--agent-text)))
           (push org-truss-agent-file made))))
+    (when org-truss-project-file
+      (let ((path (expand-file-name org-truss-project-file directory)))
+        (unless (file-exists-p path)
+          (with-temp-file path)
+          (push org-truss-project-file made))))
     (nreverse made)))
 
 ;;;###autoload
 (defun org-truss-init (directory)
   "Set up DIRECTORY to make a document in, and open its truss file.
 A new truss file when there is none.  Beside it, what is missing of the
-directories its head comment names and of `org-truss-agent-file'; see
-`org-truss-set-up-directory'.  A truss file written before its
+directories its head comment names, of `org-truss-agent-file' and of
+`org-truss-project-file'; see `org-truss-set-up-directory'.  A truss file
+written before its
 attachments were kept beside it is given the line that keeps them there,
 left unsaved to be looked over."
   (interactive (list (read-directory-name "Directory: " (org-truss--default-directory))))

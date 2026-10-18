@@ -27,7 +27,29 @@
              (setq org-truss--source source)
              (org-truss-board-redraw)
              ,@body))
+       (org-truss-test--close-copies)
        (kill-buffer source))))
+
+;; Headings the board takes out to be written in go into org-dock's copies;
+;; in a directory of the tests' own, not the user's.
+(setq org-dock-directory (file-name-as-directory (make-temp-file "org-truss-dock" t)))
+
+(defun org-truss-test--copy ()
+  "Return the buffer of the heading taken out to be written in, or nil."
+  (seq-find (lambda (buffer) (buffer-local-value 'org-dock--session buffer))
+            (buffer-list)))
+
+(defun org-truss-test--close-copies ()
+  "Close every copy of a heading taken out, as if let go unasked."
+  (dolist (buffer (buffer-list))
+    (when (buffer-local-value 'org-dock--session buffer)
+      (with-current-buffer buffer (set-buffer-modified-p nil))
+      (kill-buffer buffer))))
+
+(defun org-truss-test--let-go ()
+  "Let the copy in this buffer go, saying yes to letting its changes go."
+  (cl-letf (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+    (org-dock-abort)))
 
 (defun org-truss-test--goto-line-with (regexp &optional from)
   "Put point on the first board line matching REGEXP, after FROM if given.
@@ -728,9 +750,9 @@ them as what the reader sees; on a section it opens its lead to be written."
           (org-truss-board-save)
           (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
           (org-truss-board-say)
-          (with-current-buffer "*truss edit*"
+          (with-current-buffer (org-truss-test--copy)
             (insert "Where we are.")
-            (org-truss-edit-abort))
+            (org-truss-test--let-go))
           ;; What the board does before each command.
           (org-truss-board-redraw)
           (should-not (string-match-p "begin_public\n\n" (with-current-buffer org-truss--source
@@ -738,9 +760,9 @@ them as what the reader sees; on a section it opens its lead to be written."
           (should-not (buffer-modified-p org-truss--source))
           (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
           (org-truss-board-say)
-          (with-current-buffer "*truss edit*"
+          (with-current-buffer (org-truss-test--copy)
             (insert "Where we are.")
-            (org-truss-edit-finish))
+            (org-dock-finish))
           (org-truss-board-redraw)
           (let ((org-truss--whole t))
             (should (equal (org-truss-section-public
@@ -749,8 +771,8 @@ them as what the reader sees; on a section it opens its lead to be written."
                            '(nil . "Where we are."))))
           (org-truss-test--goto-line-with "├ Rain[ ·]+\\(?:\\[*#[^] ]+]* \\)?Rain")
           (org-truss-board-say)
-          (with-current-buffer "*truss edit*"
-            (org-truss-edit-finish))
+          (with-current-buffer (org-truss-test--copy)
+            (org-dock-finish))
           (should (string-match-p "#\\+begin_public Why it drags\n\n?#\\+end_public"
                                   (with-current-buffer org-truss--source (buffer-string)))))))))
 
@@ -972,7 +994,7 @@ The entry it opens is shown in `edit'."
        (org-truss-test--answering ,answers
          (org-truss-board-new)))
      (set-buffer board)
-     (let ((edit (get-buffer "*truss edit*")))
+     (let ((edit (org-truss-test--copy)))
        ,@body)))
 
 (defun org-truss-test--parent-label (source label)
@@ -1079,8 +1101,8 @@ same for the member it moves under."
           (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
           (org-truss-test--answering '("Said twice")
             (org-truss-board-new))
-          (with-current-buffer "*truss edit*"
-            (org-truss-edit-abort))
+          (with-current-buffer (org-truss-test--copy)
+            (org-truss-test--let-go))
           (with-current-buffer org-truss--source
             (should-not (org-entry-get (org-truss-test--heading-pos "Lone remark") "TRUSS_LOGIC"))
             (should-not (string-match-p "Said twice" (buffer-string))))
@@ -1303,29 +1325,29 @@ the link that placed it, and leaves the file unmodified when it was."
             (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
             (org-truss-test--answering '("The team grew")
               (org-truss-board-new))
-            (with-current-buffer "*truss edit*"
-              (should org-truss-edit-mode)
+            (with-current-buffer (org-truss-test--copy)
+              (should org-dock-mode)
               (should (string-match-p "C-c C-c" (format "%s" header-line-format)))
               (insert "Two joined in May.\n")
-              (org-truss-edit-abort))
-            (should-not (get-buffer "*truss edit*"))
+              (org-truss-test--let-go))
+            (should-not (org-truss-test--copy))
             (should-not (string-match-p "The team grew" (with-current-buffer org-truss--source
                                                           (buffer-string))))
             (should-not (buffer-modified-p org-truss--source))
             (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
             (org-truss-board-edit)
-            (with-current-buffer "*truss edit*"
+            (with-current-buffer (org-truss-test--copy)
               (goto-char (point-max))
               (insert "Said in passing.\n")
-              (org-truss-edit-abort))
+              (org-truss-test--let-go))
             (should-not (buffer-modified-p org-truss--source))
             (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
             (org-truss-board-edit)
-            (with-current-buffer "*truss edit*"
+            (with-current-buffer (org-truss-test--copy)
               (goto-char (point-max))
               (insert "Said in passing.\n")
-              (org-truss-edit-finish))
-            (should-not (get-buffer "*truss edit*"))
+              (org-dock-finish))
+            (should-not (org-truss-test--copy))
             (should-not (buffer-modified-p org-truss--source))
             (should (string-match-p "\\*\\* Lone remark\n\nSaid in passing\\.\n"
                                     (with-temp-buffer
@@ -1334,9 +1356,10 @@ the link that placed it, and leaves the file unmodified when it was."
 
 (ert-deftest org-truss-test-init-sets-up-the-directory ()
   "init writes a truss file and puts beside it the directories its head
-comment names and the file telling a coding agent where the rules are,
-leaving what is there already.  A file written before gets the line that
-keeps its attachments beside it, unsaved."
+comment names, the file telling a coding agent where the rules are, and,
+when one is named, the file marking a project, leaving what is there
+already.  A file written before gets the line that keeps its attachments
+beside it, unsaved."
   (org-truss-test--in-directory
       '(("old/truss.org" . "#+title: Old\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n")
         ("old/CLAUDE.md" . "Mine.\n"))
@@ -1355,12 +1378,15 @@ keeps its attachments beside it, unsaved."
           (should (file-directory-p (expand-file-name sub dir))))
         (should (string-match-p "read the comment at the head of truss\\.org"
                                 (funcall read "new/CLAUDE.md")))
-        (org-truss-init (expand-file-name "old" dir))
+        (should-not (file-exists-p (expand-file-name "new/.project" dir)))
+        (let ((org-truss-project-file ".project"))
+          (org-truss-init (expand-file-name "old" dir)))
         (should (string-prefix-p "# -*- org-attach-id-dir: \"attach/\"; -*-\n#+title: Old\n"
                                  (buffer-string)))
         (should (buffer-modified-p))
         (should (equal (funcall read "old/CLAUDE.md") "Mine.\n"))
-        (should (file-directory-p (expand-file-name "old/sources" dir)))))))
+        (should (file-directory-p (expand-file-name "old/sources" dir)))
+        (should (equal (funcall read "old/.project") ""))))))
 
 (ert-deftest org-truss-test-board-asks-for-a-file ()
   "With no truss file near, the board asks for one: the file, its directory,
@@ -1432,19 +1458,30 @@ it from the board."
     (should (string-match-p "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?How reviews run now" (buffer-string)))))
 
 (ert-deftest org-truss-test-board-edits-one-entry ()
-  "e opens the line's heading alone, sharing the file's text."
+  "e takes the line's heading out with what is under it, the headings under
+it folded to their lines; the heading stays as it is in the file until the
+copy is written back."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (save-window-excursion
       (org-truss-board-edit)
-      (should (eq (buffer-base-buffer) source))
-      (should (string-prefix-p "** Reviews run long" (buffer-string)))
-      (should-not (string-match-p "Half the items" (buffer-string)))
-      (goto-char (point-max))
-      (insert "A note.\n")
+      (should org-dock-mode)
+      (should (string-prefix-p "** Half the items repeat" (buffer-string)))
+      (should (string-match-p "\\*\\*\\* Agenda diff" (buffer-string)))
+      (should-not (string-match-p "Move to fortnightly" (buffer-string)))
+      (goto-char (point-min))
+      (search-forward "Robin keeps")
+      (should-not (invisible-p (point)))
+      (search-forward ":TRUSS_SOURCE: agendas")
+      (should (invisible-p (point)))
+      (goto-char (point-min))
+      (end-of-line)
+      (insert "\nA note.")
+      (should-not (with-current-buffer source
+                    (save-excursion (goto-char (point-min)) (search-forward "A note." nil t))))
+      (org-dock-finish)
       (should (with-current-buffer source
-                (save-excursion (goto-char (point-min)) (search-forward "A note." nil t))))
-      (kill-buffer))))
+                (save-excursion (goto-char (point-min)) (search-forward "A note." nil t)))))))
 
 (ert-deftest org-truss-test-board-catches-up ()
   "Selected again after its file changed, the board draws again."
@@ -1956,6 +1993,89 @@ where it is written, where it is called, the lines it takes below its own."
     (org-truss-test--goto-line-with "^ Title")
     (org-truss--light-same)
     (should-not org-truss--same-overlays)))
+
+(ert-deftest org-truss-test-board-of-one-heading ()
+  "In an Org file that is no truss file, the board is of the heading at
+point alone, or of the nearest above it with a pattern: its patterns, what
+is under it in its places, and what they lack, without the parts of a
+document.  A pattern applied there puts in a heading for each place."
+  (org-truss-test--in-directory
+      (list (cons "notes.org"
+                  (concat "#+title: Notes\n"
+                          "* New approval rules\n"
+                          "** The head approves\n"
+                          "* Something else\n")))
+    (let ((org-truss-language 'en))
+      (save-window-excursion
+        (with-current-buffer (find-file-noselect (expand-file-name "notes.org" dir))
+          (goto-char (point-min))
+          (search-forward "New approval")
+          (org-truss-board))
+        (should (get-buffer "*truss notes.org › New approval rules*"))
+        (set-buffer "*truss notes.org › New approval rules*")
+        (should (string-match-p "^ Heading  one heading" (buffer-string)))
+        (should-not (string-match-p "Something else\\|Misplaced\\|no structure part" (buffer-string)))
+        (org-truss-test--goto-line-with "[a-z]+[ ·]+\\(?:\\[*#[^] ]+]* \\)?New approval rules")
+        (org-truss-test--answering '("aspects › 5W1H")
+          (org-truss-board-pattern))
+        (should (string-match-p "aspects › 5W1H" (buffer-string)))
+        (with-current-buffer org-truss--source
+          (goto-char (point-min))
+          (should (equal (org-entry-get (search-forward "New approval") "TRUSS_ASPECTS") "5w1h"))
+          (should (re-search-forward "^\\*\\* Who\n:PROPERTIES:\n:TRUSS_ROLE: who\n" nil t)))
+        ;; From under it, the board is of the heading with the pattern.
+        (with-current-buffer org-truss--source
+          (goto-char (point-min))
+          (search-forward "The head approves")
+          (should (equal (org-with-point-at (org-truss--root-here) (org-get-heading t t t t))
+                         "New approval rules")))))))
+
+(ert-deftest org-truss-test-agent-told-the-patterns ()
+  "A heading taken out with patterns tells an agent their places, as the
+TRUSS_ROLE values and the titles of their placeholders, and how one is
+filled."
+  (org-truss-test--in-directory
+      (list (cons "notes.org" "* Rules\n:PROPERTIES:\n:TRUSS_ASPECTS: pros-cons\n:END:\n** Pros\n:PROPERTIES:\n:TRUSS_ROLE: pros\n:END:\n"))
+    (let ((org-truss-language 'en)
+          got)
+      (with-current-buffer (find-file-noselect (expand-file-name "notes.org" dir))
+        (let ((org-dock-agent-function (lambda (r) (setq got r))))
+          (with-current-buffer (save-current-buffer (org-dock-heading (point-min) :display nil))
+            (org-dock-ask-agent)
+            (let ((text (with-temp-buffer (insert-file-contents (plist-get got :request))
+                                          (buffer-string))))
+              (should (string-match-p "^## Patterns$" text))
+              (should (string-match-p "pros-cons (aspects)" text))
+              (should (string-match-p "Places: pros (Pros), cons (Cons)" text))
+              (should (string-match-p "its title is one sentence that states what fills the place" text)))))))))
+
+(ert-deftest org-truss-test-apply-a-pattern-in-the-file ()
+  "A pattern is applied from the file as from the board: in a file that is
+no truss file to the heading at point, or to one under a heading with a
+pattern; in a truss file to the member the heading is."
+  (let ((org-truss-language 'en))
+    (org-truss-test--with "* Rules\n** Who\n:PROPERTIES:\n:TRUSS_ROLE: who\n:END:\n* Else\n"
+      (search-forward "Rules")
+      (org-truss-test--answering '("aspects › 5W1H")
+        (org-truss-apply-pattern))
+      (goto-char (point-min))
+      (should (equal (org-entry-get (point) "TRUSS_ASPECTS") "5w1h"))
+      (should (re-search-forward "^\\*\\* When\n:PROPERTIES:\n:TRUSS_ROLE: when\n" nil t))
+      (should-not (re-search-forward "^\\*\\* Who$" nil t))
+      (goto-char (point-min))
+      (search-forward "** Who")
+      (org-truss-test--answering '("how › steps")
+        (org-truss-apply-pattern))
+      (should (equal (org-entry-get (point) "TRUSS_LOGIC") "steps"))
+      (goto-char (point-min))
+      (search-forward "* Else")
+      (should-not (org-entry-get (point) "TRUSS_ASPECTS")))
+    (org-truss-test--with org-truss-test--file
+      (search-forward "** Reviews run long")
+      (org-truss-test--answering '("why › deduction")
+        (org-truss-apply-pattern))
+      (should (equal (org-entry-get (point) "TRUSS_LOGIC") "deduction"))
+      (should (re-search-forward "^\\*\\*\\* Major premise\n" nil t)))))
 
 (provide 'org-truss-board-test)
 

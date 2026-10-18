@@ -1148,7 +1148,9 @@ asks for and no field fills, on which a new field fills it."
   (let ((root (org-truss-model-structure model))
         (org-truss--in-structure t))
     (if (null root)
-        (list (org-truss--line (propertize " (no structure part)" 'face 'org-truss-attention)))
+        ;; A heading read alone makes no document, and is not missing one.
+        (unless (with-current-buffer (org-truss-model-buffer model) (org-truss--root-pos))
+          (list (org-truss--line (propertize " (no structure part)" 'face 'org-truss-attention))))
       (let ((item (list :type 'section :pos (org-truss-section-pos root) :root t
                         :label (org-truss-section-label root) :key '(section root)))
             (stem (if (org-truss-section-children root) " │ " "   ")))
@@ -1255,17 +1257,24 @@ its pattern asks for, among the gaps -- and the constraints unmet."
 (defun org-truss--members-part (model checks)
   "Return the members part of the board for MODEL, then what is left to do.
 That is what CHECKS finds of the members part's own, not the findings."
-  (let ((pos (with-current-buffer (org-truss-model-buffer model)
-               (org-with-wide-buffer (org-truss--part-pos "members"))))
-        (argued (lambda (ms) (seq-remove #'org-truss-finding-p ms)))
-        (broken (plist-get checks :broken-grounds)))
+  (let* ((root (with-current-buffer (org-truss-model-buffer model)
+                 (org-with-wide-buffer (org-truss--root-pos))))
+         (pos (or root
+                  (with-current-buffer (org-truss-model-buffer model)
+                    (org-with-wide-buffer (org-truss--part-pos "members")))))
+         (argued (lambda (ms) (seq-remove #'org-truss-finding-p ms)))
+         (broken (plist-get checks :broken-grounds)))
     (append
      (and pos
           (append
            (list (org-truss--line "")
-                 (org-truss--part-line "Members" "what is made of it: interpretations and decisions"
-                                       (list :type 'brief :pos pos :part 'members
-                                             :key '(brief (members)))))
+                 (if root
+                     (org-truss--part-line "Heading" "one heading, read as a truss file's members are"
+                                           (list :type 'brief :pos pos :part 'members
+                                                 :key '(brief (members))))
+                   (org-truss--part-line "Members" "what is made of it: interpretations and decisions"
+                                         (list :type 'brief :pos pos :part 'members
+                                               :key '(brief (members))))))
            (mapcan (lambda (m)
                      (org-truss--member-lines model m "   " (list 'member (org-truss-member-label m))))
                    (org-truss-model-members model))))
@@ -1294,9 +1303,12 @@ That is what CHECKS finds of the members part's own, not the findings."
                             (funcall argued (seq-filter #'org-truss-member-p
                                                         (plist-get checks :placeholders)))
                             'placeholders)
-     (org-truss--misplaced-lines model (seq-remove (lambda (c) (org-truss-finding-p (car c)))
-                                                   (plist-get checks :misplaced))
-                                 'misplaced)
+     ;; Which part a member belongs in is a document's question: a heading
+     ;; read alone has no parts to be misplaced between.
+     (unless root
+       (org-truss--misplaced-lines model (seq-remove (lambda (c) (org-truss-finding-p (car c)))
+                                                     (plist-get checks :misplaced))
+                                   'misplaced))
      (org-truss--list-lines model "Broken grounds" (seq-uniq (mapcar #'car broken)) 'broken-grounds
                             (lambda (m)
                               (propertize (mapconcat (lambda (b) (format "[[%s]]" (org-truss--target (cdr b))))

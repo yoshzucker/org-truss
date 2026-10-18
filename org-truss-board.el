@@ -27,6 +27,7 @@
 (require 'org-truss-guide)
 (require 'org-truss-export)
 (require 'org-truss-draw)
+(require 'org-dock)
 
 (defvar-local org-truss--folds nil
   "Lines of this board folded or unfolded by hand, as (KEY . open|closed).
@@ -40,6 +41,18 @@ A line not here is folded or not as `org-truss-board-fold-limit' says.")
 
 (defvar-local org-truss--file nil
   "The truss file this board draws, to visit again if its buffer is killed.")
+
+(defvar-local org-truss--board-root nil
+  "On the board of one heading of a file that is no truss file, its marker.
+Given to the file's buffer as `org-truss--root' before the board reads
+it, so that boards of two headings of one file each read their own.")
+
+(defun org-truss--give-root ()
+  "Tell the file's buffer which heading this board reads, if it reads one."
+  (when (and org-truss--board-root (buffer-live-p org-truss--source))
+    (let ((root org-truss--board-root))
+      (with-current-buffer org-truss--source
+        (setq org-truss--root root)))))
 
 (defvar-local org-truss--drawn-tick nil
   "The source buffer's text tick when the board was drawn.
@@ -127,6 +140,7 @@ closed whenever it is not wanted: the board opens it again."
 If the file's buffer was killed it is visited again; if its text changed,
 by hand or by anything else, the board draws it as it is now.  So a
 command acts on the file as it is, and a key pressed once is enough."
+  (org-truss--give-root)
   (condition-case err
       (when (or (org-truss--revive) (org-truss--stale-p))
         (org-truss-board-redraw))
@@ -138,6 +152,7 @@ command acts on the file as it is, and a key pressed once is enough."
   (org-truss--revive)
   (unless (buffer-live-p org-truss--source)
     (user-error "The truss file's buffer is gone"))
+  (org-truss--give-root)
   (let ((key (plist-get (org-truss--item) :key))
         (line (line-number-at-pos))
         (inhibit-read-only t)
@@ -275,8 +290,62 @@ directory, or anything in it; see `org-truss--ask-file'.
 
 The board is where a truss file is worked from.  The file's own buffer can
 be closed whenever it is not wanted -- the board visits it again -- and
-\\[save-buffer] on the board saves it."
+\\[save-buffer] on the board saves it.
+
+In an Org file that is no truss file, the board is of one heading alone:
+the nearest at or above point with a pattern, else, when no truss file is
+near, the heading at point.  It is drawn as a truss file's members are --
+its patterns, what is under it in its places, and what they lack -- with
+no brief, subject or structure, and its commands work on it there: `p'
+puts a pattern on it, and a heading in for each place."
   (interactive "P")
+  (if-let* ((root (and (not ask) (org-truss--root-here))))
+      (org-truss--board-of-heading root)
+    (org-truss--board-of-file ask)))
+
+(defun org-truss--patterned-p ()
+  "Non-nil when the heading at point has a pattern of any kind."
+  (seq-some (lambda (property) (org-entry-get nil property))
+            '("TRUSS_ASPECTS" "TRUSS_LOGIC" "TRUSS_TELLING")))
+
+(defun org-truss--root-here ()
+  "Return a marker at the heading to draw a board of alone, or nil.
+In an Org file that is no truss file: the nearest heading at or above
+point with a pattern; else the heading at point, when no truss file is
+near to draw instead."
+  (when (and (derived-mode-p 'org-mode) buffer-file-name (not (org-truss-file-p))
+             (not (org-before-first-heading-p)))
+    (save-excursion
+      (org-back-to-heading t)
+      (let ((here (point))
+            found)
+        (while (and (not found)
+                    (progn (when (org-truss--patterned-p) (setq found (point)))
+                           (and (not found) (org-up-heading-safe)))))
+        (cond (found (copy-marker found))
+              ((not (org-truss-locate)) (copy-marker here)))))))
+
+(defun org-truss--board-of-heading (root)
+  "Draw the board of the heading at ROOT alone, its file being no truss file.
+Its patterns, what is under it, and what they ask for and it lacks, as a
+truss file's members are drawn; every command of the board works on it."
+  (let* ((source (marker-buffer root))
+         (file (buffer-file-name source))
+         (board (get-buffer-create
+                 (format "*truss %s › %s*" (file-name-nondirectory file)
+                         (org-with-point-at root (org-get-heading t t t t))))))
+    (with-current-buffer board
+      (unless (derived-mode-p 'org-truss-board-mode)
+        (org-truss-board-mode))
+      (setq org-truss--source source
+            org-truss--file file
+            org-truss--board-root root
+            default-directory (file-name-directory file))
+      (org-truss-board-redraw))
+    (pop-to-buffer board)))
+
+(defun org-truss--board-of-file (ask)
+  "Draw the board of the nearest truss file, or of one asked for with ASK."
   (let* ((file (or (and (not ask) (org-truss-locate))
                    (org-truss--ask-file)))
          (source (find-file-noselect file))
@@ -634,6 +703,41 @@ it has can be taken off, as (none . KIND)."
                                      (cons (format "no %s" kind) (cons 'none kind))))
                               '(logic aspects telling))))))
 
+(defun org-truss--read-pattern (cluster)
+  "Read a pattern CLUSTER can take, or one of its kinds to take off.
+Return the pattern's id, or (none . KIND); see `org-truss--pattern-choices'."
+  (let ((choices (org-truss--pattern-choices cluster)))
+    (org-truss--read-choice
+     "Pattern: " choices
+     (mapcar (lambda (c) (cons (car c) (org-truss--pattern-about (cdr c)))) choices))))
+
+(defun org-truss--apply-pattern (pos id section)
+  "Give the cluster at POS in this buffer the pattern ID, and its places.
+ID is as `org-truss--read-pattern' returns it; SECTION is non-nil when the
+cluster is a section.  What the pattern asks for and is not there is put
+in, a heading for each place, to be written over; on the brief or the
+subject, a field.  A telling pattern on a section takes the sections there
+into its places first.  Logic that takes no aspects takes them off."
+  (if (eq (car-safe id) 'none)
+      (org-truss-set-pattern pos (cdr id) nil)
+    (let ((kind (plist-get (org-truss-pattern id) :kind)))
+      (if (and section (eq kind 'telling))
+          (org-truss-apply-section-telling pos id)
+        (org-truss-set-pattern pos kind id))
+      (when (and (eq kind 'logic) (not (org-truss-aspects-allowed-p id)))
+        (org-truss-set-pattern pos 'aspects nil))
+      (let* ((cluster (org-truss-cluster-at (org-truss-read) pos))
+             (asks (if (eq kind 'telling)
+                       (mapcar #'car (org-truss-places-under cluster))
+                     (plist-get (org-truss-pattern id) :roles)))
+             (gaps (seq-filter (lambda (gap) (memq (car gap) asks))
+                               (org-truss-gaps cluster))))
+        (if (org-truss-part-p cluster)
+            (pcase-dolist (`(,role . ,short) gaps)
+              (dotimes (_ short)
+                (set-marker (org-truss-add-field pos role) nil)))
+          (org-truss-add-places pos gaps section))))))
+
 (defun org-truss-board-pattern ()
   "Apply a pattern to the cluster at point: a member, a section, the structure,
 the brief or the subject.
@@ -644,7 +748,7 @@ there is put in, a heading for each place, to be written over: a
 deduction's premises, a 6W1H's aspects, a PREP's reasons and examples; on
 the brief or the subject, a field.  A telling pattern on a section takes
 the sections there into its places first.  Logic that takes no aspects
-takes them off."
+takes them off.  `org-truss-apply-pattern' does the same from the file."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'section 'member 'brief))
          (section (eq (plist-get item :type) 'section))
@@ -652,30 +756,49 @@ takes them off."
          (cluster (or (let ((cluster (org-truss-cluster-at (org-truss-read org-truss--source) pos)))
                         (and (not (org-truss-field-p cluster)) cluster))
                       (user-error "Nothing to apply a pattern to here")))
-         (choices (org-truss--pattern-choices cluster))
-         (id (org-truss--read-choice
-              "Pattern: " choices
-              (mapcar (lambda (c) (cons (car c) (org-truss--pattern-about (cdr c)))) choices))))
+         (id (org-truss--read-pattern cluster)))
     (org-truss--editing
-      (if (eq (car-safe id) 'none)
-          (org-truss-set-pattern pos (cdr id) nil)
-        (let ((kind (plist-get (org-truss-pattern id) :kind)))
-          (if (and section (eq kind 'telling))
-              (org-truss-apply-section-telling pos id)
-            (org-truss-set-pattern pos kind id))
-          (when (and (eq kind 'logic) (not (org-truss-aspects-allowed-p id)))
-            (org-truss-set-pattern pos 'aspects nil))
-          (let* ((cluster (org-truss-cluster-at (org-truss-read) pos))
-                 (asks (if (eq kind 'telling)
-                           (mapcar #'car (org-truss-places-under cluster))
-                         (plist-get (org-truss-pattern id) :roles)))
-                 (gaps (seq-filter (lambda (gap) (memq (car gap) asks))
-                                   (org-truss-gaps cluster))))
-            (if (org-truss-part-p cluster)
-                (pcase-dolist (`(,role . ,short) gaps)
-                  (dotimes (_ short)
-                    (set-marker (org-truss-add-field pos role) nil)))
-              (org-truss-add-places pos gaps section))))))))
+      (org-truss--apply-pattern pos id section))))
+
+(defun org-truss--pattern-root (pos)
+  "Return a marker at the heading to read alone for the heading at POS.
+The nearest at or above POS with a pattern, else the heading at POS; in
+a file that is no truss file, as the board of one heading reads it."
+  (save-excursion
+    (goto-char pos)
+    (org-back-to-heading t)
+    (let ((here (point))
+          found)
+      (while (and (not found)
+                  (progn (when (org-truss--patterned-p) (setq found (point)))
+                         (and (not found) (org-up-heading-safe)))))
+      (copy-marker (or found here)))))
+
+(defun org-truss-apply-pattern ()
+  "Apply a pattern to the heading at point, in the file, as `p' on the board.
+In a truss file, to the member, the section or the part the heading is.
+In any other Org file, to the heading, read as the board of one heading
+reads it: the nearest at or above point with a pattern is read alone, and
+the heading at point is in it.  What the pattern asks for and is not there
+is put in, a heading for each place, to be written over."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an Org buffer"))
+  (when (org-before-first-heading-p)
+    (user-error "Not under a heading"))
+  (let* ((pos (save-excursion (org-back-to-heading t) (point)))
+         (org-truss--root (unless (org-truss-file-p) (org-truss--pattern-root pos)))
+         (cluster (let ((cluster (org-truss-cluster-at (org-truss-read) pos)))
+                    (and cluster (not (org-truss-field-p cluster)) cluster))))
+    (unless cluster
+      (user-error "Nothing to apply a pattern to here"))
+    (when (get-text-property pos 'org-dock)
+      (user-error "This heading is out in a copy; apply the pattern there"))
+    (let ((id (org-truss--read-pattern cluster)))
+      (org-truss--apply-pattern pos id (org-truss-section-p cluster))
+      (message "%s" (if (eq (car-safe id) 'none)
+                        (format "No %s pattern" (cdr id))
+                      (org-truss-pattern-label id))))))
 
 (defun org-truss-board-new-section ()
   "Add a section under the section at point.
@@ -972,8 +1095,7 @@ away when it is finished."
       (org-truss--fresh)
       (let* ((pos (plist-get item :pos))
              (session (with-current-buffer org-truss--source
-                        (list :original (buffer-substring pos (cdr (org-truss--own-bounds pos)))
-                              :hash (buffer-hash)
+                        (list :hash (buffer-hash)
                               :modified (buffer-modified-p))))
              (at (with-current-buffer org-truss--source
                    (org-with-wide-buffer (copy-marker (org-truss-public-body pos))))))
@@ -1045,108 +1167,136 @@ shown, this puts the line back on one line instead."
     (org-truss-board-redraw)))
 
 (defun org-truss-board-edit ()
-  "Edit the heading of the line at point on its own, in another window.
-The heading and what is written under it, up to the next heading, are shown
-alone in a buffer sharing the truss file's text, so the rest of the file
-stays out of the way.  As in a capture buffer, \\<org-truss-edit-mode-map>\
-\\[org-truss-edit-finish] saves the file and closes
-it, and \\[org-truss-edit-abort] puts back what was there and closes it.
+  "Take the heading of the line at point out, to be written in beside the board.
+The heading and everything under it go into a copy of their own, by
+org-dock, the headings under it folded so that its own text is in view,
+and the heading cannot change in the file meanwhile.  As in a capture
+buffer, \\<org-dock-mode-map>\\[org-dock-finish] writes it back and saves
+the file, and \\[org-dock-abort] lets it go, leaving the heading as it was.
 Back on the board, it draws again."
   (interactive)
   (org-truss--edit (plist-get (org-truss--want (org-truss--item) 'section 'member 'broken 'brief 'use)
                               :pos)))
 
-(defvar-local org-truss--edit-session nil
-  "How to take back what was done in this edit buffer, and where to go after.
-A plist: :original, the text the buffer held when it opened; :hash and
-:modified, the truss file's buffer then; :undo, a function that takes back
-the rest of what writing it did; :board, the board it was opened from.")
+(defun org-truss--text-end (pos)
+  "Return where text is written in the heading at POS: after its own text.
+On the line after the last of it -- unless that line is a heading under
+it, where what is typed would go into the heading; then at the end of the
+line before."
+  (save-excursion
+    (let ((end (save-excursion (goto-char pos) (org-end-of-subtree t t) (point))))
+      (goto-char (cdr (org-truss--own-bounds pos)))
+      (skip-chars-backward " \t\n")
+      (forward-line 1)
+      (if (and (< (point) end) (org-at-heading-p))
+          (1- (point))
+        (point)))))
 
-(defvar org-truss-edit-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") #'org-truss-edit-finish)
-    (define-key map (kbd "C-c C-k") #'org-truss-edit-abort)
-    map)
-  "Keys of a buffer editing one entry of a truss file.")
+(defun org-truss--fold-copy ()
+  "Show this copy's heading with its own text, the headings under it folded.
+Its blocks and drawers are open, as they are part of what it says."
+  (save-excursion
+    (goto-char (point-min))
+    (when (org-at-heading-p)
+      (org-fold-hide-subtree)
+      (org-fold-show-entry)
+      (org-fold-show-children)
+      (org-fold-show-all '(blocks drawers)))))
 
-(define-minor-mode org-truss-edit-mode
-  "One entry of a truss file, edited on its own.
-\\{org-truss-edit-mode-map}"
-  :lighter " Truss-Edit"
-  (when org-truss-edit-mode
-    (setq-local header-line-format
-                (substitute-command-keys
-                 "\\<org-truss-edit-mode-map>Truss entry.  \
-Finish `\\[org-truss-edit-finish]', abort `\\[org-truss-edit-abort]'."))))
+(defun org-truss-dock-request (request)
+  "Tell an agent what the patterns of a heading taken out ask for.
+REQUEST is the plist `org-dock-agent-function' gets.  Said wherever the
+heading is from, since a heading of any Org file can have patterns; nil
+when none in the copy has one."
+  (let ((ids (with-current-buffer (find-file-noselect (plist-get request :copy))
+               (org-with-wide-buffer
+                (goto-char (point-min))
+                (let ((case-fold-search t)
+                      found)
+                  (while (re-search-forward
+                          "^[ \t]*:TRUSS_\\(?:ASPECTS\\|LOGIC\\|TELLING\\):[ \t]*\\(\\S-+\\)" nil t)
+                    (let ((id (intern (match-string 1))))
+                      (when (org-truss-pattern id)
+                        (cl-pushnew id found))))
+                  (nreverse found))))))
+    (when ids
+      (concat
+       "## Patterns\n\n"
+       "TRUSS_ASPECTS, TRUSS_LOGIC and TRUSS_TELLING on a heading name a pattern\n"
+       "of org-truss, whose places its subheadings fill.  The patterns in the\n"
+       "copy, with their places as TRUSS_ROLE values and, in brackets, the title\n"
+       "of a place not yet filled:\n\n"
+       (mapconcat (lambda (id)
+                    (let ((pattern (org-truss-pattern id)))
+                      (format "- %s (%s): %s.\n  Places: %s" id (plist-get pattern :kind)
+                              (plist-get pattern :about)
+                              (mapconcat (lambda (role)
+                                           (format "%s (%s)" role (org-truss-role-label role)))
+                                         (or (plist-get pattern :roles)
+                                             (mapcar #'car (plist-get pattern :places)))
+                                         ", "))))
+                  ids "\n")
+       "\n\nUnder a heading with a pattern, each place has one subheading.  Write\n"
+       "it so:\n\n"
+       "- its title is one sentence that states what fills the place;\n"
+       "- its TRUSS_ROLE property names the place;\n"
+       "- its text holds what supports that sentence, with links to where it\n"
+       "  comes from.\n\n"
+       "A subheading whose title is still that of a place not yet filled is\n"
+       "filled by replacing its title.  Do not change existing properties.\n"))))
+
+(add-hook 'org-dock-request-functions #'org-truss-dock-request 20)
+
+;; The same from the package's autoloads, so that a heading with patterns,
+;; in any Org file, says so when it is handed to an agent before anything of
+;; org-truss has been used.
+;;;###autoload (autoload 'org-truss-dock-request "org-truss")
+;;;###autoload (with-eval-after-load 'org-dock (add-hook 'org-dock-request-functions #'org-truss-dock-request 20))
 
 (defun org-truss--edit (pos &optional body session)
-  "Show the heading at POS on its own in another window, to be edited.
+  "Take the heading at POS out by org-dock, to be written in beside the board.
 With BODY, point goes below the heading and its drawers, where its text is
 written, or to BODY itself when it is a position; otherwise to the heading.
-SESSION, when the heading has just been written, says how to take it back,
-as `org-truss--edit-session' does; else aborting puts back what the buffer
-holds now."
-  (let ((old (get-buffer "*truss edit*"))
-        (board (current-buffer))
-        (source org-truss--source))
-    (when old (kill-buffer old))
-    (let ((buffer (make-indirect-buffer source "*truss edit*" t)))
-      (with-current-buffer buffer
-        (widen)
-        (narrow-to-region pos (cdr (org-truss--own-bounds pos)))
-        (org-fold-show-all)
-        (goto-char (point-max))
-        (cond ((not body) (goto-char pos))
-              ((number-or-marker-p body) (goto-char body))
-              (t (skip-chars-backward " \t\n")
-                 (forward-line 1)))
-        (org-truss-edit-mode 1)
-        (setq org-truss--edit-session
-              (append (list :board board)
-                      (or session
-                          (list :original (buffer-string)
-                                :hash (with-current-buffer source (buffer-hash))
-                                :modified (buffer-modified-p source))))))
-      (pop-to-buffer buffer '((display-buffer-reuse-window display-buffer-pop-up-window))))))
 
-(defun org-truss--edit-close (board)
-  "Close this edit buffer and its window, and go back to BOARD if it is shown."
-  (let ((window (get-buffer-window (current-buffer))))
-    (if window
-        (quit-window t window)
-      (kill-buffer (current-buffer))))
-  (let ((window (and (buffer-live-p board) (get-buffer-window board))))
-    (when window
-      (select-window window))))
-
-(defun org-truss-edit-finish ()
-  "Save the truss file and close this entry, going back to the board.
-A public block left empty is taken away first."
-  (interactive)
-  (let ((board (plist-get org-truss--edit-session :board)))
-    (org-truss-drop-empty-public (point-min) (point-max))
-    (with-current-buffer (buffer-base-buffer)
-      (save-buffer))
-    (org-truss--edit-close board)))
-
-(defun org-truss-edit-abort ()
-  "Put back what this entry held when it was opened, and close it.
-An entry written just now is taken away, with the link that placed it.
-When the file's buffer then holds what it held before, it is unmodified
-again if it was before."
-  (interactive)
-  (let* ((session org-truss--edit-session)
-         (base (buffer-base-buffer)))
-    (let ((inhibit-read-only t))
-      (delete-region (point-min) (point-max))
-      (insert (plist-get session :original)))
-    (with-current-buffer base
-      (let ((undo (plist-get session :undo)))
-        (when undo (funcall undo)))
-      (when (and (not (plist-get session :modified))
-                 (equal (buffer-hash) (plist-get session :hash)))
-        (set-buffer-modified-p nil)))
-    (org-truss--edit-close (plist-get session :board))))
+SESSION, when the heading was written just now or a block put in for it,
+says how to take that back when the copy is let go: :new, non-nil for a
+heading written just now, which goes; :undo, a function taking back the
+rest; :hash and :modified, the truss file's buffer before, made
+unmodified again when it holds what it held.  A public block put in and
+left empty goes too.  Writing the copy back takes away a public block
+left empty, and saves the file."
+  (let* ((source org-truss--source)
+         (copy
+          (with-current-buffer source
+            (org-with-wide-buffer
+             (let ((head (copy-marker pos))
+                   (at (cond ((not body) nil)
+                             ((number-or-marker-p body) body)
+                             (t (org-truss--text-end pos)))))
+               (org-dock-heading
+                pos :at at :display nil
+                :finish (lambda (beg _end)
+                          (set-marker head nil)
+                          (org-truss-drop-empty-public beg (cdr (org-truss--own-bounds beg)))
+                          (when buffer-file-name (save-buffer)))
+                :abort (lambda ()
+                         (org-with-wide-buffer
+                          (if (plist-get session :new)
+                              (progn (goto-char head)
+                                     (delete-region (point) (save-excursion
+                                                              (org-end-of-subtree t t)
+                                                              (point))))
+                            (when session
+                              (org-truss-drop-empty-public
+                               head (cdr (org-truss--own-bounds head)))))
+                          (when-let* ((undo (plist-get session :undo)))
+                            (funcall undo)))
+                         (set-marker head nil)
+                         (when (and session (not (plist-get session :modified))
+                                    (equal (buffer-hash) (plist-get session :hash)))
+                           (set-buffer-modified-p nil)))))))))
+    (with-current-buffer copy (org-truss--fold-copy))
+    (pop-to-buffer copy '((display-buffer-reuse-window display-buffer-pop-up-window)))))
 
 (defun org-truss--goto-label (label)
   "Put point on the first line of the board for the member LABEL, if any."
@@ -1225,7 +1375,7 @@ member away."
          (props (append (and id (list (cons "CUSTOM_ID" id)))
                         (and role (list (cons "TRUSS_ROLE" (symbol-name role))))))
          (session (with-current-buffer org-truss--source
-                    (list :original "" :hash (buffer-hash) :modified (buffer-modified-p))))
+                    (list :new t :hash (buffer-hash) :modified (buffer-modified-p))))
          at)
     (when (string-empty-p label)
       (user-error "A member needs a heading"))
@@ -1266,6 +1416,17 @@ member away."
   '(("fact" . fact) ("assumption" . assumption) ("question" . question) ("claim" . claim))
   "The kinds of member `org-truss-board-kind' writes, by the board's word.")
 
+(defvar org-truss-read-source-function #'org-truss-read-source
+  "Function reading where a fact comes from.
+Called with what the fact says now, or nil, and the truss file, or nil;
+returns the source as it is to be written in TRUSS_SOURCE.  With
+org-moor, a source of the file's, or one taken there and then; see
+org-truss-moor.el.")
+
+(defun org-truss-read-source (default _file)
+  "Read where a fact comes from, as words; DEFAULT is what it says now."
+  (read-string "Source: " default))
+
 (defun org-truss-board-kind ()
   "Say what the member at point is, and write what makes it so.
 A fact asks where it comes from, and is given it as its TRUSS_SOURCE; an
@@ -1282,8 +1443,9 @@ is hard to think of while writing the statement; this writes them."
          (value (pcase kind
                   ('nil (user-error "No kind given"))
                   ('fact
-                   (let ((source (string-trim (read-string "Source: "
-                                                           (org-truss-member-source member)))))
+                   (let ((source (string-trim (funcall org-truss-read-source-function
+                                                       (org-truss-member-source member)
+                                                       (buffer-file-name org-truss--source)))))
                      (if (string-empty-p source)
                          (user-error "A fact is a statement with a source")
                        source)))

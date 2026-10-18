@@ -3,6 +3,11 @@
 
 Build an argument from members, arrange it into a document, in Org.
 
+It needs [[https://github.com/yoshzucker/org-dock][org-dock]], which takes a
+heading out to be written in, and works with
+[[https://github.com/yoshzucker/org-moor][org-moor]], for the sources read,
+when it is there.
+
 * Why
 
 A truss carries load because its members are joined into triangles.  A
@@ -123,7 +128,7 @@ A member's kind follows from what is written on it.  Only two are declared.
 
 | Kind       | How it is known                                                           |
 |------------+---------------------------------------------------------------------------|
-| fact       | it has a ~TRUSS_SOURCE~                                                   |
+| fact       | it has a ~TRUSS_SOURCE~, or its text cites a source with a ~moor:~ link   |
 | summary    | in the subject, a how pattern sums up the parts nested under it           |
 | claim      | something supports it                                                     |
 | hypothesis | a claim whose support, followed down, reaches an assumption or a question |
@@ -362,14 +367,19 @@ There is one ~truss.org~ per document, in a directory of its own.
 adds what is missing and leaves what is there.
 
 | ~truss.org~ | the manuscript; the rest is written from it or for it                  |
-| ~sources/~  | what was read, a file for each source: a page, a PDF, an extract       |
+| ~sources/~  | what was read: with org-moor, a directory each, its file and record    |
 | ~notes/~    | what is ours and not a source: memos, slides, minutes                  |
 | ~attach/~   | what ~org-attach~ (~C-c C-a~) attaches to a heading: a picture, a file |
 | ~out/~      | the document, written by ~x~ on the board or ~M-x org-truss-export~    |
 | ~CLAUDE.md~ | for a coding agent: where the rules are, and when to read them         |
 
-So the directory can be moved, or handed over, whole.  A fact's
-~TRUSS_SOURCE~ names its file in ~sources/~ as well as where it came from.
+So the directory can be moved, or handed over, whole.  With org-moor, a
+source taken from a truss file goes in its ~sources/~: a directory named by
+the source's id, holding its copy and its record -- a title, where it came
+from, how and when.  A fact cites it with a ~moor:~ link, ~[[moor:ID::12][Manual
+p. 12]]~ for a page or a line, in its text beside the words it quotes, or in
+~TRUSS_SOURCE~; either makes it a fact.  ~TRUSS_SOURCE~ also takes words,
+for a source that is not a file: /calendar export/, /team agreement/.
 The first line of
 ~truss.org~ sets ~org-attach-id-dir~ to ~attach/~, so what ~org-attach~ puts
 on its headings is kept there, not where attachments go elsewhere, each
@@ -385,6 +395,13 @@ agent file says only to read it before working there, to read a part's
 have one home, kept current by ~org-truss-refresh-guides~, and what is
 loaded into every session stays a few lines.  ~org-truss-agent-file~ names
 the file, or is ~nil~ for none.
+
+~org-truss-project-file~, when it names one, is an empty file written there
+too, that marks the directory as a project: ~".project"~, say, with
+~project-vc-extra-root-markers~ naming it.  Then the directory is a
+project even outside a repository, and what starts at a project's root --
+a coding agent among them -- starts beside ~truss.org~ and its sources.
+Inside a repository it makes the directory a project apart from the rest.
 
 A comment block at the head of ~truss.org~ holds the rules of the file, the same for
 whoever edits it, by hand, on the board, or as a language model working in
@@ -668,7 +685,22 @@ brief, its subject, its members and its structure, in the order the work
 is done, each followed by what is left to do there.
 
 The board is where a truss file is worked from, as the agenda is for Org
-files.  It can be called from anywhere: when no ~truss.org~ is near the
+files.
+
+A heading of any other Org file can be drawn on a board of its own: in a
+file that is no truss file, ~M-x org-truss-board~ draws the nearest heading
+at or above point with a pattern -- or, when no truss file is near, the
+heading at point -- as a truss file's members are drawn, under a line
+/Heading/.  Its patterns, the headings under it in the places they fill,
+and the places still empty are all there, without a brief, a subject or a
+structure; what belongs in which part is a document's question, so nothing
+there is listed as misplaced.  ~p~ on it puts a pattern on it, and a
+heading in for each place, to be written over -- and in the file itself,
+in a truss file or any other, ~M-x org-truss-apply-pattern~ does what ~p~
+does, on the heading at point; written over with the
+statement that fills it, a place still shows on the right what it is --
+/Who:/, /When:/ -- so the heading need not say it.  An agent asked about it
+with org-dock is told what its patterns ask.  It can be called from anywhere: when no ~truss.org~ is near the
 current buffer, or with a prefix argument, it asks for one as ~find-file~
 asks for a file -- the file, its directory, or anything below it -- and
 offers to start one in a directory that has none, making the directory if
@@ -1017,15 +1049,18 @@ file written in another language the two sides read apart at a glance.
 
 The board is read-only.  Its commands change the truss file and draw the
 board again.  The writing itself happens in the file: ~RET~, ~TAB~ and ~SPC~
-open it where the line points, as they do in the agenda, and ~e~ opens just
-that heading's entry beside the board, the rest of the file out of the way.
-The entry they go to is shown with its blocks open -- its public block, its
-quotation -- even where ~org-hide-block-startup~ folds blocks, since they
-are part of what it says; the headings under it are left as they were.
-As in a capture buffer, ~C-c C-c~ there saves the file and closes the
-entry, and ~C-c C-k~ puts back what it held and closes it; its header line
-says so.  ~C-c C-c~ is taken for this, so a source block in an entry is run
-with ~C-c C-v e~ instead.
+open it where the line points, as they do in the agenda, and ~e~ takes just
+that heading out, by org-dock, into a copy of its own beside the board, with
+what is under it and the rest of the file out of the way.  The headings
+under it are folded to their lines, and its own text is shown with its
+blocks open -- its public block, its quotation -- even where
+~org-hide-block-startup~ folds blocks, since they are part of what it
+says.  While it is out the heading cannot change in the file.  As in a
+capture buffer, ~C-c C-c~ there writes it back, saves the file and closes
+the copy, and ~C-c C-k~ lets the copy go, the heading as it was; its header
+line says so.  ~C-c C-c~ is taken for this, so a source block in an entry
+is run with ~C-c C-v e~ instead.  An agent can be asked to work on the
+copy, and on nothing else; see org-dock.
 Back on the board after the file has changed, it draws again, and before
 each command it draws again first if the file's text has changed, so the
 command acts on the file as it is.  Only the text counts: fontifying the
@@ -1112,7 +1147,9 @@ a section lists starts folded where it is not opened, as ~O~ says.
 A fact keeps the words of its source with it, in a ~#+begin_quote~ block in
 its own text, which stays in the file as notes do.  Copy the passage, in
 Emacs or in a browser, and ~Q~ on the fact puts it there, or, after
-asking, in place of the quotation already there.
+asking, in place of the quotation already there.  With org-moor, reading
+a source beside the fact -- ~org-moor-noter~ -- writes the quotation and the
+link to its page or line in one go.
 
 A ground supports a member from outside what is nested under it, through
 ~TRUSS_GROUNDS~.  ~b~ on a member offers its grounds first, and choosing
@@ -1160,7 +1197,9 @@ any member that says how does, so on it ~c~ writes its last.
 What a member is follows from a property or a tag, and those are hard to
 think of while writing the statement itself.  The board says when a member
 is /bare/, and ~t~ on it says what it is instead: a /fact/ asks where it
-comes from and writes it as ~TRUSS_SOURCE~; an /assumption/ asks whom to
+comes from and writes it as ~TRUSS_SOURCE~ -- with org-moor, one of the
+file's sources by its title, or a file or a page taken there and then,
+written as a link to it; an /assumption/ asks whom to
 confirm it with and writes ~TRUSS_CONFIRM~; a /question/ is tagged; a
 /claim/ stands on what is nested under it.  What would make it another
 kind is taken off, except that a source stays on an assumption or a
@@ -1245,6 +1284,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-notes-directory~     | ~"notes"~                     | what is ours and not a source                 |
 | ~org-truss-attach-directory~    | ~"attach"~                    | what ~org-attach~ attaches to its headings    |
 | ~org-truss-agent-file~          | ~"CLAUDE.md"~                 | for a coding agent; ~nil~ for none            |
+| ~org-truss-project-file~        | ~nil~                         | an empty file marking the directory a project |
 | ~org-truss-pandoc-program~      | ~"pandoc"~                    |                                               |
 | ~org-truss-board-middle-width~  | ~nil~, half the window        | room for the file's words before the right    |
 | ~org-truss-board-right-width~   | ~nil~, the window's edge      | where a line drawn whole breaks its right     |
@@ -1264,9 +1304,11 @@ everyone.
 * Batch
 
 #+begin_src sh
-emacs --batch -L . -l org-truss -f org-truss-batch-check  truss.org
-emacs --batch -L . -l org-truss -f org-truss-batch-board  truss.org
-emacs --batch -L . -l org-truss -f org-truss-batch-export truss.org
+emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-check  truss.org
+emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-board  truss.org
+emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-export truss.org
+emacs --batch -L . -L ../org-dock -L ../org-moor -l org-truss -l org-moor \
+      -f org-truss-batch-take truss.org FILE-OR-URL [TITLE]
 #+end_src
 
 The first prints what is left to do, as ~M-x org-truss-check~ lists it:
@@ -1274,14 +1316,21 @@ under the name of each check that finds something and what it finds, a
 line for each thing, ~truss.org:42: …~.  Anything that edits the file
 without the board -- you by hand, or a model working in the file -- can
 run it to see what it broke or left undone.  The comment block at the head
-of a truss file gives this line, with the directory org-truss is loaded
-from.  The second prints the board as text, for anything that reads the
-structure without Emacs open.
+of a truss file gives this line, with the directories org-truss and
+org-dock are loaded from.  The second prints the board as text, for
+anything that reads the structure without Emacs open.
+
+The last, with org-moor, takes a file -- copied, never moved -- or a web
+page into the truss file's ~sources/~ and prints a link to it named by its
+title, for a model working in the file, which cannot ask Emacs: written
+where the fact is, it cites the source.  The comment block gives this line
+too when org-moor is there.
 
 * Tests
 
 #+begin_src sh
-emacs --batch -Q -L . -L test -l test/org-truss-core-test.el \
-      -l test/org-truss-export-test.el -l test/org-truss-board-test.el \
+emacs --batch -Q -L . -L ../org-dock -L ../org-moor -L test \
+      -l test/org-truss-core-test.el -l test/org-truss-export-test.el \
+      -l test/org-truss-board-test.el -l test/org-truss-moor-test.el \
       -f ert-run-tests-batch-and-exit
 #+end_src

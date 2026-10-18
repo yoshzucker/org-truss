@@ -27,8 +27,9 @@
 # How to write each part is in its :GUIDE: drawer (TAB opens it).
 #
 # Beside this file
-#   SOURCES/   what was read, kept: a file for each source, a page, a PDF,
-#              an extract.  A fact's TRUSS_SOURCE names its file here too
+#   SOURCES/   what was read, kept: a directory for each source, its file
+#              and its record, moor.org, taken by org-moor.  A fact cites
+#              one with a moor: link, in its text or in TRUSS_SOURCE
 #   NOTES/     what is ours and not a source: memos, slides, minutes
 #   ATTACH/    what C-c C-a attaches to a heading, a picture or a file.
 #              ~[[attachment:NAME]]~ is NAME in the directory under ATTACH/
@@ -66,7 +67,8 @@
 #
 # Properties and tags
 #   CUSTOM_ID         a member's id
-#   TRUSS_SOURCE      its source; makes it a fact
+#   TRUSS_SOURCE      its source, unless a moor: link in its text says
+#                     it; either makes it a fact
 #   TRUSS_GROUNDS     support from outside its cluster: ~[[#m3]] [[#m7]]~
 #   TRUSS_CONFIRM     whom to confirm an assumption with
 #   TRUSS_LOGIC       how what is under it is joined to it.  why: reasons
@@ -88,7 +90,8 @@
 #   :noexport: not written out
 #
 # After editing, check (what is left to do, by line)
-#   emacs --batch -L ORG-TRUSS-DIR -l org-truss -f org-truss-batch-check FILE
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss -f org-truss-batch-check FILE
+#TAKE
 #
 # M-x org-truss-refresh-guides brings this text and the :GUIDE:s up to date.
 "
@@ -98,8 +101,9 @@
 # 出ます。各部の書き方は、その部の :GUIDE:（TAB で開く）にあります。
 #
 # このファイルの隣
-#   SOURCES/   読んだ資料の控え。資料一つにファイル一つ（ページ、PDF、
-#              抜き書き）。事実の TRUSS_SOURCE にはこのファイルも書く
+#   SOURCES/   読んだ資料の控え。資料一つにディレクトリ一つ（ファイルと
+#              記録 moor.org、org-moor が取り込む）。事実は資料を moor:
+#              リンクで引く（本文か TRUSS_SOURCE に）
 #   NOTES/     出典ではない手元の資料：メモ、自分たちのスライド、議事録
 #   ATTACH/    C-c C-a で見出しに付けたもの（画像、ファイル）。
 #              ~[[attachment:名前]]~ は ATTACH/ の下の、見出しの ID の
@@ -135,7 +139,8 @@
 #
 # プロパティとタグ
 #   CUSTOM_ID         部材の ID
-#   TRUSS_SOURCE      出典。書くと事実になる
+#   TRUSS_SOURCE      出典。本文の moor: リンクが出典を言っていなければ
+#                     書く。どちらでも事実になる
 #   TRUSS_GROUNDS     入れ子の外の根拠を ~[[#m3]] [[#m7]]~ と並べる
 #   TRUSS_CONFIRM     前提を誰に確かめるか
 #   TRUSS_LOGIC       つなぎ方：塊のすぐ下が上にとって何か。
@@ -154,7 +159,8 @@
 #   :against: 反論  :assumption: 前提  :question: 未解決  :noexport: 書き出さない
 #
 # 編集したら確かめる（残りの作業を行番号付きで出す）
-#   emacs --batch -L ORG-TRUSS-DIR -l org-truss -f org-truss-batch-check FILE
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss -f org-truss-batch-check FILE
+#TAKE
 #
 # この文面と :GUIDE: は M-x org-truss-refresh-guides で最新に戻せます。
 ")
@@ -165,9 +171,24 @@ cluster are, how one member points to another, what is written out, and
 what each property means, and what goes in the directories beside it.
 How to work in each part is in its guide; the board's keys are at the
 board's foot; what each check means is printed with it.  ORG-TRUSS-DIR
-and FILE stand for where org-truss is loaded from and
-`org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the
-directories beside the file; see `org-truss--preamble'.")
+and ORG-DOCK-DIR stand for where org-truss and org-dock are loaded from,
+FILE for `org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/
+for the directories beside the file; a line #TAKE, for how an agent takes
+a source, when org-moor is there.  See `org-truss--preamble'.")
+
+(defconst org-truss--take-text
+  '("\
+#
+# A file or a page read, taken into SOURCES/ with a link printed to cite it
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE PATH-OR-URL [TITLE]
+"
+    "\
+#
+# 読んだファイルやページを SOURCES/ に取り込み、引くためのリンクを出す
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE パスかURL [題]
+")
+  "How an agent takes a source, in the comment at the head of a truss file.
+Written there when org-moor is there to take it with.")
 
 (defconst org-truss--guides
   '((brief
@@ -191,8 +212,9 @@ p で替えられる。")
      "文書が守るもの：分量、形式、言えないこと。")
     (subject
      "What was found.  Write each fact as a member under the field it
-belongs to, with its source in TRUSS_SOURCE (t on the board) and the
-source's own words in #+begin_quote (Q).  Sum facts up in clusters: nest
+belongs to, with its source -- a moor: link to it in its text, or
+TRUSS_SOURCE (t on the board) -- and the source's own words in a
+quote block, #+begin_quote (Q).  Sum facts up in clusters: nest
 them under a member that says in one sentence what they say together, and
 no more, with TRUSS_LOGIC parts -- they are its parts, how › parts; c on
 the board writes it.  Tag :question: what is
@@ -200,8 +222,9 @@ still to find out.  What the facts mean, and what to do, go in the
 members.  None of this is written out; a member a section lists is, alone,
 without its parts.  The fields are the places of TRUSS_ASPECTS; p on the
 board's Subject line changes it."
-     "調べたこと。事実は一つずつ、合う項目の下に部材として書き、出典を
-TRUSS_SOURCE に（盤面の t）、出典の原文を本文に #+begin_quote で残す（Q）。
+     "調べたこと。事実は一つずつ、合う項目の下に部材として書き、出典を本文の
+moor: リンクか TRUSS_SOURCE に（盤面の t）、出典の原文を本文の引用
+ブロック #+begin_quote に残す（Q）。
 事実は塊にまとめる。下の事実が合わせて言っていることを一文で書いた部材の
 下に入れ子にし、その一文には下の事実が言っている以上のことを書かない。上の
 部材には TRUSS_LOGIC: parts を付ける（how › parts、下は上の内訳。盤面の c
@@ -282,14 +305,21 @@ that fills ROLE.")
 The command that checks the file is written as it runs here: with the
 directory org-truss is loaded from, and the name of a truss file.  The
 directories beside it are named as they are set here."
-  (let ((library (locate-library "org-truss"))
-        (text (apply #'org-truss--pick org-truss--preamble-text)))
+  (let* ((dir-of (lambda (name)
+                   (let ((library (locate-library name)))
+                     (if library
+                         (directory-file-name
+                          (abbreviate-file-name (file-name-directory library)))
+                       "DIR"))))
+         (text (string-replace "#TAKE\n"
+                               (if (locate-library "org-moor")
+                                   (apply #'org-truss--pick org-truss--take-text)
+                                 "")
+                               (apply #'org-truss--pick org-truss--preamble-text))))
     (pcase-dolist (`(,placeholder . ,value)
-                   `(("ORG-TRUSS-DIR"
-                      . ,(if library
-                             (directory-file-name
-                              (abbreviate-file-name (file-name-directory library)))
-                           "DIR"))
+                   `(("ORG-TRUSS-DIR" . ,(funcall dir-of "org-truss"))
+                     ("ORG-DOCK-DIR" . ,(funcall dir-of "org-dock"))
+                     ("ORG-MOOR-DIR" . ,(funcall dir-of "org-moor"))
                      ("FILE" . ,org-truss-file-name)
                      ("SOURCES/" . ,(file-name-as-directory org-truss-sources-directory))
                      ("NOTES/" . ,(file-name-as-directory org-truss-notes-directory))

@@ -494,6 +494,18 @@ Return a plist:
           :drawers (apply #'concat (nreverse drawers))
           :notes (apply #'concat (nreverse notes)))))
 
+(defun org-truss--cited (pos)
+  "Return the first link to a source in the own text of the heading at POS.
+A source taken by org-moor is cited by a `moor:' link; written in a
+member's text, beside the words it quotes, it says where the member comes
+from as TRUSS_SOURCE does.  Nil when there is none."
+  (let ((bounds (org-truss--own-bounds pos)))
+    (save-excursion
+      (goto-char (car bounds))
+      (and (re-search-forward "\\[\\[moor:[^]\n]+\\]\\(?:\\[[^]\n]*\\]\\)?\\]"
+                              (cdr bounds) t)
+           (match-string-no-properties 0)))))
+
 (defun org-truss--own (pos)
   "Parse the own text of the heading at POS."
   (let ((bounds (org-truss--own-bounds pos)))
@@ -692,7 +704,7 @@ none written, its support."
        :label (org-truss--heading-text)
        :level (org-current-level)
        :tags (org-get-tags nil t)
-       :source (org-entry-get nil "TRUSS_SOURCE")
+       :source (or (org-entry-get nil "TRUSS_SOURCE") (org-truss--cited pos))
        :grounds (org-truss--grounds-refs (org-entry-get nil "TRUSS_GROUNDS"))
        :logic (org-truss--intern (org-entry-get nil "TRUSS_LOGIC"))
        :aspects (org-truss--intern (org-entry-get nil "TRUSS_ASPECTS"))
@@ -760,6 +772,22 @@ is written under them.  Every heading right under it is a field."
   (mapcan (lambda (m) (cons m (org-truss--flatten (org-truss-member-children m))))
           members))
 
+(defvar-local org-truss--root nil
+  "In an Org file that is no truss file, a marker at the heading read as one.
+The board of one heading -- `org-truss-board' on a heading of such a
+file -- reads the file as a truss file whose members are that heading
+alone, with its patterns, what is under it and what it lacks; there is
+no brief, subject or structure.  Set in the file's buffer by the board
+before it reads it.")
+
+(defun org-truss--root-pos ()
+  "Return where the heading read as a truss file's one member is, or nil."
+  (and (markerp org-truss--root)
+       (eq (marker-buffer org-truss--root) (current-buffer))
+       (save-excursion
+         (goto-char org-truss--root)
+         (and (org-at-heading-p) (point)))))
+
 (defun org-truss-read (&optional buffer)
   "Read the truss file in BUFFER, or the current buffer, into a model.
 A heading under a field of the brief or the subject is a member like those
@@ -776,8 +804,10 @@ among its duplicates, and its index finds the first.  See
                                              '(brief subject))))
             (brief (let ((pos (alist-get 'brief parts))) (and pos (org-truss--read-part pos 'brief))))
             (subject (let ((pos (alist-get 'subject parts))) (and pos (org-truss--read-part pos 'subject))))
-            (tops (and members (mapcar #'org-truss--read-member
-                                       (org-truss--children members))))
+            (root (org-truss--root-pos))
+            (tops (cond (root (list (org-truss--read-member root)))
+                        (members (mapcar #'org-truss--read-member
+                                         (org-truss--children members)))))
             (all (org-truss--by-position
                   (org-truss--flatten (append (mapcan (lambda (field)
                                                         (copy-sequence (org-truss-field-children field)))
