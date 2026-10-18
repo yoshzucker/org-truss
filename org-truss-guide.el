@@ -41,59 +41,51 @@
 # The four top headings (filled from the top; told apart by TRUSS_PART, so
 # they may sit at any level)
 #   Brief      the reader: who, and what they expect
-#   Subject    what was found: facts, and questions still open
+#   Subject    what was found: the facts
 #   Members    what is made of it: what the facts mean, and what to do
 #   Structure  the document's outline: sections, each listing members
 #
 # How a heading relates to the headings right under it (its patterns)
-#   A heading says what the headings right under it are to it, in these three
-#   properties:
-#   TRUSS_LOGIC    whether they hold it up (why) or are its steps or parts
-#                  (how).  why: reasons deduction induction; how: steps
-#                  parts.  Unset on a member, it is why > reasons
-#   TRUSS_ASPECTS  what they must cover, leaving nothing out: what-why-how
-#                  pros-cons short-long past-present-future 5w1h 6w1h.  On
-#                  Brief and Subject, the fields:
-#                  reader-question-response-constraints,
-#                  premises-issue-constraints
-#   TRUSS_TELLING  the order the heading and they are told in: first last
-#                  prep sds scqa sky-rain-umbrella.  Unset, first: the
-#                  heading, then them.  They are told in the order they are
-#                  written; the check points out what is out of the
-#                  pattern's order
-#   Each heading right under one says in TRUSS_ROLE the role it plays in
-#   the patterns of the one above: who, minor, reason, sky, issue, ...  When
-#   no heading plays a role one of those patterns asks for, the check points
-#   it out
+#   A heading says what the headings right under it are to it, in these
+#   three properties
+#   TRUSS_LOGIC      they are its reasons.  reasons deduction induction
+#   TRUSS_BREAKDOWN  they are its breakdown.  steps parts what-why-how
+#                    pros-cons short-long past-present-future 5w1h 6w1h.  On
+#                    Brief and Subject, reader-question-response-constraints
+#                    and premises-issue-constraints
+#   TRUSS_TELLING    the order it and they are told in.  first last prep sds
+#                    scqa sky-rain-umbrella.  Unset, first: it, then them.
+#                    They are told in the order they are written; the check
+#                    points out what is out of the pattern's order
+#   Each heading right under one says the role it plays in each of its
+#   patterns, in the pattern's property with _ROLE after it: reason or
+#   major in TRUSS_LOGIC_ROLE, who or issue in TRUSS_BREAKDOWN_ROLE, sky in
+#   TRUSS_TELLING_ROLE.  When no heading plays a role a pattern asks for,
+#   the check points the role out
+#
+# Grounds
+#   A heading that plays a role right under a TRUSS_LOGIC heading must have
+#   grounds, unless it has TRUSS_LOGIC itself or the tag :assumption:.  It
+#   has grounds when it has one of these
+#     TRUSS_GROUNDS     a link to a source, or words naming one
+#     #+begin_quote     the source's own words, quoted in its text
+#     a source link     a moor:, file: or URL link in its text
+#   TRUSS_GROUNDS can also point to a member, ~[[#m3]]~, to stand on it.
+#   The check points out a heading that must have grounds and has none, and
+#   a member pointed to that has no grounds, no TRUSS_LOGIC and no tag
+#   :assumption:
 #
 # Under the four
 #   right under Brief or Subject
-#     a field: plays one role of their TRUSS_ASPECTS
+#     a field: plays one role of their TRUSS_BREAKDOWN
 #   under a field, or right under Members
-#     a member: its heading states one fact, claim, assumption or question,
-#     as a sentence that reads without the sentences around it -- no \"the
-#     following\", no \"above\".  The text under the heading is notes
+#     a member: its heading is one sentence, which reads without the
+#     sentences around it -- no \"the following\", no \"above\".  The text
+#     under the heading is notes
 #   under Structure
 #     a section of the document: it lists the members it shows, as links
-#   A member's kind is the first row of this table that holds for it:
-#     question    it has the tag :question:
-#     assumption  it has the tag :assumption:
-#     step, part  in Members, the TRUSS_LOGIC of the heading above it is
-#                 steps or parts
-#     fact        it has TRUSS_SOURCE, or a moor: link in its text
-#     summary     in Brief or Subject, its TRUSS_LOGIC is steps or parts and
-#                 it has headings under it
-#     claim       it has TRUSS_GROUNDS, or headings under it without the tag
-#                 :against: (with TRUSS_LOGIC steps or parts, TRUSS_GROUNDS
-#                 alone counts)
-#     objection   it has the tag :against:
-#     bare        none of the above; the check points it out
-#   A claim whose TRUSS_GROUNDS and headings under it, followed down, reach
-#   an assumption or a question is a hypothesis
-#   A member with members under it takes TRUSS_LOGIC parts in Subject -- it
-#   sums them up -- and reasons in Members -- they hold it up.  To point to
-#   a member, give it :CUSTOM_ID: m7 (the next free number) and write
-#   ~[[#m7]]~
+#   To point to a member, give it :CUSTOM_ID: m7 (the next free number) and
+#   write ~[[#m7]]~
 #
 # Written out (only what Structure reaches)
 #   #+title             the title
@@ -101,22 +93,19 @@
 #   #+begin_public      its section's opening (right under Structure, the
 #                       document's)
 #   ~- [[#m7][words]]~  member m7: the words, else its #+begin_public, else
-#                       its heading; a member of Members brings its own
+#                       its heading; then the members under it
 #   #+begin_opening     a member's words where its TRUSS_TELLING opens with
 #   #+begin_closing     it, and where it closes with it; else as above
+#   Under a member with TRUSS_BREAKDOWN and no TRUSS_LOGIC, the members are
+#   a list, numbered for steps
 #   Notes under a heading, outside #+begin_public, are not written out
 #
 # Other properties, and tags
 #   CUSTOM_ID         a member's id
-#   TRUSS_SOURCE      its source, in words; not needed when its text has a
-#                     moor: link to a file in SOURCES/
-#   TRUSS_GROUNDS     members that hold it up besides those under it:
-#                     ~[[#m3]] [[#m7]]~
-#   TRUSS_CONFIRM     who can tell whether an assumption holds: a person, a
-#                     team
 #   TRUSS_PART        marks one of the four top headings; leave it be
-#   :against: objection  :assumption: assumed  :question: open
-#   :noexport: not written out
+#   :assumption:      taken as given: a heading that must have grounds needs
+#                     none
+#   :noexport:        not written out
 #
 # After editing, check (what is left to do, by line)
 #   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss -f org-truss-batch-check FILE
@@ -142,72 +131,65 @@
 # 第一階層の4つの見出し（上から順に埋める。TRUSS_PART で見分けるので、
 # 別の階層に置いてもよい）
 #   Brief      読み手のこと：誰か、何を期待するか
-#   Subject    調べたこと：事実と、まだ調べている問い
+#   Subject    調べたこと：事実
 #   Members    考えたこと：事実が何を意味するか（解釈）と、何をするか（判断）
 #   Structure  生成文書の構成：節ごとに載せる部材を並べる
 #
 # 見出しとそのすぐ下の見出しの関係（型）
 #   見出しは、すぐ下の見出しが自分にとって何かを、次の3つのプロパティで指定する
-#   TRUSS_LOGIC    下が自分を支えるか（why）、自分の手順か部分か（how）。
-#                  why：reasons deduction induction、how：steps parts。
-#                  部材で未設定なら why > reasons とみなす
-#   TRUSS_ASPECTS  下の見出しで漏れなく扱うべき観点。what-why-how pros-cons
-#                  short-long past-present-future 5w1h 6w1h。Brief・
-#                  Subject では reader-question-response-constraints と
-#                  premises-issue-constraints
-#   TRUSS_TELLING  自分と下をどの順で語るか。first last prep sds scqa
-#                  sky-rain-umbrella。未設定なら first（自分が先、下が後）。
-#                  下は書いた順に語られ、型の順と違えば検査が指摘する
-#   すぐ下の見出しはそれぞれ、上の見出しの型の中でどの役を担うかを
-#   TRUSS_ROLE に書く：who、minor、reason、sky、issue など。上の見出しの型が
-#   求める役を担う見出しが欠けていれば、検査がその役を指摘する
+#   TRUSS_LOGIC      下は自分の理由。reasons deduction induction
+#   TRUSS_BREAKDOWN  下は自分の内訳。steps parts what-why-how pros-cons
+#                    short-long past-present-future 5w1h 6w1h。Brief・
+#                    Subject では reader-question-response-constraints と
+#                    premises-issue-constraints
+#   TRUSS_TELLING    自分と下をどの順で語るか。first last prep sds scqa
+#                    sky-rain-umbrella。未設定なら first（自分が先、下が後）。
+#                    下は書いた順に語られ、型の順と違えば検査が指摘する
+#   すぐ下の見出しはそれぞれ、上の見出しの型の中で担う役を、その型の
+#   プロパティ名に _ROLE を付けたプロパティに書く。TRUSS_LOGIC_ROLE に
+#   reason や major、TRUSS_BREAKDOWN_ROLE に who や issue、
+#   TRUSS_TELLING_ROLE に sky など。型が求める役を担う見出しがなければ、
+#   検査がその役を指摘する
+#
+# 根拠
+#   TRUSS_LOGIC の見出しのすぐ下で役を担う見出しは、根拠を持つべき見出し。
+#   ただし、自分も TRUSS_LOGIC を持つ見出しと、:assumption: を付けた見出しは
+#   除く。根拠を持つとは、次のどれかを持つこと
+#     TRUSS_GROUNDS     資料へのリンクか、資料を名指す言葉
+#     #+begin_quote     本文に引いた資料の原文
+#     資料へのリンク    本文の moor:・file:・URL のリンク
+#   TRUSS_GROUNDS には部材へのリンク ~[[#m3]]~ も書け、その部材を根拠に
+#   する。根拠を持つべき見出しに根拠がないとき、また、指した部材が根拠も
+#   TRUSS_LOGIC も :assumption: も持たないとき、検査が指摘する
 #
 # 4つの見出しの下
 #   Brief・Subject のすぐ下
-#     観点：その TRUSS_ASPECTS の役を一つ担う
+#     観点：その TRUSS_BREAKDOWN の役を一つ担う
 #   観点の下、Members のすぐ下
-#     部材：見出しに、事実・主張・前提・問いを一つ書く。前後の文を頼らずに
-#     読める文にする（「次の」「上記の」と書かない）。見出しの下の本文はメモ
+#     部材：見出しに一文を書く。前後の文を頼らずに読める文にする（「次の」
+#     「上記の」と書かない）。見出しの下の本文はメモ
 #   Structure の下
 #     節：文書の章。載せる部材をリンクで並べる
-#   部材の種類は、次の表を上から見て、最初に当てはまるもの
-#     問い        :question: タグがある
-#     前提        :assumption: タグがある
-#     手順・部分  Members で、上の見出しの TRUSS_LOGIC が steps か parts
-#     事実        TRUSS_SOURCE がある。または本文に moor: リンクがある
-#     まとめ      Brief・Subject で、TRUSS_LOGIC が steps か parts で、
-#                 下に見出しがある
-#     主張        TRUSS_GROUNDS がある。または :against: タグのない下の
-#                 見出しがある（TRUSS_LOGIC が steps か parts のときは、
-#                 TRUSS_GROUNDS だけで決まる）
-#     反論        :against: タグがある
-#     支えなし    どれにも当たらない。検査が指摘する
-#   主張のうち、TRUSS_GROUNDS と下の見出しを辿ると前提か問いに行き着く
-#   ものは仮説
-#   下に部材を持つ部材には、Subject では TRUSS_LOGIC: parts（上は下の
-#   まとめ）、Members では reasons（下は上の根拠）を付ける。部材を指すときは、
-#   その部材に :CUSTOM_ID: m7（空いている次の番号）を付けて、リンクは
-#   ~[[#m7]]~ と書く
+#   部材を指すときは、その部材に :CUSTOM_ID: m7（空いている次の番号）を
+#   付けて、リンクは ~[[#m7]]~ と書く
 #
 # 書き出されるもの（Structure から辿れるものだけ）
 #   #+title                   文書のタイトル
 #   節の見出し                文書の見出し
 #   #+begin_public            節の最初の文（Structure 直下なら文書の最初の文）
 #   節の ~- [[#m7][言い方]]~  部材 m7。言い方、なければ部材の #+begin_public、
-#                             なければ見出し。Members の部材は下の部材も出る
+#                             なければ見出し。続けて下の部材が出る
 #   #+begin_opening           語り口が部材で始まるところでの部材の言い方、
 #   #+begin_closing           部材で結ぶところでの言い方。なければ上と同じ
+#   TRUSS_BREAKDOWN を持ち TRUSS_LOGIC を持たない部材の下は、箇条書きで出る
+#   （steps は番号付き）
 #   見出しの下のメモ（#+begin_public の外）は書き出さない
 #
 # そのほかのプロパティとタグ
 #   CUSTOM_ID         部材の ID
-#   TRUSS_SOURCE      出典を言葉で書く。本文に SOURCES/ のファイルへの
-#                     moor: リンクがあれば要らない
-#   TRUSS_GROUNDS     下の見出しのほかに自分を支える部材を
-#                     ~[[#m3]] [[#m7]]~ と並べる
-#   TRUSS_CONFIRM     前提が正しいかを確かめられる相手（人や部署）
 #   TRUSS_PART        4つの見出しの印。変えない
-#   :against: 反論  :assumption: 前提  :question: 未解決  :noexport: 書き出さない
+#   :assumption:      根拠を持つべき見出しを、根拠なしでそうであるとする
+#   :noexport:        書き出さない
 #
 # 編集したら確かめる（残りの作業を行番号付きで出す）
 #   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss -f org-truss-batch-check FILE
@@ -217,15 +199,16 @@
 ")
   "The comment block at the head of a truss file, in English and Japanese.
 It holds the rules of the file, the same for whoever edits it -- a person,
-or a model working in the file: what each part holds, what a member and a
-cluster are, how one member points to another, what is written out, and
-what each property means, and what goes in the directories beside it.
-How to work in each part is in its guide; the board's keys are at the
-board's foot; what each check means is printed with it.  ORG-TRUSS-DIR
-and ORG-DOCK-DIR stand for where org-truss and org-dock are loaded from,
-FILE for `org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/
-for the directories beside the file; a line #TAKE, for how an agent takes
-a source, when org-moor is there.  See `org-truss--preamble'.")
+or a model working in the file: what each part holds, what the patterns
+and the roles are, which headings must have grounds and what grounds are,
+how one member points to another, what is written out, what each other
+property means, and what goes in the directories beside it.  How to work
+in each part is in its guide; the board's keys are at the board's foot;
+what each check means is printed with it.  ORG-TRUSS-DIR and ORG-DOCK-DIR
+stand for where org-truss and org-dock are loaded from, FILE for
+`org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the
+directories beside the file; a line #TAKE, for how an agent takes a
+source, when org-moor is there.  See `org-truss--preamble'.")
 
 (defconst org-truss--take-text
   '("\
@@ -244,10 +227,10 @@ Written there when org-moor is there to take it with.")
 (defconst org-truss--guides
   '((brief
      "What the document must satisfy.  None of it is written out; a member
-under a field is, when a section lists it.  The fields are the places of
-TRUSS_ASPECTS; p on the board's Brief line changes it."
+under a field is, when a section lists it.  The fields are the roles of
+TRUSS_BREAKDOWN; p on the board's Brief line changes it."
      "この文書が満たすべき条件。ここは書き出されない。観点の下の部材は、節に
-載せれば書き出される。観点は TRUSS_ASPECTS の役を担い、盤面の Brief の行の
+載せれば書き出される。観点は TRUSS_BREAKDOWN の役を担い、盤面の Brief の行の
 p で替えられる。")
     ((brief reader)
      "Who reads it, and what do they already know?"
@@ -263,26 +246,24 @@ p で替えられる。")
      "文書が守るもの：分量、形式、言えないこと。")
     (subject
      "What was found.  Write each fact as a member under the field it
-belongs to, with its source -- a moor: link to it in its text, or
-TRUSS_SOURCE (t on the board) -- and the source's own words in a
-quote block, #+begin_quote (Q).  Sum facts up in clusters: nest
-them under a member that says in one sentence what they say together, and
-no more, with TRUSS_LOGIC parts -- they are its parts, how › parts; c on
-the board writes it.  Tag :question: what is
-still to find out.  What the facts mean, and what to do, go in the
-members.  None of this is written out; a member a section lists is, alone,
-without its parts.  The fields are the places of TRUSS_ASPECTS; p on the
-board's Subject line changes it."
-     "調べたこと。事実は一つずつ、合う観点の下に部材として書き、出典を本文の
-moor: リンクか TRUSS_SOURCE に（盤面の t）、出典の原文を本文の引用
-ブロック #+begin_quote に残す（Q）。
-関係する事実はまとめる。下の事実が合わせて言っていることを一文で書いた部材の
-下に入れ子にし、その一文には下の事実が言っている以上のことを書かない。上の
-部材には TRUSS_LOGIC: parts を付ける（how › parts、下は上の内訳。盤面の c
-が書く）。まだ調べていることには
-:question: を付ける。事実の意味と、することは Members に書く。ここは書き
-出されない。節に載せた部材は、その一文だけが出て、内訳は出ない。観点は
-TRUSS_ASPECTS の役を担い、盤面の Subject の行の p で替えられる。")
+belongs to, with its grounds: the source's own words in a quote block,
+a #+begin_quote (Q on the board), or a link to the source in TRUSS_GROUNDS
+(t on the board).  Sum up facts that belong together: nest them under a
+member that says in one sentence what they say together, and no more,
+with TRUSS_LOGIC: reasons (p on the board) -- each fact is then a reason,
+and must have its grounds.  What the facts mean, and what to do, go in
+the members.  None of this is written out; a member a section lists is,
+with the members under it.  The fields are the roles of TRUSS_BREAKDOWN;
+p on the board's Subject line changes it."
+     "調べたこと。事実は一つずつ、合う観点の下に部材として書き、根拠を付ける。
+出典の原文を本文の引用ブロック #+begin_quote に残すか（盤面の Q）、出典への
+リンクを TRUSS_GROUNDS に書く（盤面の t）。関係する事実はまとめる。下の事実
+が合わせて言っていることを一文で書いた部材の下に入れ子にし、その一文には下の
+事実が言っている以上のことを書かない。上の部材には TRUSS_LOGIC: reasons を
+付ける（盤面の p）。下の事実はその理由になり、それぞれ根拠を持つべき見出しに
+なる。事実の意味と、することは Members に書く。ここは書き出されない。節に
+載せた部材は、下の部材と一緒に書き出される。観点は TRUSS_BREAKDOWN の役を
+担い、盤面の Subject の行の p で替えられる。")
     ((subject premises)
      "What is taken as given: what of the situation will not be argued."
      "何を前提とするか。現状のうち、議論せずに受け入れるもの。")
@@ -294,63 +275,59 @@ TRUSS_ASPECTS の役を担い、盤面の Subject の行の p で替えられる
      "動かせないもの：期限、予算、方針、法令。")
     (members
      "What is made of what was found: what the facts mean here, and what is
-to be done.  Each heading is a member, one claim in one sentence.  Make it
-stand on the heads of the subject's clusters it reads by pointing to them
-in TRUSS_GROUNDS, ~[[#m3]] [[#m7]]~ (b on the board).  Nest under a claim
-the members that support it, with TRUSS_LOGIC reasons (c on the board
-writes it), and tag one that argues against it :against:.  Give a member
-that says what to do how › steps or how › parts (p on the board), and what
-is under it is its steps or parts instead of its support; aspects, as
-6W1H, ask that nothing be left out.  A telling pattern, as PREP, says in
-what order it is written out.  Tag :assumption: what you take as given
-without checking.
-Facts and what is still to find out go in the subject.
-Write each heading to make sense pulled out on its own: no \"the
-following\", no \"above\".  Words fitted to the reader belong to the
-section that lists it (S on the board).  The text under a heading is never
-written out; tag :noexport: a member that should not be."
+to be done.  Each heading is a member, one statement in one sentence.
+Nest under a claim the members that are its reasons, and give the claim
+TRUSS_LOGIC (p on the board): reasons, deduction or induction.  Each
+reason plays a role of it in TRUSS_LOGIC_ROLE, and must have grounds:
+point in its TRUSS_GROUNDS to the facts of the subject it stands on,
+~[[#m3]] [[#m7]]~ (b on the board), or cite a source (t, Q).  Tag
+:assumption: a reason taken as given without grounds (A).  Give what is
+to be done TRUSS_BREAKDOWN -- steps, parts, 5W1H (p on the board) -- and
+what is under it is its parts, which need no grounds.  A telling pattern,
+as PREP, says in what order it is written out.  Write each heading to
+make sense pulled out on its own: no \"the following\", no \"above\".
+Words fitted to the reader belong to the section that lists it (S on the
+board).  The text under a heading is never written out; tag :noexport: a
+member that should not be."
      "考えたこと：Subject の事実が、ここで何を意味するか（解釈）と、何を
-するか（判断）。見出し一つが部材一つで、主張を一文で書く。読んだ Subject の
-事実のまとめ（下に事実を持つ部材）を、TRUSS_GROUNDS に ~[[#m3]] [[#m7]]~ と
-書いて根拠にする（盤面の b）。
-主張を支える部材はその下に入れ子にし、主張には TRUSS_LOGIC: reasons を
-付ける（盤面の c が書く）。反論には :against: を付ける。やることを言う部材に
-how › steps か how › parts を付けると（盤面の p）、下の部材は根拠ではなく手順
-や部分になる。6W1H などの観点を付けると、抜け漏れがないかを見る。PREP など
-の語り口は、書き出す順を決める。確かめずに置くものには :assumption:
-を付ける。事実と、まだ調べていることは Subject に書く。
+するか（判断）。見出し一つが部材一つで、一文で書く。主張の理由になる部材は
+その下に入れ子にし、主張には TRUSS_LOGIC を付ける（盤面の p）：reasons、
+deduction、induction。理由はそれぞれ TRUSS_LOGIC_ROLE に役を書き、根拠を
+持つべき見出しになる。根拠には、支えにする Subject の事実を TRUSS_GROUNDS に
+~[[#m3]] [[#m7]]~ と書くか（盤面の b）、出典を引く（盤面の t、Q）。根拠
+なしで置く理由には :assumption: を付ける（盤面の A）。することに
+TRUSS_BREAKDOWN を付けると（steps、parts、5w1h など。盤面の p）、下の部材は
+その内訳になり、根拠は要らない。PREP などの語り口は、書き出す順を決める。
 見出しは、抜き出して読んでも通じるように書く（「次の」「上記の」を使わ
 ない）。読み手に合わせた言い方は、載せる節の側で書く（盤面の S）。見出しの
 下の本文は書き出されない。書き出したくない部材には :noexport: を付ける。")
     (structure
      "The sections of the document.  Leave it empty while there is no
-document to make, as when a question is only being worked out: until it
-has a pattern, a section or a link, every member is checked, and none is
-listed as not placed.  A section lists the members it shows as links, as
-~- [[#m7]]~ with m7 the member's CUSTOM_ID (a on the board).  A telling
-pattern here, or on a section -- Sky, Rain, Umbrella, SCQA, PREP (p on
-the board) -- gives the sections right below their places, each filled by
-a section's TRUSS_ROLE; a place none fills is listed under Pattern gaps.
-A section's heading becomes a heading of the document, and the text of
-its #+begin_public, the section's opening.  A link's description, as in
-~- [[#m7][words]]~, is written out in place of the member's heading (S on
-the board).  Write here only what guides the
-reader; put facts and claims in members, which are what the board's checks
-read.  Sections nest as deep as the document needs."
+document to make, as when a question is only being worked out.  A section
+lists the members it shows as links, as ~- [[#m7]]~ with m7 the member's
+CUSTOM_ID (a on the board).  A telling pattern here, or on a section --
+Sky, Rain, Umbrella, SCQA, PREP (p on the board) -- gives the sections
+right below their roles, each written in a section's TRUSS_TELLING_ROLE;
+a role none plays is listed under Missing roles.  A section's heading
+becomes a heading of the document, and the text of its #+begin_public,
+the section's opening.  A link's description, as in ~- [[#m7][words]]~,
+is written out in place of the member's heading (S on the board).  Write
+here only what guides the reader; put facts and claims in members, which
+are what the board's checks read.  Sections nest as deep as the document
+needs."
      "書き出す文書の節。相談して考えをまとめるだけなど、文書を作らないうちは
-空のままにしておく。型も節もリンクもないあいだは、すべての部材が検査され、
-未配置（Not placed）とは言われない。節は、載せる部材をリンクの箇条
-~- [[#m7]]~ で並べる（m7 は部材の CUSTOM_ID。盤面の a）。ここや節に語り口
-（Sky, Rain, Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節が
-担う役が決まり、節は TRUSS_ROLE にその役を書く。どの節も担っていない役は
-Pattern gaps に出る。節の見出しは文書の見出しになり、節に
-書いた #+begin_public の中身は節の最初の文になる。リンクに説明を付けて
+空のままにしておく。節は、載せる部材をリンクの箇条 ~- [[#m7]]~ で並べる
+（m7 は部材の CUSTOM_ID。盤面の a）。ここや節に語り口（Sky, Rain,
+Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節が担う役が
+決まり、節は TRUSS_TELLING_ROLE にその役を書く。どの節も担っていない役は
+Missing roles に出る。節の見出しは文書の見出しになり、節に書いた内容
+（#+begin_public の中身）は節の最初の文になる。リンクに説明を付けて
 ~- [[#m7][言い方]]~ とすると、部材の見出しの代わりにその説明が出る（盤面の
 S）。ここには読み手を案内する言葉だけを書き、事実や主張は Members の部材に
 する。盤面のチェックが読むのは部材だけだから。節はいくらでも入れ子にできる。"))
   "Guidance written into a truss file, in English and Japanese.
 Keyed by a part, or by (PART ROLE) for a field of the brief or the subject
-that fills ROLE.")
+that plays ROLE.")
 
 (defun org-truss--preamble ()
   "Return the comment block at the head of a truss file, in `org-truss-language'.
@@ -408,25 +385,27 @@ takes the value at once, as visiting the file would give it."
          (format ":GUIDE:\n%s\n:END:\n" (org-truss--pick (nth 0 entry) (nth 1 entry))))))
 
 (defun org-truss--field-entry (part role level)
-  "Return a new field of PART filling ROLE, a heading at LEVEL, as text.
-Named for its place in English, whatever `org-truss-language' says, and
+  "Return a new field of PART playing ROLE, a heading at LEVEL, as text.
+Named for its role in English, whatever `org-truss-language' says, and
 with its guide, followed by a blank line."
-  (format "%s %s\n:PROPERTIES:\n:TRUSS_ROLE: %s\n:END:\n%s\n"
-          (make-string level ?*) (org-truss-role-name role) role
+  (format "%s %s\n:PROPERTIES:\n:%s: %s\n:END:\n%s\n"
+          (make-string level ?*) (org-truss-role-name role)
+          (org-truss-role-property 'breakdown) role
           (or (org-truss--guide (list part role)) "")))
 
 (defun org-truss-add-field (pos role)
-  "Write a field filling ROLE under the part at POS, the brief or the subject.
-Among the fields there, where the part's aspects list ROLE: before the
-first that fills a place they list after it, or else last.  Return a
-marker at the new heading."
+  "Write a field playing ROLE under the part at POS, the brief or the subject.
+Among the fields there, where the part's breakdown lists ROLE: before the
+first that plays a role it lists after it, or else last.  Return a marker
+at the new heading."
   (let* ((part (intern (org-entry-get pos "TRUSS_PART")))
-         (roles (plist-get (org-truss-pattern (org-truss--intern (org-entry-get pos "TRUSS_ASPECTS")))
-                           :roles))
+         (roles (org-truss-pattern-roles
+                 (org-truss--intern (org-entry-get pos (alist-get 'breakdown org-truss-pattern-properties)))))
          (rank (lambda (r) (or (seq-position roles r) most-positive-fixnum)))
          (before (seq-find (lambda (child)
-                             (let ((theirs (org-truss--roles (org-entry-get child "TRUSS_ROLE"))))
-                               (and theirs (> (apply #'min (mapcar rank theirs)) (funcall rank role)))))
+                             (let ((theirs (org-truss--intern
+                                            (org-entry-get child (org-truss-role-property 'breakdown)))))
+                               (and theirs (> (funcall rank theirs) (funcall rank role)))))
                            (org-truss--children pos))))
     (save-excursion
       (if before
@@ -442,19 +421,22 @@ marker at the new heading."
   "Return the text of a new truss file titled TITLE.
 Its first line keeps what is attached to its headings beside it; see
 `org-truss--file-variables'.  The brief and the subject are given the
-aspects `org-truss-part-aspects' names, and a field for each.  Its
+breakdowns `org-truss-part-breakdowns' names, and a field for each.  Its
 headings are English whatever `org-truss-language' says: they name the
 parts and fields, are not rewritten, and never reach the reader.  The
 guidance is in `org-truss-language'."
   (let ((part (lambda (part heading)
-                (let ((aspects (alist-get part org-truss-part-aspects)))
+                (let ((breakdown (alist-get part org-truss-part-breakdowns)))
                   (concat
                    (format "* %s\n:PROPERTIES:\n:TRUSS_PART: %s\n%s:END:\n%s\n"
                            heading part
-                           (if aspects (format ":TRUSS_ASPECTS: %s\n" aspects) "")
+                           (if breakdown
+                               (format ":%s: %s\n" (alist-get 'breakdown org-truss-pattern-properties)
+                                       breakdown)
+                             "")
                            (org-truss--guide part))
                    (mapconcat (lambda (role) (org-truss--field-entry part role 2))
-                              (plist-get (org-truss-pattern aspects) :roles) ""))))))
+                              (org-truss-pattern-roles breakdown) ""))))))
     (concat
      (org-truss--file-variables)
      (format "#+title: %s\n\n" title)
@@ -488,34 +470,13 @@ no guide, such as a field of your own."
           (insert guide)
           (set-marker end nil))))))
 
-(defun org-truss--convert-fields (pos part)
-  "Make the fields of PART, the part at POS, fill places, if they do not yet.
-A field marked TRUSS_FIELD, as files once marked them, fills that place by
-TRUSS_ROLE instead; and the part, if it has no aspects, is given those
-`org-truss-part-aspects' names for it.  Nothing is done to a part none of
-whose fields was marked so."
-  (let ((marked nil))
-    ;; From the last field up, so what is changed lies below what is still
-    ;; to change and positions stay good.
-    (dolist (child (reverse (org-truss--children pos)))
-      (let ((field (org-entry-get child "TRUSS_FIELD")))
-        (when field
-          (unless (org-entry-get child "TRUSS_ROLE")
-            (org-entry-put child "TRUSS_ROLE" field))
-          (org-entry-delete child "TRUSS_FIELD")
-          (setq marked t))))
-    (let ((aspects (alist-get part org-truss-part-aspects)))
-      (when (and marked aspects (not (org-entry-get pos "TRUSS_ASPECTS")))
-        (org-entry-put pos "TRUSS_ASPECTS" (symbol-name aspects))))))
-
 (defun org-truss-refresh-guides-in-buffer ()
   "Put the current guidance back into the truss file in this buffer.
 The comment block at its head, and the :GUIDE: drawer of each part and of
 each field of the brief and the subject, are written anew, or added where
 they were deleted.  A file without the first line that keeps its
 attachments beside it is given one; see `org-truss-put-file-variables'.
-Fields marked as files once marked them are made to fill places; see
-`org-truss--convert-fields'.  Nothing else is read or moved."
+Nothing else is read or moved."
   (org-truss-put-file-variables)
   (org-with-wide-buffer
    (goto-char (point-min))
@@ -532,9 +493,9 @@ Fields marked as files once marked them are made to fill places; see
      (let ((pos (org-truss--part-pos (symbol-name part))))
        (when pos
          (when (memq part '(brief subject))
-           (org-truss--convert-fields pos part)
            (dolist (field (reverse (org-truss--children pos)))
-             (let ((role (car (org-truss--roles (org-entry-get field "TRUSS_ROLE")))))
+             (let ((role (org-truss--intern
+                          (org-entry-get field (org-truss-role-property 'breakdown)))))
                (when role
                  (org-truss--replace-guide field (list part role))))))
          (org-truss--replace-guide pos part))))))

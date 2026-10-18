@@ -52,7 +52,7 @@
 (require 'org-truss-board)
 
 ;; Sources taken by org-moor, when it is there: a truss file's go beside
-;; it, and a fact can cite one, or take one, from the board.
+;; it, and a member can cite one, or take one, from the board.
 (with-eval-after-load 'org-moor
   (require 'org-truss-moor))
 
@@ -204,10 +204,10 @@ finds and where, by line.  RET on a line visits it."
 ;;;###autoload
 (defun org-truss-convert-references ()
   "Make the nearest truss file point to its members by CUSTOM_ID.
-A link [[*heading]] in the structure, and a heading named in
-TRUSS_GROUNDS, become [[#id]], and the member named is given an id when it
-has none; a link keeps its words.  For a file written before members were
-pointed to by id, or a link written by heading.  The buffer is left
+A link [[*heading]], in the structure or in TRUSS_GROUNDS, becomes
+[[#id]], and the member named is given an id when it has none; a link
+keeps its words.  For a link written by heading, with Org's completion,
+say.  The buffer is left
 unsaved, to be looked over."
   (interactive)
   (let ((file (or (org-truss-locate)

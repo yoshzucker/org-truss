@@ -107,19 +107,19 @@ In the structure when TOLD."
           (org-truss-section-children (org-truss-model-structure (org-truss-read source)))))
 
 (ert-deftest org-truss-test-board-draws ()
-  "The board shows sections, members with their kind, gaps and what is undone."
+  "The board shows sections, members by the roles they play, missing roles
+and what is undone."
   (org-truss-test--with-board org-truss-test--file
     (let ((text (buffer-string)))
       (should (string-match-p "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky +Sky$" text))
-      (should (string-match-p "^ Structure .*\n (tell › Sky, Rain, Umbrella)\n ├ Sky" text))
+      (should (string-match-p "^ Structure .*\n (telling › Sky, Rain, Umbrella)\n ├ Sky" text))
       (should (string-match-p
-               "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +Hold the review every other week\\.\n +(why › deduction)$" text))
+               "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +Hold the review every other week\\.\n +(logic › deduction)$" text))
       (should (string-match-p "Minor premise —" text))
       (should (string-match-p "broken link[ ·]+\\(?:\\[*#[^] ]+]* \\)?\\[\\[#none\\]\\]" text))
       (should (string-match-p "^ Broken links\n +\\[\\[#none\\]\\] ← Umbrella$" text))
-      (should (string-match-p "\n   Premises —\n" text))
-      (should (string-match-p "^ Pattern gaps\n   Structure[ ·]+\\(?:\\[*#[^] ]+]* \\)?tell › Sky, Rain, Umbrella +Premises$" text))
-      (should (string-match-p "^ Not placed$" text))
+      (should (string-match-p "^ No grounds\n   Reason \\[no grounds\\][ ·]+Some items are urgent +no grounds$" text))
+      (should (string-match-p "^ Missing roles\n   member[ ·]+#move Move to fortnightly +Minor premise$" text))
       (should (string-match-p "RET visit" text)))))
 
 (ert-deftest org-truss-test-board-speaks-english ()
@@ -128,14 +128,14 @@ are named in `org-truss-language'."
   (org-truss-test--with-board org-truss-test--file
     (let ((org-truss-language 'ja))
       (org-truss-test--goto-line-with "^ Structure")
-      (org-truss-test--answering '("tell › SCQA")
+      (org-truss-test--answering '("telling › SCQA")
         (org-truss-board-pattern))
       (should (equal (org-truss-test--structure-labels source)
                      '("状況" "複雑化" "問い" "答え" "Sky" "Rain" "Umbrella")))
       (let ((text (buffer-string)))
-        (should (string-match-p "^ Structure .*\n (tell › SCQA)$" text))
+        (should (string-match-p "^ Structure .*\n (telling › SCQA)$" text))
         (should (string-match-p "├ Complication[ ·]+\\(?:\\[*#[^] ]+]* \\)?複雑化 +複雑化$" text))
-        (should (string-match-p "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long +Reviews ran past the hour eight times this quarter\\." text))))))
+        (should (string-match-p "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long +Reviews ran past the hour eight times this quarter\\." text))))))
 
 (ert-deftest org-truss-test-board-leaves-the-root-heading-out ()
   "The structure's own heading names the part, so the board calls it Structure."
@@ -147,35 +147,38 @@ are named in `org-truss-language'."
                    "Structure"))))
 
 (ert-deftest org-truss-test-board-shows-the-fields ()
-  "Under the title come the brief and the subject, each with its pattern and
-its fields, named by the places they fill: each field with its text and
-the members written under it, empty or not.  A place the pattern asks for
-and no field fills follows them; the subject's is listed too."
+  "Under the title come the brief and the subject, each with its breakdown
+and its fields, named by the roles they play: each field with its text and
+the members written under it, empty or not.  A role the breakdown asks
+for and no field plays follows them, and is listed under the part."
   (org-truss-test--with-board org-truss-test--conditions-file
     (should (string-match-p
              (concat "^ Brief  .*\n"
-                     " (aspects › Reader, Question, Response, Constraints)\n"
+                     " (breakdown › Reader, Question, Response, Constraints)\n"
                      " ├ Reader[ ·]+\\(?:\\[*#[^] ]+]* \\)?The safety board\\.\n"
                      " ├ Question\n"
                      " └ Response wanted\n"
                      "   Constraints —\n\n"
+                     " Missing roles\n"
+                     "   Brief +Constraints\n\n"
                      " Subject  .*\n"
-                     " (aspects › Premises, Issue, Constraints)\n"
+                     " (breakdown › Premises, Issue, Constraints)\n"
                      " ├ Issue\n"
-                     " │   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Nobody checks before a test +Nobody checks before a test\n"
+                     " │   member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Nobody checks before a test +Nobody checks before a test\n"
                      " └ Constraints[ ·]+\\(?:\\[*#[^] ]+]* \\)?Finance said so at the October meeting\\.\n"
-                     "     fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year +No budget this year\n"
+                     "     member[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year +No budget this year\n"
                      "       ▤ Premises[ ·]+Premises\n"
-                     "     bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed +The schedule is fixed\n"
-                     "   Premises —\n")
+                     "       ⏚ source[ ·]+finance, 3 October\n"
+                     "     member[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed +The schedule is fixed\n"
+                     "   Premises —\n\n"
+                     " Missing roles\n"
+                     "   Subject +Premises\n")
              (buffer-string)))
-    (should (string-match-p "^ Pattern gaps\n   Subject[ ·]+aspects › Premises, Issue, Constraints +Premises$"
-                            (buffer-string)))
     (org-truss-test--goto-line-with "^ ├ Issue")
     (save-window-excursion
       (org-truss-board-visit)
       (should (equal (org-get-heading t t t t) "Issue")))
-    (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed")
     (org-truss-test--answering '("Structure › Premises › Premises")
       (org-truss-board-place))
     ;; Placed, it is given an id to be pointed to by.
@@ -188,10 +191,11 @@ and no field fills follows them; the subject's is listed too."
                    "m1"))))
 
 (ert-deftest org-truss-test-board-parts-take-patterns ()
-  "The brief and the subject are clusters of their fields.  s on a place
-their pattern asks for and no field fills puts in a field filling it,
-where the pattern lists it; p gives the part other aspects, and a field
-for each; a field filling none of them is marked, and r gives it a place."
+  "The brief and the subject are broken down into their fields.  s on a
+role their breakdown asks for and no field plays puts in a field playing
+it, where the breakdown lists it; p gives the part another breakdown, and
+a field for each role; a field playing none of them is marked, and r
+gives it a role."
   (org-truss-test--with-board org-truss-test--conditions-file
     (let ((headings (lambda ()
                       (with-current-buffer source
@@ -203,7 +207,7 @@ for each; a field filling none of them is marked, and r gives it a place."
       (org-truss-board-new-section)
       (should (equal (seq-take (seq-drop (funcall headings) 3) 3)
                      '("Premises" "Issue" "Constraints")))
-      (should (equal (funcall property "Premises" "TRUSS_ROLE") "premises"))
+      (should (equal (funcall property "Premises" "TRUSS_BREAKDOWN_ROLE") "premises"))
       (should (string-match-p "^ ├ Premises\n ├ Issue\n" (buffer-string)))
       (with-current-buffer source
         (goto-char (org-truss-test--heading-pos "Premises"))
@@ -211,22 +215,22 @@ for each; a field filling none of them is marked, and r gives it a place."
       (org-truss-test--goto-line-with "^ Subject ")
       (should (equal (mapcar #'cdr (org-truss--pattern-choices
                                     (org-truss-model-subject (org-truss-read source))))
-                     '(what-why-how pros-cons short-long past-present-future 5w1h 6w1h
+                     '(steps parts what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
-                       (none . aspects))))
-      (org-truss-test--answering '("aspects › Pros and cons")
+                       (none . breakdown))))
+      (org-truss-test--answering '("breakdown › Pros and cons")
         (org-truss-board-pattern))
-      (should (equal (funcall property "Subject" "TRUSS_ASPECTS") "pros-cons"))
+      (should (equal (funcall property "Subject" "TRUSS_BREAKDOWN") "pros-cons"))
       (should (equal (seq-drop (funcall headings) 3)
                      '("Pros" "Cons" "Premises" "Issue" "Constraints" "Check with a breathalyser"
                        "Premises")))
       (org-truss-test--goto-line-with "^ ├ Issue")
       (should (eq (get-text-property (+ (point) 3) 'face) 'org-truss-attention))
-      (should (string-prefix-p "Fills no place of aspects › Pros and cons"
+      (should (string-prefix-p "Plays no role of breakdown › Pros and cons"
                                (get-text-property (point) 'help-echo)))
-      (org-truss-test--answering '(("Cons"))
+      (org-truss-test--answering '("Cons")
         (org-truss-board-roles))
-      (should (equal (funcall property "Issue" "TRUSS_ROLE") "cons"))
+      (should (equal (funcall property "Issue" "TRUSS_BREAKDOWN_ROLE") "cons"))
       (should (= (count-matches "^ [├└] Cons *$" (point-min) (point-max)) 2)))))
 
 (ert-deftest org-truss-test-board-cuts-long-headings ()
@@ -237,9 +241,9 @@ keeps its column."
                                "Move to fortnightly, starting next quarter, for every team"
                                org-truss-test--file t t)
     (should (string-match-p "Move to fortnightly, starting[^…\n]*…  Hold the review" (buffer-string)))
-    (should (= (org-truss-test--column-of "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move" "Hold the review every other week." t)
-               (org-truss-test--column-of "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long" "Reviews ran past the hour" t)))
-    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move")
+    (should (= (org-truss-test--column-of "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move" "Hold the review every other week." t)
+               (org-truss-test--column-of "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long" "Reviews ran past the hour" t)))
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move")
     (re-search-forward "Move to")
     (should (equal (get-text-property (point) 'help-echo)
                    "Move to fortnightly, starting next quarter, for every team"))))
@@ -254,10 +258,10 @@ lines below instead of cut short."
                org-truss-test--file t t)))
     (org-truss-test--with text
       (let ((board (org-truss-board-text (org-truss-read) t)))
-        (should-not (string-match-p "^ +hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move.*…  Hold.*\n +(why › deduction" board))
-        (should (string-match-p (concat "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly, starting next +"
+        (should-not (string-match-p "^ +member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move.*…  Hold.*\n +(logic › deduction" board))
+        (should (string-match-p (concat "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly, starting next +"
                                         "Hold the review every other week\\.\n"
-                                        " +quarter, for every team\n")
+                                        " +(logic › deduction) +quarter, for every team\n")
                                 board))))))
 
 (ert-deftest org-truss-test-board-fits-entry-text-to-the-window ()
@@ -281,8 +285,8 @@ set for it; without entry text nothing is broken."
 
 (ert-deftest org-truss-test-board-fits-every-line-with-entry-text ()
   "With entry text shown, every line of the board fits the window: a field's
-text, a ground, where a member is used, a title, whom to confirm with, a
-labelled part and what a check lists are broken too, and nothing is cut."
+text, a ground, a source, where a member is used, a title, a labelled part
+and what a check lists are broken too, and nothing is cut."
   (let* ((org-truss-language 'en)
          (org-truss-board-middle-width nil)
          (org-truss-board-right-width nil)
@@ -294,16 +298,16 @@ labelled part and what a check lists are broken too, and nothing is cut."
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_ROLE: constraints
+:TRUSS_BREAKDOWN_ROLE: constraints
 :END:
 The constraints, LONG.
 - An item, LONG
 *** A fact, LONG
 :PROPERTIES:
 :CUSTOM_ID: m1
-:TRUSS_SOURCE: s
+:TRUSS_GROUNDS: the minutes, LONG
 :END:
-*** A question, LONG                                              :question:
+*** A question, LONG
 * Members
 :PROPERTIES:
 :TRUSS_PART: members
@@ -312,12 +316,11 @@ The constraints, LONG.
 :PROPERTIES:
 :CUSTOM_ID: m2
 :TRUSS_GROUNDS: [[#m1]]
-:TRUSS_LOGIC: 6w1h
+:TRUSS_BREAKDOWN: 6w1h
 :END:
 *** Who does it, LONG
 :PROPERTIES:
-:TRUSS_ROLE: who
-:TRUSS_CONFIRM: whoever is LONG
+:TRUSS_BREAKDOWN_ROLE: who
 :END:
 * Structure
 :PROPERTIES:
@@ -325,7 +328,7 @@ The constraints, LONG.
 :END:
 ** Now
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_TELLING_ROLE: situation
 :END:
 #+begin_public A title, LONG
 #+end_public
@@ -356,7 +359,7 @@ take half of the window each; a width set for the file's words fixes it."
               (with-temp-buffer
                 (insert (org-truss-board-text model nil 120))
                 (goto-char (point-min))
-                (re-search-forward "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?")
+                (re-search-forward "^   member[ ·]+\\(?:\\[*#[^] ]+]* \\)?")
                 (current-column))))
         (should (= (- (funcall reader-column 120) file-column)
                    (/ (+ (- 120 1 file-column) 2) 2)))
@@ -388,29 +391,34 @@ members under it branch off from the column of its word, as a tree, below
 the line naming its pattern."
   (org-truss-test--with-board org-truss-test--file
     (let ((text (buffer-string)))
-      (should (string-match-p "^ ├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky .*\n │   • fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long" text))
-      (should (string-match-p (concat "^   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
-                                      "   (why › reasons)\n"
+      (should (string-match-p "^ ├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky .*\n │   • member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long" text))
+      (should (string-match-p (concat "^   member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
+                                      "   (logic › reasons)\n"
                                       "   │ ▤ Rain[ ·]+Rain\n"
-                                      "   │ ↥ hypothesis[ ·]+Move to fortnightly\n"
-                                      "   │ ⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
-                                      "   ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff +noexport$")
+                                      "   │ ↥ member[ ·]+Move to fortnightly\n"
+                                      "   │ ⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
+                                      "   ├ Reason[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff +noexport$")
                               text))
       ;; The members' tree is drawn in a face of its own, the sections' not.
       (goto-char (point-min))
-      (re-search-forward "^   \\(├\\) fact")
+      (re-search-forward "^   \\(├\\) Reason")
       (should (eq (get-text-property (match-beginning 1) 'face) 'org-truss-branch))
       (re-search-forward "^ \\(├\\) Rain")
       (should-not (get-text-property (match-beginning 1) 'face)))
     (org-truss-test--told)
     (let ((text (buffer-string)))
-      (should (string-match-p (concat "^ │   • hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
-                                      " │   (why › reasons)\n"
-                                      " │   │ ↥ hypothesis[ ·]+Move to fortnightly\n"
-                                      " │   │ ⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
-                                      " │   ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff")
+      (should (string-match-p (concat "^ │   • member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat .*\n"
+                                      " │   (logic › reasons)\n"
+                                      " │   │ ↥ member[ ·]+Move to fortnightly\n"
+                                      " │   │ ⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
+                                      " │   ├ Reason[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff")
                               text))
-      (should (string-match-p "^ │   └ x objection[ ·]+\\(?:\\[*#[^] ]+]* \\)?Some items are urgent .*\n │     (why › reasons)\n │     ├ x fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Urgent items go to chat .*\n │     └ x question" text)))))
+      (should (string-match-p (concat "^ │   └ Reason \\[no grounds\\][ ·]+Some items are urgent .*\n"
+                                      " │     (breakdown › parts)\n"
+                                      " │     ├ Part[ ·]+Urgent items go to chat .*\n"
+                                      " │     │   ⏚ source[ ·]+team agreement\n"
+                                      " │     └ Part[ ·]+Who decides")
+                              text)))))
 
 (ert-deftest org-truss-test-board-aligns-the-files-words ()
   "The file's words start in one column, however much the board says first."
@@ -418,9 +426,9 @@ the line naming its pattern."
     (let ((columns (mapcar (lambda (spec) (org-truss-test--column-of (car spec) (cdr spec)))
                            '(("^ Title" . "Fortnightly reviews")
                              ("├ Sky" . "Sky")
-                             ("hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move" . "Move to fortnightly")
-                             ("x question" . "Who decides what is urgent")
-                             ("^   bare" . "Lone remark")))))
+                             ("member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move" . "Move to fortnightly")
+                             ("Part[ ·]+Who" . "Who decides what is urgent")
+                             ("^   member[ ·]+Lone" . "Lone remark")))))
       (should (= 1 (length (seq-uniq columns)))))))
 
 (ert-deftest org-truss-test-board-help-follows-the-keys ()
@@ -442,8 +450,8 @@ the body, with links read as their text."
     (let ((text (buffer-string)))
       (should (string-match-p "Rain[ ·]+\\(?:\\[*#[^] ]+]* \\)?Rain +Why it drags$" text))
       (should (string-match-p "Half the items repeat +Most items come back unchanged$" text))
-      (should (string-match-p "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff +noexport$" text))
-      (should (string-match-p "x fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Urgent items go to chat +Urgent items go to chat$" text))))
+      (should (string-match-p "Reason[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff +noexport$" text))
+      (should (string-match-p "Part[ ·]+\\(?:\\[*#[^] ]+]* \\)?Urgent items go to chat +- Urgent items go to chat$" text))))
   (should (equal (substring-no-properties
                   (org-truss--reader-text '(nil . "As [[*Reviews run long]] shows,\nhalf repeat.\n\nMore.")))
                  "As Reviews run long shows, half repeat."))
@@ -458,10 +466,10 @@ naming its pattern stays right under it, the notes starting below when
 the pattern's words run into their column."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-board-entry-text)
-    (let ((column (org-truss-test--column-of "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"
+    (let ((column (org-truss-test--column-of "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"
                                              "Half the items repeat" t)))
       (forward-line 1)
-      (should (looking-at-p " │   (why › reasons) +Robin keeps raising the same items; +Half of each agenda"))
+      (should (looking-at-p " │   (logic › reasons) +Robin keeps raising the same items; +Half of each agenda"))
       (should (= column (progn (search-forward "Robin") (- (current-column) 5)))))
     (org-truss-board-entry-text)
     (should-not (string-match-p "Robin" (buffer-string)))))
@@ -472,18 +480,18 @@ rest on one line; w again, from any of its lines, puts it back.  With entry
 text shown, w puts a line on one line instead, and E draws every line one
 way again."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-told-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-board-wrap)
-    (should (looking-at-p " │   • hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
+    (should (looking-at-p " │   • member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
     (should (= (how-many "Robin keeps raising" (point-min) (point-max)) 1))
-    (should (string-match-p "Robin keeps raising[^├]*\n │   ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff" (buffer-string)))
+    (should (string-match-p "Robin keeps raising[^├]*\n │   ├ Reason[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff" (buffer-string)))
     (forward-line 1)
     (org-truss-board-wrap)
-    (should (looking-at-p " │   • hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
+    (should (looking-at-p " │   • member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat"))
     (should-not (string-match-p "Robin" (buffer-string)))
     (org-truss-board-entry-text)
     (should (= (how-many "Robin keeps raising" (point-min) (point-max)) 2))
-    (org-truss-test--goto-told-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-board-wrap)
     (should (= (how-many "Robin keeps raising" (point-min) (point-max)) 1))
     (org-truss-board-entry-text)
@@ -505,20 +513,21 @@ past what is under a member."
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_ROLE: constraints
+:TRUSS_BREAKDOWN_ROLE: constraints
 :END:
 *** A summary, LONG
 :PROPERTIES:
-:TRUSS_LOGIC: parts
+:TRUSS_LOGIC: reasons
 :END:
 **** A fact, LONG
 :PROPERTIES:
-:TRUSS_SOURCE: s
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_GROUNDS: s
 :END:
 A note under it, LONG.
 **** Another fact
 :PROPERTIES:
-:TRUSS_SOURCE: s
+:TRUSS_LOGIC_ROLE: reason
 :END:
 * Members
 :PROPERTIES:
@@ -526,37 +535,38 @@ A note under it, LONG.
 :END:
 ** A claim, LONG
 :PROPERTIES:
-:TRUSS_LOGIC: parts
-:TRUSS_ASPECTS: 6w1h
+:TRUSS_BREAKDOWN: 6w1h
+:TRUSS_TELLING: sds
 :END:
 A note under the claim.
 *** Where it is done
 :PROPERTIES:
-:TRUSS_ROLE: where
+:TRUSS_BREAKDOWN_ROLE: where
 :END:
 " t t)))
     (org-truss-test--with text
       (let ((board (org-truss-board-text (org-truss-read) t 120)))
         (should (string-match-p
-                 (concat "^     summary[ ·]+\\(?:\\[*#[^] ]+]* \\)?A summary, long enough to +"
+                 (concat "^     member[ ·]+A summary, long enough to +"
                          "A summary, long enough to break in a column this narrow\n"
-                         "     (how › parts)  break in a column this\n"
+                         "     (logic › reasons) +break in a column this\n"
                          "     │ +narrow\n"
-                         "     ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?A fact, long enough to break\n"
+                         "     ├ Reason[ ·]+A fact, long enough to break +A fact, long enough to break in a column this narrow\n"
                          "     │ +in a column this narrow\n"
                          "     │ +A note under it, long enough\n"
                          "     │ +to break in a column this\n"
                          "     │ +narrow\\.\n"
-                         "     └ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Another fact\n")
+                         "     │   ⏚ source[ ·]+s\n"
+                         "     └ Reason \\[no grounds\\] +Another fact +Another fact\n")
                  board))
         (should (string-match-p
-                 (concat "^   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?A claim, long enough to +"
+                 (concat "^   member[ ·]+A claim, long enough to +"
                          "A claim, long enough to break in a column this narrow\n"
                          " +break in a column this\n"
                          " +narrow\n"
-                         "   (how › parts, aspects › 6W1H)\n"
+                         "   (breakdown › 6W1H, telling › SDS)\n"
                          "   │ +A note under the claim\\.\n"
-                         "   └ part  \\[Where\\]")
+                         "   └ Where")
                  board))))))
 
 (ert-deftest org-truss-test-board-runs-the-tree-down ()
@@ -574,12 +584,12 @@ and every line any of them is broken onto."
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_ROLE: constraints
+:TRUSS_BREAKDOWN_ROLE: constraints
 :END:
 *** A fact, LONG
 :PROPERTIES:
 :CUSTOM_ID: m1
-:TRUSS_SOURCE: s
+:TRUSS_GROUNDS: s
 :END:
 * Members
 :PROPERTIES:
@@ -589,8 +599,13 @@ and every line any of them is broken onto."
 :PROPERTIES:
 :CUSTOM_ID: m2
 :TRUSS_GROUNDS: [[#m1]]
+:TRUSS_LOGIC: reasons
 :END:
 *** A reason
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_GROUNDS: s
+:END:
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure
@@ -605,16 +620,16 @@ and every line any of them is broken onto."
         (dolist (entries '(nil t))
           (let ((board (org-truss-board-text model entries 120)))
             (should (string-match-p
-                     (concat "^   claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?A claim.*\n"
-                             "   (why › reasons)\n"
+                     (concat "^   member[ ·]+\\(?:\\[*#[^] ]+]* \\)?A claim.*\n"
+                             "   (logic › reasons)\n"
                              "   │ ▤ section[ ·]+Later\n"
-                             "   │ ⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?A fact, long enough to.*\n"
+                             "   │ ⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?A fact, long enough to.*\n"
                              (if entries "   │ +in a column this narrow\n" "")
                              "   └ ")
                      board))
             (should (string-match-p
                      (concat "^ └ section[ ·]+\\(?:\\[*#[^] ]+]* \\)?Now.*\n"
-                             "   │ • fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?A fact, long enough to.*\n"
+                             "   │ • member[ ·]+\\(?:\\[*#[^] ]+]* \\)?A fact, long enough to.*\n"
                              (if entries "   │ +in a column this narrow\n" "")
                              "   └ section[ ·]+\\(?:\\[*#[^] ]+]* \\)?Later")
                      board))))))))
@@ -697,34 +712,24 @@ not before closing punctuation."
   "p on the root gives the structure a pattern's sections."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-line-with "^ Structure")
-    (org-truss-test--answering '("tell › SCQA")
+    (org-truss-test--answering '("telling › SCQA")
       (org-truss-board-pattern))
     (should (equal (org-truss-test--structure-labels source)
                    '("Situation" "Complication" "Question" "Answer" "Sky" "Rain" "Umbrella")))
-    (org-truss-test--goto-line-with "Rain ⚠[ ·]+\\(?:\\[*#[^] ]+]* \\)?Rain")
+    (org-truss-test--goto-line-with "Rain \\[no role\\][ ·]+Rain")
     (should (equal (get-text-property (point) 'help-echo)
-                   "no place for Rain in SCQA"))))
+                   "Plays no role of telling › SCQA; r gives it one"))))
 
 (ert-deftest org-truss-test-board-marks-sections-outside-the-pattern ()
-  "A section filling no place of its parent's pattern is marked."
+  "A section playing no role of its parent's pattern is marked."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-line-with "└ Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella")
-    (org-truss-test--answering '(("Answer"))
-      (org-truss-board-roles))
-    (org-truss-test--goto-line-with "└ Answer ⚠[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella")
-    (should (string-prefix-p "no place for Answer in Sky, Rain, Umbrella. "
+    (with-current-buffer source
+      (org-entry-put (org-truss-test--heading-pos "Umbrella") "TRUSS_TELLING_ROLE" "answer"))
+    (org-truss-board-redraw)
+    (org-truss-test--goto-line-with "└ Answer \\[no role\\][ ·]+Umbrella")
+    (should (string-prefix-p "Plays no role of telling › Sky, Rain, Umbrella; "
                              (get-text-property (point) 'help-echo)))))
-
-(ert-deftest org-truss-test-board-marks-sections-named-by-the-pattern ()
-  "A section the reader would meet under the pattern's name for its place is
-marked; one with a title of its own is not."
-  (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
-    (should (string-match-p "the pattern's name" (get-text-property (point) 'help-echo)))
-    (search-forward "Sky" nil t 3)
-    (should (eq (get-text-property (1- (point)) 'face) 'org-truss-attention))
-    (org-truss-test--goto-line-with "├ Rain[ ·]+\\(?:\\[*#[^] ]+]* \\)?Rain")
-    (should-not (get-text-property (point) 'help-echo))))
 
 (ert-deftest org-truss-test-board-says ()
   "S on a listed member writes the words its section tells it in, and shows
@@ -736,14 +741,14 @@ them as what the reader sees; on a section it opens its lead to be written."
         (with-temp-buffer
           (org-truss-board))
         (with-current-buffer (get-buffer (format "*truss %s*" (abbreviate-file-name dir)))
-          (org-truss-test--goto-told-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+          (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
           (org-truss-test--answering '("Our reviews overran.")
             (org-truss-board-say))
           (should (string-match-p "Reviews run long +Our reviews overran\\.$" (buffer-string)))
           (should (equal (with-current-buffer org-truss--source
                            (org-truss-link-wording (org-truss--part-pos "structure") "x"))
                          nil))
-          (org-truss-test--goto-told-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+          (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
           (org-truss-test--answering '("Reviews run long")
             (org-truss-board-say))
           (should (string-match-p "Reviews run long +Reviews ran past the hour" (buffer-string)))
@@ -779,8 +784,8 @@ them as what the reader sees; on a section it opens its lead to be written."
 (ert-deftest org-truss-test-board-applies-an-argument-pattern ()
   "p on a member gives it an argument pattern."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
-    (org-truss-test--answering '("why › induction")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--answering '("logic › induction")
       (org-truss-board-pattern))
     (should (eq (org-truss-member-logic
                  (org-truss-member-by-label (org-truss-read source) "Half the items repeat"))
@@ -798,30 +803,30 @@ a member folds what is nested under it.  c into a folded field unfolds it."
   (let ((org-truss-board-fold-limit 1))
     (org-truss-test--with-board org-truss-test--conditions-file
       (should (string-match-p "^ └ Constraints ▸2[ ·]+\\(?:\\[*#[^] ]+]* \\)?Finance said so" (buffer-string)))
-      (should-not (string-match-p "^     fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" (org-truss-test--top)))
+      (should-not (string-match-p "^     member[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" (org-truss-test--top)))
       (org-truss-test--goto-line-with "^ └ Constraints")
       (org-truss-board-fold)
-      (should (string-match-p "^     fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" (org-truss-test--top)))
-      (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed")
+      (should (string-match-p "^     member[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" (org-truss-test--top)))
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed")
       (org-truss-board-fold)
-      (should-not (string-match-p "^     bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed" (org-truss-test--top)))
+      (should-not (string-match-p "^     member[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed" (org-truss-test--top)))
       (should (looking-at-p " └ Constraints ▸2"))
       (org-truss-test--creating '("Tests start at seven")
-        (should (string-match-p "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Tests start at seven" (buffer-string)))
+        (should (string-match-p "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Tests start at seven" (buffer-string)))
         (should (equal (plist-get (org-truss--item) :label) "Tests start at seven")))))
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-board-fold)
-    (should (string-match-p "hypothesis ▸5[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat.*\n   hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move"
+    (should (string-match-p "member ▸5[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat.*\n   member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move"
                             (buffer-string)))
-    (org-truss-test--goto-line-with "hypothesis ▸5")
+    (org-truss-test--goto-line-with "member ▸5")
     (org-truss-board-fold)
-    (should (string-match-p (concat "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat.*\n"
-                                    "   (why › reasons)\n"
+    (should (string-match-p (concat "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat.*\n"
+                                    "   (logic › reasons)\n"
                                     "\\(?:   │ [▤↥] .*\n\\)+"
-                                    "   │ ⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+                                    "   │ ⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
                             (buffer-string)))
-    (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
     (should-error (org-truss-board-fold) :type 'user-error)))
 
 (ert-deftest org-truss-test-board-quotes ()
@@ -831,44 +836,28 @@ its own text, and replaces it the next time, after asking."
     (let ((own (lambda () (with-current-buffer source
                             (let ((b (org-truss--own-bounds (org-truss-test--heading-pos "Unused aside"))))
                               (buffer-substring-no-properties (car b) (cdr b)))))))
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
       (let ((kill-ring (list "Said in the hallway.\n* not a heading")))
         (org-truss-test--answering '(t)
           (org-truss-board-quote)))
       (should (equal (funcall own)
-                     (concat ":PROPERTIES:\n:CUSTOM_ID: aside\n:TRUSS_SOURCE: hallway\n:END:\n"
+                     (concat ":PROPERTIES:\n:CUSTOM_ID: aside\n:TRUSS_GROUNDS: hallway\n:END:\n"
                              "#+begin_quote\nSaid in the hallway.\n * not a heading\n#+end_quote\n\n")))
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
       (let ((kill-ring (list "Said twice.")))
         (org-truss-test--answering '(nil)
           (org-truss-board-quote))
         (should (string-match-p "Said in the hallway" (funcall own)))
-        (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
+        (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
         (org-truss-test--answering '(t)
           (org-truss-board-quote)))
       (should (string-match-p "#\\+begin_quote\nSaid twice\\.\n#\\+end_quote\n\n\\'" (funcall own)))
       (should-not (string-match-p "hallway\\." (funcall own))))))
 
-(ert-deftest org-truss-test-board-lists-unmet-constraints ()
-  "A constraint of the subject the document does not use -- placed nowhere,
-the ground of nothing placed -- is listed as unmet.  One a placed member
-stands on is met; one only an unplaced member stands on is not."
-  (org-truss-test--with-board org-truss-test--conditions-file
-    (should (string-match-p "^ Unmet constraints\n   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?The schedule is fixed +The schedule is fixed$"
-                            (buffer-string)))
-    (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check with a breathalyser")
-    (org-truss-test--answering '("Subject › Constraints › The schedule is fixed")
-      (org-truss-board-ground))
-    (should (string-match-p "^ Unmet constraints" (buffer-string)))
-    (org-truss-test--goto-line-with "claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check with a breathalyser")
-    (org-truss-test--answering '("Structure › Premises › Premises")
-      (org-truss-board-place))
-    (should-not (string-match-p "^ Unmet constraints" (buffer-string)))))
-
 (ert-deftest org-truss-test-board-visits-a-ground ()
   "RET on a ground goes to the member it names, not to the claim above it."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+    (org-truss-test--goto-line-with "⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
     (save-window-excursion
       (org-truss-board-visit)
       (should (eq (current-buffer) source))
@@ -883,9 +872,9 @@ looks -- org-indent's prefixes, say -- comes onto the board."
                      (org-truss-test--goto-line-with regexp)
                      (search-forward label (line-end-position))
                      (get-text-property (match-beginning 0) 'face))))
-      (should (eq (funcall face-of "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check with a breathalyser" "Check with")
+      (should (eq (funcall face-of "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check with a breathalyser" "Check with")
                   'org-level-2))
-      (should (eq (funcall face-of "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" "No budget") 'org-level-3))
+      (should (eq (funcall face-of "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" "No budget") 'org-level-3))
       (with-current-buffer source
         (font-lock-ensure)
         (put-text-property (point-min) (point-max) 'line-prefix "  ")
@@ -894,7 +883,7 @@ looks -- org-indent's prefixes, say -- comes onto the board."
                       (org-truss-member-by-label (org-truss-read) "No budget this year"))
                      "No budget this year")))
       (org-truss-board-redraw)
-      (should (eq (funcall face-of "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" "No budget") 'org-level-3))
+      (should (eq (funcall face-of "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year" "No budget") 'org-level-3))
       (should-not (text-property-not-all (point-min) (point-max) 'line-prefix nil)))))
 
 (ert-deftest org-truss-test-board-visit-opens-the-blocks ()
@@ -910,7 +899,7 @@ folded; the blocks of the headings under it stay as they were."
       (with-current-buffer source
         (org-fold-hide-block-all))
       (should (funcall hidden "Half of each agenda"))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
       (save-window-excursion
         (org-truss-board-visit))
       (should-not (funcall hidden "Half of each agenda"))
@@ -933,54 +922,55 @@ folded; the blocks of the headings under it stay as they were."
       (should (looking-at-p "#\\+title: Fortnightly reviews")))))
 
 (ert-deftest org-truss-test-board-structure-takes-any-pattern ()
-  "p on the Structure line offers every kind of pattern.  Aspects given to it
-ask the sections right below to cover them, and a section is made for each
-none covers yet; no telling takes the telling pattern off."
+  "p on the Structure line offers a breakdown and a telling pattern.  A
+breakdown given to it asks the sections right below to play its roles,
+and a section is made for each none plays yet; no telling takes the
+telling pattern off."
   (org-truss-test--with-board org-truss-test--file
     (let ((property (lambda (name)
                       (with-current-buffer source
                         (org-entry-get (org-truss-test--heading-pos "Structure") name)))))
       (org-truss-test--goto-line-with "^ Structure ")
-      (org-truss-test--answering '("aspects › Past, present, future")
+      (org-truss-test--answering '("breakdown › Past, present, future")
         (org-truss-board-pattern))
-      (should (equal (funcall property "TRUSS_ASPECTS") "past-present-future"))
+      (should (equal (funcall property "TRUSS_BREAKDOWN") "past-present-future"))
       (should (equal (funcall property "TRUSS_TELLING") "sky-rain-umbrella"))
       (should (equal (org-truss-test--structure-labels source)
                      '("Sky" "Rain" "Umbrella" "Past" "Present" "Future")))
-      (should (string-match-p "^ (aspects › Past, present, future, tell › Sky, Rain, Umbrella)$"
+      (should (string-match-p "^ (breakdown › Past, present, future, telling › Sky, Rain, Umbrella)$"
                               (buffer-string)))
       (org-truss-test--goto-line-with "^ Structure ")
       (org-truss-test--answering '("no telling")
         (org-truss-board-pattern))
       (should-not (funcall property "TRUSS_TELLING"))
-      (should (string-match-p "^ (aspects › Past, present, future)$" (buffer-string))))))
+      (should (string-match-p "^ (breakdown › Past, present, future)$" (buffer-string))))))
 
 (ert-deftest org-truss-test-board-section-gaps ()
-  "A section's patterns ask the sections right below it for their places.
-s on a gap adds a section that fills it; r on a section offers the roles of
-the patterns above, those still open first."
+  "A section's patterns ask the sections right below it for their roles.
+s on a missing role adds a section that plays it; r on a section offers
+the roles of the patterns above, those no section plays yet first."
   (org-truss-test--with-board org-truss-test--file
     (with-current-buffer source
-      (org-truss-set-pattern (org-truss-test--heading-pos "Umbrella") 'aspects '5w1h))
+      (org-truss-set-pattern (org-truss-test--heading-pos "Umbrella") 'breakdown '5w1h))
     (org-truss-board-redraw)
-    (should (string-match-p "└ Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella.*\n   (aspects › 5W1H)\n" (buffer-string)))
+    (should (string-match-p "└ Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella.*\n   (breakdown › 5W1H)\n" (buffer-string)))
     (should (string-match-p "^     Who —$" (buffer-string)))
     (should (string-match-p "^   Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella +Who, When, Where, What, Why, How$" (buffer-string)))
     (org-truss-test--goto-line-with "^     When —$")
     (org-truss-test--answering '("When we start")
       (org-truss-board-new-section))
     (with-current-buffer source
-      (should (equal (org-entry-get (org-truss-test--heading-pos "When we start") "TRUSS_ROLE")
+      (should (equal (org-entry-get (org-truss-test--heading-pos "When we start") "TRUSS_BREAKDOWN_ROLE")
                      "when")))
     (should-not (string-match-p "^     When —$" (buffer-string)))
     (org-truss-test--goto-line-with "When we start")
     (let (offered)
-      (cl-letf (((symbol-function 'completing-read-multiple)
-                 (lambda (_prompt table &rest _) (setq offered table) '("Who"))))
+      (cl-letf (((symbol-function 'completing-read)
+                 (lambda (_prompt table &rest _) (setq offered table) "Who")))
         (org-truss-board-roles))
       (should (equal (seq-take offered 5) '("Who" "Where" "What" "Why" "How"))))
     (with-current-buffer source
-      (should (equal (org-entry-get (org-truss-test--heading-pos "When we start") "TRUSS_ROLE")
+      (should (equal (org-entry-get (org-truss-test--heading-pos "When we start") "TRUSS_BREAKDOWN_ROLE")
                      "who")))
     (org-truss-test--goto-line-with "^     When —$")
     (should-error (org-truss-board-new) :type 'user-error)))
@@ -1007,15 +997,15 @@ The entry it opens is shown in `edit'."
 
 (ert-deftest org-truss-test-board-creates-a-member ()
   "c writes a new member and opens it to be written.  Away from any member,
-field or section it goes at the top of the members, not placed; the board
-goes to its line."
+field or section it goes at the top of the members; the board goes to its
+line."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-line-with "^ Title")
     (org-truss-test--creating '("Reviews start late")
       (should (equal (org-truss-test--parent-label source "Reviews start late")
                      '("Members" . 2)))
       (should (equal (plist-get (org-truss--item) :label) "Reviews start late"))
-      (should (string-match-p "^ Not placed\n\\(.*\n\\)*   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews start late"
+      (should (string-match-p "^   member[ ·]+Reviews start late"
                               (buffer-string)))
       (with-current-buffer edit
         (should (equal (buffer-string) "** Reviews start late\n\n"))
@@ -1026,10 +1016,11 @@ goes to its line."
                   :type 'user-error)))
 
 (ert-deftest org-truss-test-board-creates-where-point-is ()
-  "On a member c writes support for it, on a gap in the role the gap wants,
-on a section a member listed there, and on a field a member under the field."
+  "On a member c writes a member under it, on a missing role one playing
+it, on a section a member listed there, and on a field a member under the
+field."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
     (org-truss-test--creating '("Eight of twelve ran over")
       (should (equal (org-truss-test--parent-label source "Eight of twelve ran over")
                      '("Reviews run long" . 3))))
@@ -1040,7 +1031,7 @@ on a section a member listed there, and on a field a member under the field."
       (should-not (string-match-p "Minor premise —" (buffer-string)))
       (with-current-buffer edit
         (should (looking-at-p "$"))
-        (should (string-match-p ":TRUSS_ROLE: minor" (buffer-string)))))
+        (should (string-match-p ":TRUSS_LOGIC_ROLE: minor" (buffer-string)))))
     (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
     (org-truss-test--creating '("The team grew")
       (should (equal (org-truss-test--parent-label source "The team grew") '("Members" . 2)))
@@ -1055,42 +1046,29 @@ on a section a member listed there, and on a field a member under the field."
       (should (equal (org-truss-test--parent-label source "Tests start at seven")
                      '("Constraints" . 3))))))
 
-(ert-deftest org-truss-test-board-starts-a-cluster ()
-  "c under a member with nothing under it yet writes the logic pattern that
-starts a cluster there -- why › reasons in the members, how › parts in the
-subject -- and leaves one already written alone.  Taking the new member
-back takes the pattern back too, and the file is as it was.  f does the
-same for the member it moves under."
+(ert-deftest org-truss-test-board-new-member-plays-its-role ()
+  "c under a member with patterns writes the new member playing a role in
+each: the one a pattern has alone, without asking; else the one asked
+for.  Under a member with none, nothing is written but the member, and
+taking it back leaves the file as it was."
   (org-truss-test--with-board org-truss-test--file
-    (let ((logic (lambda (label)
-                   (with-current-buffer source
-                     (org-entry-get (org-truss-test--heading-pos label) "TRUSS_LOGIC")))))
-      (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
-      (org-truss-test--creating '("Said twice")
-        (should (equal (funcall logic "Lone remark") "reasons"))
-        (should (string-match-p "claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark.*\n   (why › reasons)\n"
-                                (buffer-string))))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
-      (org-truss-test--creating '("Teams that tried it")
-        (should (equal (funcall logic "Move to fortnightly") "deduction")))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (let ((role (lambda (label kind)
+                  (with-current-buffer source
+                    (org-entry-get (org-truss-test--heading-pos label) (org-truss-role-property kind))))))
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
       (org-truss-test--creating '("Most agendas match")
-        (should-not (funcall logic "Half the items repeat")))
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
-      (org-truss-test--answering '("Members › Lone remark")
-        (org-truss-board-refile))
-      (should (equal (funcall logic "Lone remark") "reasons"))
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
-      (org-truss-test--answering '("Members › Lone remark › Unused aside")
-        (org-truss-board-refile))
-      (should (equal (funcall logic "Unused aside") "reasons"))))
-  (org-truss-test--with-board org-truss-test--conditions-file
-    (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year")
-    (org-truss-test--creating '("The fund is spent")
-      (should (equal (with-current-buffer source
-                       (org-entry-get (org-truss-test--heading-pos "No budget this year") "TRUSS_LOGIC"))
-                     "parts"))
-      (should (string-match-p "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year.*\n +(how › parts)\n" (buffer-string)))))
+        (should (equal (funcall role "Most agendas match" 'logic) "reason")))
+      (org-truss-test--goto-line-with "Reason \\[no grounds\\][ ·]+Some items are urgent")
+      (org-truss-test--creating '("Releases cannot wait")
+        (should (equal (funcall role "Releases cannot wait" 'breakdown) "part")))
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--creating '("Our review repeats itself" "Minor premise")
+        (should (equal (funcall role "Our review repeats itself" 'logic) "minor")))
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
+      (org-truss-test--creating '("Said twice")
+        (should-not (with-current-buffer source
+                      (org-entry-get (org-truss-test--heading-pos "Lone remark") "TRUSS_LOGIC")))
+        (should-not (funcall role "Said twice" 'logic)))))
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
     (let ((default-directory dir)
           (org-truss-language 'en))
@@ -1098,62 +1076,56 @@ same for the member it moves under."
         (with-temp-buffer
           (org-truss-board))
         (with-current-buffer (get-buffer (format "*truss %s*" (abbreviate-file-name dir)))
-          (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
+          (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
           (org-truss-test--answering '("Said twice")
             (org-truss-board-new))
           (with-current-buffer (org-truss-test--copy)
             (org-truss-test--let-go))
           (with-current-buffer org-truss--source
-            (should-not (org-entry-get (org-truss-test--heading-pos "Lone remark") "TRUSS_LOGIC"))
             (should-not (string-match-p "Said twice" (buffer-string))))
           (should-not (buffer-modified-p org-truss--source)))))))
 
-(ert-deftest org-truss-test-board-says-what-a-member-is ()
-  "t writes what makes a member the kind it is said to be, and takes off
-what would make it another."
+(ert-deftest org-truss-test-board-sources-and-assumptions ()
+  "t names the source a member stands on in its TRUSS_GROUNDS, the members
+it links to there staying, and nothing takes it away; A tags a member
+:assumption: or takes the tag off.  A reason that lacked grounds has them
+then, and the board says so."
   (org-truss-test--with-board org-truss-test--file
-    (let ((kind (lambda (label)
-                  (let ((model (org-truss-read source)))
-                    (org-truss-member-kind model (org-truss-member-by-label model label))))))
-      (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
-      (org-truss-test--answering '("assumption" "Robin")
-        (org-truss-board-kind))
-      (should (eq (funcall kind "Lone remark") 'assumption))
-      (should (string-match-p "Lone remark +Lone remark  confirm with Robin" (buffer-string)))
-      (org-truss-test--goto-line-with "assumption[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
-      (org-truss-test--answering '("fact" "minutes, 2 October")
-        (org-truss-board-kind))
-      (should (eq (funcall kind "Lone remark") 'fact))
-      (let ((member (org-truss-member-by-label (org-truss-read source) "Lone remark")))
-        (should (equal (org-truss-member-source member) "minutes, 2 October"))
-        (should-not (org-truss-member-confirm member))
-        (should-not (org-truss-member-tags member)))
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
-      (org-truss-test--answering '("question")
-        (org-truss-board-kind))
-      (should (eq (funcall kind "Lone remark") 'question))
-      (org-truss-test--goto-line-with "question[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
-      (org-truss-test--answering '("claim")
-        (org-truss-board-kind))
-      (should (eq (funcall kind "Lone remark") 'bare))
-      (should-not (org-truss-member-source
-                   (org-truss-member-by-label (org-truss-read source) "Lone remark")))
-      (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
-      (should-error (org-truss-test--answering '("fact" "")
-                      (org-truss-board-kind))
-                    :type 'user-error))))
+    (let ((grounds (lambda (label)
+                     (with-current-buffer source
+                       (org-entry-get (org-truss-test--heading-pos label) "TRUSS_GROUNDS")))))
+      (org-truss-test--goto-line-with "Reason \\[no grounds\\][ ·]+Some items are urgent")
+      (org-truss-test--answering '("minutes, 2 October")
+        (org-truss-board-source))
+      (should (equal (funcall grounds "Some items are urgent") "minutes, 2 October"))
+      (should-not (string-match-p "Reason \\[no grounds\\][ ·]+Some items are urgent" (buffer-string)))
+      (should (string-match-p "⏚ source[ ·]+minutes, 2 October" (buffer-string)))
+      (org-truss-test--goto-line-with "member[ ·]+#move Move to fortnightly")
+      (org-truss-test--answering '("the minutes")
+        (org-truss-board-source))
+      (should (equal (funcall grounds "Move to fortnightly") "[[#half]] the minutes"))
+      (org-truss-test--goto-line-with "member[ ·]+#move Move to fortnightly")
+      (org-truss-test--answering '("")
+        (org-truss-board-source))
+      (should (equal (funcall grounds "Move to fortnightly") "[[#half]]"))
+      (org-truss-test--goto-line-with "Major premise \\[no grounds\\]")
+      (org-truss-board-assume)
+      (should (string-match-p "Major premise \\[assumed\\][ ·]+A meeting" (buffer-string)))
+      (org-truss-test--goto-line-with "Major premise \\[assumed\\]")
+      (org-truss-board-assume)
+      (should (string-match-p "Major premise \\[no grounds\\][ ·]+A meeting" (buffer-string))))))
 
 (ert-deftest org-truss-test-board-files-a-member ()
   "f moves a member, with what is nested under it, under a field, a member or
 the top of the members.  Links still find it."
   (org-truss-test--with-board org-truss-test--conditions-file
-    (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?No budget this year")
     (org-truss-test--answering '("Members")
       (org-truss-board-refile))
     (should (equal (org-truss-test--parent-label source "No budget this year") '("Members" . 2)))
     (should (equal (plist-get (org-truss--item) :label) "No budget this year"))
     (should-not (string-match-p "broken link" (buffer-string)))
-    (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check with a breathalyser")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check with a breathalyser")
     (org-truss-test--answering '("Subject › Constraints")
       (org-truss-board-refile))
     (should (equal (org-truss-test--parent-label source "Check with a breathalyser")
@@ -1163,7 +1135,7 @@ the top of the members.  Links still find it."
       (should-not (assoc "Members › Half the items repeat › Agenda diff"
                          (org-truss--file-choices
                           model (org-truss-member-by-label model "Half the items repeat")))))
-    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-test--answering '("Members › Lone remark")
       (org-truss-board-refile))
     (should (equal (org-truss-test--parent-label source "Half the items repeat")
@@ -1175,29 +1147,29 @@ the top of the members.  Links still find it."
   "A step is drawn as one, numbered on the right as the reader will see it."
   (org-truss-test--with-board org-truss-test--steps-file
     (let ((text (buffer-string)))
-      (should (string-match-p "claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check before every test +Check before every test\n +(how › steps)" text))
-      (should (string-match-p "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver face to face +1\\. Meet the driver face to face$" text))
-      (should (string-match-p "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Note the reading +noexport$" text))
-      (should (string-match-p "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Breathe into the checker +2\\. The driver breathes" text))
-      (should (string-match-p "x objection[ ·]+\\(?:\\[*#[^] ]+]* \\)?The checker may be broken +The checker may be broken$" text)))))
+      (should (string-match-p "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check before every test +Check before every test\n +(breakdown › steps)" text))
+      (should (string-match-p "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver face to face +1\\. Meet the driver face to face$" text))
+      (should (string-match-p "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Note the reading +noexport$" text))
+      (should (string-match-p "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Breathe into the checker +2\\. The driver breathes" text))
+      (should (string-match-p "Step[ ·]+Check the checker works +3\\. Check the checker works$" text)))))
 
 (ert-deftest org-truss-test-board-draws-parts ()
-  "Parts are drawn as parts, with the bullet, or the aspect, the reader sees;
-an aspect none covers is a gap, and c on one fills it."
+  "Parts are drawn by the roles they play, with the bullet, or the role, the
+reader sees; a role none plays is missing, and c on one writes a member
+playing it."
   (org-truss-test--with-board org-truss-test--how-file
     (let ((text (buffer-string)))
-      (should (string-match-p "claim\\|bare" text))
-      (should (string-match-p "(how › parts, aspects › 5W1H)" text))
-      (should (string-match-p "part  \\[Who\\][ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver's manager +- Who: The driver's manager$" text))
-      (should (string-match-p "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver +1\\. Meet the driver$" text))
-      (should (string-match-p "part[ ·]+\\(?:\\[*#[^] ]+]* \\)?A checker that works +- A checker that works$" text))
-      (should (string-match-p "(why › reasons, tell › PREP)" text))
+      (should (string-match-p "(breakdown › 5W1H)" text))
+      (should (string-match-p "Who[ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver's manager +- Who: The driver's manager$" text))
+      (should (string-match-p "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver +1\\. Meet the driver$" text))
+      (should (string-match-p "Part[ ·]+\\(?:\\[*#[^] ]+]* \\)?A checker that works +- A checker that works$" text))
+      (should (string-match-p "(telling › PREP)" text))
       (should (string-match-p "What —" text)))
     (org-truss-test--goto-line-with "What —")
     (org-truss-test--creating '("Breathe into the checker")
       (should (equal (org-truss-member-roles
                       (org-truss-member-by-label (org-truss-read source) "Breathe into the checker"))
-                     '(what)))
+                     '((breakdown . what))))
       (should-not (string-match-p "What —" (buffer-string))))))
 
 (ert-deftest org-truss-test-board-offers-members-by-path ()
@@ -1212,7 +1184,7 @@ what is written under it."
                      "Members › Check before every … › How: As follows › step 2: Read the checker"))
       (should (equal (org-truss--member-path
                       model (org-truss-member-by-label model "Someone to check"))
-                     "Members › What a check needs › part: Someone to check"))))
+                     "Members › What a check needs › Part: Someone to check"))))
   (org-truss-test--with org-truss-test--conditions-file
     (let* ((model (org-truss-read))
            (names (mapcar #'car (org-truss--file-choices
@@ -1224,10 +1196,10 @@ what is written under it."
                        "Members"))))))
 
 (ert-deftest org-truss-test-board-offers-patterns-by-family ()
-  "p offers every logic pattern, the aspects where the logic takes them, and
-the telling patterns, each kind beside the others; one written can be taken
+  "p offers a member every logic, breakdown and telling pattern, and a
+section the breakdowns and the telling patterns; one written can be taken
 off.  What a pattern asks for and is not there is put in, a heading for each
-place.  o tells a member last, or as written."
+role.  o tells a member last, or as written."
   (org-truss-test--with org-truss-test--file
     (let* ((model (org-truss-read))
            (choices (lambda (cluster) (mapcar #'cdr (org-truss--pattern-choices cluster)))))
@@ -1236,58 +1208,59 @@ place.  o tells a member last, or as written."
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
                        first last prep sds scqa sky-rain-umbrella)))
-      (should (equal (funcall choices (org-truss-test--m model "Move to fortnightly"))
-                     '(reasons deduction induction steps parts
-                       first last prep sds scqa sky-rain-umbrella (none . logic))))
-      (should (equal (seq-drop (funcall choices (org-truss-model-structure model)) 13)
-                     '(first last prep sds scqa sky-rain-umbrella (none . telling))))
+      (should (equal (last (funcall choices (org-truss-test--m model "Move to fortnightly")))
+                     '((none . logic))))
+      (should (equal (funcall choices (org-truss-model-structure model))
+                     '(steps parts what-why-how pros-cons short-long past-present-future 5w1h 6w1h
+                       reader-question-response-constraints premises-issue-constraints
+                       first last prep sds scqa sky-rain-umbrella (none . telling))))
       (should (equal (car (rassq 'prep (org-truss--pattern-choices
                                         (org-truss-test--m model "Lone remark"))))
-                     "tell › PREP"))))
+                     "telling › PREP"))))
   (org-truss-test--with-board org-truss-test--file
     (let ((member (lambda () (org-truss-member-by-label (org-truss-read source) "Move to fortnightly"))))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
-      (org-truss-test--answering '("tell › PREP")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--answering '("telling › PREP")
         (org-truss-board-pattern))
       (should (eq (org-truss-member-logic (funcall member)) 'deduction))
       (should (eq (org-truss-member-telling (funcall member)) 'prep))
-      (should (string-match-p "(why › deduction, tell › PREP)" (buffer-string)))
+      (should (string-match-p "(logic › deduction, telling › PREP)" (buffer-string)))
       (should (equal (mapcar (lambda (m) (cons (org-truss-member-label m) (org-truss-member-roles m)))
                              (org-truss-member-children (funcall member)))
-                     '(("A meeting that repeats itself can meet less" major)
-                       ("Reason" reason) ("Example" example))))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+                     '(("A meeting that repeats itself can meet less" (logic . major))
+                       ("Reason" (telling . reason)) ("Example" (telling . example)))))
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-board-flip)
       (should (eq (org-truss-member-telling (funcall member)) 'last))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("no telling")
         (org-truss-board-pattern))
       (should-not (org-truss-member-telling (funcall member)))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
-      (org-truss-test--answering '("why › reasons")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--answering '("logic › reasons")
         (org-truss-board-pattern))
       (should (eq (org-truss-member-logic (funcall member)) 'reasons))
-      (should (string-match-p "(why › reasons)" (buffer-string))))))
+      (should (string-match-p "(logic › reasons)" (buffer-string))))))
 
 (ert-deftest org-truss-test-board-creates-the-next-step ()
-  "On a step c writes the next step, just after it; on a member that says how,
-its last step; with a prefix argument, support under the step.  On a
-labelled part it asks which role the next one fills."
+  "On a step c writes the next step, just after it; on a member broken down
+into steps, its last step; with a prefix argument, a member under the
+step.  On a labelled part it asks which role the next one plays."
   (org-truss-test--with-board org-truss-test--steps-file
     (let ((steps (lambda ()
                    (org-truss-test--labels
-                    (org-truss-how-children
+                    (org-truss-member-children
                      (org-truss-member-by-label (org-truss-read source) "Check before every test"))))))
-      (org-truss-test--goto-line-with "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver face to face")
+      (org-truss-test--goto-line-with "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver face to face")
       (org-truss-test--creating '("Show your face")
         (should (equal (funcall steps)
                        '("Meet the driver face to face" "Show your face"
-                         "Note the reading" "Breathe into the checker")))
-        (should (string-match-p "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Show your face +2\\. Show your face" (buffer-string))))
-      (org-truss-test--goto-line-with "claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check before every test")
+                         "Note the reading" "Breathe into the checker" "Check the checker works")))
+        (should (string-match-p "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Show your face +2\\. Show your face" (buffer-string))))
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check before every test")
       (org-truss-test--creating '("Thank the driver")
         (should (equal (car (last (funcall steps))) "Thank the driver")))
-      (org-truss-test--goto-line-with "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Show your face")
+      (org-truss-test--goto-line-with "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Show your face")
       (let ((current-prefix-arg '(4)))
         (save-window-excursion
           (org-truss-test--answering '("The law asks to see it")
@@ -1295,19 +1268,19 @@ labelled part it asks which role the next one fills."
       (should (equal (org-truss-test--parent-label source "The law asks to see it")
                      '("Show your face" . 4)))))
   (org-truss-test--with-board org-truss-test--how-file
-    (org-truss-test--goto-line-with "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver")
+    (org-truss-test--goto-line-with "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?Meet the driver")
     (org-truss-test--creating '("Show the reading")
       (should (equal (org-truss-test--parent-label source "Show the reading") '("As follows" . 4))))
-    (org-truss-test--goto-line-with "part  \\[How\\][ ·]+\\(?:\\[*#[^] ]+]* \\)?As follows")
+    (org-truss-test--goto-line-with "How[ ·]+\\(?:\\[*#[^] ]+]* \\)?As follows")
     (org-truss-test--creating '("Write it down")
       (should (equal (org-truss-test--parent-label source "Write it down") '("As follows" . 4))))
-    (org-truss-test--goto-line-with "part  \\[Who\\][ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver's manager")
+    (org-truss-test--goto-line-with "Who[ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver's manager")
     (org-truss-test--creating '("A breath test" "What")
       (should (equal (org-truss-test--parent-label source "A breath test")
                      '("Check before every test" . 3)))
       (should (equal (org-truss-member-roles
                       (org-truss-member-by-label (org-truss-read source) "A breath test"))
-                     '(what))))))
+                     '((breakdown . what)))))))
 
 (ert-deftest org-truss-test-board-edit-finishes-and-aborts ()
   "In an entry opened from the board, C-c C-c saves the file and closes it;
@@ -1334,14 +1307,14 @@ the link that placed it, and leaves the file unmodified when it was."
             (should-not (string-match-p "The team grew" (with-current-buffer org-truss--source
                                                           (buffer-string))))
             (should-not (buffer-modified-p org-truss--source))
-            (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
+            (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
             (org-truss-board-edit)
             (with-current-buffer (org-truss-test--copy)
               (goto-char (point-max))
               (insert "Said in passing.\n")
               (org-truss-test--let-go))
             (should-not (buffer-modified-p org-truss--source))
-            (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
+            (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
             (org-truss-board-edit)
             (with-current-buffer (org-truss-test--copy)
               (goto-char (point-max))
@@ -1421,14 +1394,13 @@ it from the board."
             (should (buffer-live-p org-truss--source))
             (should (equal (buffer-file-name org-truss--source)
                            (expand-file-name "truss.org" dir)))
-            (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
-            (org-truss-test--answering '("question")
-              (org-truss-board-kind))
+            (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
+            (org-truss-board-assume)
             (should (string-match-p "^ Title  unsaved" (buffer-string)))
             (should (eq (command-remapping 'save-buffer) #'org-truss-board-save))
             (org-truss-board-save)
             (should-not (string-match-p "unsaved" (buffer-string)))
-            (should (string-match-p "Lone remark +:question:"
+            (should (string-match-p "Lone remark +:assumption:"
                                     (with-temp-buffer
                                       (insert-file-contents (expand-file-name "truss.org" dir))
                                       (buffer-string))))))))))
@@ -1439,7 +1411,7 @@ it from the board."
     (save-window-excursion
       (switch-to-buffer (current-buffer))
       (delete-other-windows)
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
       (let ((board (selected-window)))
         (org-truss-board-show)
         (should (eq (selected-window) board))
@@ -1462,7 +1434,7 @@ it from the board."
 it folded to their lines; the heading stays as it is in the file until the
 copy is written back."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (save-window-excursion
       (org-truss-board-edit)
       (should org-dock-mode)
@@ -1472,7 +1444,7 @@ copy is written back."
       (goto-char (point-min))
       (search-forward "Robin keeps")
       (should-not (invisible-p (point)))
-      (search-forward ":TRUSS_SOURCE: agendas")
+      (search-forward ":TRUSS_GROUNDS: agendas")
       (should (invisible-p (point)))
       (goto-char (point-min))
       (end-of-line)
@@ -1498,7 +1470,7 @@ copy is written back."
   "a on a placed member moves it to the chosen section: a member is placed
 in one section at most."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
     (org-truss-test--answering '("Structure › Umbrella › Umbrella")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
@@ -1510,14 +1482,14 @@ in one section at most."
   "a on an unplaced member places it in the chosen section; on a section, a
 member placed elsewhere is moved there, and one placed there stays put."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
     (org-truss-test--answering '("Structure › Sky › Sky")
       (org-truss-board-place))
     (should (equal (org-truss-section-links
                     (car (org-truss-section-children
                           (org-truss-model-structure (org-truss-read source)))))
                    '("long" "m1")))
-    (should-not (string-match-p "^ Not placed\n.*\n   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark" (buffer-string)))
+    (should-not (string-match-p "^ Not placed\n.*\n   member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark" (buffer-string)))
     (org-truss-test--goto-line-with "└ Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella")
     (org-truss-test--answering '("Members › Lone remark")
       (org-truss-board-place))
@@ -1564,17 +1536,17 @@ placed elsewhere is moved from there."
 it from the file, with what is under it and what placed it, leaving the
 grounds that named it to show as broken."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-told-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+    (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
     (org-truss-board-take-out)
     (let ((model (org-truss-read source)))
       (should (org-truss-member-by-label model "Reviews run long"))
       (should (null (org-truss-section-links
                      (car (org-truss-section-children (org-truss-model-structure model)))))))
-    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-test--answering '(nil)
       (org-truss-board-delete))
     (should (org-truss-member-by-label (org-truss-read source) "Half the items repeat"))
-    (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-test--answering '(t)
       (org-truss-board-delete))
     (let ((model (org-truss-read source)))
@@ -1585,7 +1557,7 @@ grounds that named it to show as broken."
       (should (equal (org-truss-member-grounds (org-truss-member-by-label model "Move to fortnightly"))
                      '("half"))))
     (should (string-match-p "⏚ broken ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?\\[\\[#half\\]\\]" (buffer-string)))
-    (should (string-match-p "^ Broken grounds\n +claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +\\[\\[#half\\]\\]$"
+    (should (string-match-p "^ Broken links\n +member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +\\[\\[#half\\]\\] in TRUSS_GROUNDS$"
                             (buffer-string)))))
 
 (ert-deftest org-truss-test-board-grounds ()
@@ -1594,27 +1566,27 @@ it takes that ground away."
   (org-truss-test--with-board org-truss-test--file
     (let ((grounds (lambda () (org-truss-member-grounds
                                (org-truss-member-by-label (org-truss-read source) "Move to fortnightly")))))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("Members › Unused aside")
         (org-truss-board-ground))
       (should (equal (funcall grounds) '("half" "aside")))
-      (should (string-match-p "⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside" (buffer-string)))
+      (should (string-match-p "⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside" (buffer-string)))
       ;; A member pointed to for the first time is given an id.
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("Members › Lone remark")
         (org-truss-board-ground))
       (should (equal (funcall grounds) '("half" "aside" "m1")))
       (should (with-current-buffer source
                 (string-match-p ":TRUSS_GROUNDS: \\[\\[#half\\]\\] \\[\\[#aside\\]\\] \\[\\[#m1\\]\\]$"
                                 (buffer-string))))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("Members › Lone remark")
         (org-truss-board-ground))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("Members › Half the items repeat")
         (org-truss-board-ground))
       (should (equal (funcall grounds) '("aside")))
-      (org-truss-test--goto-line-with "⏚ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
+      (org-truss-test--goto-line-with "⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
       (org-truss-board-ground)
       (should (null (funcall grounds)))
       (should-not (with-current-buffer source
@@ -1632,34 +1604,35 @@ it takes that ground away."
     (should (null (org-truss-test--structure-labels source)))))
 
 (ert-deftest org-truss-test-board-new-section-and-roles ()
-  "s adds a section; r changes what it fills."
+  "s adds a section, asking the role it plays in the pattern above; r
+changes it."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-line-with "^ Structure")
-    (org-truss-test--answering '(("Premises") "Premises")
+    (org-truss-test--answering '("Rain" "More rain")
       (org-truss-board-new-section))
-    (should (equal (car (last (org-truss-test--structure-labels source))) "Premises"))
-    (org-truss-test--goto-line-with "└ Premises")
-    (org-truss-test--answering '(("Premises" "Rain"))
+    (should (equal (car (last (org-truss-test--structure-labels source))) "More rain"))
+    (org-truss-test--goto-line-with "└ Rain ⚠[ ·]+More rain")
+    (org-truss-test--answering '("Umbrella")
       (org-truss-board-roles))
     (should (equal (org-truss-section-roles
                     (car (last (org-truss-section-children
                                 (org-truss-model-structure (org-truss-read source))))))
-                   '(premises rain)))))
+                   '((telling . umbrella))))))
 
 (ert-deftest org-truss-test-board-flips ()
   "o tells a member last, after what is under it, and again first, before it.
 Told first asks nothing of what is under it, as no telling pattern does."
   (org-truss-test--with-board org-truss-test--file
     (let ((member (lambda () (org-truss-member-by-label (org-truss-read source) "Move to fortnightly"))))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-board-flip)
       (should (eq (org-truss-member-telling (funcall member)) 'last))
-      (should (string-match-p "(why › deduction, tell › conclusion last)" (buffer-string)))
-      (org-truss-test--goto-line-with "hypothesis[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
+      (should (string-match-p "(logic › deduction, telling › conclusion last)" (buffer-string)))
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-board-flip)
       (should (eq (org-truss-member-telling (funcall member)) 'first))
-      (should (string-match-p "(why › deduction, tell › conclusion first)" (buffer-string)))
-      (should (equal (org-truss-gaps (funcall member)) '((minor . 1)))))))
+      (should (string-match-p "(logic › deduction, telling › conclusion first)" (buffer-string)))
+      (should (equal (org-truss-gaps (funcall member)) '((logic minor . 1)))))))
 
 (ert-deftest org-truss-test-board-keeps-up-with-the-file ()
   "A hand edit to the file is drawn before the next command, which then acts
@@ -1677,13 +1650,13 @@ command is asking makes it draw again instead of acting."
         (goto-char (point-min))
         (insert "\n"))
       (should (org-truss--stale-p))
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
       (org-truss--before-command)
       (should-not (org-truss--stale-p))
       (org-truss-test--answering '("Structure › Umbrella › Umbrella")
         (org-truss-board-place))
       (should (member "long" (funcall umbrella)))
-      (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
       (cl-letf (((symbol-function 'completing-read)
                  (lambda (&rest _)
                    (with-current-buffer source
@@ -1703,82 +1676,77 @@ command is asking makes it draw again instead of acting."
 (ert-deftest org-truss-test-board-draws-the-parts-in-order ()
   "The subject, the members and the structure each take a part of the board,
 in the order the work is done, each followed by what is left to do there.
-Everywhere a member's right is what the document tells of it -- nothing
-for the parts of a member of the subject, which it never tells -- and
-outside the structure, lines marked ▤ and ↥ say where it is used."
+Everywhere a member's right is what the document tells of it, and outside
+the structure, lines marked ▤ and ↥ say where it is used."
   (org-truss-test--with-board org-truss-test--clusters-file
     (let ((text (buffer-string)))
       (should (string-match-p
                (concat "^ Subject .*\n"
                        " ├ Premises\n"
-                       " │   question[ ·]+\\(?:\\[*#[^] ]+]* \\)?How many cars we run +How many cars we run\n"
+                       " │   member[ ·]+\\(?:\\[*#[^] ]+]* \\)?How many cars we run +How many cars we run\n"
                        " └ Constraints\n"
-                       "     summary[ ·]+\\(?:\\[*#[^] ]+]* \\)?The manager checks every driver.* +"
+                       "     member[ ·]+\\(?:\\[*#[^] ]+]* \\)?The manager checks every driver.* +"
                        "The rules ask for a check before and after driving\\.\n"
-                       "     (how › parts)\n"
+                       "     (logic › reasons)\n"
                        "     │ ▤ Situation[ ·]+Background\n"
-                       "     │ ↥ claim[ ·]+Drivers are checked before and after .*\n"
-                       "     ├ fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?The rule asks for a check before driving\n")
+                       "     │ ↥ member[ ·]+Drivers are checked before and after .*\n"
+                       "     ├ Reason[ ·]+\\(?:\\[*#[^] ]+]* \\)?The rule asks for a check before driv.* +"
+                       "The rule asks for a check before driving\n")
                text))
-      (should (string-match-p (concat "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?A manager is named.*\n"
-                                      "       ↥ claim[ ·]+The law binds us, so we must check\n"
-                                      "       ↥ claim[ ·]+The rule may apply to us\n")
+      (should (string-match-p (concat "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?A manager is named.*\n"
+                                      "       ↥ member[ ·]+The law binds us, so we must check\n"
+                                      "       ↥ member[ ·]+The rule may apply to us\n")
                               text))
-      (should (string-match-p "^ Misplaced\n   claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?The law binds us.* an interpretation" text))
-      (should (string-match-p "^ Open questions\n   question[ ·]+\\(?:\\[*#[^] ]+]* \\)?How many cars we run" text))
       (should (< (string-match "^ Subject " text) (string-match "^ Members " text)
                  (string-match "^ Structure " text)))
-      (should (string-match-p "^ Misplaced\n   fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?The tester reads zero when sober +a fact" text))
       (should (string-match-p (concat "├ Situation[ ·]+\\(?:\\[*#[^] ]+]* \\)?Background +Background\n"
-                                      " │   • summary[ ·]+\\(?:\\[*#[^] ]+]* \\)?The manager checks.* +The rules ask for a check before and after driving\\.\n"
+                                      " │   • member ▸3[ ·]+\\(?:\\[*#[^] ]+]* \\)?The manager checks.* +The rules ask for a check before and after driving\\.\n"
                                       " └ Conclusion")
                               text))
-      (should (string-match-p "step[ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver blows into the tester +1\\. The driver blows" text)))))
+      (should (string-match-p "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver blows into the tester +1\\. The driver blows" text)))))
 
 (ert-deftest org-truss-test-board-patterns-in-the-subject ()
-  "A member of the subject is offered every logic pattern and the aspects,
-and no telling pattern, since it is not told; c on the subject's own line
-asks for a field, and on a fact of a cluster writes the next one."
+  "A member of the subject is offered the patterns a member of the members
+is; c on the subject's own line asks for a field, and on a member with
+reasons writes another."
   (org-truss-test--with org-truss-test--clusters-file
     (let ((model (org-truss-read)))
-      (should (equal (mapcar #'cdr (org-truss--pattern-choices
-                                    (org-truss-test--m model "The manager checks every driver before and after driving")))
-                     '(reasons deduction induction steps parts
-                       what-why-how pros-cons short-long past-present-future 5w1h 6w1h
-                       reader-question-response-constraints premises-issue-constraints
-                       (none . logic))))))
+      (should (equal (last (mapcar #'cdr (org-truss--pattern-choices
+                                          (org-truss-test--m model "The manager checks every driver before and after driving")))
+                           2)
+                     '(sky-rain-umbrella (none . logic))))))
   (org-truss-test--with-board org-truss-test--clusters-file
     (org-truss-test--goto-line-with "^ Subject ")
     (should-error (org-truss-board-new) :type 'user-error)
-    (org-truss-test--goto-line-with "fact[ ·]+\\(?:\\[*#[^] ]+]* \\)?The check may be made by video")
+    (org-truss-test--goto-line-with "member[ ·]+#rule The manager checks")
     (org-truss-test--creating '("The check may be made by phone")
       (should (equal (org-truss-test--parent-label source "The check may be made by phone")
-                     '("The manager checks every driver before and after driving" . 4))))))
+                     '("The manager checks every driver before and after driving" . 4)))
+      (should (string-match-p "Reason \\[no grounds\\][ ·]+The check may be made by phone"
+                              (buffer-string))))))
 
 (ert-deftest org-truss-test-board-shows-what-is-unfinished ()
-  "A section the file has too late is marked, saying which it is below; it
-is listed with the placeholders and the empty sections under the
-structure, a member placeholder under the members, its heading marked."
+  "A section the file has too late is marked, saying which it is below, and
+listed under the structure; a heading playing no role of the pattern above
+is marked, and listed under its part."
   (org-truss-test--with-board org-truss-test--unfinished-file
     (let ((text (buffer-string)))
       (should (string-match-p "^ ├ Sky ⚠[ ·]+\\(?:\\[*#[^] ]+]* \\)?空 " text))
       (should (equal (get-text-property (string-match "^ ├ Sky ⚠" text) 'help-echo text)
                      "Sky, Rain, Umbrella tells it before Rain, which is above it in the file"))
       (should (string-match-p "^ Out of order\n   Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?空 +below Rain$" text))
-      (should (string-match-p "^ Placeholders\n   Rain[ ·]+\\(?:\\[*#[^] ]+]* \\)?Rain +Rain\n   Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella +Umbrella$"
-                              text))
-      (should (string-match-p "^ Empty sections\n   Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?空 +Where we stand\n   section[ ·]+\\(?:\\[*#[^] ]+]* \\)?Notes for later" text))
-      ;; Under a pattern that names places, a section with none wants one.
-      (should (string-match-p "^ └ no role[ ·]+\\(?:\\[*#[^] ]+]* \\)?Notes for later" text))
-      (should (eq (get-text-property (string-match "no role[ ·]+\\(?:\\[*#[^] ]+]* \\)?Notes for later" text) 'face text)
+      (should (string-match-p "^ └ section \\[no role\\][ ·]+Notes for later" text))
+      (should (eq (get-text-property (string-match "\\[no role\\][ ·]+Notes for later" text) 'face text)
                   'org-truss-attention))
-      (should (string-match-p "^ Placeholders\n   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reason +Reason\n   bare[ ·]+\\(?:\\[*#[^] ]+]* \\)?Example" text))
-      (should (eq (get-text-property (string-match "Reason +Reason" text) 'face text)
-                  'org-truss-attention)))))
+      (should (string-match-p "^ No role\n   section \\[no role\\][ ·]+Notes for later +plays no role of telling › Sky, Rain, Umbrella$"
+                              text))
+      (should (string-match-p "└ member \\[no role\\][ ·]+Example +Example$" text))
+      (should (string-match-p "^ No role\n   member \\[no role\\][ ·]+Example +plays no role of telling › PREP$"
+                              text)))))
 
 (ert-deftest org-truss-test-board-tells-aspects-of-reasons ()
-  "In the structure a reason covering an aspect shows it on the right, as
-the reader is told it."
+  "In the structure a reason playing a role of a breakdown shows it on the
+right, as the reader is told it."
   (org-truss-test--with-board "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -1786,11 +1754,14 @@ the reader is told it."
 ** We move
 :PROPERTIES:
 :CUSTOM_ID: move
-:TRUSS_ASPECTS: pros-cons
+:TRUSS_LOGIC: reasons
+:TRUSS_BREAKDOWN: pros-cons
 :END:
 *** Less time in meetings
 :PROPERTIES:
-:TRUSS_ROLE: pros
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_BREAKDOWN_ROLE: pros
+:TRUSS_GROUNDS: the calendar
 :END:
 * S
 :PROPERTIES:
@@ -1821,11 +1792,11 @@ So we hold the review every other week.
 #+end_closing
 *** Reviews are weekly
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_TELLING_ROLE: situation
 :END:
 *** Half the items repeat
 :PROPERTIES:
-:TRUSS_ROLE: complication
+:TRUSS_TELLING_ROLE: complication
 :TRUSS_TELLING: last
 :END:
 **** The agenda diff shows it
@@ -1842,21 +1813,21 @@ So we hold the review every other week.
       (let ((text (buffer-string)))
         (should (string-match-p
                  (concat "We move to fortnightly reviews +┐\n"
-                         ".*(why › reasons, tell › SCQA) +│\n"
+                         ".*(telling › SCQA) +│\n"
                          ".*▤ Structure +│\n"
                          ".*Reviews are weekly +│ Reviews are weekly\n")
                  text))
         (should (string-match-p " +answer +└ So we hold the review every other week\\.\n" text))
-        (should (string-match-p "claim ▸3[ ·]+\\[\\[#move\\]\\] We move to fortnightly reviews +So we hold the review every other week\\.\n"
+        (should (string-match-p "member ▸3[ ·]+\\[\\[#move\\]\\] We move to fortnightly reviews +So we hold the review every other week\\.\n"
                                 text)))
-      (org-truss-test--goto-told-line-with "claim[ ·]+\\(?:\\[*#[^] ]+]* \\)?We move")
+      (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?We move")
       (let ((told (buffer-substring (point) (point-max))))
         (should (string-match-p
                  (concat "We move to fortnightly reviews +┐\n"
-                         ".*(why › reasons, tell › SCQA) +│\n"
+                         ".*(telling › SCQA) +│\n"
                          ".*Reviews are weekly +│ Reviews are weekly\n"
                          ".*Half the items repeat +│ ┐\n"
-                         ".*(why › reasons, tell › conclusion last) +│ │\n"
+                         ".*(telling › conclusion last) +│ │\n"
                          ".*The agenda diff shows it +│ │ The agenda diff shows it\n"
                          " +conclusion +│ └ Half the items repeat\n"
                          " +Question — +│\n"
@@ -1867,32 +1838,31 @@ So we hold the review every other week.
   "O opens the members a section lists under it, with their uses, grounds
 and gaps, and folds them where they are written; O again opens them where
 written and lists them on one line in the structure.  Point stays on the
-member, where it is opened; a member of the subject stays open where it
-is written.  The mode line says which."
+member, where it is opened.  The mode line says which."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "^   hypothesis ·+ #half")
+    (org-truss-test--goto-line-with "^   member ·+ #half")
     (org-truss-board-fold)
     (org-truss-board-order)
     (should (equal mode-name "Truss told"))
-    (should (looking-at " │   • hypothesis[ ·]+\\[\\[#half\\]\\] Half the items repeat"))
-    (should (string-match-p "^   hypothesis ▸5[ ·]+#half Half the items repeat +Most items come back unchanged$"
+    (should (looking-at " │   • member[ ·]+\\[\\[#half\\]\\] Half the items repeat"))
+    (should (string-match-p "^   member ▸5[ ·]+#half Half the items repeat +Most items come back unchanged$"
                             (buffer-string)))
     (should (string-match-p (concat "^ └ Umbrella.*\n"
-                                    "     • hypothesis[ ·]+\\[\\[#move\\]\\] Move to fortnightly.*\n"
-                                    "     (why › deduction)\n"
-                                    "     │ ⏚ hypothesis[ ·]+\\[\\[#half\\]\\] Half the items repeat\n"
-                                    "     └ bare  \\[Major premise\\].*\n"
+                                    "     • member[ ·]+\\[\\[#move\\]\\] Move to fortnightly.*\n"
+                                    "     (logic › deduction)\n"
+                                    "     │ ⏚ ground[ ·]+\\[\\[#half\\]\\] Half the items repeat\n"
+                                    "     └ Major premise \\[no grounds\\].*\n"
                                     "       Minor premise —\n")
                             (buffer-string)))
     (org-truss-board-order)
     (should (equal mode-name "Truss"))
-    (should (looking-at "   hypothesis[ ·]+#half Half the items repeat"))
-    (should (string-match-p "^ │   • hypothesis ▸5[ ·]+\\[\\[#half\\]\\]" (buffer-string))))
+    (should (looking-at "   member[ ·]+#half Half the items repeat"))
+    (should (string-match-p "^ │   • member ▸5[ ·]+\\[\\[#half\\]\\]" (buffer-string))))
   (org-truss-test--with-board org-truss-test--clusters-file
     (org-truss-test--told)
-    (should (string-match-p "^     summary[ ·]+#rule The manager checks every driver.*\n     (how › parts)\n"
+    (should (string-match-p "^     member ▸3[ ·]+#rule The manager checks every driver"
                             (buffer-string)))
-    (should (string-match-p "^ │   • summary[ ·]+\\[\\[#rule\\]\\] The manager checks every driver.*\n └ Conclusion"
+    (should (string-match-p "^ │   • member[ ·]+\\[\\[#rule\\]\\] The manager checks every driver.*\n │   (logic › reasons)\n"
                             (buffer-string)))))
 
 (ert-deftest org-truss-test-board-tells-where-it-is-written ()
@@ -1907,17 +1877,17 @@ the member."
                                "^- \\[\\[#long\\]\\]$" "- [[#long][Reviews overran]]"
                                org-truss-test--file)
     (let ((text (buffer-string)))
-      (should (string-match-p (concat "^   fact[ ·]+#long Reviews run long +Reviews overran\n"
+      (should (string-match-p (concat "^   member[ ·]+#long Reviews run long +Reviews overran\n"
                                       "     ▤ Sky[ ·]+Sky\n"
-                                      "     ↥ hypothesis[ ·]+Half the items repeat\n")
+                                      "     ↥ member[ ·]+Half the items repeat\n")
                               text))
-      (should (string-match-p "bare  \\[Major premise\\][ ·]+A meeting that .*  A meeting that repeats itself can meet less$"
+      (should (string-match-p "Major premise \\[no grounds\\][ ·]*A meeting that .*  A meeting that repeats itself can meet less$"
                               text))
-      (org-truss-test--goto-line-with "^   bare[ ·]+Lone remark +\\(Lone remark\\)$")
+      (org-truss-test--goto-line-with "^   member[ ·]+Lone remark +\\(Lone remark\\)$")
       (should (eq (get-text-property (match-beginning 1) 'face) 'org-truss-untold))
-      (org-truss-test--goto-line-with "^   fact[ ·]+#long Reviews run long +\\(Reviews overran\\)$")
+      (org-truss-test--goto-line-with "^   member[ ·]+#long Reviews run long +\\(Reviews overran\\)$")
       (should-not (eq (get-text-property (match-beginning 1) 'face) 'org-truss-untold))
-      (org-truss-test--goto-line-with "^     ↥ hypothesis")
+      (org-truss-test--goto-line-with "^     ↥ member")
       (should (string-prefix-p "Built on it: this member stands on the member above"
                                (get-text-property (+ (point) 5) 'help-echo)))
       (should-error (org-truss-board-delete) :type 'user-error)
@@ -1926,8 +1896,8 @@ the member."
         (should (equal (org-get-heading t t t t) "Half the items repeat")))))
   (let ((org-truss-board-middle-width 24))
     (org-truss-test--with-board org-truss-test--clusters-file
-      (should (string-match-p "^   │ ⏚ summary[ ·]+\\[\\[#rule\\]\\] The manager checks ev…$" (buffer-string)))
-      (should (string-match-p "step[ ·]+The driver blows into…  1\\. The driver blows into the tester$"
+      (should (string-match-p "^   │ ⏚ ground[ ·]+\\[\\[#rule\\]\\] The manager checks ev…$" (buffer-string)))
+      (should (string-match-p "Step[ ·]+The driver blows into…  1\\. The driver blows into the tester$"
                               (org-truss-test--top))))))
 
 (ert-deftest org-truss-test-board-names-members-by-id ()
@@ -1938,36 +1908,36 @@ is named by nothing; one with no id, by nothing anywhere.  The heading
 starts in the same column all the same."
   (org-truss-test--with-board org-truss-test--file
     (let ((text (buffer-string)))
-      (should (string-match-p "^   hypothesis ·+ #half Half the items repeat " text))
-      (should (string-match-p "^   │ ⏚ fact ·+ \\[\\[#long\\]\\] Reviews run long$" text))
-      (should (string-match-p "^ │   • hypothesis ▸5[ ·]+\\[\\[#half\\]\\] Half the items repeat " text))
-      (should (string-match-p "^   bare ·+ Lone remark +Lone remark$" text))
-      (should (= (org-truss-test--column-of "^   hypothesis ·+ #half" "Half the items repeat")
-                 (org-truss-test--column-of "^   bare ·+ Lone remark" "Lone remark"))))
+      (should (string-match-p "^   member ·+ #half Half the items repeat " text))
+      (should (string-match-p "^   │ ⏚ ground ·+ \\[\\[#long\\]\\] Reviews run long$" text))
+      (should (string-match-p "^ │   • member ▸5[ ·]+\\[\\[#half\\]\\] Half the items repeat " text))
+      (should (string-match-p "^   member ·+ Lone remark +Lone remark$" text))
+      (should (= (org-truss-test--column-of "^   member ·+ #half" "Half the items repeat")
+                 (org-truss-test--column-of "^   member ·+ Lone remark" "Lone remark"))))
     (org-truss-test--told)
     (let ((text (buffer-string)))
-      (should (string-match-p "^ │   • hypothesis ·+ \\[\\[#half\\]\\] Half the items repeat " text))
-      (should (string-match-p "^ │   ├ fact ·+ Agenda diff " text)))))
+      (should (string-match-p "^ │   • member ·+ \\[\\[#half\\]\\] Half the items repeat " text))
+      (should (string-match-p "^ │   ├ Reason ·+ Agenda diff " text)))))
 
 (ert-deftest org-truss-test-board-goes-to-the-same-member ()
   "= on a line calling a member goes to where it is written; there, to the
 next call after the one come from, and round; on a member shown under one
 a section calls, to where it is written as well."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-told-line-with "hypothesis ·+ \\[\\[#half\\]\\]")
+    (org-truss-test--goto-told-line-with "member ·+ \\[\\[#half\\]\\]")
     (org-truss-board-same)
-    (should (looking-at "   hypothesis ▸5 ·+ #half Half the items repeat"))
+    (should (looking-at "   member ▸5 ·+ #half Half the items repeat"))
     (org-truss-board-same)
-    (should (looking-at "     │ ⏚ hypothesis[ ·]+\\[\\[#half\\]\\]"))
+    (should (looking-at "     │ ⏚ ground[ ·]+\\[\\[#half\\]\\]"))
     (org-truss-board-same)
-    (should (looking-at "   hypothesis ▸5 ·+ #half"))
+    (should (looking-at "   member ▸5 ·+ #half"))
     (org-truss-board-same)
-    (should (looking-at " │   • hypothesis ·+ \\[\\[#half\\]\\]"))
+    (should (looking-at " │   • member ·+ \\[\\[#half\\]\\]"))
     ;; Where it is written is folded into the member it is nested under,
     ;; which is opened where told; it is unfolded.
-    (org-truss-test--goto-told-line-with "fact ·+ Agenda diff")
+    (org-truss-test--goto-told-line-with "Reason ·+ Agenda diff")
     (org-truss-board-same)
-    (should (looking-at "   ├ fact ·+ #diff Agenda diff"))))
+    (should (looking-at "   ├ Reason ·+ #diff Agenda diff"))))
 
 (ert-deftest org-truss-test-board-unfolds-to-the-same-member ()
   "= unfolds a field that hides where the member is written."
@@ -1976,20 +1946,20 @@ a section calls, to where it is written as well."
       (should-not (string-match-p "#budget No budget" (buffer-string)))
       (org-truss-test--goto-told-line-with "\\[\\[#budget\\]\\]")
       (org-truss-board-same)
-      (should (looking-at " +fact ·+ #budget No budget this year")))))
+      (should (looking-at " +member ·+ #budget No budget this year")))))
 
 (ert-deftest org-truss-test-board-lights-the-same-member ()
   "The lines naming the member on the line at point are lit, but that line:
 where it is written, where it is called, the lines it takes below its own."
   (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-told-line-with "hypothesis ·+ \\[\\[#half\\]\\]")
+    (org-truss-test--goto-told-line-with "member ·+ \\[\\[#half\\]\\]")
     (org-truss--light-same)
     (let ((lit (mapcar (lambda (overlay)
                          (buffer-substring (overlay-start overlay) (1- (overlay-end overlay))))
                        org-truss--same-overlays)))
       (should (seq-some (lambda (line) (string-match-p "#half Half the items repeat" line)) lit))
-      (should (seq-some (lambda (line) (string-match-p "⏚ hypothesis[ ·]+\\[\\[#half\\]\\]" line)) lit))
-      (should-not (seq-some (lambda (line) (string-match-p "^ │   • hypothesis" line)) lit)))
+      (should (seq-some (lambda (line) (string-match-p "⏚ ground[ ·]+\\[\\[#half\\]\\]" line)) lit))
+      (should-not (seq-some (lambda (line) (string-match-p "^ │   • member" line)) lit)))
     (org-truss-test--goto-line-with "^ Title")
     (org-truss--light-same)
     (should-not org-truss--same-overlays)))
@@ -2016,13 +1986,13 @@ document.  A pattern applied there puts in a heading for each place."
         (should (string-match-p "^ Heading  one heading" (buffer-string)))
         (should-not (string-match-p "Something else\\|Misplaced\\|no structure part" (buffer-string)))
         (org-truss-test--goto-line-with "[a-z]+[ ·]+\\(?:\\[*#[^] ]+]* \\)?New approval rules")
-        (org-truss-test--answering '("aspects › 5W1H")
+        (org-truss-test--answering '("breakdown › 5W1H")
           (org-truss-board-pattern))
-        (should (string-match-p "aspects › 5W1H" (buffer-string)))
+        (should (string-match-p "breakdown › 5W1H" (buffer-string)))
         (with-current-buffer org-truss--source
           (goto-char (point-min))
-          (should (equal (org-entry-get (search-forward "New approval") "TRUSS_ASPECTS") "5w1h"))
-          (should (re-search-forward "^\\*\\* Who\n:PROPERTIES:\n:TRUSS_ROLE: who\n" nil t)))
+          (should (equal (org-entry-get (search-forward "New approval") "TRUSS_BREAKDOWN") "5w1h"))
+          (should (re-search-forward "^\\*\\* Who\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: who\n" nil t)))
         ;; From under it, the board is of the heading with the pattern.
         (with-current-buffer org-truss--source
           (goto-char (point-min))
@@ -2031,11 +2001,11 @@ document.  A pattern applied there puts in a heading for each place."
                          "New approval rules")))))))
 
 (ert-deftest org-truss-test-agent-told-the-patterns ()
-  "A heading taken out with patterns tells an agent their places, as the
-TRUSS_ROLE values and the titles of their placeholders, and how one is
-filled."
+  "A heading taken out with patterns tells an agent their roles, as the
+values of the role properties and the titles of their placeholders, how
+one is written, and which must have grounds."
   (org-truss-test--in-directory
-      (list (cons "notes.org" "* Rules\n:PROPERTIES:\n:TRUSS_ASPECTS: pros-cons\n:END:\n** Pros\n:PROPERTIES:\n:TRUSS_ROLE: pros\n:END:\n"))
+      (list (cons "notes.org" "* Rules\n:PROPERTIES:\n:TRUSS_BREAKDOWN: pros-cons\n:END:\n** Pros\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: pros\n:END:\n"))
     (let ((org-truss-language 'en)
           got)
       (with-current-buffer (find-file-noselect (expand-file-name "notes.org" dir))
@@ -2045,34 +2015,35 @@ filled."
             (let ((text (with-temp-buffer (insert-file-contents (plist-get got :request))
                                           (buffer-string))))
               (should (string-match-p "^## Patterns$" text))
-              (should (string-match-p "pros-cons (aspects)" text))
-              (should (string-match-p "Places: pros (Pros), cons (Cons)" text))
-              (should (string-match-p "its title is one sentence that states what fills the place" text)))))))))
+              (should (string-match-p "pros-cons (TRUSS_BREAKDOWN)" text))
+              (should (string-match-p "Roles: pros (Pros), cons (Cons)" text))
+              (should (string-match-p "its title is one sentence that states what plays the role" text))
+              (should (string-match-p "under TRUSS_LOGIC, it has grounds" text)))))))))
 
 (ert-deftest org-truss-test-apply-a-pattern-in-the-file ()
   "A pattern is applied from the file as from the board: in a file that is
 no truss file to the heading at point, or to one under a heading with a
 pattern; in a truss file to the member the heading is."
   (let ((org-truss-language 'en))
-    (org-truss-test--with "* Rules\n** Who\n:PROPERTIES:\n:TRUSS_ROLE: who\n:END:\n* Else\n"
+    (org-truss-test--with "* Rules\n** Who\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: who\n:END:\n* Else\n"
       (search-forward "Rules")
-      (org-truss-test--answering '("aspects › 5W1H")
+      (org-truss-test--answering '("breakdown › 5W1H")
         (org-truss-apply-pattern))
       (goto-char (point-min))
-      (should (equal (org-entry-get (point) "TRUSS_ASPECTS") "5w1h"))
-      (should (re-search-forward "^\\*\\* When\n:PROPERTIES:\n:TRUSS_ROLE: when\n" nil t))
+      (should (equal (org-entry-get (point) "TRUSS_BREAKDOWN") "5w1h"))
+      (should (re-search-forward "^\\*\\* When\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: when\n" nil t))
       (should-not (re-search-forward "^\\*\\* Who$" nil t))
       (goto-char (point-min))
       (search-forward "** Who")
-      (org-truss-test--answering '("how › steps")
+      (org-truss-test--answering '("breakdown › steps")
         (org-truss-apply-pattern))
-      (should (equal (org-entry-get (point) "TRUSS_LOGIC") "steps"))
+      (should (equal (org-entry-get (point) "TRUSS_BREAKDOWN") "steps"))
       (goto-char (point-min))
       (search-forward "* Else")
-      (should-not (org-entry-get (point) "TRUSS_ASPECTS")))
+      (should-not (org-entry-get (point) "TRUSS_BREAKDOWN")))
     (org-truss-test--with org-truss-test--file
       (search-forward "** Reviews run long")
-      (org-truss-test--answering '("why › deduction")
+      (org-truss-test--answering '("logic › deduction")
         (org-truss-apply-pattern))
       (should (equal (org-entry-get (point) "TRUSS_LOGIC") "deduction"))
       (should (re-search-forward "^\\*\\*\\* Major premise\n" nil t)))))

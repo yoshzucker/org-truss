@@ -12,7 +12,7 @@
 ;;; Commentary:
 
 ;; The edits org-truss makes to a truss file, each at a position in its
-;; buffer: sections rearranged, links and properties written, members
+;; buffer: sections rearranged, links, roles and grounds written, members
 ;; added, moved and deleted.  The board's commands make them.  What is read
 ;; from the file is in org-truss-core.el.
 
@@ -43,9 +43,9 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
             :wordings (plist-get own :wordings)
             :children (mapcar #'org-truss--snapshot (org-truss--children pos))))))
 
-(defun org-truss--snapshot-roles (snapshot)
-  "Return the roles SNAPSHOT's TRUSS_ROLE names."
-  (org-truss--roles (cdr (assoc "TRUSS_ROLE" (plist-get snapshot :props)))))
+(defun org-truss--snapshot-telling-role (snapshot)
+  "Return the role SNAPSHOT's TRUSS_TELLING_ROLE names, or nil."
+  (org-truss--intern (cdr (assoc (org-truss-role-property 'telling) (plist-get snapshot :props)))))
 
 (defun org-truss--drawer (props)
   "Return the property drawer for PROPS, an alist, or \"\" when it is empty."
@@ -106,27 +106,25 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
 (defun org-truss--place-snapshot (place)
   "Return a snapshot of a new, empty section for PLACE of a telling pattern."
   (list :heading (org-truss-role-label (car place))
-        :props (list (cons "TRUSS_ROLE" (symbol-name (car place))))
+        :props (list (cons (org-truss-role-property 'telling) (symbol-name (car place))))
         :drawers "" :notes "" :public-raw "" :links nil :children nil))
 
 (defun org-truss-apply-section-telling (pos pattern)
   "Give the section at POS the telling PATTERN, and a section for each place.
-A section already there that shares a role with one of the pattern's places
-takes that place as it is -- heading, roles and all it holds -- so nothing
-written is changed; a section for the place, named in `org-truss-language',
-is added only where none does.  A section that shares no role, or roles
-with more than one place, is kept after the rest -- outside the pattern, to
-be moved by hand.  Links on the section itself stay on it."
+A section already there whose TRUSS_TELLING_ROLE is one of the pattern's
+places takes that place as it is -- heading, roles and all it holds -- so
+nothing written is changed; a section for the place, named in
+`org-truss-language', is added only where none does.  A section in none of
+the places is kept after the rest -- outside the pattern, to be moved by
+hand.  Links on the section itself stay on it."
   (let* ((news (mapcar #'org-truss--place-snapshot (org-truss-pattern-places pattern)))
          (snapshot (org-truss--snapshot pos))
          (olds (plist-get snapshot :children))
          (place-of (lambda (old)
-                     (let ((hits (seq-filter
-                                  (lambda (new)
-                                    (seq-intersection (org-truss--snapshot-roles old)
-                                                      (org-truss--snapshot-roles new)))
-                                  news)))
-                       (and (= (length hits) 1) (car hits))))))
+                     (let ((role (org-truss--snapshot-telling-role old)))
+                       (and role (seq-find (lambda (new)
+                                             (eq (org-truss--snapshot-telling-role new) role))
+                                           news))))))
     (setq snapshot
           (plist-put snapshot :children
                      (append (mapcan (lambda (new)
@@ -280,8 +278,13 @@ Return non-nil when there was such an item."
             (insert text-b))))
       t)))
 
+(defun org-truss--role-props (roles)
+  "Return the properties that say ROLES, (KIND . ROLE) each, as an alist."
+  (mapcar (lambda (r) (cons (org-truss-role-property (car r)) (symbol-name (cdr r)))) roles))
+
 (defun org-truss-add-section (parent name roles)
-  "Add a section called NAME, answering ROLES, as the last one under PARENT."
+  "Add a section called NAME, playing ROLES, as the last one under PARENT.
+ROLES are (KIND . ROLE), the roles it plays in the patterns of PARENT."
   (save-excursion
     (let ((level (1+ (org-truss--level parent))))
       (goto-char parent)
@@ -289,52 +292,43 @@ Return non-nil when there was such an item."
       (unless (bolp) (insert "\n"))
       (insert (org-truss--serialize
                (list :heading name
-                     :props (and roles (list (cons "TRUSS_ROLE"
-                                                   (mapconcat #'symbol-name roles " "))))
+                     :props (org-truss--role-props roles)
                      :drawers "" :notes "" :public-raw "" :links nil :children nil)
                level)))))
 
-(defun org-truss-set-roles (pos roles)
-  "Make the heading at POS answer ROLES, or no role when ROLES is nil."
-  (if roles
-      (org-entry-put pos "TRUSS_ROLE" (mapconcat #'symbol-name roles " "))
-    (org-entry-delete pos "TRUSS_ROLE")))
+(defun org-truss-set-role (pos kind role)
+  "Make the heading at POS play ROLE in the pattern of KIND above it.
+With ROLE nil, it plays none there."
+  (if role
+      (org-entry-put pos (org-truss-role-property kind) (symbol-name role))
+    (org-entry-delete pos (org-truss-role-property kind))))
 
 (defun org-truss-set-pattern (pos kind pattern)
   "Give the cluster at POS, a member or a section, PATTERN of KIND.
-KIND is `logic', `aspects' or `telling'; see `org-truss-patterns'.  With
-PATTERN nil it has none of that kind: a member then reads as why ›
-reasons, aspects ask for nothing, and it is told conclusion first."
+KIND is `logic', `breakdown' or `telling'; see `org-truss-patterns'.  With
+PATTERN nil it has none of that kind: no reasons, no breakdown, or told
+conclusion first."
   (let ((property (alist-get kind org-truss-pattern-properties)))
     (if pattern
         (org-entry-put pos property (symbol-name pattern))
       (org-entry-delete pos property))))
 
-(defun org-truss-start-cluster (pos home)
-  "Write the logic a member written in HOME starts a cluster with, at POS.
-Only when the member at POS has none written; see `org-truss-default-logic'.
-Return the pattern written, or nil."
-  (unless (org-entry-get pos "TRUSS_LOGIC")
-    (let ((logic (org-truss-default-logic home)))
-      (org-truss-set-pattern pos 'logic logic)
-      logic)))
-
 (defun org-truss-add-places (pos gaps section)
-  "Put under the heading at POS a heading for each place GAPS names.
-GAPS are (ROLE . SHORT-BY), as `org-truss-gaps' gives them: as many
+  "Put under the heading at POS a heading for each role GAPS names.
+GAPS are (KIND ROLE . SHORT-BY), as `org-truss-gaps' gives them: as many
 headings for a role as it is short by, each named for its role in
-`org-truss-language' and filling it, after what is there.  They are
+`org-truss-language' and playing it, after what is there.  They are
 sections when SECTION is non-nil, and members, to be written over, when it
-is not.  A pattern asks for places a writer cannot be expected to make
+is not.  A pattern asks for headings a writer cannot be expected to make
 by hand; this makes them.  Return the number made."
   (let ((n 0))
-    (pcase-dolist (`(,role . ,short) gaps)
+    (pcase-dolist (`(,kind ,role . ,short) gaps)
       (dotimes (_ short)
         (setq n (1+ n))
         (if section
-            (org-truss-add-section pos (org-truss-role-label role) (list role))
+            (org-truss-add-section pos (org-truss-role-label role) (list (cons kind role)))
           (org-truss-add-member pos (org-truss-role-label role)
-                                (list (cons "TRUSS_ROLE" (symbol-name role)))))))
+                                (org-truss--role-props (list (cons kind role)))))))
     n))
 
 (defun org-truss--write-member-after (pos level label props)
@@ -360,12 +354,32 @@ After what is nested under it too, so it comes next among its siblings.
 Return a marker at the new heading."
   (org-truss--write-member-after pos (org-truss--level pos) label props))
 
+(defun org-truss--put-grounds (pos refs sources)
+  "Write TRUSS_GROUNDS at POS: links to the members REFS, then SOURCES.
+With neither, take it away."
+  (if (or refs sources)
+      (org-entry-put pos "TRUSS_GROUNDS" (org-truss--grounds-value refs sources))
+    (org-entry-delete pos "TRUSS_GROUNDS")))
+
 (defun org-truss-set-grounds (pos refs)
   "Make the members REFS the grounds of the member at POS, or none if nil.
-REFS are CUSTOM_IDs; see `org-truss-ensure-id'."
-  (if refs
-      (org-entry-put pos "TRUSS_GROUNDS" (org-truss--grounds-value refs))
-    (org-entry-delete pos "TRUSS_GROUNDS")))
+REFS are CUSTOM_IDs; see `org-truss-ensure-id'.  The sources TRUSS_GROUNDS
+names besides stay."
+  (org-truss--put-grounds pos refs (org-truss--grounds-sources (org-entry-get pos "TRUSS_GROUNDS"))))
+
+(defun org-truss-set-sources (pos sources)
+  "Make SOURCES what TRUSS_GROUNDS at POS names besides members, or nothing.
+A link to a source, or words naming one that has no file.  The links to
+members stay."
+  (org-truss--put-grounds pos (org-truss--grounds-refs (org-entry-get pos "TRUSS_GROUNDS"))
+                          (and sources (not (string-blank-p sources)) (string-trim sources))))
+
+(defun org-truss-toggle-assumption (pos)
+  "Tag the member at POS :assumption:, or take the tag off.  Return non-nil if on."
+  (org-with-point-at pos
+    (let ((on (not (member org-truss-assumption-tag (org-get-tags nil t)))))
+      (org-toggle-tag org-truss-assumption-tag (if on 'on 'off))
+      on)))
 
 (defconst org-truss--id-re "^[ \t]*:CUSTOM_ID:[ \t]+m\\([0-9]+\\)[ \t]*$"
   "A CUSTOM_ID of the form org-truss gives: m and a number.")
@@ -515,28 +529,6 @@ only be in the way."
         (replace-match ""))
       (set-marker end nil))))
 
-(defun org-truss-set-kind (pos kind &optional value)
-  "Make the member at POS a KIND of member, by writing what makes it one.
-KIND is `fact', `assumption', `question' or `claim'.  A fact takes VALUE as
-its TRUSS_SOURCE; an assumption, as whom to confirm it with, nobody when
-VALUE is nil.  What would make it another kind is taken off: the tags, and
-the source of a claim.  A source stays on an assumption or a question, as
-a note of where it was thought to come from; whom to confirm with goes once
-it is a fact or a claim."
-  (org-with-point-at pos
-    (dolist (tag (list org-truss-assumption-tag org-truss-question-tag))
-      (when (member tag (org-get-tags nil t))
-        (org-toggle-tag tag 'off)))
-    (pcase kind
-      ('assumption (org-toggle-tag org-truss-assumption-tag 'on))
-      ('question (org-toggle-tag org-truss-question-tag 'on))))
-  (pcase kind
-    ('fact (org-entry-put pos "TRUSS_SOURCE" value))
-    ('claim (org-entry-delete pos "TRUSS_SOURCE")))
-  (cond ((memq kind '(fact claim)) (org-entry-delete pos "TRUSS_CONFIRM"))
-        ((and (eq kind 'assumption) value) (org-entry-put pos "TRUSS_CONFIRM" value))
-        ((eq kind 'assumption) (org-entry-delete pos "TRUSS_CONFIRM"))))
-
 (defun org-truss-refile-member (pos parent)
   "Move the member at POS, with what is nested under it, to the end of PARENT.
 PARENT is the position of a part, a field or another member, outside the
@@ -579,10 +571,10 @@ A label another member has is refused: a statement is written once."
 (defun org-truss-convert-references-in-buffer ()
   "Make every link and ground that names a member by its heading point by id.
 A link [[*heading]] in the structure becomes [[#id]], keeping its words,
-and a heading in TRUSS_GROUNDS -- a link to it, or a name in the old
-`;'-separated list -- becomes [[#id]]; the member named is given a
-CUSTOM_ID when it has none.  A heading no member has is left as it is, and
-the checks show it as broken.  Return the number of references changed."
+and so does one in TRUSS_GROUNDS, keeping the sources named there; the
+member named is given a CUSTOM_ID when it has none.  A heading no member
+has is left as it is, and the checks show it as broken.  Return the number
+of references changed."
   (let ((count 0)
         (case-fold-search nil)
         (id-of (lambda (label)
@@ -609,7 +601,8 @@ the checks show it as broken.  Return the number of references changed."
      (goto-char (point-min))
      (while (re-search-forward "^[ \t]*:TRUSS_GROUNDS:[ \t]+\\(.*?\\)[ \t]*$" nil t)
        (let* ((at (copy-marker (line-beginning-position)))
-              (refs (org-truss--grounds-refs (match-string-no-properties 1)))
+              (value (match-string-no-properties 1))
+              (refs (org-truss--grounds-refs value))
               (new (mapcar (lambda (ref)
                              (or (and (string-prefix-p "*" ref)
                                       (save-excursion (funcall id-of (substring ref 1))))
@@ -620,7 +613,8 @@ the checks show it as broken.  Return the number of references changed."
                                                                 refs new))))
            (goto-char at)
            (org-back-to-heading t)
-           (org-entry-put nil "TRUSS_GROUNDS" (org-truss--grounds-value new)))
+           (org-entry-put nil "TRUSS_GROUNDS"
+                          (org-truss--grounds-value new (org-truss--grounds-sources value))))
          (goto-char at)
          (forward-line 1)
          (set-marker at nil))))

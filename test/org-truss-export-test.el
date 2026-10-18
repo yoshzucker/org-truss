@@ -22,7 +22,7 @@ written as its heading; notes, :noexport: and unplaced members stay behind."
     (should (string-match-p "^#\\+title: Fortnightly reviews$" out))
     (should (string-match-p "Reviews ran past the hour" out))
     (should-not (string-match-p "^Reviews run long" out))
-    (should (string-match-p "^Urgent items go to chat$" out))
+    (should (string-match-p "^Some items cannot wait two weeks\\.\n\n- Urgent items go to chat\n- Who decides what is urgent$" out))
     (should-not (string-match-p "Robin" out))
     (should-not (string-match-p "Agenda diff" out))
     (should-not (string-match-p "Lone remark" out))
@@ -35,12 +35,15 @@ and the field's own text is not."
     (should (string-match-p "^\\* Premises\n\nNo budget this year$" out))
     (should-not (string-match-p "Finance\\|schedule" out))))
 
-(ert-deftest org-truss-test-render-subject-cluster ()
-  "A summary of the subject is written alone where it is placed: its parts are
-the breakdown it was found with, and stay behind."
+(ert-deftest org-truss-test-render-subject-like-members ()
+  "A member of the subject is written as one of the members is, where it is
+placed: in the words of the link, then what is nested under it."
   (let ((out (org-truss-test--render org-truss-test--clusters-file)))
-    (should (string-match-p "^\\* Background\n\nThe rules ask for a check before and after driving\\.\n\n\\* What we do" out))
-    (should-not (string-match-p "video\\|rule asks" out))
+    (should (string-match-p (concat "^\\* Background\n\nThe rules ask for a check before and after driving\\.\n\n"
+                                    "The rule asks for a check before driving\n\n"
+                                    "The rule asks for a check after driving\n\n"
+                                    "The check may be made by video\n\n\\* What we do")
+                            out))
     (should (string-match-p "1\\. The driver blows into the tester" out))))
 
 (ert-deftest org-truss-test-render-titles ()
@@ -74,8 +77,8 @@ own; the structure's lead opens the document."
                             (org-truss-test--render org-truss-test--file)))))
 
 (ert-deftest org-truss-test-render-conclusion-last ()
-  "A conclusion that comes last follows its support, with its title in bold;
-what argues against it still comes after it."
+  "A conclusion that comes last follows what is under it, with its title in
+bold."
   (let ((out (org-truss-test--render "#+title: T
 * M
 :PROPERTIES:
@@ -91,12 +94,12 @@ Claim body.
 #+end_public
 *** Ground
 :PROPERTIES:
-:TRUSS_SOURCE: s
+:TRUSS_GROUNDS: s
 :END:
 #+begin_public
 Ground body.
 #+end_public
-*** Doubt                                                           :against:
+*** Doubt
 #+begin_public
 Doubt body.
 #+end_public
@@ -106,11 +109,11 @@ Doubt body.
 :END:
 ** Only
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_TELLING_ROLE: situation
 :END:
 - [[#claim]]
 ")))
-    (should (string-match-p "Ground body\\.\n\n\\*The claim\\*\nClaim body\\.\n\nDoubt body\\." out))
+    (should (string-match-p "Ground body\\.\n\nDoubt body\\.\n\n\\*The claim\\*\nClaim body\\." out))
     (should-not (string-match-p "^\\*\\* The claim" out))))
 
 (ert-deftest org-truss-test-render-conclusion-first ()
@@ -119,11 +122,11 @@ of its own; with no telling pattern it is told the same."
   (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
                        "** Claim\n:PROPERTIES:\n:CUSTOM_ID: claim\n:TRUSS_TELLING: first\n:END:\n"
                        "#+begin_public The claim\nClaim body.\n#+end_public\n"
-                       "*** Doubt                                                           :against:\n"
-                       "*** Ground\n:PROPERTIES:\n:TRUSS_SOURCE: s\n:END:\n"
+                       "*** Doubt\n"
+                       "*** Ground\n:PROPERTIES:\n:TRUSS_GROUNDS: s\n:END:\n"
                        "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[#claim]]\n"))
          (out (org-truss-test--render text)))
-    (should (string-match-p "^\\*\\* The claim\nClaim body\\.\n\nGround\n\nDoubt\n" out))
+    (should (string-match-p "^\\*\\* The claim\nClaim body\\.\n\nDoubt\n\nGround\n" out))
     (should (equal (org-truss-test--render (replace-regexp-in-string ":TRUSS_TELLING: first\n" "" text))
                    out))))
 
@@ -146,13 +149,13 @@ of its own; with no telling pattern it is told the same."
 :END:
 ** Outer
 :PROPERTIES:
-:TRUSS_ROLE: conclusion
+:TRUSS_TELLING_ROLE: conclusion
 :END:
 #+begin_public What to do
 #+end_public
 *** Inner
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_TELLING_ROLE: situation
 :END:
 #+begin_public Where we are
 #+end_public
@@ -164,27 +167,27 @@ of its own; with no telling pattern it is told the same."
 
 (ert-deftest org-truss-test-render-steps ()
   "Steps are written as a numbered list, closing over one left out.  What is
-nested under a step goes inside its item; what argues against the member
-follows the list."
+nested under a step goes inside its item."
   (let ((out (org-truss-test--render org-truss-test--steps-file)))
     (should (string-match-p
              (concat "^\\* Do\n\n"
                      "Check before every test\n\n"
                      "1\\. Meet the driver face to face\n\n"
                      "   A video call counts as face to face\n"
-                     "2\\. The driver breathes into the checker\\.\n\n"
-                     "The checker may be broken\n")
+                     "2\\. The driver breathes into the checker\\.\n"
+                     "3\\. Check the checker works\n")
              out))
     (should-not (string-match-p "Note the reading" out)))
   (let ((out (org-truss-test--render
-              (replace-regexp-in-string ":TRUSS_LOGIC: steps\n:TRUSS_GROUNDS"
-                                        ":TRUSS_LOGIC: steps\n:TRUSS_TELLING: last\n:TRUSS_GROUNDS"
+              (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps\n:TRUSS_GROUNDS"
+                                        ":TRUSS_BREAKDOWN: steps\n:TRUSS_TELLING: last\n:TRUSS_GROUNDS"
                                         org-truss-test--steps-file))))
-    (should (string-match-p "^1\\. Meet[^\0]*\n\nCheck before every test\n\nThe checker" out))))
+    (should (string-match-p "^1\\. Meet[^\0]*works\n\nCheck before every test\n" out))))
 
 (ert-deftest org-truss-test-render-parts-and-prep ()
-  "Parts are a bulleted list in the order of the file, those covering
-aspects opening with the aspect, and what a part holds goes inside it.
+  "A breakdown with no reasons is a bulleted list in the order of the file,
+each part of one of more than one role opening with its role, and what a
+part holds goes inside it.
 PREP tells the point, what is under it as the file has it, and the point
 again."
   (let ((out (org-truss-test--render org-truss-test--how-file)))
@@ -207,19 +210,19 @@ again."
   (let* ((org-truss-language 'ja)
          (out (org-truss-test--render
                (replace-regexp-in-string
-                ":TRUSS_ASPECTS: 5w1h" ":TRUSS_ASPECTS: 6w1h"
+                ":TRUSS_BREAKDOWN: 5w1h" ":TRUSS_BREAKDOWN: 6w1h"
                 (replace-regexp-in-string
                  "^\\*\\*\\* Before the first run"
-                 "*** Whoever drives\n:PROPERTIES:\n:TRUSS_ROLE: whom\n:END:\n*** Before the first run"
+                 "*** Whoever drives\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: whom\n:END:\n*** Before the first run"
                  org-truss-test--how-file)))))
     (should (string-match-p (concat "^- 誰が：The driver's manager\n- どこで：In the office or by video call\n"
                                     "- 誰に：Whoever drives\n- いつ：")
                             out))))
 
 (ert-deftest org-truss-test-render-aspects-of-reasons ()
-  "Reasons covering aspects open with the aspect, as parts do, whatever the
-logic: the reader is told which part of the breakdown each is.  What
-covers none is told as written."
+  "Reasons broken down by more than one role open with their role, as parts
+do: the reader is told which part of the breakdown each is.  What plays
+none is told as written."
   (let ((text "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -227,15 +230,16 @@ covers none is told as written."
 ** We move to fortnightly reviews
 :PROPERTIES:
 :CUSTOM_ID: move
-:TRUSS_ASPECTS: pros-cons
+:TRUSS_LOGIC: reasons
+:TRUSS_BREAKDOWN: pros-cons
 :END:
 *** Less time in meetings
 :PROPERTIES:
-:TRUSS_ROLE: pros
+:TRUSS_BREAKDOWN_ROLE: pros
 :END:
 *** Items wait longer
 :PROPERTIES:
-:TRUSS_ROLE: cons
+:TRUSS_BREAKDOWN_ROLE: cons
 :END:
 #+begin_public Slower answers
 Some items wait a week more.
@@ -270,16 +274,16 @@ We move to fortnightly reviews.
 #+end_public
 *** Should we keep meeting weekly
 :PROPERTIES:
-:TRUSS_ROLE: question
+:TRUSS_TELLING_ROLE: question
 :END:
 *** Half the items repeat
 :PROPERTIES:
-:TRUSS_ROLE: complication
+:TRUSS_TELLING_ROLE: complication
 :END:
 *** Robin agrees
 *** Reviews are weekly
 :PROPERTIES:
-:TRUSS_ROLE: situation
+:TRUSS_TELLING_ROLE: situation
 :END:
 * S
 :PROPERTIES:

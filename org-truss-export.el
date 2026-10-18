@@ -62,56 +62,42 @@ its text as a paragraph, or its title when that is all there is."
   "Return (DEPTH SHOWN AFTER-SUPPORT) items for MEMBER and what is under it.
 SHOWN is what the reader sees: of MEMBER, as `org-truss-member-told' says,
 WORDING being the words the section listing it tells it in, and opened
-with LABEL when given, the aspect it covers.  It is told as
-`org-truss--tell' says.  What says how to do it is one item, a list.  A
-member tagged :noexport: gives nothing, and nor does what is nested under
-it.  A finding gives itself alone: what is nested under it is the
-breakdown it was found with, which a section lists by itself if the
-reader is to see it."
+with LABEL when given, the role it plays in a breakdown.  It is told as
+`org-truss--tell' says.  A member tagged :noexport: gives nothing, and nor
+does what is nested under it."
   (unless (org-truss-noexport-p member)
-    (if (org-truss-finding-p member)
-        (list (list depth (org-truss--labelled (org-truss-member-told member 'before wording)
-                                               label)
-                    nil))
-      (org-truss--tell member depth wording label))))
+    (org-truss--tell member depth wording label)))
 
-(defun org-truss--how-items (member depth)
-  "Return what says how to do MEMBER as flow items at DEPTH below it: one list."
-  (let ((list (org-truss--how-text member)))
+(defun org-truss--list-items (member depth)
+  "Return MEMBER's breakdown as flow items at DEPTH below it: one list."
+  (let ((list (org-truss--list-text member)))
     (and (not (string-empty-p list))
          (list (list (1+ depth) (cons nil list) nil)))))
 
 (defun org-truss--tell (member depth &optional wording label)
   "Return the flow of MEMBER at DEPTH, as it is told.
-What is under it comes in the order of the file -- for a member that
-says how, as one list -- and what argues against it after the rest,
-since an objection needs the claim it answers.  The member itself comes
-before all of it or after, as its telling pattern puts it, in the words
+What is under it comes in the order of the file -- for a member broken
+down with no reasons, as one list.  The member itself comes before all of
+it or after, as its telling pattern puts it, in the words
 `org-truss-member-told' gives it there, WORDING among them, and opened
 with LABEL.  A pattern that closes with it again, as PREP and SDS do,
 tells it once more at the end, in the words it is told in after."
   (let* ((first (org-truss-told-first-p member))
          (self (org-truss--labelled (org-truss-member-told member (if first 'before 'after) wording)
                                     label))
-         (below (lambda (ms)
+         (under (if (org-truss-breakdown-list member)
+                    (org-truss--list-items member depth)
                   (mapcan (lambda (m)
-                            (org-truss--flow m (1+ depth) nil (org-truss--aspect-label member m)))
-                          ms)))
-         (under (if (org-truss-how-p member)
-                    (org-truss--how-items member depth)
-                  (funcall below (org-truss--joined-under member))))
-         (against (funcall below (seq-filter #'org-truss-against-p
-                                             (org-truss-member-children member)))))
+                            (org-truss--flow m (1+ depth) nil (org-truss--role-label member m)))
+                          (org-truss-member-children member)))))
     (if first
         (append (list (list depth self nil))
                 under
-                against
                 (and (org-truss-told-again-p member)
                      (org-truss--restatement (org-truss-member-told member 'after wording)
                                              (1+ depth))))
       (append under
-              (list (list depth self (and under t)))
-              against))))
+              (list (list depth self (and under t)))))))
 
 (defun org-truss--indent (text column)
   "Return TEXT with every line after the first indented COLUMN columns.
@@ -130,30 +116,30 @@ A heading cannot sit in a list, so a title opens its block in bold."
                         (and shown (not (string-empty-p text)) text)))
                     items)))
 
-(defun org-truss--aspect-label (member child)
+(defun org-truss--role-label (member child)
   "Return what opens CHILD where it is told under MEMBER, or \"\" for nothing.
-When MEMBER has aspects, the one CHILD covers, named in
-`org-truss-language': whatever MEMBER's logic, the reader is told which
-part of the breakdown each piece is."
-  (let ((aspect (org-truss-aspect-of member child)))
-    (if aspect
-        (format (org-truss--pick "%s: " "%s：") (org-truss-role-label aspect))
+When MEMBER's breakdown labels its parts, the role CHILD plays, named in
+`org-truss-language': the reader is told which part of the breakdown each
+piece is."
+  (let ((role (org-truss-role-label-under member child)))
+    (if role
+        (format (org-truss--pick "%s: " "%s：") (org-truss-role-label role))
       "")))
 
 (defun org-truss--list-marker (member child n)
-  "Return (BULLET . LABEL) for CHILD, the Nth item of what says how to do MEMBER.
-BULLET opens the list item, a number for a step; LABEL is the aspect it
-covers, as `org-truss--aspect-label' gives it."
-  (cons (if (eq (org-truss-how-list member) 'numbered) (format "%d. " n) "- ")
-        (org-truss--aspect-label member child)))
+  "Return (BULLET . LABEL) for CHILD, the Nth item of MEMBER's breakdown.
+BULLET opens the list item, a number for a step; LABEL is the role it
+plays, as `org-truss--role-label' gives it."
+  (cons (if (eq (org-truss-breakdown-list member) 'numbered) (format "%d. " n) "- ")
+        (org-truss--role-label member child)))
 
-(defun org-truss--how-text (member)
-  "Return what says how to do MEMBER as an Org list.
-Steps are numbered and parts are not; a part covering an aspect opens with it.
-Each item is what the reader sees of it.  What is nested under it goes
-inside its item: how to do it, as a list again, or what supports it and
-argues against it as paragraphs.  One tagged :noexport: is left out, and
-the numbers close over it."
+(defun org-truss--list-text (member)
+  "Return MEMBER's breakdown as an Org list.
+Steps are numbered and the rest are not; a part of a breakdown that labels
+them opens with its role.  Each item is what the reader sees of it.  What
+is nested under it goes inside its item: its own breakdown, as a list
+again, or what is told under it as paragraphs.  One tagged :noexport: is
+left out, and the numbers close over it."
   (let ((n 0))
     (mapconcat
      (lambda (child)
@@ -163,20 +149,16 @@ the numbers close over it."
                                         (or (car shown) "")
                                         (if (car shown) "\n" "")
                                         (or (cdr shown) ""))))
-              (children (org-truss-member-children child))
-              (flow (lambda (ms)
-                      (mapcan (lambda (m) (org-truss--flow m 1 nil (org-truss--aspect-label child m)))
-                              ms)))
-              (nested (if (org-truss-how-p child)
-                          (cons (org-truss--how-text child)
-                                (org-truss--blocks
-                                 (funcall flow (seq-filter #'org-truss-against-p children))))
-                        (org-truss--blocks (funcall flow children)))))
+              (nested (if (org-truss-breakdown-list child)
+                          (list (org-truss--list-text child))
+                        (org-truss--blocks
+                         (mapcan (lambda (m) (org-truss--flow m 1 nil (org-truss--role-label child m)))
+                                 (org-truss-member-children child))))))
          (concat (car marker)
                  (org-truss--indent
                   (string-join (seq-remove #'string-empty-p (cons own nested)) "\n\n")
                   (length (car marker))))))
-     (seq-remove #'org-truss-noexport-p (org-truss-how-children member))
+     (seq-remove #'org-truss-noexport-p (org-truss-member-children member))
      "\n")))
 
 (defun org-truss--emit (items level)

@@ -16,13 +16,13 @@
 ;; A truss file keeps what was read beside it, in
 ;; `org-truss-sources-directory', so that the directory can be handed over
 ;; whole.  org-moor keeps a source as a directory there -- its copy and its
-;; record -- and a fact cites one with a `moor:' link, in its text or in
-;; TRUSS_SOURCE; either makes it a fact.
+;; record -- and a member cites one with a `moor:' link, in its text or in
+;; TRUSS_GROUNDS; either gives it grounds.
 ;;
 ;; Here: the sources of a truss file are put beside it; `t' on the board
-;; offers them, or takes one there and then, when a fact is said to be one;
-;; and `org-truss-batch-take' takes one for an agent working in the file,
-;; which cannot ask Emacs, and prints the link to cite it with.
+;; offers them, or takes one there and then, for a member to stand on; and
+;; `org-truss-batch-take' takes one for an agent working in the file, which
+;; cannot ask Emacs, and prints the link to cite it with.
 
 ;;; Code:
 
@@ -46,10 +46,10 @@
   "What `org-truss-moor-read-source' offers to take a web page by.")
 
 (defun org-truss-moor-read-source (default file)
-  "Read where a fact comes from: a source of FILE's, one taken now, or words.
+  "Read a source a member stands on: a source of FILE's, one taken now, or words.
 A source of the truss file FILE, by its title, is cited by a link to it;
 a file or a web page can be taken into its sources there and then; any
-other answer is written as it is.  DEFAULT is what the fact says now."
+other answer is written as it is.  DEFAULT is what is named now."
   (let* ((sources (org-moor-sources file))
          (records (sort (org-moor-sources-in sources)
                         (lambda (a b) (string< (or (plist-get a :title) "")
@@ -87,9 +87,9 @@ For an agent working in the file, which cannot ask Emacs:
         -f org-truss-batch-take truss.org FILE-OR-URL [TITLE]
 
 A file is copied, never moved, and titled by its name unless TITLE is
-given.  The link printed names the source by its title; written where a
-fact is, it cites the source, and with a place, ::12 after the id, a page
-of a PDF or a line of anything else."
+given.  The link printed names the source by its title; written in a
+member's TRUSS_GROUNDS or its text, it cites the source, and with a place,
+::12 after the id, a page of a PDF or a line of anything else."
   (let* ((truss (expand-file-name (or (pop command-line-args-left)
                                       (error "org-truss: no truss file"))))
          (what (or (pop command-line-args-left)

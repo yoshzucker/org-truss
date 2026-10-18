@@ -12,24 +12,23 @@
 (require 'org-truss-core-test)
 (require 'org-moor)
 
-(ert-deftest org-truss-test-cited-by-a-link-is-a-fact ()
-  "A member whose text cites a source with a moor: link is a fact, as one
-with TRUSS_SOURCE is; a link elsewhere under it does not make it one."
+(ert-deftest org-truss-test-a-link-to-a-source-is-grounds ()
+  "A member whose text cites a source with a moor: link has grounds of its
+own; a link under a member nested in it gives the member none."
   (org-truss-test--with
       (concat "* Subject\n:PROPERTIES:\n:TRUSS_PART: subject\n:END:\n"
-              "** Premises\n:PROPERTIES:\n:TRUSS_ROLE: premises\n:END:\n"
+              "** Premises\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: premises\n:END:\n"
               "*** Approval goes to the head first\n"
               "#+begin_quote\nThe head approves before finance.\n#+end_quote\n"
               "[[moor:6f1c::12][Approval manual p. 12]]\n"
               "*** Reviews run long\n"
               "**** Eight of twelve ran over\n[[moor:9a3e::3][Calendar l. 3]]\n")
-    (let ((model (org-truss-read)))
-      (should (eq (org-truss-member-kind model (org-truss-test--m model "Approval goes to the head first"))
-                  'fact))
-      (should (equal (org-truss-member-source
-                      (org-truss-test--m model "Approval goes to the head first"))
-                     "[[moor:6f1c::12][Approval manual p. 12]]"))
-      (should-not (org-truss-member-source (org-truss-test--m model "Reviews run long"))))))
+    (let* ((model (org-truss-read))
+           (approval (org-truss-test--m model "Approval goes to the head first")))
+      (should (org-truss-own-grounds-p approval))
+      (should (equal (org-truss-member-cited approval) "[[moor:6f1c::12][Approval manual p. 12]]"))
+      (should (equal (org-truss-member-quoted approval) "The head approves before finance."))
+      (should-not (org-truss-own-grounds-p (org-truss-test--m model "Reviews run long"))))))
 
 (ert-deftest org-truss-test-sources-beside-the-file ()
   "A truss file's sources are beside it; other files' are where they were."
@@ -52,9 +51,9 @@ printed a link to cite it by."
         (should (plist-get record :copy)))
       (should (file-exists-p file)))))
 
-(ert-deftest org-truss-test-a-fact-from-a-source ()
-  "Said to be a fact, a member is offered the file's sources by title, and
-cites the one chosen with a link."
+(ert-deftest org-truss-test-a-source-from-the-sources ()
+  "A member given a source is offered the file's sources by title, and cites
+the one chosen with a link; other words are written as they are."
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
     (let* ((truss (expand-file-name "truss.org" dir))
            (record (org-moor-new-source "Calendar export" "/x/cal.csv" 'file
