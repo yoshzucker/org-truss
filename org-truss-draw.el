@@ -871,7 +871,9 @@ plays that role."
 PREFIX draws the tree to the left; LAST says SECTION ends its siblings.
 PATH is the labels from the root, which identifies the line across redraws.
 PARENT is the section above.  A section that comes below one the
-parent's telling pattern tells after is marked."
+parent's telling pattern tells after is marked.  Under a pattern written
+out as a list, its right opens with the number, the bullet or the role
+the reader sees it with, as a member's does."
   (let* ((path (append path (list (org-truss-section-label section))))
          (inner (concat prefix (if last "  " "│ ")))
          (children (org-truss-section-children section))
@@ -894,7 +896,12 @@ parent's telling pattern tells after is marked."
          (title (org-truss-section-title section))
          (label (org-truss--label-lines
                  (propertize (org-truss-section-label section) 'face 'org-truss-section)))
-         (reader (org-truss--reader-lines (cons title (cdr public))))
+         (n (and parent (org-truss-list-form parent) (not (org-truss-noexport-p section))
+                 (seq-position (seq-remove #'org-truss-noexport-p (org-truss-section-children parent))
+                               section)))
+         (marker (and n (org-truss--list-marker parent section (1+ n))))
+         (reader (org-truss--reader-lines
+                  (cons (if marker (concat (car marker) (cdr marker) title) title) (cdr public))))
          (item (list :type 'section :pos (org-truss-section-pos section)
                      :label (org-truss-section-label section)
                      :key (list 'section path))))

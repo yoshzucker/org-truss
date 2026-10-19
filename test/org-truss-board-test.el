@@ -1160,6 +1160,30 @@ another member.  Links still find it."
     (should (equal (org-truss-test--parent-label source "Who decides what is urgent")
                    '("Some items are urgent" . 5)))))
 
+(ert-deftest org-truss-test-board-numbers-sections ()
+  "A section below one broken down shows on the right the number, the
+bullet or the role the reader sees it with, as a member does."
+  (org-truss-test--with-board "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:TRUSS_BREAKDOWN: steps
+:END:
+** Agree
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: step
+:END:
+** Change the calendar
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: step
+:END:
+"
+    (should (string-match-p "├ Step[ ·]+Agree +1\\. Agree$" (buffer-string)))
+    (should (string-match-p "└ Step[ ·]+Change the calendar +2\\. Change the calendar$" (buffer-string)))))
+
 (ert-deftest org-truss-test-board-numbers-steps ()
   "A step is drawn as one, numbered on the right as the reader will see it."
   (org-truss-test--with-board org-truss-test--steps-file

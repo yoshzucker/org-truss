@@ -255,6 +255,63 @@ We move to fortnightly reviews.
 "
   "A member told by SCQA, what is under it written out of the pattern's order.")
 
+(ert-deftest org-truss-test-render-sections-broken-down ()
+  "The sections below one broken down are written out as a list, as the
+members under a member are: each an item, not a heading, opened with its
+number or role, its title and lead, and inside it the members it lists
+and the sections below it, their titles in bold."
+  (let* ((org-truss-language 'en)
+         (file "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Agree next week
+:PROPERTIES:
+:CUSTOM_ID: agree
+:TRUSS_BREAKDOWN: parts
+:END:
+*** Ask the leads
+*** Ask the team
+** Change the calendar
+:PROPERTIES:
+:CUSTOM_ID: cal
+:END:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:TRUSS_BREAKDOWN: steps
+:END:
+** First
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: step
+:END:
+#+begin_public Agree
+We agree first.
+#+end_public
+- [[#agree]]
+*** A detail
+- [[#cal]]
+** Then
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: step
+:END:
+- [[#cal]]
+")
+         (out (org-truss-test--render file)))
+    (should (string-match-p
+             (concat "^1\\. Agree\n   We agree first\\.\n\n"
+                     "   Agree next week\n\n"
+                     "   - Ask the leads\n   - Ask the team\n\n"
+                     "   \\*A detail\\*\n\n"
+                     "   Change the calendar\n"
+                     "2\\. Then\n\n   Change the calendar\n")
+             out))
+    (should-not (string-match-p "^\\*+ " out))
+    (let ((out (org-truss-test--render
+                (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps" ":TRUSS_BREAKDOWN: 5w1h"
+                                          (replace-regexp-in-string "ROLE: step" "ROLE: who" file)))))
+      (should (string-match-p "^- Who: Agree\n" out)))))
+
 (ert-deftest org-truss-test-render-a-telling-on-a-member ()
   "A member is told before what is under it, and that in the order of the
 file, whatever its telling pattern: SCQA's answer, too, is a heading under

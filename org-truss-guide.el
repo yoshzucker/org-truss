@@ -99,9 +99,10 @@
 #                       document's)
 #   ~- [[#m7][words]]~  member m7: the words, else its #+begin_public, else
 #                       its heading; then the members under it
-#   Under a member with TRUSS_BREAKDOWN, the members are a list, numbered
-#   for steps; where the pattern names its roles, each opens with its own,
-#   as Pros: or Who:
+#   Under a heading with TRUSS_BREAKDOWN, member or section, the headings
+#   are a list, numbered for steps; where the pattern names its roles, each
+#   opens with its own, as Pros: or Who:.  A section in a list is an item,
+#   not a heading, and what it holds goes inside it
 #   Notes under a heading, outside #+begin_public, are not written out
 #
 # Other properties, and tags
@@ -189,9 +190,10 @@
 #   #+begin_public            節の最初の文（Structure 直下なら文書の最初の文）
 #   節の ~- [[#m7][言い方]]~  部材 m7。言い方、なければ部材の #+begin_public、
 #                             なければ見出し。続けて下の部材が出る
-#   TRUSS_BREAKDOWN を持つ部材の下は、箇条書きで出る（steps は番号付き）。
-#   型が役の名前を出すものでは、それぞれ自分の役で始まる（メリット：、誰が：
-#   など）
+#   TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書きで出る（steps
+#   は番号付き）。型が役の名前を出すものでは、それぞれ自分の役で始まる
+#   （メリット：、誰が：など）。箇条書きの中の節は見出しでなく項目になり、
+#   節の中身はその項目の中に入る
 #   見出しの下のメモ（#+begin_public の外）は書き出さない
 #
 # そのほかのプロパティとタグ
@@ -323,9 +325,9 @@ CUSTOM_ID (a on the board).  A pattern here, or on a section (p on the
 board) -- a telling pattern as Sky, Rain, Umbrella, SCQA, PREP -- gives
 the sections right below their roles, each written in a section's
 property of its kind, as TRUSS_TELLING_ROLE; a role none plays is listed
-under Missing roles.  A section's heading
-becomes a heading of the document, and the text of its #+begin_public,
-the section's opening.  A link's description, as in ~- [[#m7][words]]~,
+under Missing roles.  A section's heading becomes a heading of the
+document, and the text of its #+begin_public, the section's opening --
+or, under a breakdown, an item of its list.  A link's description, as in ~- [[#m7][words]]~,
 is written out in place of the member's heading (S on the board).  Write
 here only what guides the reader; put facts and claims in members, which
 can be stood on as grounds and listed in any section.  Sections nest as
@@ -336,7 +338,8 @@ deep as the document needs."
 Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節が担う役が
 決まり、節はその種類のプロパティ（TRUSS_TELLING_ROLE など）に役を書く。
 どの節も担っていない役は Missing roles に出る。節の見出しは文書の見出しに
-なり、節に書いた内容（#+begin_public の中身）は節の最初の文になる。リンク
+なり、節に書いた内容（#+begin_public の中身）は節の最初の文になる。内訳の型
+の下では、節は箇条書きの項目になる。リンク
 に説明を付けて ~- [[#m7][言い方]]~ とすると、部材の見出しの代わりにその説明
 が出る（盤面の S）。ここには読み手を案内する言葉だけを書き、事実や主張は
 Members の部材にする。部材なら、根拠として指せ、どの節にも載せられるから。

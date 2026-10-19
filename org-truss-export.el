@@ -114,32 +114,62 @@ it plays, as `org-truss--role-label' gives it."
   (cons (if (eq (org-truss-list-form member) 'numbered) (format "%d. " n) "- ")
         (org-truss--role-label member child)))
 
-(defun org-truss--list-text (member)
-  "Return what is under MEMBER as an Org list, numbered or not as it says.
-An item playing a role flagged :label opens with its role.  Each item is
-what the reader sees of it.  What is nested under it goes inside its item:
-as a list again when it says so, else as paragraphs.  One tagged
-:noexport: is left out, and the numbers close over it."
+(defun org-truss--list-text (cluster &optional model)
+  "Return what is right under CLUSTER as an Org list, numbered or not as it says.
+CLUSTER is a member or a section, and what is under it members or
+sections; MODEL finds the members a section lists.  An item playing a
+role flagged :label opens with its role.  Each item is what the reader
+sees of it -- a section's title and lead -- and what it holds goes inside
+it: what is nested under a member, as a list again when it says so, else
+as paragraphs; what a section holds, as `org-truss--section-inside' says.
+One tagged :noexport: is left out, and the numbers close over it."
   (let ((n 0))
     (mapconcat
      (lambda (child)
-       (let* ((marker (org-truss--list-marker member child (setq n (1+ n))))
-              (shown (org-truss-member-told child))
+       (let* ((marker (org-truss--list-marker cluster child (setq n (1+ n))))
+              (section (org-truss-section-p child))
+              (shown (if section
+                         (cons (org-truss-section-title child) (cdr (org-truss-section-public child)))
+                       (org-truss-member-told child)))
               (own (string-trim (concat (cdr marker)
                                         (or (car shown) "")
                                         (if (car shown) "\n" "")
                                         (or (cdr shown) ""))))
-              (nested (if (org-truss-list-form child)
-                          (list (org-truss--list-text child))
-                        (org-truss--blocks
-                         (mapcan (lambda (m) (org-truss--flow m 1 nil (org-truss--role-label child m)))
-                                 (org-truss-cluster-children child))))))
+              (nested (cond (section (org-truss--section-inside model child))
+                            ((org-truss-list-form child)
+                             (list (org-truss--list-text child)))
+                            (t (org-truss--blocks
+                                (mapcan (lambda (m) (org-truss--flow m 1 nil (org-truss--role-label child m)))
+                                        (org-truss-cluster-children child)))))))
          (concat (car marker)
                  (org-truss--indent
                   (string-join (seq-remove #'string-empty-p (cons own nested)) "\n\n")
                   (length (car marker))))))
-     (seq-remove #'org-truss-noexport-p (org-truss-cluster-children member))
+     (seq-remove #'org-truss-noexport-p (org-truss-cluster-children cluster))
      "\n")))
+
+(defun org-truss--section-inside (model section)
+  "Return what SECTION of MODEL holds as blocks that sit inside a list item.
+The members it lists, then the sections below it: as a list when its
+pattern says so, else each as its title in bold, its lead, and what it
+holds in turn."
+  (append
+   (mapcan (lambda (ref)
+             (let ((member (org-truss-member-by-ref model ref)))
+               (if member
+                   (org-truss--blocks (org-truss--flow member 1 (org-truss-section-wording section ref)))
+                 (list (format (org-truss--pick "(broken link: %s)" "（リンク切れ: %s）")
+                               (org-truss--target ref))))))
+           (org-truss-section-links section))
+   (if (org-truss-list-form section)
+       (let ((list (org-truss--list-text section model)))
+         (and (not (string-empty-p list)) (list list)))
+     (mapcan (lambda (s)
+               (append (org-truss--blocks
+                        (list (list 0 (cons (org-truss-section-title s)
+                                            (or (cdr (org-truss-section-public s)) "")))))
+                       (org-truss--section-inside model s)))
+             (seq-remove #'org-truss-noexport-p (org-truss-section-children section))))))
 
 (defun org-truss--emit (items level)
   "Return Org text for ITEMS inside a section whose heading is at LEVEL.
@@ -172,8 +202,17 @@ A titled member gets a heading, under which what is under it is told."
      (if (or (null body) (string-empty-p body)) "" (concat body "\n"))
      "\n"
      (org-truss--render-links model section level)
-     (mapconcat (lambda (s) (org-truss--render-section model s (1+ level)))
-                (org-truss-section-children section) ""))))
+     (org-truss--render-below model section (1+ level)))))
+
+(defun org-truss--render-below (model section level)
+  "Return Org text for the sections below SECTION of MODEL.
+As one list when a pattern of SECTION says so, as what is under a member
+is; see `org-truss-list-form'.  Else each under a heading at LEVEL."
+  (if (org-truss-list-form section)
+      (let ((list (org-truss--list-text section model)))
+        (if (string-empty-p list) "" (concat list "\n\n")))
+    (mapconcat (lambda (s) (org-truss--render-section model s level))
+               (org-truss-section-children section) "")))
 
 (defun org-truss--render-links (model section level)
   "Return Org text for the members SECTION of MODEL lists, under LEVEL."
@@ -197,8 +236,7 @@ The structure's own lead, the text of its public block, opens it."
             (if (or (null lead) (string-empty-p lead)) "" (concat lead "\n\n"))
             (if root
                 (concat (org-truss--render-links model root 0)
-                        (mapconcat (lambda (s) (org-truss--render-section model s 1))
-                                   (org-truss-section-children root) ""))
+                        (org-truss--render-below model root 1))
               ""))))
 
 ;;;; Writing it out
