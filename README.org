@@ -244,24 +244,40 @@ A heading has grounds when it has one of these:
 
 ~TRUSS_GROUNDS~ can also point to members, ~[[#m3]] [[#m7]]~, to stand on
 them: a reason in the members on the facts of the subject it reads (see
-[[*Pointing to a member]]).  A member pointed to gives grounds when it
-has its own, or a ~TRUSS_LOGIC~, or is an assumption, or when what its own
-~TRUSS_GROUNDS~ points to gives them.
+[[*Pointing to a member]]).
+
+Whether a heading has grounds is read from what it writes, not from what
+that points to.  What it points to is asked something of its own, of
+every heading alike, whether it must have grounds or not: what is pointed
+to as grounds must hold as what it is.
+
+| Pointed to          | Holds when                                                                                                    |
+|---------------------+---------------------------------------------------------------------------------------------------------------|
+| a member, ~[[#m3]]~ | it has grounds, or a ~TRUSS_LOGIC~, or the tag ~:assumption:~ -- as a heading that must have grounds is asked |
+| a source, ~moor:~   | the truss file's ~sources/~ holds it                                                                          |
+| a file, ~file:~     | it is there                                                                                                   |
+| a URL, words        | not checked: nothing in the file can tell                                                                     |
+
+It is asked one step: what a member pointed to points to in turn is asked
+of that member, where it is written.  Whether a source says what it is
+cited for is not asked of any heading; that is past what the file's
+structure can tell.
 
 The line between a fact and an assumption is whether you can say where it
 came from.
 
 ** What is left to do
 
-Five checks, each found where the problem is:
+Six checks, each found where the problem is:
 
-| Check         | Found at                       | What it finds                                                                                        |
-|---------------+--------------------------------+------------------------------------------------------------------------------------------------------|
-| Missing roles | the heading whose pattern asks | a role its pattern asks for that no heading right under it plays                                     |
-| No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them |
-| Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                        |
-| No grounds    | the heading that lacks them    | must have grounds and has none, or points in ~TRUSS_GROUNDS~ to a member that gives none             |
-| Broken links  | the link                       | a link in a section or in ~TRUSS_GROUNDS~ to no member; a ~CUSTOM_ID~ two members have               |
+| Check         | Found at                       | What it finds                                                                                                                                               |
+|---------------+--------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Missing roles | the heading whose pattern asks | a role its pattern asks for that no heading right under it plays                                                                                            |
+| No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them                                                        |
+| Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                                               |
+| No grounds    | the heading that lacks them    | must have grounds and has none                                                                                                                              |
+| Weak grounds  | the heading that points        | points in ~TRUSS_GROUNDS~ to a member that does not hold                                                                                                    |
+| Broken links  | the link                       | a link to nothing: in a section or ~TRUSS_GROUNDS~ to no member, in ~TRUSS_GROUNDS~ or a member's text to no source or file; a ~CUSTOM_ID~ two members have |
 
 They say what is so; what to do about it is written in the file.
 
@@ -787,11 +803,12 @@ the section the line hangs from:
 =⏚= and =•= are where a link is written, and name what it calls by its
 id; =↥= and =▤= are the other end, where a member is written.  What a
 member stands on is drawn below it, as the ground is below a building:
-=⏚ ground= a member it points to -- with =[no grounds]= when that member
-gives none -- =⏚ source= a source named in ~TRUSS_GROUNDS~, =⏚ cited= the
-first link to a source in its text, =⏚ quote= the words it quotes.  What
-stands on a member is drawn below it too, as everything under a line is,
-so its mark points up, from the member to it.  A line marked =⏚=, =↥= or
+=⏚ ground= a member it points to -- with =[no grounds]= when it does not
+hold -- =⏚ source= a source named in ~TRUSS_GROUNDS~, =⏚ cited= the first
+link to a source in its text -- each with =[not found]= when a link there
+points to nothing -- and =⏚ quote= the words it quotes.  What stands on a
+member is drawn below it too, as everything under a line is, so its mark
+points up, from the member to it.  A line marked =⏚=, =↥= or
 =▤= is cut to the middle, its whole heading in the tooltip; the mouse on
 any mark says what it means, and ~RET~ on the line goes to what it names.
 ~=~ goes between a member and its calls.  A member with no line marked =▤=
@@ -804,19 +821,20 @@ plays it.
 
 The other marks of the board are not links:
 
-| Mark                | Where               | Says                                                    |
-|---------------------+---------------------+---------------------------------------------------------|
-| =#m9=               | end of the left     | the member, where it is written                         |
-| =[[#m9]]=           | end of the left     | the member, where a section's link or a ground calls it |
-| =[no role]=         | after the role      | plays no role of a pattern of the heading above         |
-| =[assumed]=         | after the role      | tagged ~:assumption:~: taken as given                   |
-| =[no grounds]=      | after the role      | must have grounds, and has none                         |
-| =(logic › reasons)= | the line below      | the patterns the heading names                          |
-| =▸5=                | after the role      | folded, five hidden; ~z~ opens it                       |
-| =⚠=                 | after the role      | out of the order of the telling pattern above           |
-| =Rain —=            | below what it holds | a role a pattern asks for that nothing plays            |
-| =┐= … =└=           | the right           | told after what is under it, on the line =└= reaches    |
-| =again=             | below what it holds | told again, as PREP and SDS close                       |
+| Mark                | Where                   | Says                                                                                 |
+|---------------------+-------------------------+--------------------------------------------------------------------------------------|
+| =#m9=               | end of the left         | the member, where it is written                                                      |
+| =[[#m9]]=           | end of the left         | the member, where a section's link or a ground calls it                              |
+| =[no role]=         | after the role          | plays no role of a pattern of the heading above                                      |
+| =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
+| =[no grounds]=      | after the role          | must have grounds, and has none; after ⏚ ground, the member pointed to does not hold |
+| =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |
+| =(logic › reasons)= | the line below          | the patterns the heading names                                                       |
+| =▸5=                | after the role          | folded, five hidden; ~z~ opens it                                                    |
+| =⚠=                 | after the role          | out of the order of the telling pattern above                                        |
+| =Rain —=            | below what it holds     | a role a pattern asks for that nothing plays                                         |
+| =┐= … =└=           | the right               | told after what is under it, on the line =└= reaches                                 |
+| =again=             | below what it holds     | told again, as PREP and SDS close                                                    |
 
 In the structure a member a section lists is one line, as written, the
 words it is told in on its right; opened there, as told (~O~), it brings
@@ -839,7 +857,8 @@ them:
 #+end_example
 
 Each part is followed by what is left to do in it, check by check --
-/Broken links/, /No grounds/, /Missing roles/, /No role/, /Out of order/
+/Broken links/, /No grounds/, /Weak grounds/, /Missing roles/, /No role/,
+/Out of order/
 (see [[*What is left to do]]) -- each thing listed in the part it is found
 in, and ~RET~ on it goes there.  The mouse on the name of a check says
 what it finds.

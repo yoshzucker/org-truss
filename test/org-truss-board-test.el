@@ -1085,6 +1085,21 @@ taking it back leaves the file as it was."
             (should-not (string-match-p "Said twice" (buffer-string))))
           (should-not (buffer-modified-p org-truss--source)))))))
 
+(ert-deftest org-truss-test-board-marks-grounds-that-do-not-hold ()
+  "A ground that does not hold says so on its line, and so does a source
+pointing to nothing; each is listed under its check, at the member that
+points to it."
+  (org-truss-test--with-board (replace-regexp-in-string
+                               ":TRUSS_GROUNDS: hallway" ":TRUSS_GROUNDS: [[#lone]] [[file:nowhere.pdf][the memo]]"
+                               (replace-regexp-in-string "^\\*\\* Lone remark$"
+                                                         "** Lone remark\n:PROPERTIES:\n:CUSTOM_ID: lone\n:END:"
+                                                         org-truss-test--file))
+    (let ((text (buffer-string)))
+      (should (string-match-p "⏚ ground \\[no grounds\\][ ·]+\\[\\[#lone\\]\\] Lone remark" text))
+      (should (string-match-p "⏚ source \\[not found\\][ ·]+the memo" text))
+      (should (string-match-p "^ Weak grounds\n   member[ ·]+#aside Unused aside +\\[\\[#lone\\]\\] has no grounds$" text))
+      (should (string-match-p "^ Broken links\n   member[ ·]+#aside Unused aside +\\[\\[file:nowhere\\.pdf\\]\\[the memo\\]\\] not found$" text)))))
+
 (ert-deftest org-truss-test-board-sources-and-assumptions ()
   "t names the source a member stands on in its TRUSS_GROUNDS, the members
 it links to there staying, and nothing takes it away; A tags a member
@@ -1557,7 +1572,7 @@ grounds that named it to show as broken."
       (should (equal (org-truss-member-grounds (org-truss-member-by-label model "Move to fortnightly"))
                      '("half"))))
     (should (string-match-p "⏚ broken ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?\\[\\[#half\\]\\]" (buffer-string)))
-    (should (string-match-p "^ Broken links\n +member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +\\[\\[#half\\]\\] in TRUSS_GROUNDS$"
+    (should (string-match-p "^ Broken links\n +member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +\\[\\[#half\\]\\] not found$"
                             (buffer-string)))))
 
 (ert-deftest org-truss-test-board-grounds ()

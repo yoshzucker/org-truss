@@ -20,7 +20,8 @@
 ;; TRUSS_GROUNDS; either gives it grounds.
 ;;
 ;; Here: the sources of a truss file are put beside it; `t' on the board
-;; offers them, or takes one there and then, for a member to stand on; and
+;; offers them, or takes one there and then, for a member to stand on; the
+;; check finds a `moor:' link to a source that is not there; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
 ;; cannot ask Emacs, and prints the link to cite it with.
 
@@ -30,6 +31,7 @@
 (require 'org-moor)
 
 (defvar org-truss-read-source-function)
+(defvar org-truss-moor-missing-function)
 
 (defun org-truss-moor-sources (file)
   "Return the sources directory of FILE when it is a truss file, else nil."
@@ -78,6 +80,13 @@ other answer is written as it is.  DEFAULT is what is named now."
       (_ answer))))
 
 (setq org-truss-read-source-function #'org-truss-moor-read-source)
+
+(defun org-truss-moor-missing-p (id file)
+  "Non-nil when the sources of FILE hold no source ID.
+FILE is the file the link to it is in; with none, the current buffer's."
+  (not (org-moor-record id (org-moor-sources file))))
+
+(setq org-truss-moor-missing-function #'org-truss-moor-missing-p)
 
 (defun org-truss-batch-take ()
   "Take a file or a web page into a truss file's sources, and print a link to it.

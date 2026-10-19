@@ -662,18 +662,22 @@ is what it stands for, under KEY, and ID how it is called, if it is."
 
 (defun org-truss--grounds-lines (model member stem key)
   "Return a line for each thing MEMBER of MODEL stands on, below it.
-The members its TRUSS_GROUNDS links to, each said to give no grounds when
-it gives none, or to be a broken link when it is no member; then the
+The members its TRUSS_GROUNDS links to, each said to be a broken link when
+it is no member, and to have no grounds when it does not hold; then the
 sources TRUSS_GROUNDS names besides, the first link to a source in its
-text, and the words it quotes.  STEM starts each; KEY is MEMBER's line's."
-  (let ((pos (org-truss-member-pos member)))
+text, and the words it quotes, a link among them that points to nothing
+said not to be found.  STEM starts each; KEY is MEMBER's line's."
+  (let* ((pos (org-truss-member-pos member))
+         (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) member))
+                                            (plist-get org-truss--checks :broken-sources))))
+         (found-p (lambda (text) (not (seq-some (lambda (link) (string-search link text)) missing)))))
     (append
      (mapcar (lambda (ref)
                (let ((ground (org-truss-member-by-ref model ref)))
                  (org-truss--ground-line
                   stem (append key (list 'ground ref))
                   (cond ((null ground) (propertize "broken ground" 'face 'org-truss-attention))
-                        ((org-truss--gives-grounds-p model ground (list member)) "ground")
+                        ((org-truss-holds-p ground) "ground")
                         (t (concat "ground" (propertize " [no grounds]" 'face 'org-truss-attention))))
                   (if ground (org-truss-member-label ground) (format "[[%s]]" (org-truss--target ref)))
                   (list :type 'member :pos (if ground (org-truss-member-pos ground) pos)
@@ -683,7 +687,9 @@ text, and the words it quotes.  STEM starts each; KEY is MEMBER's line's."
              (org-truss-member-grounds member))
      (mapcar (lambda (source)
                (org-truss--ground-line stem (append key (list 'source (car source)))
-                                       (symbol-name (car source))
+                                       (concat (symbol-name (car source))
+                                               (if (funcall found-p (cdr source)) ""
+                                                 (propertize " [not found]" 'face 'org-truss-attention)))
                                        (org-truss--one-line (org-truss--link-text (cdr source)))
                                        (list :type 'member :pos pos)))
              (delq nil (list (and (org-truss-member-sources member)
@@ -1061,8 +1067,10 @@ finds it, as `org-truss-check-descriptions' names them."
          (lines
           (append
            (org-truss--check-group
-            model "Broken links" (funcall in (plist-get checks :broken-grounds))
-            (lambda (e) (format "%s in TRUSS_GROUNDS" (funcall refs (list (cdr e))))))
+            model "Broken links" (funcall in (append (plist-get checks :broken-grounds)
+                                                     (plist-get checks :broken-sources)))
+            (lambda (e) (format "%s not found" (if (string-prefix-p "[[" (cdr e)) (cdr e)
+                                                 (funcall refs (list (cdr e)))))))
            (and (or broken duplicates)
                 (cons (org-truss--check-heading "Broken links")
                  (mapcar (lambda (b)
@@ -1083,10 +1091,11 @@ finds it, as `org-truss-check-descriptions' names them."
                                                    'face 'org-truss-dim)
                                        (list :key '(duplicates)))))
            (org-truss--check-group
-            model "No grounds" (funcall in (plist-get checks :no-grounds))
-            (lambda (e) (if (eq (cdr e) t) "no grounds"
-                          (format "%s %s none" (funcall refs (cdr e))
-                                  (if (cdr (cdr e)) "give" "gives")))))
+            model "No grounds" (funcall in (mapcar #'list (plist-get checks :no-grounds)))
+            (lambda (_) "no grounds"))
+           (org-truss--check-group
+            model "Weak grounds" (funcall in (plist-get checks :weak-grounds))
+            (lambda (e) (format "%s has no grounds" (funcall refs (list (cdr e))))))
            (org-truss--check-group
             model "Missing roles" (funcall in (plist-get checks :gaps))
             (lambda (e) (mapconcat (lambda (gap)

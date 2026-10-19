@@ -71,9 +71,11 @@
 #     #+begin_quote     the source's own words, quoted in its text
 #     a source link     a moor:, file: or URL link in its text
 #   TRUSS_GROUNDS can also point to a member, ~[[#m3]]~, to stand on it.
-#   The check points out a heading that must have grounds and has none, and
-#   a member pointed to that has no grounds, no TRUSS_LOGIC and no tag
-#   :assumption:
+#   What any heading points to as grounds must hold as what it is: a member
+#   has grounds, TRUSS_LOGIC or the tag :assumption:; a source taken by
+#   org-moor or a file is there.  A URL and words are not checked.  The
+#   check points out a heading that must have grounds and has none, and
+#   grounds that do not hold
 #
 # Under the four
 #   right under Brief or Subject
@@ -159,8 +161,11 @@
 #     #+begin_quote     本文に引いた資料の原文
 #     資料へのリンク    本文の moor:・file:・URL のリンク
 #   TRUSS_GROUNDS には部材へのリンク ~[[#m3]]~ も書け、その部材を根拠に
-#   する。根拠を持つべき見出しに根拠がないとき、また、指した部材が根拠も
-#   TRUSS_LOGIC も :assumption: も持たないとき、検査が指摘する
+#   する。どの見出しでも、根拠として指したものは、その種類として成り立って
+#   いなければならない。部材なら、根拠か TRUSS_LOGIC か :assumption: を
+#   持つこと。org-moor の資料やファイルなら、それがあること。URL と言葉は
+#   確かめない。根拠を持つべき見出しに根拠がないとき、また、根拠として
+#   指したものが成り立たないとき、検査が指摘する
 #
 # 4つの見出しの下
 #   Brief・Subject のすぐ下

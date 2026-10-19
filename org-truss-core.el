@@ -502,6 +502,24 @@ In its own text, past its property drawer, where TRUSS_GROUNDS is."
       (and (re-search-forward org-truss--source-link-re (cdr bounds) t)
            (match-string-no-properties 0)))))
 
+(defun org-truss--source-links (pos)
+  "Return every link to a source the heading at POS has, in the order written.
+Those in its TRUSS_GROUNDS, then those in its text past its property
+drawer."
+  (let ((bounds (org-truss--own-bounds pos))
+        (found nil))
+    (save-excursion
+      (dolist (from (list (car bounds) (org-truss--after-properties bounds)))
+        (goto-char from)
+        (let ((end (if (= from (car bounds)) (org-truss--after-properties bounds) (cdr bounds))))
+          (while (re-search-forward org-truss--source-link-re end t)
+            (let ((link (match-string-no-properties 0)))
+              (when (or (/= from (car bounds))
+                        (save-excursion (beginning-of-line)
+                                        (looking-at-p "^[ \t]*:TRUSS_GROUNDS:")))
+                (push link found)))))))
+    (nreverse found)))
+
 (defun org-truss--quoted (pos)
   "Return what the first #+begin_quote block under the heading at POS says.
 Trimmed; \"\" for an empty one, and nil when there is none."
@@ -671,11 +689,13 @@ one written under a field of theirs.  ID is its CUSTOM_ID, by which links
 and grounds point to it, or nil when nothing has pointed to it yet.
 GROUNDS are the references of the links to members in its TRUSS_GROUNDS,
 and SOURCES what else TRUSS_GROUNDS says; CITED is the first link to a
-source in its text, and QUOTED what its text quotes of one, or nil.  OPENING
+source in its text, and QUOTED what its text quotes of one, or nil;
+SOURCE-LINKS are all its links to sources, in TRUSS_GROUNDS and its text.
+OPENING
 and CLOSING are what its opening and closing blocks say, (TITLE . BODY):
 the words it is told in where its telling pattern opens with it, and where
 it closes with it again."
-  id tags grounds sources cited quoted home opening closing)
+  id tags grounds sources cited quoted source-links home opening closing)
 
 (cl-defstruct (org-truss-section (:include org-truss-cluster)
                                  (:constructor org-truss--make-section)
@@ -732,6 +752,7 @@ HOME is the part it is written in, `members' when not given."
          :sources (org-truss--grounds-sources grounds)
          :cited (org-truss--cited pos)
          :quoted (org-truss--quoted pos)
+         :source-links (org-truss--source-links pos)
          :logic (org-truss--pattern-here 'logic)
          :breakdown (org-truss--pattern-here 'breakdown)
          :telling (org-truss--pattern-here 'telling)
@@ -1039,10 +1060,12 @@ Nil when they are not, or CHILD plays none."
 ;;;; Grounds
 
 ;; A heading that plays a role of the logic above it is a reason, and must
-;; have grounds: in TRUSS_GROUNDS, a link to a source or words naming one,
-;; or a link to another member, whose grounds it then uses; a quotation in
-;; its text; or a link to a source there.  One with reasons of its own
-;; leaves that to them, and an assumption is taken without.
+;; have grounds: TRUSS_GROUNDS -- links to members or to sources, or words
+;; naming a source -- a quotation in its text, or a link to a source there.
+;; One with reasons of its own leaves that to them, and an assumption is
+;; taken without.  What any heading points to as grounds must hold as what
+;; it is: a member, as a heading that must have grounds is asked to; a
+;; source or a file, by being there.
 
 (defun org-truss-own-grounds-p (member)
   "Non-nil when MEMBER has grounds of its own, not through another member.
@@ -1050,6 +1073,21 @@ TRUSS_GROUNDS saying more than links to members, a quotation in its text,
 or a link to a source there."
   (or (org-truss-member-sources member) (org-truss-member-cited member)
       (org-truss-member-quoted member)))
+
+(defun org-truss-has-grounds-p (member)
+  "Non-nil when MEMBER has grounds: its TRUSS_GROUNDS names something, or
+its text quotes a source or links to one.  What a link points to is not
+read here; see `org-truss-weak-grounds'."
+  (or (org-truss-own-grounds-p member) (org-truss-member-grounds member)))
+
+(defun org-truss-holds-p (member)
+  "Non-nil when MEMBER holds as a statement: it has grounds, or reasons of
+its own under TRUSS_LOGIC, or is tagged :assumption:, taken as given.
+What a heading that must have grounds is asked, and what a member pointed
+to as grounds is."
+  (or (org-truss-has-grounds-p member)
+      (org-truss-member-logic member)
+      (org-truss-assumption-p member)))
 
 (defun org-truss-needs-grounds-p (model member)
   "Non-nil when MEMBER of MODEL must have grounds.
@@ -1062,35 +1100,51 @@ logic of its own, and is not tagged :assumption:."
          (not (org-truss-member-logic member))
          (not (org-truss-assumption-p member)))))
 
-(defun org-truss--gives-grounds-p (model member seen)
-  "Non-nil when a link to MEMBER of MODEL, in TRUSS_GROUNDS, gives grounds.
-MEMBER has grounds of its own, or reasons of its own, or is an assumption;
-or what its TRUSS_GROUNDS links to gives grounds, every one.  SEEN holds
-the members on the way here, so a cycle gives none."
-  (and (not (memq member seen))
-       (or (org-truss-own-grounds-p member)
-           (org-truss-member-logic member)
-           (org-truss-assumption-p member)
-           (let ((found (delq nil (mapcar (lambda (ref) (org-truss-member-by-ref model ref))
-                                          (org-truss-member-grounds member)))))
-             (and found
-                  (seq-every-p (lambda (m) (org-truss--gives-grounds-p model m (cons member seen)))
-                               found))))))
-
 (defun org-truss-missing-grounds (model member)
-  "Return what MEMBER of MODEL lacks of the grounds it must have, or nil.
-Nil when it need not have any, or has them.  Else t when it has none at
-all, or the references in its TRUSS_GROUNDS of the members that give
-none.  A link to no member gives nothing; it is a broken link."
-  (when (org-truss-needs-grounds-p model member)
-    (let* ((found (seq-filter (lambda (ref) (org-truss-member-by-ref model ref))
-                              (org-truss-member-grounds member)))
-           (bad (seq-remove (lambda (ref) (org-truss--gives-grounds-p
-                                           model (org-truss-member-by-ref model ref) (list member)))
-                            found)))
-      (cond (bad bad)
-            ((or found (org-truss-own-grounds-p member)) nil)
-            (t t)))))
+  "Non-nil when MEMBER of MODEL must have grounds and does not hold.
+Which, since what must have grounds has no logic and is no assumption,
+is when it has none."
+  (and (org-truss-needs-grounds-p model member)
+       (not (org-truss-holds-p member))))
+
+(defun org-truss-weak-grounds (model member)
+  "Return the references in MEMBER's TRUSS_GROUNDS to members that do not hold.
+Whatever MEMBER is: what is pointed to as grounds must hold, as a member
+is asked to; see `org-truss-holds-p'.  Only one step: what that member
+points to in turn is asked of it there.  A link to no member is broken,
+not weak."
+  (seq-filter (lambda (ref)
+                (let ((ground (org-truss-member-by-ref model ref)))
+                  (and ground (not (org-truss-holds-p ground)))))
+              (org-truss-member-grounds member)))
+
+(defvar org-truss-moor-missing-function nil
+  "Function telling whether a source taken by org-moor is missing, or nil.
+Called with its id and the truss file; non-nil when there is no such
+source.  Set by org-truss-moor.el; without org-moor a `moor:' link is not
+looked for.")
+
+(defun org-truss--link-target (link)
+  "Return the target LINK, [[TARGET][WORDS]], points to, as written."
+  (and (string-match "\\`\\[\\[\\([^]]+\\)\\]" link) (match-string 1 link)))
+
+(defun org-truss-source-missing-p (link file pos)
+  "Non-nil when LINK, a link to a source, points to nothing there.
+FILE is the truss file, from whose directory a relative path is read, and
+POS the heading LINK is under, whose attachments it may name.  A link to
+a page on the web is not looked for, nor a `moor:' link while org-moor is
+not there to look."
+  (let* ((target (org-link-unescape (or (org-truss--link-target link) "")))
+         (path (car (split-string (replace-regexp-in-string "\\`[a-z]+:" "" target) "::")))
+         (dir (if file (file-name-directory file) default-directory)))
+    (cond ((string-prefix-p "moor:" target)
+           (and org-truss-moor-missing-function
+                (funcall org-truss-moor-missing-function path file)))
+          ((string-prefix-p "attachment:" target)
+           (let ((attach (org-with-point-at pos (ignore-errors (org-attach-dir)))))
+             (not (and attach (file-exists-p (expand-file-name path attach))))))
+          ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
+           (not (file-exists-p (expand-file-name path dir)))))))
 
 ;;;; How a member is told
 
@@ -1218,10 +1272,14 @@ heading that lacks.
                  with a pattern of KIND that plays no role of it
 :out-of-order    (CHILD . ABOVE) for headings the file has below one their
                  parent's telling pattern tells after them
-:no-grounds      (MEMBER . MISSING) for members that must have grounds
-                 and lack them, as `org-truss-missing-grounds' says
+:no-grounds      members that must have grounds and have none; see
+                 `org-truss-missing-grounds'
+:weak-grounds    (MEMBER . REF) for links in TRUSS_GROUNDS to members that
+                 do not hold; see `org-truss-weak-grounds'
 :broken-links    (SECTION . REF) for links in a section to no member
 :broken-grounds  (MEMBER . REF) for links in TRUSS_GROUNDS to no member
+:broken-sources  (MEMBER . LINK) for links to sources, in TRUSS_GROUNDS or
+                 the text, that point to nothing there
 :duplicates      CUSTOM_IDs more than one member has"
   (let* ((clusters (org-truss-clusters model))
          (root (org-truss-model-structure model))
@@ -1235,10 +1293,11 @@ heading that lacks.
                                      (org-truss-no-role c)))
                            clusters)
           :out-of-order (mapcan #'org-truss-out-of-order clusters)
-          :no-grounds (delq nil (mapcar (lambda (m)
-                                          (let ((missing (org-truss-missing-grounds model m)))
-                                            (and missing (cons m missing))))
-                                        (org-truss-model-all model)))
+          :no-grounds (seq-filter (lambda (m) (org-truss-missing-grounds model m))
+                                  (org-truss-model-all model))
+          :weak-grounds (mapcan (lambda (m)
+                                  (mapcar (lambda (ref) (cons m ref)) (org-truss-weak-grounds model m)))
+                                (org-truss-model-all model))
           :broken-links (mapcan (lambda (s)
                                   (mapcar (lambda (ref) (cons s ref))
                                           (seq-remove (lambda (ref) (org-truss-member-by-ref model ref))
@@ -1249,15 +1308,27 @@ heading that lacks.
                                             (seq-remove (lambda (ref) (org-truss-member-by-ref model ref))
                                                         (org-truss-member-grounds m))))
                                   (org-truss-model-all model))
+          :broken-sources (let ((file (buffer-file-name (org-truss-model-buffer model))))
+                            (with-current-buffer (org-truss-model-buffer model)
+                              (org-with-wide-buffer
+                               (mapcan (lambda (m)
+                                         (mapcar (lambda (link) (cons m link))
+                                                 (seq-filter (lambda (link)
+                                                               (org-truss-source-missing-p
+                                                                link file (org-truss-member-pos m)))
+                                                             (org-truss-member-source-links m))))
+                                       (org-truss-model-all model)))))
           :duplicates (org-truss-model-duplicates model))))
 
 ;;;; What is left to do, as text
 
 (defconst org-truss-check-descriptions
   '(("Broken links"
-     . "links, in a section or in TRUSS_GROUNDS, that point to no member, and CUSTOM_IDs more than one member has: [[#id]] wants one member with that CUSTOM_ID")
+     . "links that point to nothing: in a section or in TRUSS_GROUNDS, to no member -- [[#id]] wants one member with that CUSTOM_ID, and two with one are reported too; in TRUSS_GROUNDS or a member's text, to no source taken by org-moor, or no file")
     ("No grounds"
-     . "headings that play a role of the TRUSS_LOGIC above them, with no TRUSS_LOGIC of their own and no :assumption: tag, and no grounds: no TRUSS_GROUNDS, no #+begin_quote and no link to a source in their text, or a TRUSS_GROUNDS link to a member that gives none")
+     . "headings that play a role of the TRUSS_LOGIC above them, with no TRUSS_LOGIC of their own and no :assumption: tag, and no grounds: no TRUSS_GROUNDS, no #+begin_quote and no link to a source in their text")
+    ("Weak grounds"
+     . "links in TRUSS_GROUNDS to members that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
     ("Missing roles"
      . "roles the TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING of a heading asks for that no heading right under it plays, by its TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE")
     ("No role"
@@ -1311,23 +1382,22 @@ of the file MODEL was read from."
                                                (org-truss-section-label section)))))
                           (plist-get checks :broken-links))
                   (mapcar (lambda (b) (funcall cluster-line (car b)
-                                               (format "[[%s]] in TRUSS_GROUNDS" (org-truss--target (cdr b)))))
+                                               (format "[[%s]] not found" (org-truss--target (cdr b)))))
                           (plist-get checks :broken-grounds))
+                  (mapcar (lambda (b) (funcall cluster-line (car b) (format "%s not found" (cdr b))))
+                          (plist-get checks :broken-sources))
                   (mapcan (lambda (id)
                             (mapcar (lambda (m) (funcall cluster-line m (format "#%s, which another member has too" id)))
                                     (seq-filter (lambda (m) (equal (org-truss-member-id m) id))
                                                 (org-truss-model-all model))))
                           (plist-get checks :duplicates))))
            (cons "No grounds"
-                 (mapcar (lambda (n)
-                           (funcall cluster-line (car n)
-                                    (if (eq (cdr n) t)
-                                        "no grounds"
-                                      (format "%s %s no grounds"
-                                              (mapconcat (lambda (ref) (format "[[%s]]" (org-truss--target ref)))
-                                                         (cdr n) " ")
-                                              (if (cdr (cdr n)) "give" "gives")))))
+                 (mapcar (lambda (m) (funcall cluster-line m "no grounds"))
                          (plist-get checks :no-grounds)))
+           (cons "Weak grounds"
+                 (mapcar (lambda (w) (funcall cluster-line (car w)
+                                              (format "[[%s]] has no grounds" (org-truss--target (cdr w)))))
+                         (plist-get checks :weak-grounds)))
            (cons "Missing roles"
                  (mapcan (lambda (g)
                            (mapcar (lambda (kind)

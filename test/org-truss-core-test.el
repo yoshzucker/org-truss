@@ -796,6 +796,10 @@ See [[file:sources/a.pdf][the rule]].
 :TRUSS_GROUNDS: [[#gone]]
 :END:
 *** No role
+** Points at a bare one
+:PROPERTIES:
+:TRUSS_GROUNDS: [[#bare]] [[#argued]]
+:END:
 ** Fact
 :PROPERTIES:
 :CUSTOM_ID: fact
@@ -865,26 +869,84 @@ a heading playing no role, a member under no logic."
         (should-not (funcall needs label))))))
 
 (ert-deftest org-truss-test-missing-grounds ()
-  "What a heading that must have grounds lacks: all of them, or the members
-its TRUSS_GROUNDS links to that give none.  A member linked to gives
-grounds when it has its own, or a logic, or is an assumption, or when
-what it links to gives them -- a cycle gives none.  A link to no member
-gives nothing."
+  "A heading that must have grounds lacks them when its TRUSS_GROUNDS names
+nothing -- a link to a member or a source, or words -- and its text neither
+quotes a source nor links to one.  What a link points to is not read."
   (org-truss-test--with org-truss-test--grounds-file
     (let* ((model (org-truss-read))
            (missing (lambda (label) (org-truss-missing-grounds model (org-truss-test--m model label)))))
       (dolist (label '("By words" "By a link" "By a quote" "In its text" "Through a member"
-                       "Through an argument" "Assumed" "Argued below" "No role"))
+                       "Through an argument" "Through a bare one" "On a cycle" "Only broken"
+                       "Assumed" "Argued below" "No role"))
         (should-not (funcall missing label)))
-      (should (equal (funcall missing "Through a bare one") '("bare")))
-      (should (equal (funcall missing "On a cycle") '("a")))
-      (should (eq (funcall missing "Unsupported") t))
-      (should (eq (funcall missing "Nothing") t))
-      (should (eq (funcall missing "Only broken") t))
-      (should (equal (mapcar (lambda (n) (cons (org-truss-member-label (car n)) (cdr n)))
-                             (plist-get (org-truss-checks model) :no-grounds))
-                     '(("Through a bare one" "bare") ("On a cycle" "a") ("Unsupported" . t)
-                       ("Nothing" . t) ("Only broken" . t)))))))
+      (should (funcall missing "Unsupported"))
+      (should (funcall missing "Nothing"))
+      (should (equal (org-truss-test--labels (plist-get (org-truss-checks model) :no-grounds))
+                     '("Unsupported" "Nothing"))))))
+
+(ert-deftest org-truss-test-holds ()
+  "A member holds when it has grounds, a logic, or the tag :assumption: --
+what is asked of a heading that must have grounds."
+  (org-truss-test--with org-truss-test--grounds-file
+    (let ((model (org-truss-read)))
+      (dolist (label '("Fact" "Argued" "Assumed" "By a quote" "A" "Points at a bare one"))
+        (should (org-truss-holds-p (org-truss-test--m model label))))
+      (dolist (label '("Bare" "Nothing" "Step one"))
+        (should-not (org-truss-holds-p (org-truss-test--m model label)))))))
+
+(ert-deftest org-truss-test-weak-grounds ()
+  "What any heading points to as grounds must hold: a link in TRUSS_GROUNDS
+to a member that does not is weak, wherever it is written, whether the
+heading must have grounds or not.  One step only: a cycle of members
+pointing to each other holds, each having grounds written."
+  (org-truss-test--with org-truss-test--grounds-file
+    (let ((model (org-truss-read)))
+      (should (equal (org-truss-weak-grounds model (org-truss-test--m model "Through a bare one"))
+                     '("bare")))
+      (should-not (org-truss-weak-grounds model (org-truss-test--m model "On a cycle")))
+      (should-not (org-truss-weak-grounds model (org-truss-test--m model "Only broken")))
+      (should (equal (mapcar (lambda (w) (cons (org-truss-member-label (car w)) (cdr w)))
+                             (plist-get (org-truss-checks model) :weak-grounds))
+                     '(("Through a bare one" . "bare") ("Points at a bare one" . "bare")))))))
+
+(ert-deftest org-truss-test-sources-must-be-there ()
+  "A link to a source points to something there: a file, by a path from the
+truss file's directory, a search after :: aside; an attachment of its
+heading; a source taken by org-moor, when org-moor can say.  A page on the
+web is not looked for.  Each that points to nothing is a broken link."
+  (org-truss-test--in-directory '(("sources/law.pdf" . "%PDF"))
+    (let ((file (expand-file-name "truss.org" dir))
+          (org-truss-moor-missing-function (lambda (id _file) (not (equal id "kept")))))
+      (with-temp-file file
+        (insert "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Cites what is there
+:PROPERTIES:
+:TRUSS_GROUNDS: [[file:sources/law.pdf::3][the law]] [[moor:kept::2][kept]]
+:END:
+See [[./sources/law.pdf]] and [[https://example.com/gone]].
+** Cites what is not
+:PROPERTIES:
+:TRUSS_GROUNDS: [[moor:lost][lost]]
+:END:
+See [[file:sources/gone.pdf][gone]], and [[attachment:shot.png]].
+"))
+      (with-current-buffer (find-file-noselect file)
+        (let* ((model (org-truss-read))
+               (broken (plist-get (org-truss-checks model) :broken-sources)))
+          (should (equal (org-truss-member-source-links (org-truss-test--m model "Cites what is there"))
+                         '("[[file:sources/law.pdf::3][the law]]" "[[moor:kept::2][kept]]"
+                           "[[./sources/law.pdf]]" "[[https://example.com/gone]]")))
+          (should (equal (mapcar (lambda (b) (cons (org-truss-member-label (car b)) (cdr b))) broken)
+                         '(("Cites what is not" . "[[moor:lost][lost]]")
+                           ("Cites what is not" . "[[file:sources/gone.pdf][gone]]")
+                           ("Cites what is not" . "[[attachment:shot.png]]"))))
+          (should (string-match-p "^truss\\.org:[0-9]+: Cites what is not -- \\[\\[moor:lost\\]\\[lost\\]\\] not found$"
+                                  (org-truss-check-report model))))
+        (let ((org-truss-moor-missing-function nil))
+          (should (equal (length (plist-get (org-truss-checks (org-truss-read)) :broken-sources)) 2)))))))
 
 (ert-deftest org-truss-test-grounds-are-written ()
   "TRUSS_GROUNDS lists links to members, then sources.  Setting either keeps
@@ -923,10 +985,8 @@ them, a broken link where it is written."
                      '(("Move to fortnightly" (logic minor . 1)))))
       (should-not (plist-get checks :no-role))
       (should-not (plist-get checks :out-of-order))
-      (should (equal (mapcar (lambda (n) (cons (org-truss-member-label (car n)) (cdr n)))
-                             (plist-get checks :no-grounds))
-                     '(("Some items are urgent" . t)
-                       ("A meeting that repeats itself can meet less" . t))))
+      (should (equal (org-truss-test--labels (plist-get checks :no-grounds))
+                     '("Some items are urgent" "A meeting that repeats itself can meet less")))
       (should (equal (mapcar #'cdr (plist-get checks :broken-links)) '("none")))
       (should-not (plist-get checks :broken-grounds))
       (should-not (plist-get checks :duplicates))))
@@ -943,7 +1003,7 @@ them, a broken link where it is written."
 and gives each thing found a line of its own that compilation mode reads."
   (org-truss-test--with org-truss-test--file
     (let ((report (org-truss-check-report (org-truss-read) "truss.org")))
-      (should (string-match-p "^Broken links -- links, in a section" report))
+      (should (string-match-p "^Broken links -- links that point to nothing" report))
       (should (string-match-p "^truss\\.org:[0-9]+: \\[\\[#none\\]\\] in Umbrella$" report))
       (should (string-match-p "^truss\\.org:[0-9]+: Some items are urgent -- no grounds$" report))
       (should (string-match-p
@@ -957,12 +1017,12 @@ and gives each thing found a line of its own that compilation mode reads."
                               (buffer-substring (point) (line-end-position)))
                        "*** Some items are urgent")))))
   (org-truss-test--with org-truss-test--grounds-file
-    (let ((report (org-truss-check-report (org-truss-read) "f")))
-      (should (string-match-p "^f:[0-9]+: Through a bare one -- \\[\\[#bare\\]\\] gives no grounds$"
-                              report))
+    (let ((report (let ((org-truss-moor-missing-function nil))
+                    (org-truss-check-report (org-truss-read) "f"))))
       (should (string-match-p "^f:[0-9]+: No role -- no TRUSS_LOGIC_ROLE of logic › reasons, under Claim$"
                               report))
-      (should (string-match-p "^f:[0-9]+: Only broken -- \\[\\[#gone\\]\\] in TRUSS_GROUNDS$" report))))
+      (should (string-match-p "^f:[0-9]+: Only broken -- \\[\\[#gone\\]\\] not found$" report))
+      (should (string-match-p "^f:[0-9]+: Through a bare one -- \\[\\[#bare\\]\\] has no grounds$" report))))
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
