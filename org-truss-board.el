@@ -539,41 +539,43 @@ As SPC does in the agenda: pressed again, it scrolls that window."
 
 ;;;; The same member, where it is written and where it is called
 
-(defun org-truss--member-pos (item)
-  "Return the position of the member the line with ITEM names, or nil."
-  (and (eq (plist-get item :type) 'member) (plist-get item :pos)))
+(defun org-truss--heading-pos (item)
+  "Return the position of the heading the line with ITEM names, or nil.
+A member or a section, where it is written or where it is called."
+  (and (memq (plist-get item :type) '(member section)) (plist-get item :pos)))
 
 (defun org-truss--head-p (item)
-  "Non-nil when ITEM is a member's own line, not one it takes below it."
+  "Non-nil when ITEM is a heading's own line, not one it takes below it."
   (let ((key (plist-get item :key)))
     (and (plist-get item :label) (equal (org-truss--owner key) key))))
 
 (defun org-truss--written-p (item)
-  "Non-nil when ITEM is the line of a member where it is written.
-In the subject or the members, as the member itself, not called."
+  "Non-nil when ITEM is the line of a heading where it is written.
+A member in the subject or the members, a section in the structure's
+tree: the heading itself, not called."
   (and (org-truss--head-p item)
        (not (plist-get item :link)) (not (plist-get item :ground))
-       (eq (car (plist-get item :key)) 'member)))
+       (memq (car (plist-get item :key)) '(member section))))
 
 (defun org-truss--call-p (item)
-  "Non-nil when ITEM is the line of a call to a member: a link, a ground."
+  "Non-nil when ITEM is the line of a call to a heading: a link, a ground."
   (and (org-truss--head-p item)
        (or (plist-get item :link) (plist-get item :ground))))
 
 (defun org-truss--lines-naming (pos)
-  "Return (START . ITEM) for each line of the board naming the member at POS."
+  "Return (START . ITEM) for each line of the board naming the heading at POS."
   (save-excursion
     (goto-char (point-min))
     (let (found)
       (while (not (eobp))
         (let ((item (get-text-property (point) 'org-truss-item)))
-          (when (eql (org-truss--member-pos item) pos)
+          (when (eql (org-truss--heading-pos item) pos)
             (push (cons (point) item) found)))
         (forward-line 1))
       (nreverse found))))
 
 (defun org-truss--open-folds-over (pos)
-  "Unfold every folded line of the board that hides the member at POS.
+  "Unfold every folded line of the board that hides the heading at POS.
 Return non-nil when one was."
   (let ((opened nil))
     (save-excursion
@@ -592,17 +594,17 @@ Return non-nil when one was."
     opened))
 
 (defvar-local org-truss--last-call nil
-  "The key of the call `org-truss-board-same' last went from to a member.")
+  "The key of the call `org-truss-board-same' last went from to a heading.")
 
 (defun org-truss-board-same ()
-  "Go to the same member: where it is written, or where it is called.
-On a line that calls a member -- a link telling it, or a ground --
-or that shows it anywhere else, go to where it is written, #m9, in the
-subject or the members, unfolding what hides it.  There, go to the next
-line that calls it, after the one come from, and round again."
+  "Go to the same heading: where it is written, or where it is called.
+On a line that calls a member or a section -- a link telling it, or a
+ground -- or that shows it anywhere else, go to where it is written, #m9,
+unfolding what hides it.  There, go to the next line that calls it, after
+the one come from, and round again."
   (interactive)
   (let* ((item (org-truss--item))
-         (pos (or (org-truss--member-pos item) (user-error "No member on this line")))
+         (pos (or (org-truss--heading-pos item) (user-error "No heading on this line")))
          (lines (org-truss--lines-naming pos))
          (written (seq-find (lambda (line) (org-truss--written-p (cdr line))) lines)))
     (if (and written (= (car written) (line-beginning-position)))
@@ -627,14 +629,14 @@ line that calls it, after the one come from, and round again."
 ;;;; Lines lit with the line at point
 
 (defun org-truss--light-same ()
-  "Light the lines naming the member on the line at point, but that line.
+  "Light the lines naming the heading on the line at point, but that line.
 Nothing is done while point stays on the line they were lit for."
   (let ((item (org-truss--item)))
     (unless (and item (eq item org-truss--same-item))
       (setq org-truss--same-item item)
       (mapc #'delete-overlay org-truss--same-overlays)
       (setq org-truss--same-overlays nil)
-      (let ((pos (org-truss--member-pos item))
+      (let ((pos (org-truss--heading-pos item))
             (here (line-beginning-position)))
         (when pos
           (dolist (line (org-truss--lines-naming pos))
@@ -678,7 +680,7 @@ What was folded or unfolded by hand starts again; point stays on the
 member it was on, where it is opened now.  The mode line says which way
 the board is drawn."
   (interactive)
-  (let ((pos (org-truss--member-pos (org-truss--item))))
+  (let ((pos (org-truss--heading-pos (org-truss--item))))
     (setq org-truss--board-order (if (eq org-truss--board-order 'told) 'written 'told)
           org-truss--folds (seq-remove (lambda (fold) (memq (car-safe (car fold)) '(member link)))
                                        org-truss--folds))
@@ -848,6 +850,14 @@ Not placed: right under Members, and not told in the document."
             (append not-placed
                     (seq-remove (lambda (m) (memq m not-placed)) (org-truss-model-all model))))))
 
+(defun org-truss--heading-path (model heading)
+  "Return where HEADING of MODEL is, as a path, to choose it by.
+A member's as `org-truss--member-path' gives it, a section's as
+`org-truss--section-choices' does."
+  (if (org-truss-section-p heading)
+      (car (rassq (org-truss-section-pos heading) (org-truss--section-choices model)))
+    (org-truss--member-path model heading)))
+
 (defun org-truss--heading-choices (model &optional but)
   "Return (PATH . POSITION) for every heading of MODEL a link can tell.
 The members, those not placed first, then the sections; BUT, a position,
@@ -947,12 +957,12 @@ stood on it can be seen."
         (org-truss-delete-member (plist-get item :pos))))))
 
 (defun org-truss-board-ground ()
-  "Make a member a ground of the heading at point, or no longer one.
-In its TRUSS_GROUNDS, which points to the member by its CUSTOM_ID; one is
-given to it when it has none.  Its grounds there now are offered first,
-and choosing one takes it away.  On a ground's own line, the one marked
-⏚, take it away from the heading it grounds without asking; one linked in
-the text is edited there."
+  "Make a heading a ground of the heading at point, or no longer one.
+A member or a section, in its TRUSS_GROUNDS, which points to it by its
+CUSTOM_ID; one is given to it when it has none.  Its grounds there now
+are offered first, and choosing one takes it away.  On a ground's own
+line, the one marked ⏚, take it away from the heading it grounds without
+asking; one linked in the text is edited there."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'member 'section))
          (model (org-truss-read org-truss--source)))
@@ -967,23 +977,26 @@ the text is edited there."
                                    (remove ground (org-truss-cluster-grounds claim))))
           (message "%s no longer grounds %s" (or (plist-get item :label) ground)
                    (org-truss-cluster-label claim)))
-      (let* ((member (org-truss-cluster-at model (plist-get item :pos)))
-             (grounds (org-truss-cluster-grounds member))
-             (inside (if (org-truss-member-p member) (org-truss--subtree member) nil))
-             (others (seq-remove (lambda (m) (memq m inside)) (org-truss-model-all model)))
-             (current (seq-filter (lambda (m) (member (org-truss-member-id m) grounds)) others))
-             (choices (mapcar (lambda (m) (cons (org-truss--member-path model m) m))
-                              (append current (seq-remove (lambda (m) (memq m current)) others))))
+      (let* ((heading (org-truss-cluster-at model (plist-get item :pos)))
+             (grounds (org-truss-cluster-grounds heading))
+             (inside (org-truss--subtree heading))
+             (others (seq-remove (lambda (h) (memq h inside))
+                                 (append (org-truss-model-all model)
+                                         (let ((root (org-truss-model-structure model)))
+                                           (and root (org-truss-sections model))))))
+             (current (seq-filter (lambda (h) (member (org-truss-cluster-id h) grounds)) others))
+             (path (lambda (h) (org-truss--heading-path model h)))
+             (choices (mapcar (lambda (h) (cons (funcall path h) h))
+                              (append current (seq-remove (lambda (h) (memq h current)) others))))
              (ground (org-truss--read-choice
                       "Ground: " choices
-                      (mapcar (lambda (m) (cons (org-truss--member-path model m)
-                                                "a ground now; choose to take it away"))
+                      (mapcar (lambda (h) (cons (funcall path h) "a ground now; choose to take it away"))
                               current))))
         (org-truss--editing
           (let ((at (copy-marker (plist-get item :pos))))
             (if (memq ground current)
-                (org-truss-set-grounds at (remove (org-truss-member-id ground) grounds))
-              (let ((ref (org-truss-ensure-id (org-truss-member-pos ground))))
+                (org-truss-set-grounds at (remove (org-truss-cluster-id ground) grounds))
+              (let ((ref (org-truss-ensure-id (org-truss-cluster-pos ground))))
                 (org-truss-set-grounds at (append grounds (list ref)))))
             (set-marker at nil)))))))
 

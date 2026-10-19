@@ -1594,6 +1594,28 @@ section in a list item."
       (should (string-match-p "^Hold the review every other week\\.\n\nLone remark\n\n\\*Sky\\*\n\nReviews ran past"
                               (org-truss-render model))))))
 
+(ert-deftest org-truss-test-board-links-to-sections ()
+  "A section is a heading like any other to the links that reach it: b
+offers it as a ground, and = goes between it where it is written and the
+lines that call it, lit together."
+  (org-truss-test--with-board org-truss-test--file
+    (org-truss-test--goto-line-with "member[ ·]+#move Move to fortnightly")
+    (org-truss-test--answering '("Structure › Sky › Sky")
+      (org-truss-board-ground))
+    (let ((model (org-truss-read source)))
+      (should (equal (org-truss-cluster-grounds (org-truss-test--m model "Move to fortnightly"))
+                     '("half" "m1")))
+      (should (equal (org-truss-cluster-id (car (org-truss-section-children (org-truss-model-structure model))))
+                     "m1")))
+    ;; A section holds as any heading does: with no grounds of its own, it
+    ;; is a weak ground.
+    (should (string-match-p "⏚ ground \\[no grounds\\][ ·]+\\[\\[#m1\\]\\] Sky" (buffer-string)))
+    (org-truss-test--goto-line-with "⏚ ground \\[no grounds\\][ ·]+\\[\\[#m1\\]\\] Sky")
+    (org-truss-board-same)
+    (should (looking-at " ├ Sky"))
+    (should (seq-some (lambda (o) (eq (overlay-get o 'face) 'org-truss-same))
+                      (overlays-in (point-min) (point-max))))))
+
 (ert-deftest org-truss-test-board-places-instead-of-a-broken-link ()
   "a on a broken link places the chosen member where the link stands; where
 else it is placed, it stays."

@@ -955,7 +955,7 @@ lines.
 |       | ~e~         | edit its entry alone, beside the board                                            | same                                               |
 |       | ~R~         | rewrite its heading                                                               | rewrite its heading                                |
 |       | ~t~         | name the source it stands on, in ~TRUSS_GROUNDS~                                  | same                                               |
-|       | ~b~         | make a member a ground of it, or not                                              | same                                               |
+|       | ~b~         | make a heading a ground of it, or not                                             | same                                               |
 |       | ~A~         | tag it an assumption, or take the tag off                                         | same                                               |
 |       | ~Q~         | put the text copied last under it, as a quotation                                 | same                                               |
 |       | ~f~         | refile it, last under another section                                             | refile it, last under a part or another member     |
@@ -972,7 +972,7 @@ lines.
 | see   | ~RET~       | go to it                                                                          | same                                               |
 |       | ~TAB~       | go to it in the other window                                                      | same                                               |
 |       | ~SPC~       | show it in the other window, staying on the board                                 | same                                               |
-|       | ~=~         |                                                                                   | go to where it is written, or there, to a call     |
+|       | ~=~         | go to where it is written, or there, to a call                                    | same                                               |
 |       | ~O~         | open the members sections list where told, or                                     | same                                               |
 |       |             | where written                                                                     |                                                    |
 |       | ~E~         | show the text under every heading, or stop                                        |                                                    |
@@ -1003,10 +1003,10 @@ one first if there is none; a block left empty is taken away again when
 the entry is finished.  On the /Structure/ line, it writes the document's
 opening.
 
-~=~ goes between where a member is written and where it is called.  On a
-line calling it -- a link that tells it, =[[#m9]]=, or a ground -- or
-showing it under a member a link calls, it goes to where it is written, =#m9=,
-unfolding what hides it.  There, it goes to the next call after the one
+~=~ goes between where a heading is written and where it is called, a
+member or a section.  On a line calling it -- a link that tells it,
+=[[#m9]]=, or a ground -- or showing it under a member a link calls, it
+goes to where it is written, =#m9=, unfolding what hides it.  There, it goes to the next call after the one
 come from, and round, saying which of how many it is.  The line at point
 is lit, and so are the other lines naming the member on it -- where it is
 written, where it is called -- in the face ~org-truss-same~; set
@@ -1032,10 +1032,10 @@ writes the quotation and the link to its page or line in one go.
 what is named there now besides members; nothing takes it away, and the
 members it points to stay.  With org-moor, it offers the file's sources by
 their titles, cited by a link to the one chosen, or takes a file or a
-page there and then.  ~b~ makes a member something it stands on, in
-~TRUSS_GROUNDS~: it offers what it stands on there first, and choosing one
-takes it away; any other is added, and given a ~CUSTOM_ID~ when it has
-none.  On a ground's own line, the one marked =⏚=, ~b~ takes that ground
+page there and then.  ~b~ makes a heading -- a member or a section --
+something it stands on, in ~TRUSS_GROUNDS~: it offers what it stands on
+there first, and choosing one takes it away; any other is added, and
+given a ~CUSTOM_ID~ when it has none.  On a ground's own line, the one marked =⏚=, ~b~ takes that ground
 away at once; one linked in the text is edited there, with ~e~.  ~A~ tags
 a heading ~:assumption:~, or takes the tag off.  Each works on a section
 as on a member: a section has grounds as any heading does.
