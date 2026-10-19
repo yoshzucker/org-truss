@@ -258,6 +258,37 @@ We move to fortnightly reviews.
 "
   "A member told by SCQA, what is under it written out of the pattern's order.")
 
+(ert-deftest org-truss-test-render-leaves-out-noexport-sections ()
+  "A section tagged :noexport: is left out, with what is under it, whether
+it would be a heading or an item of a list."
+  (dolist (pattern '("" ":TRUSS_BREAKDOWN: parts\n"))
+    (let ((out (org-truss-test--render (concat "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Kept
+:PROPERTIES:
+:CUSTOM_ID: kept
+:END:
+** Hidden away
+:PROPERTIES:
+:CUSTOM_ID: away
+:END:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+" pattern ":END:
+** Shown
+- [[#kept]]
+** Not shown                                                       :noexport:
+- [[#away]]
+*** Below it
+- [[#away]]
+"))))
+      (should (string-match-p "Shown" out))
+      (should (string-match-p "Kept" out))
+      (should-not (string-match-p "Not shown\\|Below it\\|Hidden away" out)))))
+
 (ert-deftest org-truss-test-render-sections-broken-down ()
   "The sections below one broken down are written out as a list, as the
 members under a member are: each an item, not a heading, opened with its

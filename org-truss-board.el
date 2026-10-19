@@ -1269,13 +1269,14 @@ left empty, and saves the file."
     (with-current-buffer copy (org-truss--fold-copy))
     (pop-to-buffer copy '((display-buffer-reuse-window display-buffer-pop-up-window)))))
 
-(defun org-truss--goto-label (label)
-  "Put point on the first line of the board for the member LABEL, if any."
+(defun org-truss--goto-label (label &optional type)
+  "Put point on the first line of the board for the heading LABEL, if any.
+A member's, or with TYPE, a heading's of that type: `section'."
   (let ((found (save-excursion
                  (goto-char (point-min))
                  (text-property-search-forward
                   'org-truss-item label
-                  (lambda (label item) (and (eq (plist-get item :type) 'member)
+                  (lambda (label item) (and (eq (plist-get item :type) (or type 'member))
                                             (equal label (plist-get item :label))))))))
     (when found
       (goto-char (prop-match-beginning found)))))
@@ -1426,44 +1427,57 @@ by its path, `org-truss--member-path'."
     (nreverse out)))
 
 (defun org-truss-board-refile ()
-  "Move the member at point, with what is nested under it, somewhere else.
-Last under the brief, the subject, the members, or another member.  Links
-and grounds point to a member by its CUSTOM_ID, so the structure shows it
-wherever it goes."
+  "Move the heading at point, with what is under it, somewhere else, last.
+A member under the brief, the subject, the members, or another member; a
+section under another section, or the structure.  Links and grounds point
+to a member by its CUSTOM_ID, so the structure shows it wherever it goes."
   (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member))
+  (let* ((item (let ((item (org-truss--want (org-truss--item) 'member 'section)))
+                 (when (plist-get item :root)
+                   (user-error "The structure stays where it is"))
+                 item))
          (model (org-truss-read org-truss--source))
-         (member (org-truss--member-at model item))
-         (to (org-truss--read-choice "Move under: " (org-truss--file-choices model member))))
+         (cluster (org-truss-cluster-at model (plist-get item :pos)))
+         (section (org-truss-section-p cluster))
+         (choices (if section
+                      (let ((inside (mapcar #'org-truss-section-pos
+                                            (cons cluster (org-truss--section-descendants cluster)))))
+                        (seq-remove (lambda (choice) (memq (cdr choice) inside))
+                                    (org-truss--section-choices model)))
+                    (org-truss--file-choices model cluster)))
+         (to (org-truss--read-choice "Move under: " choices)))
     (org-truss--editing
       (let ((to (copy-marker to)))
-        (set-marker (org-truss-refile-member (plist-get item :pos) to) nil)
+        (set-marker (org-truss-refile (plist-get item :pos) to) nil)
         (set-marker to nil)))
-    (org-truss--goto-label (org-truss-member-label member))))
+    (org-truss--goto-label (org-truss-cluster-label cluster) (and section 'section))))
 
 (defun org-truss--shift (delta)
-  "Move the line at point DELTA places among its siblings."
+  "Move the line at point DELTA places among its siblings.
+A member a section lists, among the links there; any other heading, in the
+file, with what is under it."
   (let ((item (org-truss--want (org-truss--item) 'section 'member 'broken)))
     (cond
      ((plist-get item :link)
       (org-truss--editing
         (unless (org-truss-shift-link (plist-get item :section) (plist-get item :link) delta)
           (user-error "Nothing to move past"))))
-     ((and (eq (plist-get item :type) 'section) (not (plist-get item :root)))
+     ((and (memq (plist-get item :type) '(section member)) (not (plist-get item :root))
+           (not (plist-get item :gap)) (not (plist-get item :claim)))
       (org-truss--editing
         (goto-char (plist-get item :pos))
         (condition-case nil
             (if (< delta 0) (org-move-subtree-up) (org-move-subtree-down))
           (error (user-error "Nothing to move past")))))
-     (t (user-error "Only sections and the members they list are ordered here")))))
+     (t (user-error "Nothing to move here")))))
 
 (defun org-truss-board-up ()
-  "Move the section or listed member at point up."
+  "Move the heading or listed member at point up among its siblings."
   (interactive)
   (org-truss--shift -1))
 
 (defun org-truss-board-down ()
-  "Move the section or listed member at point down."
+  "Move the heading or listed member at point down among its siblings."
   (interactive)
   (org-truss--shift 1))
 

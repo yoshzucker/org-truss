@@ -901,8 +901,10 @@ the reader sees it with, as a member's does."
                  (seq-position (seq-remove #'org-truss-noexport-p (org-truss-section-children parent))
                                section)))
          (marker (and n (org-truss--list-marker parent section (1+ n))))
-         (reader (org-truss--reader-lines
-                  (cons (if marker (concat (car marker) (cdr marker) title) title) (cdr public))))
+         (reader (if (org-truss-noexport-p section)
+                     (list (propertize "noexport" 'face 'org-truss-dim))
+                   (org-truss--reader-lines
+                    (cons (if marker (concat (car marker) (cdr marker) title) title) (cdr public)))))
          (item (list :type 'section :pos (org-truss-section-pos section)
                      :label (org-truss-section-label section)
                      :key (list 'section path))))

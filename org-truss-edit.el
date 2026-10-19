@@ -562,19 +562,20 @@ only be in the way."
         (replace-match ""))
       (set-marker end nil))))
 
-(defun org-truss-refile-member (pos parent)
-  "Move the member at POS, with what is nested under it, to the end of PARENT.
-PARENT is the position of a part or another member, outside the
-subtree at POS.  Its headings take the levels of their new place.  Links
-and grounds point to it by its CUSTOM_ID, which goes with it, so they
-still find it.  Return a marker at its heading."
+(defun org-truss-refile (pos parent)
+  "Move the heading at POS, with what is under it, to the end of PARENT.
+PARENT is the position of another heading, outside the subtree at POS: a
+part or a member for a member, a section for a section.  Its headings
+take the levels of their new place.  Links and grounds point to a member
+by its CUSTOM_ID, which goes with it, so they still find it.  Return a
+marker at its heading."
   (let* ((end (save-excursion (goto-char pos) (org-end-of-subtree t t) (point)))
          (parent (copy-marker parent))
          (delta (- (1+ (org-truss--level parent)) (org-truss--level pos)))
          (text (buffer-substring-no-properties pos end)))
     (when (and (<= pos parent) (< parent end))
       (set-marker parent nil)
-      (user-error "A member cannot go under itself"))
+      (user-error "A heading cannot go under itself"))
     (unless (string-suffix-p "\n" text)
       (setq text (concat text "\n")))
     (setq text (replace-regexp-in-string

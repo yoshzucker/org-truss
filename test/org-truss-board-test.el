@@ -1677,12 +1677,41 @@ command is asking makes it draw again instead of acting."
         (should-error (org-truss-board-place) :type 'user-error))
       (should (member "long" (funcall umbrella))))))
 
-(ert-deftest org-truss-test-board-orders-sections ()
-  "M-down moves a section after its next sibling."
+(ert-deftest org-truss-test-board-orders-headings ()
+  "M-down moves a section after its next sibling, and a member where it is
+written after its next one, with what is nested under it: an order the
+telling pattern does not want is put right from the board."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
     (org-truss-board-down)
-    (should (equal (org-truss-test--structure-labels source) '("Rain" "Sky" "Umbrella")))))
+    (should (equal (org-truss-test--structure-labels source) '("Rain" "Sky" "Umbrella"))))
+  (org-truss-test--with-board org-truss-test--telling-text
+    (should (string-match-p "Out of order" (buffer-string)))
+    (org-truss-test--goto-line-with "Reviews are weekly")
+    (org-truss-board-up)
+    (org-truss-board-up)
+    (org-truss-board-up)
+    (org-truss-test--goto-line-with "Half the items repeat")
+    (org-truss-board-up)
+    (should (equal (org-truss-test--labels
+                    (org-truss-member-children
+                     (org-truss-member-by-label (org-truss-read source) "We move to fortnightly reviews")))
+                   '("Reviews are weekly" "Half the items repeat" "Should we keep meeting weekly"
+                     "Robin agrees")))
+    (should-not (string-match-p "Out of order" (buffer-string)))))
+
+(ert-deftest org-truss-test-board-refiles-a-section ()
+  "f moves a section, with what is under it, last under another section; it
+cannot go under itself, and the structure stays where it is."
+  (org-truss-test--with-board org-truss-test--file
+    (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
+    (org-truss-test--answering '("Structure › Umbrella › Umbrella")
+      (org-truss-board-refile))
+    (should (equal (org-truss-test--structure-labels source) '("Rain" "Umbrella")))
+    (should (equal (org-truss-test--parent-label source "Sky") '("Umbrella" . 3)))
+    (should (string-match-p "• member[ ·]+\\[\\[#long\\]\\] Reviews run long" (buffer-string)))
+    (org-truss-test--goto-line-with "^ Structure ")
+    (should-error (org-truss-board-refile) :type 'user-error)))
 
 (ert-deftest org-truss-test-board-draws-the-parts-in-order ()
   "The subject, the members and the structure each take a part of the board,

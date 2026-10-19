@@ -201,12 +201,13 @@ a section's alone."
 (defun org-truss--render-below (model section level)
   "Return Org text for the sections below SECTION of MODEL.
 As one list when a pattern of SECTION says so, as what is under a member
-is; see `org-truss-list-form'.  Else each under a heading at LEVEL."
+is; see `org-truss-list-form'.  Else each under a heading at LEVEL.  One
+tagged :noexport: is left out, with what is under it, as a member is."
   (if (org-truss-list-form section)
       (let ((list (org-truss--list-text section model)))
         (if (string-empty-p list) "" (concat list "\n\n")))
     (mapconcat (lambda (s) (org-truss--render-section model s level))
-               (org-truss-section-children section) "")))
+               (seq-remove #'org-truss-noexport-p (org-truss-section-children section)) "")))
 
 (defun org-truss--render-links (model section)
   "Return Org text for the members SECTION of MODEL lists."
