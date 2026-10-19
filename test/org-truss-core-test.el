@@ -475,6 +475,40 @@ Meet every other week.
 "
   "A file part written: a heading playing no role, sections out of order.")
 
+(defconst org-truss-test--telling-text "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** We move to fortnightly reviews
+:PROPERTIES:
+:CUSTOM_ID: move
+:TRUSS_TELLING: scqa
+:END:
+#+begin_public Fortnightly
+We move to fortnightly reviews.
+#+end_public
+*** Should we keep meeting weekly
+:PROPERTIES:
+:TRUSS_TELLING_ROLE: question
+:END:
+*** Half the items repeat
+:PROPERTIES:
+:TRUSS_TELLING_ROLE: complication
+:END:
+*** Robin agrees
+*** Reviews are weekly
+:PROPERTIES:
+:TRUSS_TELLING_ROLE: situation
+:END:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** Now
+- [[truss-include:move]]
+"
+  "A member told by SCQA, what is under it written out of the pattern's order.")
+
 (defmacro org-truss-test--with (text &rest body)
   "Run BODY in an Org buffer holding TEXT."
   (declare (indent 1))
