@@ -98,7 +98,9 @@
 #   #+begin_public      its section's opening (right under Structure, the
 #                       document's)
 #   ~- [[#m7][words]]~  member m7: the words, else its #+begin_public, else
-#                       its heading; then the members under it
+#                       its heading; then the members under it.  A title on
+#                       its #+begin_public opens it in bold: only sections
+#                       make the document's headings
 #   Under a heading with TRUSS_BREAKDOWN, member or section, the headings
 #   are a list, numbered for steps; where the pattern names its roles, each
 #   opens with its own, as Pros: or Who:.  A section in a list is an item,
@@ -189,7 +191,9 @@
 #   節の見出し                文書の見出し
 #   #+begin_public            節の最初の文（Structure 直下なら文書の最初の文）
 #   節の ~- [[#m7][言い方]]~  部材 m7。言い方、なければ部材の #+begin_public、
-#                             なければ見出し。続けて下の部材が出る
+#                             なければ見出し。続けて下の部材が出る。部材の
+#                             #+begin_public の題は、太字で頭に出る。文書の
+#                             見出しを作るのは節だけ
 #   TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書きで出る（steps
 #   は番号付き）。型が役の名前を出すものでは、それぞれ自分の役で始まる
 #   （メリット：、誰が：など）。箇条書きの中の節は見出しでなく項目になり、

@@ -842,10 +842,10 @@ What the reader sees is the words the section tells a member in, when it
 has some; else the title of the line's public block, or the start of the
 block's text when it has no title, or else its heading -- for a section,
 its heading in the document; /noexport/ when the reader sees nothing of
-it.  On the /Structure/ line is the structure's own lead.  What becomes a
-heading in the document -- a section's title, a member's public title --
-is drawn as one; what becomes body text, in the faint face the notes in
-the middle take.  The brief is the reader's only through the title.
+it.  On the /Structure/ line is the structure's own lead.  A title the
+reader sees -- a section's heading in the document, a member's title in
+bold -- is drawn as one; what becomes body text, in the faint face the
+notes in the middle take.  The brief is the reader's only through the title.
 Under the title come the brief, then the subject, each drawn as the
 members are: its line, its patterns, and the members under it, each named
 by the role it plays, so what the structure has to meet stays in view.  A
@@ -1083,7 +1083,9 @@ pandoc, when it is installed, to make ~out/truss.md~.
   paragraph.  One tagged ~:noexport:~ is left out, with what is nested under
   it.
 - A member is followed by what is nested under it, in the order of the
-  file.  A titled member becomes a heading under its section.
+  file.  Its title, when its public block has one, opens its paragraph in
+  bold: the document's headings are its sections' alone, as the structure
+  shows them.
 - A heading broken down, member or section, has its parts written as a
   list, with reasons or without: steps numbered, the rest bulleted, each
   part opening with its role where the breakdown names its roles.  What

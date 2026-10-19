@@ -47,13 +47,14 @@ placed: in the words of the link, then what is nested under it."
     (should (string-match-p "1\\. The driver blows into the tester" out))))
 
 (ert-deftest org-truss-test-render-titles ()
-  "A section is titled by its public title, else by its heading."
+  "A section is titled by its public title, else by its heading.  A
+member's public title opens its paragraph in bold."
   (dolist (org-truss-language '(en ja))
     (let ((out (org-truss-test--render org-truss-test--file)))
       (should (string-match-p "^\\* Sky$" out))
       (should (string-match-p "^\\* Why it drags$" out))
       (should (string-match-p "^\\* Umbrella$" out))
-      (should (string-match-p "^\\*\\* Most items come back unchanged$" out)))))
+      (should (string-match-p "^\\*Most items come back unchanged\\*$" out)))))
 
 (ert-deftest org-truss-test-render-wording-and-lead ()
   "A member is told in the words of the link that lists it, in place of its
@@ -77,8 +78,8 @@ own; the structure's lead opens the document."
                             (org-truss-test--render org-truss-test--file)))))
 
 (ert-deftest org-truss-test-render-member-first ()
-  "A member comes before what is under it, under a heading of its own; with
-a telling pattern or none, it is told the same."
+  "A member comes before what is under it, its title in bold; with a
+telling pattern or none, it is told the same."
   (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
                        "** Claim\n:PROPERTIES:\n:CUSTOM_ID: claim\n:TRUSS_TELLING: prep\n:END:\n"
                        "#+begin_public The claim\nClaim body.\n#+end_public\n"
@@ -86,12 +87,13 @@ a telling pattern or none, it is told the same."
                        "*** Ground\n:PROPERTIES:\n:TRUSS_GROUNDS: s\n:END:\n"
                        "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[#claim]]\n"))
          (out (org-truss-test--render text)))
-    (should (string-match-p "^\\*\\* The claim\nClaim body\\.\n\nDoubt\n\nGround\n" out))
+    (should (string-match-p "^\\*The claim\\*\nClaim body\\.\n\nDoubt\n\nGround\n" out))
     (should (equal (org-truss-test--render (replace-regexp-in-string ":TRUSS_TELLING: prep\n" "" text))
                    out))))
 
 (ert-deftest org-truss-test-render-nesting ()
-  "Nested sections are written one level deeper, titled members deeper still."
+  "Nested sections are written one level deeper; a titled member is no
+heading, its title opening its paragraph in bold."
   (let ((out (org-truss-test--render "#+title: T
 * M
 :PROPERTIES:
@@ -123,7 +125,8 @@ a telling pattern or none, it is told the same."
 ")))
     (should (string-match-p "^\\* What to do\n" out))
     (should (string-match-p "^\\*\\* Where we are\n" out))
-    (should (string-match-p "^\\*\\*\\* Inner title\n" out))))
+    (should (string-match-p "^\\*Inner title\\*\n" out))
+    (should-not (string-match-p "^\\*+ Inner title" out))))
 
 (ert-deftest org-truss-test-render-steps ()
   "Steps are written as a numbered list, closing over one left out.  What is
@@ -321,7 +324,7 @@ the file to be put right."
     (let ((out (org-truss-test--render
                 (replace-regexp-in-string "scqa" pattern org-truss-test--telling-text))))
       (should (string-match-p
-               (concat "^\\*\\* Fortnightly\nWe move to fortnightly reviews\\.\n\n"
+               (concat "^\\*Fortnightly\\*\nWe move to fortnightly reviews\\.\n\n"
                        "Should we keep meeting weekly\n\nHalf the items repeat\n\nRobin agrees\n\n"
                        "Reviews are weekly\n\n\\'")
                out))))

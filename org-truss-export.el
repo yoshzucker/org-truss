@@ -88,7 +88,8 @@ Blank lines stay blank."
 
 (defun org-truss--blocks (items)
   "Return ITEMS as blocks of text that sit inside a list item.
-A heading cannot sit in a list, so a title opens its block in bold."
+A member's title opens its block in bold, as it opens its paragraph
+anywhere."
   (delq nil (mapcar (lambda (item)
                       (let* ((shown (nth 1 item))
                              (text (string-trim
@@ -171,26 +172,19 @@ holds in turn."
                        (org-truss--section-inside model s)))
              (seq-remove #'org-truss-noexport-p (org-truss-section-children section))))))
 
-(defun org-truss--emit (items level)
-  "Return Org text for ITEMS inside a section whose heading is at LEVEL.
-A titled member gets a heading, under which what is under it is told."
-  (let (stack out)
-    (dolist (item items)
-      (pcase-let ((`(,depth ,public) item))
-        (when public
-          (let ((title (car public))
-                (body (cdr public)))
-            (cond
-             (title
-              (while (and stack (>= (car stack) depth))
-                (pop stack))
-              (push (format "%s %s\n%s\n" (make-string (+ level 1 (length stack)) ?*)
-                            title (if (string-empty-p body) "" (concat body "\n")))
-                    out)
-              (push depth stack))
-             ((not (string-empty-p body))
-              (push (concat body "\n\n") out)))))))
-    (apply #'concat (nreverse out))))
+(defun org-truss--emit (items)
+  "Return Org text for ITEMS, each a paragraph.
+A member's title opens its paragraph in bold: a heading of the document is
+a section's alone."
+  (mapconcat (lambda (item)
+               (pcase-let* ((`(,_depth ,public) item)
+                            (`(,title . ,body) public))
+                 (cond ((null public) "")
+                       (title (format "*%s*\n%s\n" title
+                                      (if (string-empty-p body) "" (concat body "\n"))))
+                       ((string-empty-p body) "")
+                       (t (concat body "\n\n")))))
+             items ""))
 
 ;;;; Sections
 
@@ -201,7 +195,7 @@ A titled member gets a heading, under which what is under it is told."
      (format "%s %s\n" (make-string level ?*) (org-truss-section-title section))
      (if (or (null body) (string-empty-p body)) "" (concat body "\n"))
      "\n"
-     (org-truss--render-links model section level)
+     (org-truss--render-links model section)
      (org-truss--render-below model section (1+ level)))))
 
 (defun org-truss--render-below (model section level)
@@ -214,14 +208,13 @@ is; see `org-truss-list-form'.  Else each under a heading at LEVEL."
     (mapconcat (lambda (s) (org-truss--render-section model s level))
                (org-truss-section-children section) "")))
 
-(defun org-truss--render-links (model section level)
-  "Return Org text for the members SECTION of MODEL lists, under LEVEL."
+(defun org-truss--render-links (model section)
+  "Return Org text for the members SECTION of MODEL lists."
   (mapconcat (lambda (ref)
                (let ((member (org-truss-member-by-ref model ref)))
                  (if member
                      (org-truss--emit (org-truss--flow member 1 (org-truss-section-wording
-                                                                   section ref))
-                                      level)
+                                                                   section ref)))
                    (format (org-truss--pick "(broken link: %s)\n\n" "（リンク切れ: %s）\n\n")
                            (org-truss--target ref)))))
              (org-truss-section-links section) ""))
@@ -235,7 +228,7 @@ The structure's own lead, the text of its public block, opens it."
                     (or (org-truss-model-title model) ""))
             (if (or (null lead) (string-empty-p lead)) "" (concat lead "\n\n"))
             (if root
-                (concat (org-truss--render-links model root 0)
+                (concat (org-truss--render-links model root)
                         (org-truss--render-below model root 1))
               ""))))
 

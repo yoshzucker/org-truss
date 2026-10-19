@@ -38,7 +38,8 @@
   :group 'org-truss)
 
 (defface org-truss-reader '((t))
-  "Face for what the reader sees as a heading, in the board's right column.
+  "Face for a title the reader sees, in the board's right column.
+A section's heading in the document, or a member's title, in bold there.
 What the reader sees as body text takes `org-truss-dim', as the notes under
 a heading do in the middle column."
   :group 'org-truss)
