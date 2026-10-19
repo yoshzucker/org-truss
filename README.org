@@ -231,9 +231,9 @@ A heading has grounds when it has one of these:
 A link to a member stands on it: a reason in the members on the facts of
 the subject it reads (see [[*Pointing to a member]]).  It is the same
 grounds written in ~TRUSS_GROUNDS~ or in the text, where it reads in a
-sentence: /as [[#m3]] shows/.  In a section, an item listing a member,
-~- [[#m7]]~, is what the section tells, not grounds; a link in its text
-besides is.
+sentence: /as [[#m3]] shows/.  A link that tells a member,
+~[[truss-include:m7]]~, is no ground: it says where the member is told (see
+[[*Two links to a member]]).
 
 Whether a heading has grounds is read from what it writes, not from what
 that points to.  What it points to is asked something of its own, of
@@ -259,14 +259,14 @@ came from.
 
 Six checks, each found where the problem is:
 
-| Check         | Found at                       | What it finds                                                                                                                           |
-|---------------+--------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
-| Missing roles | the heading whose pattern asks | a role its pattern asks for that no heading right under it plays                                                                        |
-| No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them                                    |
-| Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                           |
-| No grounds    | the heading that lacks them    | must have grounds and has none                                                                                                          |
-| Weak grounds  | the heading that points        | points as grounds, in ~TRUSS_GROUNDS~ or its text, to a member that does not hold                                                       |
-| Broken links  | the link                       | a link to nothing: in a section, ~TRUSS_GROUNDS~ or a heading's text to no member, to no source or file; a ~CUSTOM_ID~ two members have |
+| Check         | Found at                       | What it finds                                                                                                                                                     |
+|---------------+--------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Missing roles | the heading whose pattern asks | a role its pattern asks for that no heading right under it plays                                                                                                  |
+| No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them                                                              |
+| Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                                                     |
+| No grounds    | the heading that lacks them    | must have grounds and has none                                                                                                                                    |
+| Weak grounds  | the heading that points        | points as grounds, in ~TRUSS_GROUNDS~ or its text, to a member that does not hold                                                                                 |
+| Broken links  | the link                       | a link to nothing: one that tells or points to no member, one to no source or file; a ~CUSTOM_ID~ two members have; a link that tells what tells its heading back |
 
 They say what is so; what to do about it is written in the file.
 
@@ -456,7 +456,7 @@ Hold the review every other week.
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: sky
 :END:
-- [[#m1]]
+- [[truss-include:m1]]
 
 ,** Rain
 :PROPERTIES:
@@ -464,7 +464,7 @@ Hold the review every other week.
 :END:
 ,#+begin_public Why it drags
 ,#+end_public
-- [[#m4]]
+- [[truss-include:m4]]
 
 ,** Umbrella
 :PROPERTIES:
@@ -472,7 +472,7 @@ Hold the review every other week.
 :END:
 ,#+begin_public What we propose
 ,#+end_public
-- [[#m5]]
+- [[truss-include:m5]]
 #+end_src
 
 ** Headings assert; the structure tells
@@ -493,18 +493,19 @@ document rather than of the world, so it needs no grounds:
 
 - a section's title, its heading;
 - a section's lead, the text of its public block, read under the title
-  before the members the section lists.  The structure's own lead opens
+  before the members the section tells.  The structure's own lead opens
   the document;
-- the words a member is told in there, as the description of the link
-  that lists it.  The heading goes on asserting, plainly; the section says
-  it as this reader needs, as a request in a notice, say.
+- the links that tell members, where they stand -- in its items, or in
+  its lead, between the words that lead from one to the next.
 
 #+begin_src org
 ,** What to do
 ,#+begin_public
 The check runs as follows.
+[[truss-include:m12]]
+And it is written down:
+[[truss-include:m13]]
 ,#+end_public
-,- [[#m12][Please have the check before and after you drive.]]
 #+end_src
 
 The joins between members are seldom the structure's to write either: a
@@ -512,9 +513,10 @@ member's patterns say what is under it is to it -- steps numbered, a part
 labelled with its role -- and the document is written so.  Whatever could
 be wrong is a member, where the checks reach it.
 
-A member told with the one above it -- a step, a part, a reason -- has no
-link to carry its words.  Its public block says what the reader sees
-instead of its heading, a title as well when it should have one:
+A member's public block says what the reader sees instead of its heading,
+wherever it is told, a title as well when it should have one -- the
+heading goes on asserting, plainly, and the block says it as the reader
+needs, as a request in a notice, say:
 
 #+begin_src org
 ,#+begin_public The title the reader sees
@@ -522,8 +524,8 @@ The text the reader sees.
 ,#+end_public
 #+end_src
 
-A link's words come first, then the member's public block, then its
-heading.  Everything else under the heading -- why you believe it, who said it, what
+A member is told in its public block, or else in its heading.  Everything
+else under the heading -- why you believe it, who said it, what
 cannot be said -- stays in the file.  A member tagged ~:noexport:~ stays in
 the file whole, with what is nested under it: evidence you keep for
 yourself, a note on what to check.  A document generated from the file can
@@ -551,21 +553,37 @@ and a member moved under a section would be read as a section.  The board
 does not depend on where in the file a member is written -- only on what
 it is nested under and what links to it.
 
-** Sections list members
+** Two links to a member
 
-A section lists the members it shows as link items, ~- [[#m7]]~.  The link
-brings the member with everything nested under it, from whatever part it
-is written in.  Its description, if it
-has one, ~- [[#m7][words]]~, is what the reader is told there in place of
-the heading.  A section can hold sections of its own.
+A member is linked to in one of two ways, and the kind of link alone says
+which -- not where it is written, nor whether it is a list item:
+
+| Link                   | What it does                                                                                          |
+|------------------------+-------------------------------------------------------------------------------------------------------|
+| ~[[#m7]]~              | points to member m7: a ground, in ~TRUSS_GROUNDS~ or in a heading's text                              |
+| ~[[truss-include:m7]]~ | tells member m7 there: the member, with what is nested under it, is written out where the link stands |
+
+A link that tells a member can stand in any heading -- a section, or a
+member that brings another along -- on a line of its own, as a list item,
+or in a sentence, inside the public block or not.  Its description,
+~[[truss-include:m7][words]]~, names it in the file alone and is never
+written out.  A link that points to one, written in a public block, reads
+as its description, or the member's heading.  What a member brings with
+it is told inside it, and so on down; a link that would tell what tells
+it back, without end, is reported under /Broken links/, and the document
+says so where it stops.
+
+A section tells the members it shows by such links, ~- [[truss-include:m7]]~,
+from whatever part they are written in.  A section can hold sections of
+its own.
 
 ** Pointing to a member
 
-A link in a section, and a ground -- in ~TRUSS_GROUNDS~ or in a heading's
-text -- point to a member by its ~CUSTOM_ID~: ~[[#m7]]~ is the member with ~:CUSTOM_ID: m7~.  Org
-resolves such a link within the file alone -- ~C-c C-o~ follows it, in a
-section or in a property -- and, unlike ~:ID:~, it is not entered in
-~org-id-locations~, nor made a node by org-roam.
+Both links point to a member by its ~CUSTOM_ID~: ~m7~ is the member with
+~:CUSTOM_ID: m7~.  Org resolves ~[[#m7]]~ within the file alone -- ~C-c
+C-o~ follows it, in a section or in a property -- and, unlike ~:ID:~, it
+is not entered in ~org-id-locations~, nor made a node by org-roam; with
+org-truss loaded, ~C-c C-o~ follows ~[[truss-include:m7]]~ the same way.
 
 A heading is what a member asserts, and it gets reworded as the argument
 and the document take shape.  Were links to name headings, each rewording
@@ -580,10 +598,10 @@ with one id, and a link or a ground that points to no member, are
 reported as /Broken links/.  ~a~ on a broken link places a member where it
 stands.
 
-A link written by heading, ~[[*heading]]~ -- with Org's completion, say --
-points to no member and shows as broken.  ~M-x org-truss-convert-references~
-points each by id, in the structure and in ~TRUSS_GROUNDS~, giving the
-member named one, and keeps a link's words.
+A link written by heading, ~[[*heading]]~ or ~[[truss-include:*heading]]~
+-- with Org's completion, say -- points to no member and shows as broken.
+~M-x org-truss-convert-references~ points each by id, wherever it is and
+in ~TRUSS_GROUNDS~, giving the member named one, and keeps a link's words.
 
 * The board
 
@@ -669,7 +687,7 @@ This is the board of the file above:
  No grounds
    Reason [no grounds] ·· Nothing urgent waits for the review                  no grounds
 
- Structure  how it is told: sections, listing members
+ Structure  how it is told: sections, telling members
  (telling › Sky, Rain, Umbrella)
  ├ Sky ·················· Sky                                                  Sky
  │   • member ▸2  [[#m1]] Reviews run long                                     Reviews ran past the hour eight times this quarter.
@@ -679,8 +697,8 @@ This is the board of the file above:
      • member ▸2  [[#m5]] Move to fortnightly                                  Hold the review every other week.
 #+end_example
 
-~O~ opens the members a section lists where they are told instead: under
-the section, with what is nested under them, where they are used, what
+~O~ opens the members links tell where they are told instead: under
+the heading whose link tells them, with what is nested under them, where they are used, what
 they stand on and what their patterns lack, and where they are written
 each is one line.  The structure then reads as the document, the right
 down the page, beside the logic each sentence rests on:
@@ -690,7 +708,7 @@ down the page, beside the logic each sentence rests on:
    member ▸3 ·········· #m4 Half the items repeat                               Most items come back unchanged
    member ▸2 ·········· #m5 Move to fortnightly                                 Hold the review every other week.
  ...
- Structure  how it is told: sections, listing members
+ Structure  how it is told: sections, telling members
  (telling › Sky, Rain, Umbrella)
  ├ Sky ···················· Sky                                                 Sky
  │   • member ····· [[#m1]] Reviews run long                                    Reviews ran past the hour eight times this quarter.
@@ -729,9 +747,9 @@ heading that plays no role of a pattern above it, =[assumed]= for an
 assumption, =[no grounds]= for a reason that must have grounds and has
 none.  At the end of the left, just before its heading, a member is named
 by its ~CUSTOM_ID~ as the file names it: =#m9= where it is written, in the
-subject and the members, and =[[#m9]]= where a section's link or a ground
-calls it.  So what the structure shows can be found where it is written,
-and a member nested under one a section calls, which is not called
+subject and the members, and =[[#m9]]= where a link that tells it or a
+ground calls it.  So what the structure shows can be found where it is
+written, and a member nested under one a link calls, which is not called
 itself, has none.  In the middle, from one column the same on every line,
 are the file's own words -- headings, labels, the title, the brief -- as
 written, with dots leading to them.  A member's heading is in the face Org
@@ -744,11 +762,11 @@ the middle are cut short, the whole of them in the tooltip, so the right
 keeps its column.  The left is as wide as it needs; the middle and the
 right share the rest of the window evenly, and are drawn again when it is
 resized.  What a section or a member holds starts two columns right of
-its word: the members a section lists, what a member stands on.  The
+its word: what it stands on, the members its links tell.  The
 sections under a section, and the members nested under a member, branch
 off from the column of its word.  The line of the tree starts right under
 the line naming its patterns and runs down past whatever comes before the
-first branch -- what it stands on or the members it lists, and with entry
+first branch -- what it stands on or the members its links tell, and with entry
 text its notes -- so each heading is held by it as far down as it goes.
 The members' tree is drawn in the face ~org-truss-branch~, faint by
 default, so where it meets the sections' tree in the structure the two
@@ -759,17 +777,16 @@ stands in the patterns; the middle, what is asserted, so whether the logic
 holds -- or, in the structure, whether the story does -- is read down it;
 the right, what the reader is told, so whether it reads as prose is read
 down that.  A member's right is the same where it is written and where a
-section shows it: the words the section tells it in, its public block, or
-its heading; a step with its number, a part with its role.  It is in the
-face ~org-truss-untold~ while no section places the member, nor one it is
-nested under.  So a heading and what is under it can be read through as
+link tells it: its public block, or its heading; a step with its number,
+a part with its role.  It is in the face ~org-truss-untold~ while the
+document does not tell it.  So a heading and what is under it can be read through as
 prose beside its logic where it is written.
 
 There are two kinds of link, and the board draws each at both its ends.
-A ground is written by the member that stands on it, in its
-~TRUSS_GROUNDS~: logic, never told.  A section's item, =- [[#m12]]=, is
-written by the section that tells the member: what the reader is shown,
-and where.  Every line drawn for an end of a link is marked, and a line
+A ground is written by the heading that stands on it, ~[[#m12]]~, in its
+~TRUSS_GROUNDS~ or its text: logic, never told.  A link that tells a
+member, ~[[truss-include:m12]]~, is written by the heading that tells it,
+a section or a member: what the reader is shown, and where.  Every line drawn for an end of a link is marked, and a line
 with no mark is written where it stands, as a heading in the file.  The
 mark says what what the line names is to the one above it, the member or
 the section the line hangs from:
@@ -779,8 +796,8 @@ the section the line hangs from:
 | =⏚=  | a member, by its id and heading; or a  | what it stands on: in its ~TRUSS_GROUNDS~, or its text |
 |      | source, or the words it quotes         |                                                        |
 | =↥=  | a member, by its roles and heading     | built on it: this stands on it, in its own grounds     |
-| =•=  | a member, by its roles, id and heading | an item of the section: =- [[#id]]= lists it here      |
-| =▤=  | a section, by its role and heading     | its section: this lists it, and tells it there         |
+| =•=  | a member, by its roles, id and heading | told by the one above: its link tells it here          |
+| =▤=  | a heading, by its role and heading     | told here: this heading's link tells it there          |
 
 =⏚= and =•= are where a link is written, and name what it calls by its
 id; =↥= and =▤= are the other end, where a member is written.  What a
@@ -806,7 +823,7 @@ The other marks of the board are not links:
 | Mark                | Where                   | Says                                                                                 |
 |---------------------+-------------------------+--------------------------------------------------------------------------------------|
 | =#m9=               | end of the left         | the member, where it is written                                                      |
-| =[[#m9]]=           | end of the left         | the member, where a section's link or a ground calls it                              |
+| =[[#m9]]=           | end of the left         | the member, where a link that tells it or a ground calls it                          |
 | =[no role]=         | after the role          | plays no role of a pattern of the heading above                                      |
 | =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
 | =[no grounds]=      | after the role          | must have grounds, and has none; after ⏚ ground, the member pointed to does not hold |
@@ -815,8 +832,9 @@ The other marks of the board are not links:
 | =▸5=                | after the role          | folded, five hidden; ~z~ opens it                                                    |
 | =⚠=                 | after the role          | out of the order of the telling pattern above                                        |
 | =Rain —=            | below what it holds     | a role a pattern asks for that nothing plays                                         |
+| =[loop]=            | after the role          | told inside what it tells: drawn as one line, since it would never end               |
 
-In the structure a member a section lists is one line, as written, the
+In the structure a member a link tells is one line, as written, the
 words it is told in on its right; opened there, as told (~O~), it brings
 with it what the document tells -- what is nested under it -- beside its
 uses, what it stands on and its gaps, so the document can be read down
@@ -920,7 +938,7 @@ and draw again rather than act on positions that have moved.
 
 The keys fall into four groups, by what they work on.  /Write/ works on
 the members themselves, the headings in the file.  /Place/ works on the
-structure's links to them: a section lists the members it shows, and the
+links that tell them: a section tells the members it shows, and the
 members do not move.  /Shape/ works on the sections, on what the structure
 says itself, and on the patterns of any heading.  /See/ moves about the
 board and the document.  The foot of the board lists them in the same four
@@ -960,24 +978,24 @@ lines.
 |       | ~g~         | draw again                                            |                                                    |
 |       | ~C-x C-s~   | save the truss file                                   |                                                    |
 
-A member is placed in one section at most.  ~a~ on a member placed
-already moves it, and on a section offers first the members placed
-nowhere.  On a broken link, ~a~ places the chosen member where the link
-stands, in its place: the way to mend one.  ~d~ loses nothing written: a
-member taken out stays in the file, and a section taken out hands what it
-places up,
-asking before its own title or notes are lost.  To be rid of a member,
-~D~ deletes it, with what is under it and what placed it; a ground that
-named it is left, a broken link on the board, so what stood on it shows.
+~a~ writes a link that tells a member, ~- [[truss-include:m7]]~, in a
+section.  A member is placed in one section at most: ~a~ on a member
+placed already moves it, and on a section offers first the members
+placed nowhere.  On a broken link, ~a~ places the chosen member where the
+link stands, in its place: the way to mend one.  ~d~ loses nothing
+written: on a member a link tells, the link goes and the member stays in
+the file, whatever heading the link is in; a section taken out hands what
+it tells up, asking before its own title or notes are lost.  To be rid of
+a member, ~D~ deletes it, with what is under it and the lines that tell
+it; a ground that named it is left, a broken link on the board, so what
+stood on it shows.
 
-~S~ writes what the structure says itself.  On a member a section lists,
-it asks for the words the section tells it in, starting from the heading;
-blank words, or the heading's own, take them off.  On a member told with
-the one above it, which no link lists, and on a section, it opens the
-public block beside the board as ~e~ opens an entry -- a section's lead, a
-step's words -- writing an empty one first if there is none; a block left
-empty is taken away again when the entry is finished.  On the /Structure/
-line, it writes the document's opening.
+~S~ writes what the reader is told in place of a heading: it opens the
+heading's public block beside the board as ~e~ opens an entry -- a
+section's lead, a member's words wherever it is told -- writing an empty
+one first if there is none; a block left empty is taken away again when
+the entry is finished.  On the /Structure/ line, it writes the document's
+opening.
 
 ~=~ goes between where a member is written and where it is called.  On a
 line calling it -- a section's link, =[[#m9]]=, or a ground -- or showing
@@ -992,8 +1010,8 @@ written, where it is called -- in the face ~org-truss-same~; set
 how many it hides.  On a line with nothing under it, ~z~ folds what it is
 under.  A member holding more than ~org-truss-board-fold-limit~, five
 unless set, starts folded, so the conditions at the top of the board stay
-short as they fill; a member a section lists starts folded where it is
-not opened, as ~O~ says.
+short as they fill; a member a link tells starts folded where it is not
+opened, as ~O~ says.
 
 A heading keeps the words of its source with it, in a ~#+begin_quote~
 block in its own text, which stays in the file as notes do, and gives it
@@ -1034,7 +1052,8 @@ heading the line at point is:
 
 - a member, or the brief, the subject or the members; on a missing role,
   playing that role;
-- on a section, at the end of the members, and listed in the section;
+- on a section, at the end of the members, and told in the section by a
+  link;
 - anywhere else, at the end of the members, where order means nothing.
 
 Under a heading with patterns, the new member plays a role in each: the
@@ -1047,8 +1066,8 @@ under it, last under another -- a member under the brief, the subject, the
 members, or another member; a section under another section, or the
 structure.  Links and grounds point to a member by its ~CUSTOM_ID~, which
 goes with it, so the structure still shows it wherever it goes.  ~M-↑~ and
-~M-↓~ move a heading among its siblings in the file, and a member a
-section lists among the links there: what the file has in an order the
+~M-↓~ move a heading among its siblings in the file, and a member a link
+tells among the links there: what the file has in an order the
 telling pattern does not want, listed /Out of order/, is put right from
 the board.  The places are offered in the order of the file, and a member
 by its path -- from its part, through what it is nested under, cut short,
@@ -1083,14 +1102,17 @@ pandoc, when it is installed, to make ~out/truss.md~.
 - A section is titled by its public block, or failing that by its heading;
   the block's text, its lead, follows the title.  One tagged ~:noexport:~
   is left out, with what is under it, as a member is.
-- A member is written in the words of the link that lists it, when it has
-  some; else as its public block, or failing that as its heading, a
-  paragraph.  One tagged ~:noexport:~ is left out, with what is nested under
-  it.
-- A member is followed by what is nested under it, in the order of the
-  file.  Its title, when its public block has one, opens its paragraph in
-  bold: the document's headings are its sections' alone, as the structure
-  shows them.
+- A link that tells a member, ~[[truss-include:m7]]~, is the member
+  written where it stands -- in a section, in a member, in a sentence.  A
+  member is written as its public block, or failing that as its heading,
+  a paragraph.  One tagged ~:noexport:~ is left out, with what is nested
+  under it.  A link that points to one, ~[[#m7]]~, in a public block, is
+  written as its description, or the member's heading.
+- A member is followed by what its links outside its public block tell,
+  and then by what is nested under it, in the order of the file.  Its
+  title, when its public block has one, opens its paragraph in bold: the
+  document's headings are its sections' alone, as the structure shows
+  them.
 - A heading broken down, member or section, has its parts written as a
   list, with reasons or without: steps numbered, the rest bulleted, each
   part opening with its role where the breakdown names its roles.  What
@@ -1098,7 +1120,9 @@ pandoc, when it is installed, to make ~out/truss.md~.
   again and the rest as paragraphs, titles in bold; a section's title and
   lead open its item, and the members it lists and the sections below it
   follow inside.  Other reasons are written as paragraphs.
-- A link to no member is written as /(broken link: …)/, where it will be seen.
+- A link that tells no member is written as /(broken link: …)/, and one
+  that would tell without end as /(told without end: …)/, where it will
+  be seen.
 - A link to a file by a relative path -- a picture in ~attach/~, a source --
   is written relative to ~out/~, so the document still finds it, and pandoc
   makes a picture an image.  ~P~ shows the pictures where they are.

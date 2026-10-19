@@ -45,7 +45,7 @@
 #   Brief      the reader: who, and what they expect
 #   Subject    what was found: the facts
 #   Members    what is made of it: what the facts mean, and what to do
-#   Structure  the document's outline: sections, each listing members
+#   Structure  the document's outline: sections, each telling members
 #
 # How a heading relates to the headings right under it (its patterns)
 #   Any heading -- one of the four, a member, a section -- says what the
@@ -73,8 +73,7 @@
 #                       words naming a source
 #     #+begin_quote     the source's own words, quoted in its text
 #     a link in its text  to a member, or to a source: moor:, file:, URL.
-#                       A section's items listing members are what it
-#                       shows, not grounds
+#                       A link that tells a member is no ground
 #   What any heading points to as grounds must hold as what it is: a member
 #   has grounds, TRUSS_LOGIC or the tag :assumption:; a source taken by
 #   org-moor or a file is there.  A URL and words are not checked.  The
@@ -88,19 +87,28 @@
 #     under the heading is notes.  A heading put in for a role is named for
 #     the role, to be written over
 #   under Structure
-#     a section of the document: it lists the members it shows, as links
-#   To point to a member, give it :CUSTOM_ID: m7 (the next free number) and
-#   write ~[[#m7]]~
+#     a section of the document: it tells members by links that tell them
+#
+# Two links to a member (give it :CUSTOM_ID: m7, the next free number)
+#   ~[[#m7]]~               points to it: a ground, wherever it is written
+#   ~[[truss-include:m7]]~  tells it there: the member, with what is under
+#                           it, is written out where the link stands, in
+#                           any heading, in a sentence too.  Its description
+#                           is for the file alone.  The check points out a
+#                           link that tells what tells its heading back
 #
 # Written out (only what Structure reaches)
 #   #+title             the title
 #   section heading     a heading
-#   #+begin_public      its section's opening (right under Structure, the
-#                       document's)
-#   ~- [[#m7][words]]~  member m7: the words, else its #+begin_public, else
-#                       its heading; then the members under it.  A title on
-#                       its #+begin_public opens it in bold: only sections
-#                       make the document's headings
+#   #+begin_public      a heading's words for the reader: a section's
+#                       opening (right under Structure, the document's), a
+#                       member's words in place of its heading.  A title on
+#                       a member's opens it in bold: only sections make the
+#                       document's headings
+#   ~[[truss-include:m7]]~  member m7, where the link stands: its words;
+#                       then what its links outside #+begin_public tell;
+#                       then the members under it
+#   ~[[#m7]]~           in #+begin_public, its words, else m7's heading
 #   Under a heading with TRUSS_BREAKDOWN, member or section, the headings
 #   are a list, numbered for steps; where the pattern names its roles, each
 #   opens with its own, as Pros: or Who:.  A section in a list is an item,
@@ -141,7 +149,7 @@
 #   Brief      読み手のこと：誰か、何を期待するか
 #   Subject    調べたこと：事実
 #   Members    考えたこと：事実が何を意味するか（解釈）と、何をするか（判断）
-#   Structure  生成文書の構成：節ごとに載せる部材を並べる
+#   Structure  生成文書の構成：節ごとに、語る部材をリンクで展開する
 #
 # 見出しとそのすぐ下の見出しの関係（型）
 #   どの見出しも（4つの見出し、部材、節）、すぐ下の見出しが自分にとって何かを、
@@ -168,8 +176,7 @@
 #                       ~[[#m3]]~
 #     #+begin_quote     本文に引いた資料の原文
 #     本文のリンク      部材へのリンク、または資料への moor:・file:・URL の
-#                       リンク。節で部材を並べる箇条は、載せるものであって
-#                       根拠ではない
+#                       リンク。部材を展開するリンクは根拠ではない
 #   どの見出しでも、根拠として指したものは、その種類として成り立って
 #   いなければならない。部材なら、根拠か TRUSS_LOGIC か :assumption: を
 #   持つこと。org-moor の資料やファイルなら、それがあること。URL と言葉は
@@ -182,18 +189,28 @@
 #     「上記の」と書かない）。見出しの下の本文はメモ。役のために入れた
 #     見出しは役の名前になっているので、書き換える
 #   Structure の下
-#     節：文書の章。載せる部材をリンクで並べる
-#   部材を指すときは、その部材に :CUSTOM_ID: m7（空いている次の番号）を
-#   付けて、リンクは ~[[#m7]]~ と書く
+#     節：文書の章。語る部材を、展開するリンクで書く
+#
+# 部材への2つのリンク（部材に :CUSTOM_ID: m7 を付ける。番号は空いている次）
+#   ~[[#m7]]~               部材を指す。どこに書いても根拠になる
+#   ~[[truss-include:m7]]~  部材をそこで展開する。リンクを書いた場所に、
+#                           部材とその下の部材が書き出される。どの見出しに
+#                           でも、文の途中にでも書ける。説明はファイルで
+#                           見るためのもので、書き出されない。展開をたどって
+#                           自分の見出しに戻るリンクは、検査が指摘する
 #
 # 書き出されるもの（Structure から辿れるものだけ）
 #   #+title                   文書のタイトル
 #   節の見出し                文書の見出し
-#   #+begin_public            節の最初の文（Structure 直下なら文書の最初の文）
-#   節の ~- [[#m7][言い方]]~  部材 m7。言い方、なければ部材の #+begin_public、
-#                             なければ見出し。続けて下の部材が出る。部材の
-#                             #+begin_public の題は、太字で頭に出る。文書の
+#   #+begin_public            読み手に見せる言葉。節なら最初の文（Structure
+#                             直下なら文書の最初の文）、部材なら見出しの
+#                             代わりの言葉。部材の題は太字で頭に出る。文書の
 #                             見出しを作るのは節だけ
+#   ~[[truss-include:m7]]~    部材 m7 を、リンクの場所に。その言葉、
+#                             #+begin_public の外のリンクが展開するもの、
+#                             下の部材の順に出る
+#   ~[[#m7]]~                 #+begin_public の中では、説明、なければ m7 の
+#                             見出しが出る
 #   TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書きで出る（steps
 #   は番号付き）。型が役の名前を出すものでは、それぞれ自分の役で始まる
 #   （メリット：、誰が：など）。箇条書きの中の節は見出しでなく項目になり、
@@ -303,10 +320,10 @@ what is under it is its parts, which need no grounds, written out as a
 list.  A member is written out before what is under it, and that in the
 order of the file; a story that keeps the conclusion for last is told by
 the sections of the structure.  Write each heading to make sense pulled
-out on its own: no \"the following\", no \"above\".
-Words fitted to the reader belong to the section that lists it (S on the
-board).  The text under a heading is never written out; tag :noexport: a
-member that should not be."
+out on its own: no \"the following\", no \"above\".  Words for the
+reader go in its #+begin_public (S on the board), and are told in place
+of its heading wherever it is told.  The rest of the text under a heading
+is never written out; tag :noexport: a member that should not be."
      "考えたこと：Subject の事実が、ここで何を意味するか（解釈）と、何を
 するか（判断）。見出し一つが部材一つで、一文で書く。主張の理由になる部材は
 その下に入れ子にし、主張には TRUSS_LOGIC を付ける（盤面の p）：reasons、
@@ -318,35 +335,38 @@ deduction、induction。理由はそれぞれ TRUSS_LOGIC_ROLE に役を書き�
 下の部材はその内訳になり、根拠は要らず、箇条書きで出る。部材は下の部材より
 先に書き出され、下の部材はファイルの順に出る。結論を最後に置く話の運びは、
 Structure の節で組む。見出しは、抜き出して読んでも通じるように書く（「次の」
-「上記の」を使わない）。読み手に合わせた言い方は、載せる節の側で書く（盤面
-の S）。見出しの下の本文は書き出されない。書き出したくない部材には
-:noexport: を付ける。")
+「上記の」を使わない）。読み手に見せる言い方は #+begin_public に書く（盤面
+の S）。部材を展開したどこでも、見出しの代わりにその言い方が出る。見出しの
+下のほかの本文は書き出されない。書き出したくない部材には :noexport: を付ける。")
     (structure
      "The sections of the document.  Leave it empty while there is no
 document to make, as when a question is only being worked out.  A section
-lists the members it shows as links, as ~- [[#m7]]~ with m7 the member's
-CUSTOM_ID (a on the board).  A pattern here, or on a section (p on the
-board) -- a telling pattern as Sky, Rain, Umbrella, SCQA, PREP -- gives
-the sections right below their roles, each written in a section's
-property of its kind, as TRUSS_TELLING_ROLE; a role none plays is listed
-under Missing roles.  A section's heading becomes a heading of the
-document, and the text of its #+begin_public, the section's opening --
-or, under a breakdown, an item of its list.  A link's description, as in ~- [[#m7][words]]~,
-is written out in place of the member's heading (S on the board).  Write
-here only what guides the reader; put facts and claims in members, which
-can be stood on as grounds and listed in any section.  Sections nest as
-deep as the document needs."
+tells the members it shows by links that tell them, as
+~- [[truss-include:m7]]~ with m7 the member's CUSTOM_ID (a on the board):
+each is written out where its link stands, with what is under it.  A
+pattern here, or on a section (p on the board) -- a telling pattern as
+Sky, Rain, Umbrella, SCQA, PREP -- gives the sections right below their
+roles, each written in a section's property of its kind, as
+TRUSS_TELLING_ROLE; a role none plays is listed under Missing roles.  A
+section's heading becomes a heading of the document -- or, under a
+breakdown, an item of its list -- and the text of its #+begin_public, the
+section's opening.  A link that tells a member can stand in the #+begin_public
+too, between words that lead from one to the next (S on the board).
+Write here only what guides the reader; put facts and claims in members,
+which can be stood on as grounds and told in any section.  Sections nest
+as deep as the document needs."
      "書き出す文書の節。相談して考えをまとめるだけなど、文書を作らないうちは
-空のままにしておく。節は、載せる部材をリンクの箇条 ~- [[#m7]]~ で並べる
-（m7 は部材の CUSTOM_ID。盤面の a）。ここや節に型（語り口なら Sky, Rain,
+空のままにしておく。節は、語る部材を、展開するリンクの箇条
+~- [[truss-include:m7]]~ で書く（m7 は部材の CUSTOM_ID。盤面の a）。部材は
+リンクの場所に、下の部材ごと書き出される。ここや節に型（語り口なら Sky, Rain,
 Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節が担う役が
 決まり、節はその種類のプロパティ（TRUSS_TELLING_ROLE など）に役を書く。
 どの節も担っていない役は Missing roles に出る。節の見出しは文書の見出しに
 なり、節に書いた内容（#+begin_public の中身）は節の最初の文になる。内訳の型
-の下では、節は箇条書きの項目になる。リンク
-に説明を付けて ~- [[#m7][言い方]]~ とすると、部材の見出しの代わりにその説明
-が出る（盤面の S）。ここには読み手を案内する言葉だけを書き、事実や主張は
-Members の部材にする。部材なら、根拠として指せ、どの節にも載せられるから。
+の下では、節は箇条書きの項目になる。展開するリンクは #+begin_public の中にも
+書け、部材と部材をつなぐ言葉の間に置ける（盤面の S）。ここには読み手を案内
+する言葉だけを書き、事実や主張は Members の部材にする。部材なら、根拠として
+指せ、どの節でも展開できるから。
 節はいくらでも入れ子にできる。"))
   "Guidance written into a truss file, in English and Japanese.
 Keyed by a part, or by (PART ROLE) for a member right under the brief or

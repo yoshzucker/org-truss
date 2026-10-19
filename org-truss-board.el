@@ -596,7 +596,7 @@ Return non-nil when one was."
 
 (defun org-truss-board-same ()
   "Go to the same member: where it is written, or where it is called.
-On a line that calls a member -- a section's link, [[#m9]], or a ground --
+On a line that calls a member -- a link telling it, or a ground --
 or that shows it anywhere else, go to where it is written, #m9, in the
 subject or the members, unfolding what hides it.  There, go to the next
 line that calls it, after the one come from, and round again."
@@ -849,27 +849,25 @@ Not placed: right under Members, and not told in the document."
                     (seq-remove (lambda (m) (memq m not-placed)) (org-truss-model-all model))))))
 
 (defun org-truss--placings (model ref)
-  "Return the sections of MODEL that place the member REF."
+  "Return the sections of MODEL whose links tell the member REF."
   (let ((root (org-truss-model-structure model)))
-    (and root (seq-filter (lambda (s) (member ref (org-truss-section-links s)))
+    (and root (seq-filter (lambda (s) (member ref (org-truss-cluster-includes s)))
                           (cons root (org-truss-sections model))))))
 
 (defun org-truss--place (pos to)
   "Place the member at POS in the section at TO, and nowhere else.
 Run in the truss file.  The member is given a CUSTOM_ID to be pointed to
-by, when it has none.  A member is placed in one section at most: where
-it was placed, it is taken out, and the words it was told in there go with
-it."
+by, when it has none, and the section tells it by a link of its own,
+- [[truss-include:m7]].  A member is placed in one section at most: where
+it was placed, it is taken out."
   (let* ((to (copy-marker to))
          (ref (org-truss-ensure-id pos))
-         (placings (org-truss--placings (org-truss-read) ref))
-         (from (mapcar #'org-truss-section-pos placings))
-         (wording (seq-some (lambda (s) (org-truss-section-wording s ref)) placings)))
+         (from (mapcar #'org-truss-section-pos (org-truss--placings (org-truss-read) ref))))
     (if (equal from (list (marker-position to)))
         (message "Already placed there")
       (dolist (pos (sort from #'>))
         (org-truss-remove-link pos ref))
-      (org-truss-add-link to ref wording))
+      (org-truss-add-link to ref))
     (set-marker to nil)))
 
 (defun org-truss-board-place ()
@@ -888,10 +886,10 @@ itself, in the file, does not move: the section lists it."
          (org-truss--editing (org-truss--place pos (plist-get item :pos)))))
       ('broken
        (let ((pos (org-truss--read-choice
-                   (format "Place instead of [[%s]]: " (org-truss--target (plist-get item :link)))
+                   (format "Place instead of %s: " (org-truss--include-link (plist-get item :link)))
                    (org-truss--member-choices model))))
          (org-truss--editing
-           (let* ((section (copy-marker (plist-get item :section)))
+           (let* ((section (copy-marker (plist-get item :holder)))
                   (ref (org-truss-ensure-id pos)))
              (dolist (pos (sort (mapcar #'org-truss-section-pos
                                         (org-truss--placings (org-truss-read) ref))
@@ -911,15 +909,16 @@ itself, in the file, does not move: the section lists it."
 
 (defun org-truss-board-take-out ()
   "Take what is at point out of the structure, losing nothing written.
-On a placed member, the section stops listing it; the member stays in the
-file.  On a section, the section goes, handing what it places up to the
-section above, and asking before its own title or notes are lost."
+On a member a link tells, the heading the link is in stops telling it;
+the member stays in the file.  On a section, the section goes, handing
+what it tells up to the section above, and asking before its own title
+or notes are lost."
   (interactive)
   (let ((item (org-truss--want (org-truss--item) 'member 'broken 'section)))
     (cond
      ((plist-get item :link)
       (org-truss--editing
-        (org-truss-remove-link (plist-get item :section) (plist-get item :link))))
+        (org-truss-remove-link (plist-get item :holder) (plist-get item :link))))
      ((eq (plist-get item :type) 'section)
       (when (plist-get item :root)
         (user-error "The root of the structure stays"))
@@ -1040,38 +1039,24 @@ finding it."
 
 (defun org-truss-board-say ()
   "Write what the reader is told at point, beside what the file asserts.
-On a member a section lists, the words the section tells it in, in place
-of its heading.  The heading goes on saying what is asserted, so the
-checks read it as before; the section says it as this reader needs.  Blank
-words, or the heading's own, tell it in its heading again.
-
-On a section, its lead: the text of its public block, read under its title
-before the members it lists.  On the Structure line, the document's
-opening.  On a member told with the one above it -- a step, a part, a
-reason -- its public block, which the reader sees in place of its heading.
-These open beside the board as an entry does; a block left empty is taken
-away when it is finished."
+The text of the heading's public block, which the reader sees in place of
+its heading: a member's words wherever it is told, a section's lead under
+its title.  On the Structure line, the document's opening.  The heading
+goes on saying what is asserted, so the checks read it as before.  It
+opens beside the board as an entry does; a block left empty is taken away
+when it is finished."
   (interactive)
   (let ((item (org-truss--want (org-truss--item) 'section 'member)))
-    (if (plist-get item :link)
-        (let* ((section (plist-get item :section))
-               (ref (plist-get item :link))
-               (label (plist-get item :label))
-               (old (with-current-buffer org-truss--source
-                      (org-truss-link-wording section ref)))
-               (new (string-trim (read-string "Say here: " (or old label)))))
-          (org-truss--editing
-            (org-truss-set-wording section ref (unless (equal new label) new))))
-      (org-truss--fresh)
-      (let* ((pos (plist-get item :pos))
-             (session (with-current-buffer org-truss--source
-                        (list :hash (buffer-hash)
-                              :modified (buffer-modified-p))))
-             (at (with-current-buffer org-truss--source
-                   (org-with-wide-buffer (copy-marker (org-truss-public-body pos))))))
-        (org-truss-board-redraw)
-        (org-truss--edit pos at session)
-        (set-marker at nil)))))
+    (org-truss--fresh)
+    (let* ((pos (plist-get item :pos))
+           (session (with-current-buffer org-truss--source
+                      (list :hash (buffer-hash)
+                            :modified (buffer-modified-p))))
+           (at (with-current-buffer org-truss--source
+                 (org-with-wide-buffer (copy-marker (org-truss-public-body pos))))))
+      (org-truss-board-redraw)
+      (org-truss--edit pos at session)
+      (set-marker at nil))))
 
 (defun org-truss--fold-line (key)
   "Return where the line that folds as KEY starts on the board, or nil."
@@ -1210,9 +1195,9 @@ when none in the copy has one."
        "- its title is one sentence that states what plays the role;\n"
        "- its role property names the role;\n"
        "- under TRUSS_LOGIC, it has grounds: a TRUSS_GROUNDS property, a\n"
-       "  #+begin_quote block, or a link to a source in its text.  It needs none\n"
-       "  when it has TRUSS_LOGIC itself, with its reasons under it, or the tag\n"
-       "  :assumption:.\n\n"
+       "  #+begin_quote block, or a link in its text to a member, [[#m3]], or\n"
+       "  to a source.  It needs none when it has TRUSS_LOGIC itself, with its\n"
+       "  reasons under it, or the tag :assumption:.\n\n"
        "A subheading whose title is still the one in brackets is written by\n"
        "replacing its title.  Do not change existing properties.\n"))))
 
@@ -1460,7 +1445,7 @@ file, with what is under it."
     (cond
      ((plist-get item :link)
       (org-truss--editing
-        (unless (org-truss-shift-link (plist-get item :section) (plist-get item :link) delta)
+        (unless (org-truss-shift-link (plist-get item :holder) (plist-get item :link) delta)
           (user-error "Nothing to move past"))))
      ((and (memq (plist-get item :type) '(section member)) (not (plist-get item :root))
            (not (plist-get item :gap)) (not (plist-get item :claim)))

@@ -56,26 +56,67 @@ member's public title opens its paragraph in bold."
       (should (string-match-p "^\\* Umbrella$" out))
       (should (string-match-p "^\\*Most items come back unchanged\\*$" out)))))
 
-(ert-deftest org-truss-test-render-wording-and-lead ()
-  "A member is told in the words of the link that lists it, in place of its
-own; the structure's lead opens the document."
+(ert-deftest org-truss-test-render-broken-link ()
+  "A link that tells no member shows in the document, where it will be seen."
+  (let ((org-truss-language 'en))
+    (should (string-match-p "(broken link: truss-include:none)"
+                            (org-truss-test--render org-truss-test--file)))))
+
+(ert-deftest org-truss-test-render-lead ()
+  "The structure's lead opens the document, before the members it tells."
   (let ((out (org-truss-test--render
               (replace-regexp-in-string
-               (regexp-quote "- [[#long]]")
-               "- [[#long][Our reviews overran eight times.]]"
-               (replace-regexp-in-string
-                (regexp-quote ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n")
-                ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n#+begin_public\nRead this first.\n#+end_public\n"
-                org-truss-test--file t t)
-               t t))))
-    (should (string-match-p "toc:nil num:nil\n\nRead this first\\.\n\n\\* Sky\n\nOur reviews overran eight times\\.$" out))
-    (should-not (string-match-p "Reviews ran past the hour" out))))
+               (regexp-quote ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n")
+               ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n#+begin_public\nRead this first.\n#+end_public\n"
+               org-truss-test--file t t))))
+    (should (string-match-p "toc:nil num:nil\n\nRead this first\\.\n\n\\* Sky\n\nReviews ran past the hour" out))))
 
-(ert-deftest org-truss-test-render-broken-link ()
-  "A link to no member shows in the document, where it will be seen."
-  (let ((org-truss-language 'en))
-    (should (string-match-p "(broken link: #none)"
-                            (org-truss-test--render org-truss-test--file)))))
+(ert-deftest org-truss-test-render-includes ()
+  "A link that tells a member is that member told where it stands, with what
+is nested under it: on a line of its own, in a list item, or in a
+sentence, inside a public block or not.  Its description names it in the
+file alone.  A link that points to a member reads as its description, or
+the member's heading, and is no link in the document.  Told again inside
+what it tells, a member would never end: there the document says so."
+  (let* ((org-truss-language 'en)
+         (out (org-truss-test--render "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Reviews run long
+:PROPERTIES:
+:CUSTOM_ID: long
+:END:
+*** Eight of twelve ran over
+** Move to fortnightly
+:PROPERTIES:
+:CUSTOM_ID: move
+:END:
+#+begin_public
+We move, as [[#long]] and [[#long][the calendar]] show:
+[[truss-include:long][named for the file]]
+#+end_public
+- [[truss-include:loop]]
+** Loops back
+:PROPERTIES:
+:CUSTOM_ID: loop
+:END:
+[[truss-include:move]]
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** Now
+- [[truss-include:move][visual]]
+")))
+    (should (string-match-p
+             (concat "^\\* Now\n\n"
+                     "We move, as Reviews run long and the calendar show:\n"
+                     "Reviews run long\n\nEight of twelve ran over\n\n"
+                     "Loops back\n\n"
+                     "(told without end: truss-include:move)\n")
+             out))
+    (should-not (string-match-p "visual\\|named for the file\\|\\[\\[" out))))
 
 (ert-deftest org-truss-test-render-member-first ()
   "A member comes before what is under it, its title in bold; with a
@@ -85,7 +126,7 @@ telling pattern or none, it is told the same."
                        "#+begin_public The claim\nClaim body.\n#+end_public\n"
                        "*** Doubt\n"
                        "*** Ground\n:PROPERTIES:\n:TRUSS_GROUNDS: s\n:END:\n"
-                       "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[#claim]]\n"))
+                       "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[truss-include:claim]]\n"))
          (out (org-truss-test--render text)))
     (should (string-match-p "^\\*The claim\\*\nClaim body\\.\n\nDoubt\n\nGround\n" out))
     (should (equal (org-truss-test--render (replace-regexp-in-string ":TRUSS_TELLING: prep\n" "" text))
@@ -121,7 +162,7 @@ heading, its title opening its paragraph in bold."
 :END:
 #+begin_public Where we are
 #+end_public
-- [[#inner]]
+- [[truss-include:inner]]
 ")))
     (should (string-match-p "^\\* What to do\n" out))
     (should (string-match-p "^\\*\\* Where we are\n" out))
@@ -213,7 +254,7 @@ Some items wait a week more.
 :PROPERTIES:
 :TRUSS_PART: structure
 :END:
-- [[#move]]
+- [[truss-include:move]]
 "))
     (should (string-match-p
              (concat "^We move to fortnightly reviews\n\n"
@@ -254,7 +295,7 @@ We move to fortnightly reviews.
 :TRUSS_PART: structure
 :END:
 ** Now
-- [[#move]]
+- [[truss-include:move]]
 "
   "A member told by SCQA, what is under it written out of the pattern's order.")
 
@@ -279,11 +320,11 @@ it would be a heading or an item of a list."
 :TRUSS_PART: structure
 " pattern ":END:
 ** Shown
-- [[#kept]]
+- [[truss-include:kept]]
 ** Not shown                                                       :noexport:
-- [[#away]]
+- [[truss-include:away]]
 *** Below it
-- [[#away]]
+- [[truss-include:away]]
 "))))
       (should (string-match-p "Shown" out))
       (should (string-match-p "Kept" out))
@@ -322,14 +363,14 @@ and the sections below it, their titles in bold."
 #+begin_public Agree
 We agree first.
 #+end_public
-- [[#agree]]
+- [[truss-include:agree]]
 *** A detail
-- [[#cal]]
+- [[truss-include:cal]]
 ** Then
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
 :END:
-- [[#cal]]
+- [[truss-include:cal]]
 ")
          (out (org-truss-test--render file)))
     (should (string-match-p
@@ -427,7 +468,7 @@ As the shot shows.
 :TRUSS_PART: structure
 :END:
 ** Now
-- [[#m1]]
+- [[truss-include:m1]]
 "))
     (let* ((buffer (find-file-noselect (expand-file-name "truss.org" dir)))
            (written (org-truss-export-buffer buffer)))

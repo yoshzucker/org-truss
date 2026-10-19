@@ -116,8 +116,8 @@ and what is undone."
       (should (string-match-p
                "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +Hold the review every other week\\.\n +(logic › deduction)$" text))
       (should (string-match-p "Minor premise —" text))
-      (should (string-match-p "broken link[ ·]+\\(?:\\[*#[^] ]+]* \\)?\\[\\[#none\\]\\]" text))
-      (should (string-match-p "^ Broken links\n +\\[\\[#none\\]\\] ← Umbrella$" text))
+      (should (string-match-p "broken link[ ·]+\\[\\[truss-include:none\\]\\]" text))
+      (should (string-match-p "^ Broken links\n +\\[\\[truss-include:none\\]\\] ← Umbrella$" text))
       (should (string-match-p "^ No grounds\n   Reason \\[no grounds\\][ ·]+Some items are urgent +no grounds$" text))
       (should (string-match-p "^ Missing roles\n   member[ ·]+#move Move to fortnightly +Minor premise$" text))
       (should (string-match-p "RET visit" text)))))
@@ -182,7 +182,7 @@ them, and is listed under the part."
     (org-truss-test--answering '("Structure › Premises › Premises")
       (org-truss-board-place))
     ;; Placed, it is given an id to be pointed to by.
-    (should (equal (org-truss-section-links
+    (should (equal (org-truss-cluster-includes
                     (car (org-truss-section-children
                           (org-truss-model-structure (org-truss-read source)))))
                    '("budget" "m1")))
@@ -330,7 +330,7 @@ The constraints, LONG.
 :END:
 #+begin_public A title, LONG
 #+end_public
-- [[#m2]]
+- [[truss-include:m2]]
 " t t)))
     (org-truss-test--with text
       (dolist (width '(100 160))
@@ -611,9 +611,9 @@ and every line any of them is broken onto."
 :TRUSS_PART: structure
 :END:
 ** Now
-- [[#m1]]
+- [[truss-include:m1]]
 *** Later
-- [[#m2]]
+- [[truss-include:m2]]
 " t t)))
     (org-truss-test--with text
       (let ((model (org-truss-read)))
@@ -732,8 +732,8 @@ not before closing punctuation."
                              (get-text-property (point) 'help-echo)))))
 
 (ert-deftest org-truss-test-board-says ()
-  "S on a listed member writes the words its section tells it in, and shows
-them as what the reader sees; on a section it opens its lead to be written."
+  "S on a section opens its lead to be written, the text of its public
+block; one left empty is taken away."
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
     (let ((default-directory dir)
           (org-truss-language 'en))
@@ -741,18 +741,6 @@ them as what the reader sees; on a section it opens its lead to be written."
         (with-temp-buffer
           (org-truss-board))
         (with-current-buffer (get-buffer (format "*truss %s*" (abbreviate-file-name dir)))
-          (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
-          (org-truss-test--answering '("Our reviews overran.")
-            (org-truss-board-say))
-          (should (string-match-p "Reviews run long +Our reviews overran\\.$" (buffer-string)))
-          (should (equal (with-current-buffer org-truss--source
-                           (org-truss-link-wording (org-truss--part-pos "structure") "x"))
-                         nil))
-          (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
-          (org-truss-test--answering '("Reviews run long")
-            (org-truss-board-say))
-          (should (string-match-p "Reviews run long +Reviews ran past the hour" (buffer-string)))
-          (org-truss-board-save)
           (org-truss-test--goto-line-with "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Sky")
           (org-truss-board-say)
           (with-current-buffer (org-truss-test--copy)
@@ -1037,7 +1025,7 @@ missing role one playing it; on a section a member listed there."
       (let ((model (org-truss-read source)))
         (should (equal (org-truss-member-id (org-truss-member-by-label model "The team grew")) "m1"))
         (should (member "m1"
-                        (org-truss-section-links
+                        (org-truss-cluster-includes
                          (car (org-truss-section-children (org-truss-model-structure model)))))))))
   (org-truss-test--with-board org-truss-test--conditions-file
     (org-truss-test--goto-line-with "^   Constraints[ ·]+Constraints")
@@ -1159,6 +1147,26 @@ another member.  Links still find it."
                    '("Lone remark" . 3)))
     (should (equal (org-truss-test--parent-label source "Who decides what is urgent")
                    '("Some items are urgent" . 5)))))
+
+(ert-deftest org-truss-test-board-draws-includes ()
+  "A member's links that tell members are drawn under it, as a section's
+are, each one line where it is not opened; one drawn inside what it tells
+is one line, marked, since it would never end.  Loops and links that
+tell nothing are listed under Broken links, in the part they are in."
+  (progn
+    (org-truss-test--with-board org-truss-test--includes-file
+      (let ((text (buffer-string)))
+        (should (string-match-p (concat "   member[ ·]+#move Move to fortnightly +We move, as Reviews run long shows\\.\n"
+                                        "     ▤ member[ ·]+Under it\n"
+                                        "     ▤ section[ ·]+Now\n"
+                                        "     • member[ ·]+\\[\\[#long\\]\\] Reviews run long")
+                                text))
+        (should (string-match-p "^ Broken links\n   member[ ·]+#move Move to fortnightly +\\[\\[truss-include:loop\\]\\] tells it back$"
+                                text))
+        (should (string-match-p "• broken link[ ·]+\\[\\[truss-include:gone\\]\\]" text))))
+    (org-truss-test--with-board org-truss-test--includes-file
+      (org-truss-test--told)
+      (should (string-match-p "• member ▸2 \\[loop\\][ ·]+\\[\\[#move\\]\\] Move to fortnightly" (buffer-string))))))
 
 (ert-deftest org-truss-test-board-numbers-sections ()
   "A section below one broken down shows on the right the number, the
@@ -1500,8 +1508,8 @@ in one section at most."
     (org-truss-test--answering '("Structure › Umbrella › Umbrella")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
-      (should (null (org-truss-section-links (car (org-truss-section-children root)))))
-      (should (equal (org-truss-section-links (nth 2 (org-truss-section-children root)))
+      (should (null (org-truss-cluster-includes (car (org-truss-section-children root)))))
+      (should (equal (org-truss-cluster-includes (nth 2 (org-truss-section-children root)))
                      '("move" "none" "long"))))))
 
 (ert-deftest org-truss-test-board-places-an-unplaced-member ()
@@ -1511,7 +1519,7 @@ member placed elsewhere is moved there, and one placed there stays put."
     (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
     (org-truss-test--answering '("Structure › Sky › Sky")
       (org-truss-board-place))
-    (should (equal (org-truss-section-links
+    (should (equal (org-truss-cluster-includes
                     (car (org-truss-section-children
                           (org-truss-model-structure (org-truss-read source)))))
                    '("long" "m1")))
@@ -1520,14 +1528,14 @@ member placed elsewhere is moved there, and one placed there stays put."
     (org-truss-test--answering '("Members › Lone remark")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
-      (should (equal (org-truss-section-links (car (org-truss-section-children root)))
+      (should (equal (org-truss-cluster-includes (car (org-truss-section-children root)))
                      '("long")))
-      (should (equal (org-truss-section-links (nth 2 (org-truss-section-children root)))
+      (should (equal (org-truss-cluster-includes (nth 2 (org-truss-section-children root)))
                      '("move" "none" "m1"))))
     (org-truss-test--goto-line-with "└ Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella")
     (org-truss-test--answering '("Members › Lone remark")
       (org-truss-board-place))
-    (should (equal (org-truss-section-links
+    (should (equal (org-truss-cluster-includes
                     (nth 2 (org-truss-section-children
                             (org-truss-model-structure (org-truss-read source)))))
                    '("move" "none" "m1")))))
@@ -1536,10 +1544,10 @@ member placed elsewhere is moved there, and one placed there stays put."
   "a on a broken link places the chosen member where the link stands; one
 placed elsewhere is moved from there."
   (org-truss-test--with-board org-truss-test--file
-    (let ((links (lambda (n) (org-truss-section-links
+    (let ((links (lambda (n) (org-truss-cluster-includes
                               (nth n (org-truss-section-children
                                       (org-truss-model-structure (org-truss-read source))))))))
-      (org-truss-test--goto-line-with "broken link[ ·]+\\(?:\\[*#[^] ]+]* \\)?\\[\\[#none\\]\\]")
+      (org-truss-test--goto-line-with "broken link[ ·]+\\[\\[truss-include:none\\]\\]")
       (org-truss-test--answering '("Members › Lone remark")
         (org-truss-board-place))
       (should (equal (funcall links 2) '("move" "m1")))
@@ -1547,14 +1555,14 @@ placed elsewhere is moved from there."
     ;; A link that names a heading is broken too, and is put right the same way.
     (with-current-buffer source
       (goto-char (point-max))
-      (insert "- [[*Reviews run long]]\n- [[#last]]\n"))
+      (insert "- [[truss-include:*Reviews run long]]\n- [[truss-include:last]]\n"))
     (org-truss-board-redraw)
-    (org-truss-test--goto-line-with "broken link[ ·]+\\(?:\\[*#[^] ]+]* \\)?\\[\\[\\*Reviews run long\\]\\]")
+    (org-truss-test--goto-line-with "broken link[ ·]+\\[\\[truss-include:\\*Reviews run long\\]\\]")
     (org-truss-test--answering '("Members › Reviews run long")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
-      (should (null (org-truss-section-links (car (org-truss-section-children root)))))
-      (should (equal (org-truss-section-links (nth 2 (org-truss-section-children root)))
+      (should (null (org-truss-cluster-includes (car (org-truss-section-children root)))))
+      (should (equal (org-truss-cluster-includes (nth 2 (org-truss-section-children root)))
                      '("move" "m1" "long" "last"))))))
 
 (ert-deftest org-truss-test-board-takes-out-and-deletes ()
@@ -1566,7 +1574,7 @@ grounds that named it to show as broken."
     (org-truss-board-take-out)
     (let ((model (org-truss-read source)))
       (should (org-truss-member-by-label model "Reviews run long"))
-      (should (null (org-truss-section-links
+      (should (null (org-truss-cluster-includes
                      (car (org-truss-section-children (org-truss-model-structure model)))))))
     (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Half the items repeat")
     (org-truss-test--answering '(nil)
@@ -1578,7 +1586,7 @@ grounds that named it to show as broken."
     (let ((model (org-truss-read source)))
       (should-not (org-truss-member-by-label model "Half the items repeat"))
       (should-not (org-truss-member-by-label model "Agenda diff"))
-      (should (null (org-truss-section-links
+      (should (null (org-truss-cluster-includes
                      (nth 1 (org-truss-section-children (org-truss-model-structure model))))))
       (should (equal (org-truss-member-grounds (org-truss-member-by-label model "Move to fortnightly"))
                      '("half"))))
@@ -1650,7 +1658,7 @@ changes it."
 at once.  Fontifying the file is not an edit.  Only an edit made while a
 command is asking makes it draw again instead of acting."
   (org-truss-test--with-board org-truss-test--file
-    (let ((umbrella (lambda () (org-truss-section-links
+    (let ((umbrella (lambda () (org-truss-cluster-includes
                                 (nth 2 (org-truss-section-children
                                         (org-truss-model-structure (org-truss-read source))))))))
       (with-current-buffer source
@@ -1809,7 +1817,7 @@ right, as the reader is told it: in the breakdown's list."
 :PROPERTIES:
 :TRUSS_PART: structure
 :END:
-- [[#move]]
+- [[truss-include:move]]
 "
     (org-truss-test--goto-told-line-with "Less time in meetings")
     (should (string-match-p "Less time in meetings +- Pros: Less time in meetings$"
@@ -1848,17 +1856,14 @@ member, where it is opened.  The mode line says which."
 
 (ert-deftest org-truss-test-board-tells-where-it-is-written ()
   "Where a member is written, its right is what the document tells of it:
-the words its section tells it in, its steps numbered, its aspects
-labelled; in the face of what is not told while nothing places it.  Lines
-under it name the sections that list it, marked ▤, and the members it is
-a ground of, marked ↥, cut to the middle, and go to them; the mouse on
+its words, its steps numbered, its aspects labelled; in the face of what
+is not told while nothing tells it.  Lines under it name the headings
+whose links tell it, marked ▤, and the members it is a ground of, marked ↥, cut to the middle, and go to them; the mouse on
 the mark says what it means; the member commands do not take them for
 the member."
-  (org-truss-test--with-board (replace-regexp-in-string
-                               "^- \\[\\[#long\\]\\]$" "- [[#long][Reviews overran]]"
-                               org-truss-test--file)
+  (org-truss-test--with-board org-truss-test--file
     (let ((text (buffer-string)))
-      (should (string-match-p (concat "^   member[ ·]+#long Reviews run long +Reviews overran\n"
+      (should (string-match-p (concat "^   member[ ·]+#long Reviews run long +Reviews ran past the hour.*\n"
                                       "     ▤ Sky[ ·]+Sky\n"
                                       "     ↥ member[ ·]+Half the items repeat\n")
                               text))
@@ -1866,7 +1871,7 @@ the member."
                               text))
       (org-truss-test--goto-line-with "^   member[ ·]+Lone remark +\\(Lone remark\\)$")
       (should (eq (get-text-property (match-beginning 1) 'face) 'org-truss-untold))
-      (org-truss-test--goto-line-with "^   member[ ·]+#long Reviews run long +\\(Reviews overran\\)$")
+      (org-truss-test--goto-line-with "^   member[ ·]+#long Reviews run long +\\(Reviews ran past the hour.*\\)$")
       (should-not (eq (get-text-property (match-beginning 1) 'face) 'org-truss-untold))
       (org-truss-test--goto-line-with "^     ↥ member")
       (should (string-prefix-p "Built on it: this member stands on the member above"

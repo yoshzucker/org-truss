@@ -29,7 +29,8 @@
 (defun org-truss--snapshot (pos)
   "Return a snapshot of the subtree at POS.
 A plist of :heading (the text after the stars), :props, :drawers, :notes,
-:public-raw, :links (the link-only items), :wordings (theirs) and :children."
+:public-raw, :links (the lines that tell members, of their own) and
+:children."
   (let ((own (org-truss--own pos)))
     (save-excursion
       (goto-char pos)
@@ -40,7 +41,6 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
             :notes (plist-get own :notes)
             :public-raw (plist-get own :public-raw)
             :links (plist-get own :items)
-            :wordings (plist-get own :wordings)
             :children (mapcar #'org-truss--snapshot (org-truss--children pos))))))
 
 (defun org-truss--snapshot-telling-role (snapshot)
@@ -67,19 +67,14 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
           (plist-get snapshot :drawers)
           (org-truss--trim-blank-lines (plist-get snapshot :notes))
           (plist-get snapshot :public-raw)
-          (mapconcat (lambda (ref)
-                       (org-truss--link-item
-                        ref (cdr (assoc ref (plist-get snapshot :wordings)))))
-                     (plist-get snapshot :links) "")
+          (mapconcat #'org-truss--link-item (plist-get snapshot :links) "")
           "\n"
           (mapconcat (lambda (c) (org-truss--serialize c (1+ level)))
                      (plist-get snapshot :children) "")))
 
-(defun org-truss--link-item (ref &optional wording)
-  "Return the list item that lists the member REF, told in WORDING if given."
-  (if wording
-      (format "- [[%s][%s]]\n" (org-truss--target ref) wording)
-    (format "- [[%s]]\n" (org-truss--target ref))))
+(defun org-truss--link-item (ref)
+  "Return the list item that tells the member REF where it is written."
+  (format "- %s\n" (org-truss--include-link ref)))
 
 (defun org-truss--replace-subtree (pos text)
   "Replace the subtree at POS with TEXT."
@@ -164,10 +159,6 @@ the labels of those sections are returned instead."
                                 (seq-uniq (append (plist-get snapshot :links)
                                                   (mapcan (lambda (s) (copy-sequence (plist-get s :links)))
                                                           below)))))
-      (setq snapshot (plist-put snapshot :wordings
-                                (append (plist-get snapshot :wordings)
-                                        (mapcan (lambda (s) (copy-sequence (plist-get s :wordings)))
-                                                below))))
       (setq snapshot (plist-put snapshot :children nil))
       (dolist (property (mapcar #'cdr org-truss-pattern-properties))
         (setq snapshot (plist-put snapshot :props
@@ -186,81 +177,62 @@ sections holding it are returned."
     (if (and lost (not force))
         (mapcar (lambda (s) (plist-get s :heading)) lost)
       (let ((links (mapcan (lambda (s) (copy-sequence (plist-get s :links))) all))
-            (wordings (mapcan (lambda (s) (copy-sequence (plist-get s :wordings))) all))
             (parent (copy-marker parent)))
         (save-excursion
           (goto-char pos)
           (delete-region pos (progn (org-end-of-subtree t t) (point))))
         (dolist (ref links)
-          (org-truss-add-link parent ref (cdr (assoc ref wordings))))
+          (org-truss-add-link parent ref))
         (set-marker parent nil)
         nil))))
 
 ;;;; Links and properties
 
-(defun org-truss-add-link (pos ref &optional wording)
-  "List the member REF in the section at POS, after its last item.
-REF is the member's CUSTOM_ID; see `org-truss-ensure-id'.  WORDING, if
-given, is what the reader is told there instead of its heading."
+(defun org-truss-add-link (pos ref)
+  "Tell the member REF under the heading at POS, after its last line of text.
+In a list item of its own, - [[truss-include:REF]]; REF is the member's
+CUSTOM_ID, see `org-truss-ensure-id'."
   (save-excursion
     (let* ((bounds (org-truss--own-bounds pos))
            (heading-end (progn (goto-char pos) (line-end-position))))
       (goto-char (cdr bounds))
       (skip-chars-backward " \t\n" heading-end)
-      (insert "\n" (string-remove-suffix "\n" (org-truss--link-item ref wording)))
+      (insert "\n" (string-remove-suffix "\n" (org-truss--link-item ref)))
       (unless (looking-at "\n")
         (insert "\n")))))
 
 (defun org-truss-remove-link (pos ref)
-  "Stop listing the member REF in the section at POS."
-  (let ((line (org-truss--link-line pos ref)))
-    (when line
-      (delete-region (car line) (cdr line))
-      t)))
-
-(defun org-truss-link-wording (pos ref)
-  "Return the words the section at POS tells the member REF in, or nil."
-  (cdr (assoc ref (plist-get (org-truss--own pos) :wordings))))
-
-(defun org-truss-set-wording (pos ref wording)
-  "Tell the member REF in WORDING in the section at POS, where it is listed.
-With WORDING nil or blank, the section tells it in its own heading again.
-Return non-nil when the section lists REF."
-  (let ((line (org-truss--link-line pos ref))
-        (wording (and wording (not (string-blank-p wording)) (string-trim wording))))
-    (when (and wording (string-match-p "[][\n]" wording))
-      (user-error "Words for a link cannot hold brackets or line breaks"))
-    (when line
-      (save-excursion
-        (goto-char (car line))
-        (let ((indent (progn (looking-at "[ \t]*") (match-string 0))))
-          (delete-region (car line) (cdr line))
-          (insert indent (org-truss--link-item ref wording))))
+  "Stop telling the member REF under the heading at POS.
+The line that holds nothing but the link goes; a link among other words,
+alone."
+  (let ((at (or (org-truss--link-line pos ref) (org-truss--include-at pos ref))))
+    (when at
+      (delete-region (car at) (cdr at))
       t)))
 
 (defun org-truss-replace-link (pos old new)
-  "Make the item listing OLD in the section at POS list NEW, where it stands.
-Return non-nil when there was such an item."
-  (let ((line (org-truss--link-line pos old))
+  "Make the link telling OLD under the heading at POS tell NEW, where it stands.
+Return non-nil when there was such a link."
+  (let ((at (org-truss--include-at pos old))
         (case-fold-search nil))
-    (when line
+    (when at
       (save-excursion
-        (goto-char (car line))
-        (re-search-forward (concat "\\[\\[" (regexp-quote (org-truss--target old)) "\\]")
-                           (cdr line))
-        (replace-match (concat "[[" (org-truss--target new) "]") t t))
+        (goto-char (car at))
+        (re-search-forward (concat (regexp-quote org-truss-include-type) ":" (regexp-quote old) "\\]")
+                           (cdr at))
+        (replace-match (concat org-truss-include-type ":" new "]") t t))
       t)))
 
 (defun org-truss-move-link (from ref to)
-  "Move the member REF from the section at FROM to the section at TO."
-  (let ((to (copy-marker to))
-        (wording (org-truss-link-wording from ref)))
+  "Move the link telling the member REF from the heading at FROM to the one at TO."
+  (let ((to (copy-marker to)))
     (when (org-truss-remove-link from ref)
-      (org-truss-add-link to ref wording))
+      (org-truss-add-link to ref))
     (set-marker to nil)))
 
 (defun org-truss-shift-link (pos ref delta)
-  "Move the item for REF in the section at POS by DELTA items, -1 or 1."
+  "Move the line telling REF under the heading at POS by DELTA such lines.
+DELTA is -1 or 1."
   (let* ((items (plist-get (org-truss--own pos) :items))
          (i (seq-position items ref))
          (j (and i (+ i delta))))
@@ -447,9 +419,10 @@ member by it, so its heading can be rewritten freely."
 
 (defun org-truss-delete-member (pos)
   "Delete the member at POS, with what is nested under it, and its placings.
-Every link item in the structure that points to it, or to a member under
-it, goes too.  A ground that points to one is left, so the board shows as
-a broken ground what stood on it.  Return the labels deleted."
+Every line that tells it, or a member under it, [[truss-include:m7]] on a
+line of its own, goes too, wherever it is.  A ground that points to one is
+left, and so is a link to one among other words, so the board shows as
+broken what stood on it or told it.  Return the labels deleted."
   (let* ((end (save-excursion (goto-char pos) (org-end-of-subtree t t) (point)))
          (labels nil)
          (ids nil))
@@ -461,17 +434,13 @@ a broken ground what stood on it.  Return the labels deleted."
           (let ((id (org-entry-get at "CUSTOM_ID")))
             (when id (push (string-trim id) ids))))))
     (delete-region pos end)
-    (let ((structure (org-truss--part-pos "structure")))
-      (when (and structure ids)
-        (save-excursion
-          (let ((stop (copy-marker (save-excursion (goto-char structure)
-                                                   (org-end-of-subtree t t) (point)))))
-            (goto-char structure)
-            (while (re-search-forward org-truss--link-item-re stop t)
-              (when (member (org-truss--ref (match-string-no-properties 1)) ids)
-                (delete-region (line-beginning-position)
-                               (min (point-max) (1+ (line-end-position))))))
-            (set-marker stop nil)))))
+    (when ids
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (while (re-search-forward org-truss--include-line-re nil t)
+         (when (member (org-truss--ref (match-string-no-properties 1)) ids)
+           (delete-region (line-beginning-position)
+                          (min (point-max) (1+ (line-end-position))))))))
     (nreverse labels)))
 
 (defun org-truss--quote-bounds (pos)
@@ -534,7 +503,7 @@ own text.  An empty block is given an empty line to write on."
               (insert "\n")
               (forward-line -1))
             (point))
-           ((re-search-forward org-truss--link-item-re end t)
+           ((re-search-forward org-truss--include-line-re end t)
             (goto-char (line-beginning-position))
             (insert "#+begin_public\n\n#+end_public\n")
             (forward-line -2)
@@ -604,34 +573,37 @@ A label another member has is refused: a statement is written once."
 
 (defun org-truss-convert-references-in-buffer ()
   "Make every link and ground that names a member by its heading point by id.
-A link [[*heading]] in the structure becomes [[#id]], keeping its words,
-and so does one in TRUSS_GROUNDS, keeping the sources named there; the
-member named is given a CUSTOM_ID when it has none.  A heading no member
-has is left as it is, and the checks show it as broken.  Return the number
-of references changed."
+A link [[*heading]] becomes [[#id]], and [[truss-include:*heading]]
+\[[truss-include:id]], wherever it is, keeping its words, and so does a
+ground in TRUSS_GROUNDS, keeping the sources named there; the member named
+is given a CUSTOM_ID when it has none.  A heading no member has is left as
+it is, and the checks show it as broken.  Return the number of references
+changed."
   (let ((count 0)
         (case-fold-search nil)
         (id-of (lambda (label)
                  (let ((m (org-truss-member-by-label (org-truss-read) label)))
                    (and m (org-truss-ensure-id (org-truss-member-pos m)))))))
     (org-with-wide-buffer
-     (let ((structure (org-truss--part-pos "structure")))
-       (when structure
-         (goto-char structure)
-         (while (re-search-forward "\\[\\[\\*\\([^]]+\\)\\]" nil t)
-           ;; Giving the member an id writes above, so where the link is
-           ;; is kept in markers.
-           (let* ((beg (copy-marker (match-beginning 0)))
-                  (end (copy-marker (match-end 0)))
-                  (id (save-excursion (funcall id-of (match-string-no-properties 1)))))
-             (when id
-               (goto-char beg)
-               (delete-region beg end)
-               (insert "[[#" id "]")
-               (setq count (1+ count)))
-             (goto-char end)
-             (set-marker beg nil)
-             (set-marker end nil)))))
+     (goto-char (point-min))
+     (while (re-search-forward (concat "\\[\\[\\(\\(?:" (regexp-quote org-truss-include-type)
+                                       ":\\)?\\)\\*\\([^]]+\\)\\]")
+                               nil t)
+       ;; Giving the member an id writes above, so where the link is is
+       ;; kept in markers.
+       (unless (save-excursion (beginning-of-line) (looking-at-p "^[ \t]*:TRUSS_GROUNDS:"))
+         (let* ((beg (copy-marker (match-beginning 0)))
+                (end (copy-marker (match-end 0)))
+                (include (not (string-empty-p (match-string-no-properties 1))))
+                (id (save-excursion (funcall id-of (match-string-no-properties 2)))))
+           (when id
+             (goto-char beg)
+             (delete-region beg end)
+             (insert "[[" (if include (concat org-truss-include-type ":" id) (concat "#" id)) "]")
+             (setq count (1+ count)))
+           (goto-char end)
+           (set-marker beg nil)
+           (set-marker end nil))))
      (goto-char (point-min))
      (while (re-search-forward "^[ \t]*:TRUSS_GROUNDS:[ \t]+\\(.*?\\)[ \t]*$" nil t)
        (let* ((at (copy-marker (line-beginning-position)))

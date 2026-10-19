@@ -13,10 +13,10 @@
 
 ;; The structure is walked in order and what the reader sees of each part is
 ;; written.  A section gives its title and its lead, the text of its public
-;; block.  A member it lists is told in the words of the link that lists it,
-;; when the link has some; else in its public block, or its heading when it
-;; has none.  A member tagged :noexport: is left out, with what is nested
-;; under it.  The result is an Org file; pandoc, when there is one, turns it
+;; block.  A link that tells a member, [[truss-include:m7]], is that member
+;; written where it stands: its public block, or its heading when it has
+;; none, then what is nested under it.  A heading tagged :noexport: is left
+;; out, with what is under it.  The result is an Org file; pandoc, when there is one, turns it
 ;; into Markdown.
 
 ;;; Code:
@@ -44,6 +44,70 @@ do to Chinese, Japanese and Korean text."
 
 ;;;; Members
 
+(defvar org-truss--model nil
+  "The model a document is written from, or a board drawn from, meanwhile.")
+
+(defvar org-truss--telling nil
+  "The members being told, the one telling the next: a member among them
+told again would be told without end.")
+
+(defun org-truss--loop-text (ref)
+  "Return what the document says where telling REF would never end.
+It names the link as text, which nothing reads as a link again."
+  (format (org-truss--pick "(told without end: %s:%s)" "（展開が循環: %s:%s）")
+          org-truss-include-type ref))
+
+(defun org-truss--broken-text (target)
+  "Return what the document says where a link to TARGET points to no member.
+TARGET is written as text, which nothing reads as a link again."
+  (format (org-truss--pick "(broken link: %s)" "（リンク切れ: %s）") target))
+
+(defun org-truss--told-text (ref)
+  "Return the member REF told as Org text, with what is nested under it.
+What a link [[truss-include:REF]] is written out as, wherever it is."
+  (let ((member (org-truss-member-by-ref org-truss--model ref)))
+    (cond ((null member) (org-truss--broken-text (concat org-truss-include-type ":" ref)))
+          ((memq member org-truss--telling) (org-truss--loop-text ref))
+          (t (string-trim (org-truss--emit (org-truss--flow member 1)))))))
+
+(defun org-truss--pointed-text (target words)
+  "Return the words a link to a member reads as in the document.
+WORDS, its description, when it has one; else the heading of the member
+TARGET names.  The document has no member to go to, so it is no link."
+  (or words
+      (let ((member (org-truss-member-by-ref org-truss--model (org-truss--ref target))))
+        (if member (org-truss-member-label member) target))))
+
+(defun org-truss--written (text)
+  "Return TEXT as the document writes it.
+A link that tells a member, [[truss-include:m7]], is that member told,
+with what is nested under it, where it stands -- in a sentence too; a
+link that points to one, [[#m7]], its words.  Nil stays nil."
+  (and text
+       (let ((from 0) out)
+         (while (string-match org-truss--include-re text from)
+           (let ((beg (match-beginning 0))
+                 (end (match-end 0))
+                 (ref (org-truss--ref (match-string 1 text))))
+             (push (org-truss--pointing-written (substring text from beg)) out)
+             (push (org-truss--told-text ref) out)
+             (setq from end)))
+         (push (org-truss--pointing-written (substring text from)) out)
+         (apply #'concat (nreverse out)))))
+
+(defun org-truss--pointing-written (text)
+  "Return TEXT with each link pointing to a member as its words."
+  (replace-regexp-in-string
+   "\\[\\[\\([#*][^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]"
+   (lambda (link)
+     (string-match "\\[\\[\\([#*][^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]" link)
+     (org-truss--pointed-text (match-string 1 link) (match-string 2 link)))
+   text t t))
+
+(defun org-truss--shown-written (shown)
+  "Return SHOWN, (TITLE . BODY), as the document writes it."
+  (and shown (cons (org-truss--written (car shown)) (org-truss--written (cdr shown)))))
+
 (defun org-truss--labelled (shown label)
   "Return SHOWN, (TITLE . BODY), opened with LABEL: its title, else its body."
   (cond ((or (null label) (string-empty-p label)) shown)
@@ -51,15 +115,29 @@ do to Chinese, Japanese and Korean text."
          (cons (concat label (car shown)) (cdr shown)))
         (t (cons (car shown) (concat label (or (cdr shown) ""))))))
 
-(defun org-truss--flow (member depth &optional wording label)
+(defun org-truss--flow (member depth &optional label)
   "Return (DEPTH SHOWN) items for MEMBER and what is under it.
 SHOWN is what the reader sees: of MEMBER, as `org-truss-member-told' says,
-WORDING being the words the section listing it tells it in, and opened
-with LABEL when given, the role it plays in a breakdown.  It is told as
-`org-truss--tell' says.  A member tagged :noexport: gives nothing, and nor
-does what is nested under it."
-  (unless (org-truss-noexport-p member)
-    (org-truss--tell member depth wording label)))
+opened with LABEL when given, the role it plays in a breakdown.  It is
+told as `org-truss--tell' says.  A member tagged :noexport: gives nothing,
+and nor does what is nested under it; one already being told, a note
+that telling it again would never end."
+  (cond ((org-truss-noexport-p member) nil)
+        ((memq member org-truss--telling)
+         (list (list depth (cons nil (org-truss--loop-text (org-truss-member-id member))))))
+        (t (let ((org-truss--telling (cons member org-truss--telling)))
+             (org-truss--tell member depth label)))))
+
+(defun org-truss--listed-flow (cluster depth)
+  "Return the flow of the members CLUSTER tells by links outside its public
+block, at DEPTH, in the order of the links."
+  (mapcan (lambda (ref)
+            (let ((member (org-truss-member-by-ref org-truss--model ref)))
+              (if member
+                  (org-truss--flow member depth)
+                (list (list depth (cons nil (org-truss--broken-text
+                                             (concat org-truss-include-type ":" ref))))))))
+          (org-truss-cluster-listed cluster)))
 
 (defun org-truss--list-items (member depth)
   "Return what is under MEMBER as flow items at DEPTH below it: one list."
@@ -67,18 +145,19 @@ does what is nested under it."
     (and (not (string-empty-p list))
          (list (list (1+ depth) (cons nil list))))))
 
-(defun org-truss--tell (member depth &optional wording label)
+(defun org-truss--tell (member depth &optional label)
   "Return the flow of MEMBER at DEPTH, as it is told.
-The member itself, in the words `org-truss-member-told' gives it, WORDING
-among them, and opened with LABEL; then what is under it, in the order of
-the file -- as one list when a pattern of MEMBER says so; see
-`org-truss-list-form'."
-  (cons (list depth (org-truss--labelled (org-truss-member-told member wording) label))
-        (if (org-truss-list-form member)
-            (org-truss--list-items member depth)
-          (mapcan (lambda (m)
-                    (org-truss--flow m (1+ depth) nil (org-truss--role-label member m)))
-                  (org-truss-cluster-children member)))))
+The member itself, in the words `org-truss-member-told' gives it, opened
+with LABEL; then the members its links outside its public block tell;
+then what is under it, in the order of the file -- as one list when a
+pattern of MEMBER says so; see `org-truss-list-form'."
+  (cons (list depth (org-truss--labelled (org-truss-member-told member) label))
+        (append (org-truss--listed-flow member (1+ depth))
+                (if (org-truss-list-form member)
+                    (org-truss--list-items member depth)
+                  (mapcan (lambda (m)
+                            (org-truss--flow m (1+ depth) (org-truss--role-label member m)))
+                          (org-truss-cluster-children member))))))
 
 (defun org-truss--indent (text column)
   "Return TEXT with every line after the first indented COLUMN columns.
@@ -91,7 +170,7 @@ Blank lines stay blank."
 A member's title opens its block in bold, as it opens its paragraph
 anywhere."
   (delq nil (mapcar (lambda (item)
-                      (let* ((shown (nth 1 item))
+                      (let* ((shown (org-truss--shown-written (nth 1 item)))
                              (text (string-trim
                                     (concat (if (car shown) (format "*%s*\n" (car shown)) "")
                                             (or (cdr shown) "")))))
@@ -115,33 +194,37 @@ it plays, as `org-truss--role-label' gives it."
   (cons (if (eq (org-truss-list-form member) 'numbered) (format "%d. " n) "- ")
         (org-truss--role-label member child)))
 
-(defun org-truss--list-text (cluster &optional model)
+(defun org-truss--list-text (cluster)
   "Return what is right under CLUSTER as an Org list, numbered or not as it says.
 CLUSTER is a member or a section, and what is under it members or
-sections; MODEL finds the members a section lists.  An item playing a
-role flagged :label opens with its role.  Each item is what the reader
-sees of it -- a section's title and lead -- and what it holds goes inside
-it: what is nested under a member, as a list again when it says so, else
-as paragraphs; what a section holds, as `org-truss--section-inside' says.
-One tagged :noexport: is left out, and the numbers close over it."
+sections.  An item playing a role flagged :label opens with its role.
+Each item is what the reader sees of it -- a section's title and lead --
+and what it holds goes inside it: the members its links tell, then what
+is nested under a member, as a list again when it says so, else as
+paragraphs; the sections below a section, as `org-truss--section-inside'
+says.  One tagged :noexport: is left out, and the numbers close over it."
   (let ((n 0))
     (mapconcat
      (lambda (child)
        (let* ((marker (org-truss--list-marker cluster child (setq n (1+ n))))
               (section (org-truss-section-p child))
-              (shown (if section
-                         (cons (org-truss-section-title child) (cdr (org-truss-section-public child)))
-                       (org-truss-member-told child)))
+              (shown (org-truss--shown-written
+                      (if section
+                          (cons (org-truss-section-title child) (cdr (org-truss-section-public child)))
+                        (org-truss-member-told child))))
               (own (string-trim (concat (cdr marker)
                                         (or (car shown) "")
                                         (if (car shown) "\n" "")
                                         (or (cdr shown) ""))))
-              (nested (cond (section (org-truss--section-inside model child))
-                            ((org-truss-list-form child)
-                             (list (org-truss--list-text child)))
-                            (t (org-truss--blocks
-                                (mapcan (lambda (m) (org-truss--flow m 1 nil (org-truss--role-label child m)))
-                                        (org-truss-cluster-children child)))))))
+              (nested (cond (section (org-truss--section-inside child))
+                            (t (let ((org-truss--telling (cons child org-truss--telling)))
+                                 (append (org-truss--blocks (org-truss--listed-flow child 1))
+                                         (if (org-truss-list-form child)
+                                             (list (org-truss--list-text child))
+                                           (org-truss--blocks
+                                            (mapcan (lambda (m)
+                                                      (org-truss--flow m 1 (org-truss--role-label child m)))
+                                                    (org-truss-cluster-children child))))))))))
          (concat (car marker)
                  (org-truss--indent
                   (string-join (seq-remove #'string-empty-p (cons own nested)) "\n\n")
@@ -149,27 +232,21 @@ One tagged :noexport: is left out, and the numbers close over it."
      (seq-remove #'org-truss-noexport-p (org-truss-cluster-children cluster))
      "\n")))
 
-(defun org-truss--section-inside (model section)
-  "Return what SECTION of MODEL holds as blocks that sit inside a list item.
-The members it lists, then the sections below it: as a list when its
-pattern says so, else each as its title in bold, its lead, and what it
-holds in turn."
+(defun org-truss--section-inside (section)
+  "Return what SECTION holds as blocks that sit inside a list item.
+The members its links tell, then the sections below it: as a list when
+its pattern says so, else each as its title in bold, its lead, and what
+it holds in turn."
   (append
-   (mapcan (lambda (ref)
-             (let ((member (org-truss-member-by-ref model ref)))
-               (if member
-                   (org-truss--blocks (org-truss--flow member 1 (org-truss-section-wording section ref)))
-                 (list (format (org-truss--pick "(broken link: %s)" "（リンク切れ: %s）")
-                               (org-truss--target ref))))))
-           (org-truss-section-links section))
+   (org-truss--blocks (org-truss--listed-flow section 1))
    (if (org-truss-list-form section)
-       (let ((list (org-truss--list-text section model)))
+       (let ((list (org-truss--list-text section)))
          (and (not (string-empty-p list)) (list list)))
      (mapcan (lambda (s)
                (append (org-truss--blocks
                         (list (list 0 (cons (org-truss-section-title s)
                                             (or (cdr (org-truss-section-public s)) "")))))
-                       (org-truss--section-inside model s)))
+                       (org-truss--section-inside s)))
              (seq-remove #'org-truss-noexport-p (org-truss-section-children section))))))
 
 (defun org-truss--emit (items)
@@ -178,59 +255,51 @@ A member's title opens its paragraph in bold: a heading of the document is
 a section's alone."
   (mapconcat (lambda (item)
                (pcase-let* ((`(,_depth ,public) item)
-                            (`(,title . ,body) public))
+                            (`(,title . ,body) (org-truss--shown-written public)))
                  (cond ((null public) "")
                        (title (format "*%s*\n%s\n" title
-                                      (if (string-empty-p body) "" (concat body "\n"))))
-                       ((string-empty-p body) "")
+                                      (if (string-empty-p (or body "")) "" (concat body "\n"))))
+                       ((string-empty-p (or body "")) "")
                        (t (concat body "\n\n")))))
              items ""))
 
 ;;;; Sections
 
-(defun org-truss--render-section (model section level)
-  "Return Org text for SECTION of MODEL at LEVEL, then the sections below it."
-  (let ((body (cdr (org-truss-section-public section))))
+(defun org-truss--render-section (section level)
+  "Return Org text for SECTION at LEVEL, then the sections below it."
+  (let ((body (org-truss--written (cdr (org-truss-section-public section)))))
     (concat
-     (format "%s %s\n" (make-string level ?*) (org-truss-section-title section))
+     (format "%s %s\n" (make-string level ?*) (org-truss--written (org-truss-section-title section)))
      (if (or (null body) (string-empty-p body)) "" (concat body "\n"))
      "\n"
-     (org-truss--render-links model section)
-     (org-truss--render-below model section (1+ level)))))
+     (org-truss--emit (org-truss--listed-flow section 1))
+     (org-truss--render-below section (1+ level)))))
 
-(defun org-truss--render-below (model section level)
-  "Return Org text for the sections below SECTION of MODEL.
+(defun org-truss--render-below (section level)
+  "Return Org text for the sections below SECTION.
 As one list when a pattern of SECTION says so, as what is under a member
 is; see `org-truss-list-form'.  Else each under a heading at LEVEL.  One
 tagged :noexport: is left out, with what is under it, as a member is."
   (if (org-truss-list-form section)
-      (let ((list (org-truss--list-text section model)))
+      (let ((list (org-truss--list-text section)))
         (if (string-empty-p list) "" (concat list "\n\n")))
-    (mapconcat (lambda (s) (org-truss--render-section model s level))
+    (mapconcat (lambda (s) (org-truss--render-section s level))
                (seq-remove #'org-truss-noexport-p (org-truss-section-children section)) "")))
-
-(defun org-truss--render-links (model section)
-  "Return Org text for the members SECTION of MODEL lists."
-  (mapconcat (lambda (ref)
-               (let ((member (org-truss-member-by-ref model ref)))
-                 (if member
-                     (org-truss--emit (org-truss--flow member 1 (org-truss-section-wording
-                                                                   section ref)))
-                   (format (org-truss--pick "(broken link: %s)\n\n" "（リンク切れ: %s）\n\n")
-                           (org-truss--target ref)))))
-             (org-truss-section-links section) ""))
 
 (defun org-truss-render (model)
   "Return the document MODEL describes, as Org text.
-The structure's own lead, the text of its public block, opens it."
-  (let* ((root (org-truss-model-structure model))
-         (lead (and root (cdr (org-truss-section-public root)))))
+The structure's own lead, the text of its public block, opens it; then
+the members its links tell, and the sections below it."
+  (let* ((org-truss--model model)
+         (org-truss--telling nil)
+         (root (org-truss-model-structure model))
+         (lead (and root (org-truss--written (cdr (org-truss-section-public root))))))
     (concat (format "#+title: %s\n#+options: toc:nil num:nil\n\n"
                     (or (org-truss-model-title model) ""))
             (if (or (null lead) (string-empty-p lead)) "" (concat lead "\n\n"))
             (if root
-                (concat (org-truss--render-links model root)
-                        (org-truss--render-below model root 1))
+                (concat (org-truss--emit (org-truss--listed-flow root 1))
+                        (org-truss--render-below root 1))
               ""))))
 
 ;;;; Writing it out
