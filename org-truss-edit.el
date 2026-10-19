@@ -255,18 +255,11 @@ DELTA is -1 or 1."
   (mapcar (lambda (r) (cons (org-truss-role-property (car r)) (symbol-name (cdr r)))) roles))
 
 (defun org-truss-add-section (parent name roles)
-  "Add a section called NAME, playing ROLES, as the last one under PARENT.
-ROLES are (KIND . ROLE), the roles it plays in the patterns of PARENT."
-  (save-excursion
-    (let ((level (1+ (org-truss--level parent))))
-      (goto-char parent)
-      (org-end-of-subtree t t)
-      (unless (bolp) (insert "\n"))
-      (insert (org-truss--serialize
-               (list :heading name
-                     :props (org-truss--role-props roles)
-                     :drawers "" :notes "" :public-raw "" :links nil :children nil)
-               level)))))
+  "Add a section called NAME, playing ROLES, under the section at PARENT.
+ROLES are (KIND . ROLE), the roles it plays in the patterns of PARENT; it
+goes where they list them, as `org-truss-add-heading' puts it, or else
+last."
+  (set-marker (org-truss-add-heading parent name (org-truss--role-props roles)) nil))
 
 (defun org-truss-set-role (pos kind role)
   "Make the heading at POS play ROLE in the pattern of KIND above it.
@@ -297,31 +290,44 @@ or the text.  The guidance sets it to give a role of a part its guide.")
                     role)
       most-positive-fixnum))
 
-(defun org-truss-add-place (pos kind role)
-  "Put under the heading at POS a heading for ROLE of its pattern of KIND.
-Named for the role in `org-truss-language' and playing it, it goes where
-the pattern lists the role: before the first heading there that plays a
-role the pattern lists after it, or else last.  Return a marker at it."
-  (let* ((rank (org-truss--rank pos kind role))
+(defun org-truss-add-heading (parent label &optional props text)
+  "Write a heading LABEL, with PROPS and TEXT under it, under PARENT.
+PARENT is the position of any heading.  The new one goes where the
+patterns of PARENT list the roles its PROPS give it: before the first
+heading there that plays, in one of those patterns, a role listed after
+its own; or else last.  Return a marker at it."
+  (let* ((kinds (seq-filter (lambda (kind) (assoc (org-truss-role-property kind) props))
+                            org-truss-pattern-kinds))
+         (rank (lambda (kind role) (org-truss--rank parent kind role)))
+         (own (lambda (kind) (org-truss--intern (cdr (assoc (org-truss-role-property kind) props)))))
          (before (seq-find (lambda (child)
-                             (let ((theirs (org-truss--intern (org-entry-get child (org-truss-role-property kind)))))
-                               (and theirs (> (org-truss--rank pos kind theirs) rank))))
-                           (org-truss--children pos)))
-         (text (concat (make-string (1+ (org-truss--level pos)) ?*) " " (org-truss-role-label role) "\n"
-                       (org-truss--drawer (org-truss--role-props (list (cons kind role))))
-                       (or (and org-truss-place-text-function
-                                (funcall org-truss-place-text-function pos role))
-                           "")
-                       "\n")))
+                             (seq-some (lambda (kind)
+                                         (let ((theirs (org-truss--intern
+                                                        (org-entry-get child (org-truss-role-property kind)))))
+                                           (and theirs (> (funcall rank kind theirs)
+                                                          (funcall rank kind (funcall own kind))))))
+                                       kinds))
+                           (org-truss--children parent))))
     (save-excursion
       (if before
           (goto-char before)
-        (goto-char pos)
+        (goto-char parent)
         (org-end-of-subtree t t)
         (unless (bolp) (insert "\n")))
       (let ((at (point-marker)))
-        (insert text)
+        (insert (make-string (1+ (org-truss--level parent)) ?*) " " label "\n"
+                (org-truss--drawer props) (or text "") "\n")
         at))))
+
+(defun org-truss-add-place (pos kind role)
+  "Put under the heading at POS a heading for ROLE of its pattern of KIND.
+Named for the role in `org-truss-language' and playing it, it goes where
+the pattern lists the role, as `org-truss-add-heading' puts it.  Return a
+marker at it."
+  (org-truss-add-heading pos (org-truss-role-label role)
+                         (org-truss--role-props (list (cons kind role)))
+                         (and org-truss-place-text-function
+                              (funcall org-truss-place-text-function pos role))))
 
 (defun org-truss-add-places (pos gaps)
   "Put under the heading at POS a heading for each role GAPS names.
@@ -336,28 +342,12 @@ expected to make by hand; this makes them.  Return the number made."
         (set-marker (org-truss-add-place pos kind role) nil)))
     n))
 
-(defun org-truss--write-member-after (pos level label props)
-  "Write a member LABEL, with PROPS, at LEVEL, after the subtree at POS.
-Return a marker at the new heading."
-  (save-excursion
-    (goto-char pos)
-    (org-end-of-subtree t t)
-    (unless (bolp) (insert "\n"))
-    (let ((at (point-marker)))
-      (insert (make-string level ?*) " " label "\n" (org-truss--drawer props) "\n")
-      at)))
-
 (defun org-truss-add-member (parent label &optional props)
-  "Write a member LABEL, with PROPS, as the last heading under PARENT.
-PARENT is the position of a part or a member.  Return a marker at
-the new heading."
-  (org-truss--write-member-after parent (1+ (org-truss--level parent)) label props))
-
-(defun org-truss-add-member-after (pos label &optional props)
-  "Write a member LABEL, with PROPS, just after the member at POS, its sibling.
-After what is nested under it too, so it comes next among its siblings.
-Return a marker at the new heading."
-  (org-truss--write-member-after pos (org-truss--level pos) label props))
+  "Write a member LABEL, with PROPS, under PARENT, a part or a member.
+Where the patterns there list the roles PROPS give it, as
+`org-truss-add-heading' puts it, or else last.  Return a marker at the
+new heading."
+  (org-truss-add-heading parent label props))
 
 (defun org-truss--put-grounds (pos refs sources)
   "Write TRUSS_GROUNDS at POS: links to the members REFS, then SOURCES.

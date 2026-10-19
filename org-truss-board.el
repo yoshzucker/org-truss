@@ -848,55 +848,55 @@ Not placed: right under Members, and not told in the document."
             (append not-placed
                     (seq-remove (lambda (m) (memq m not-placed)) (org-truss-model-all model))))))
 
-(defun org-truss--placings (model ref)
-  "Return the sections of MODEL whose links tell the member REF."
-  (let ((root (org-truss-model-structure model)))
-    (and root (seq-filter (lambda (s) (member ref (org-truss-cluster-includes s)))
-                          (cons root (org-truss-sections model))))))
+(defun org-truss--heading-choices (model &optional but)
+  "Return (PATH . POSITION) for every heading of MODEL a link can tell.
+The members, those not placed first, then the sections; BUT, a position,
+is left out."
+  (seq-remove (lambda (choice) (eql (cdr choice) but))
+              (append (org-truss--member-choices model)
+                      (cdr (org-truss--section-choices model)))))
+
+(defun org-truss--tellers (model ref)
+  "Return the headings of MODEL whose links tell the heading REF."
+  (seq-filter (lambda (c) (member ref (org-truss-cluster-includes c)))
+              (org-truss-clusters model)))
 
 (defun org-truss--place (pos to)
-  "Place the member at POS in the section at TO, after what it tells there.
-Run in the truss file.  The member is given a CUSTOM_ID to be pointed to
-by, when it has none, and the section tells it by a link of its own,
-- [[truss-include:m7]].  Where else it is told stays as it is: a member
-can be told in as many sections as want it."
+  "Tell the heading at POS in the heading at TO, after what it says there.
+Run in the truss file.  The heading told is given a CUSTOM_ID to be
+pointed to by, when it has none, and TO tells it by a link of its own,
+- [[truss-include:m7]].  Where else it is told stays as it is: a heading
+can be told in as many places as want it."
   (let* ((to (copy-marker to))
          (ref (org-truss-ensure-id pos)))
     (if (memq (marker-position to)
-              (mapcar #'org-truss-section-pos (org-truss--placings (org-truss-read) ref)))
+              (mapcar #'org-truss-cluster-pos (org-truss--tellers (org-truss-read) ref)))
         (message "Already told there")
       (org-truss-add-link to ref))
     (set-marker to nil)))
 
 (defun org-truss-board-place ()
-  "Place a member in a section of the structure.
-On a section, ask which member to place in it, those not placed yet
-first.  On a broken link, ask which member to place where it stands, in
-its place.  On a member, ask which section to place it in.  A member can
-be placed in as many sections as want it; one placed already stays where
-it is placed, too.  The member itself, in the file, does not move: the
-section tells it by a link."
+  "Tell a heading in the heading at point, by a link of its own.
+On any heading -- a section, a member, a part -- ask which to tell in it:
+a member, those not placed yet first, or a section.  On a broken link,
+ask which to tell where it stands, in its place.  A heading can be told
+in as many places as want it; where else it is told, it stays.  Nothing
+told moves in the file: the link tells it where it stands."
   (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'section 'member 'broken))
+  (let* ((item (org-truss--want (org-truss--item) 'section 'member 'brief 'broken))
          (model (org-truss-read org-truss--source)))
-    (pcase (plist-get item :type)
-      ('section
-       (let ((pos (org-truss--read-choice "Place: " (org-truss--member-choices model))))
-         (org-truss--editing (org-truss--place pos (plist-get item :pos)))))
-      ('broken
-       (let ((pos (org-truss--read-choice
-                   (format "Place instead of %s: " (org-truss--include-link (plist-get item :link)))
-                   (org-truss--member-choices model))))
-         (org-truss--editing
-           (let ((holder (copy-marker (plist-get item :holder)))
-                 (ref (org-truss-ensure-id pos)))
-             (org-truss-replace-link holder (plist-get item :link) ref)
-             (set-marker holder nil)))))
-      (_
-       (let ((pos (or (and (plist-get item :label) (plist-get item :pos))
-                      (user-error "Nothing to place here")))
-             (to (org-truss--read-choice "Place in: " (org-truss--section-choices model))))
-         (org-truss--editing (org-truss--place pos to)))))))
+    (if (eq (plist-get item :type) 'broken)
+        (let ((pos (org-truss--read-choice
+                    (format "Tell instead of %s: " (org-truss--include-link (plist-get item :link)))
+                    (org-truss--heading-choices model))))
+          (org-truss--editing
+            (let ((holder (copy-marker (plist-get item :holder)))
+                  (ref (org-truss-ensure-id pos)))
+              (org-truss-replace-link holder (plist-get item :link) ref)
+              (set-marker holder nil))))
+      (let* ((to (or (plist-get item :pos) (user-error "Nothing to tell anything in here")))
+             (pos (org-truss--read-choice "Tell here: " (org-truss--heading-choices model to))))
+        (org-truss--editing (org-truss--place pos to))))))
 
 (defun org-truss--confirm-loss (labels)
   "Ask whether to lose the writing in the sections LABELS; non-nil means yes."
@@ -1063,10 +1063,11 @@ when it is finished."
       (and found (prop-match-beginning found)))))
 
 (defun org-truss-board-fold ()
-  "Fold what is nested under the member at point, or unfold it.
-On a line with nothing under it, what it is under.  A folded line says how
-many it hides.  A member holding more than `org-truss-board-fold-limit'
-starts folded."
+  "Fold what is under the heading at point, or unfold it.
+Under a member, what is nested under it and what its links tell; under a
+section, the sections below it and what its links tell.  On a line with
+nothing under it, what it is under.  A folded line says how many it hides.
+A heading holding more than `org-truss-board-fold-limit' starts folded."
   (interactive)
   (let* ((item (org-truss--item))
          (at (if (plist-get item :fold)

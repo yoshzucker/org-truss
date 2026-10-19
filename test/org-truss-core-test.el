@@ -1162,8 +1162,9 @@ and gives each thing found a line of its own that compilation mode reads."
                      "Move to fortnightly" "A meeting that repeats itself can meet less")))))
 
 (ert-deftest org-truss-test-duplicates ()
-  "Two members with one id are reported, since a link cannot tell them apart;
-two with one label are not, since nothing points by label."
+  "Two headings with one id are reported, since a link cannot tell them
+apart, members or sections alike; two with one label are not, since
+nothing points by label."
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -1178,11 +1179,21 @@ two with one label are not, since nothing points by label."
 :END:
 ** Same
 ** Same
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** Three
+:PROPERTIES:
+:CUSTOM_ID: x
+:END:
 "
     (let ((model (org-truss-read)))
       (should (equal (org-truss-model-duplicates model) '("x")))
-      (should (equal (org-truss-member-label (org-truss-member-by-ref model "x")) "One"))
-      (should (string-match-p "^f:[0-9]+: Two -- #x, which another member has too$"
+      (should (equal (org-truss-member-label (org-truss-heading-by-ref model "x")) "One"))
+      (should (string-match-p "^f:[0-9]+: Two -- #x, which another heading has too$"
+                              (org-truss-check-report model "f")))
+      (should (string-match-p "^f:[0-9]+: Three -- #x, which another heading has too$"
                               (org-truss-check-report model "f"))))))
 
 ;;;; Reading
@@ -1217,10 +1228,10 @@ source."
   (should (equal (org-truss--link-item "a") "- [[truss-include:a]]\n"))
   (org-truss-test--with org-truss-test--file
     (let ((model (org-truss-read)))
-      (should (equal (org-truss-member-label (org-truss-member-by-ref model "half"))
+      (should (equal (org-truss-member-label (org-truss-heading-by-ref model "half"))
                      "Half the items repeat"))
       (should (equal (org-truss-member-id (org-truss-test--m model "Lone remark")) nil))
-      (should-not (org-truss-member-by-ref model "Half the items repeat")))))
+      (should-not (org-truss-heading-by-ref model "Half the items repeat")))))
 
 (ert-deftest org-truss-test-ensure-id ()
   "A member is given m and the next free number, once; one it has stays."
@@ -1597,7 +1608,7 @@ by its id, and still find it.  A label another member has is refused."
                      (replace-regexp-in-string "^\\*\\* Half the items repeat$" "** Agendas repeat"
                                                before))))
     (let ((model (org-truss-read)))
-      (should (equal (org-truss-member-label (org-truss-member-by-ref model "half")) "Agendas repeat"))
+      (should (equal (org-truss-member-label (org-truss-heading-by-ref model "half")) "Agendas repeat"))
       (should (equal (org-truss-member-grounds (org-truss-test--m model "Move to fortnightly"))
                      '("half"))))
     (org-truss-rename (org-truss-test--heading-pos "Agendas repeat") "Agendas repeat")

@@ -71,6 +71,19 @@ member's public title opens its paragraph in bold."
                org-truss-test--file t t))))
     (should (string-match-p "toc:nil num:nil\n\nRead this first\\.\n\n\\* Sky\n\nReviews ran past the hour" out))))
 
+(ert-deftest org-truss-test-render-document-title ()
+  "The structure's public title, as any section's, is the title the
+document is written under; without one, the file's #+title."
+  (should (string-match-p "\\`#\\+title: Fortnightly reviews\n"
+                          (org-truss-test--render org-truss-test--file)))
+  (let ((out (org-truss-test--render
+              (replace-regexp-in-string
+               (regexp-quote ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n")
+               ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n#+begin_public Every other week\nRead this first.\n#+end_public\n"
+               org-truss-test--file t t))))
+    (should (string-match-p "\\`#\\+title: Every other week\n" out))
+    (should (string-match-p "toc:nil num:nil\n\nRead this first\\." out))))
+
 (ert-deftest org-truss-test-render-includes ()
   "A link that tells a member is that member told where it stands, with what
 is nested under it: on a line of its own, in a list item, or in a

@@ -89,25 +89,27 @@
 #   under Structure
 #     a section of the document: it tells members by links that tell them
 #
-# Two links to a member (give it :CUSTOM_ID: m7, the next free number)
+# Two links to a heading (give it :CUSTOM_ID: m7, the next free number)
 #   ~[[#m7]]~               points to it: a ground, wherever it is written
-#   ~[[truss-include:m7]]~  tells it there: the member, with what is under
-#                           it, is written out where the link stands, in
-#                           any heading, in a sentence too.  Its description
-#                           is for the file alone.  The check points out a
-#                           link that tells what tells its heading back
+#   ~[[truss-include:m7]]~  tells it there: the heading, a member or a
+#                           section, with what is under it, is written out
+#                           where the link stands, in any heading, in a
+#                           sentence too.  Its description is for the file
+#                           alone.  The check points out a link that tells
+#                           what tells its heading back
 #
 # Written out (only what Structure reaches)
-#   #+title             the title
+#   #+title             the title, unless Structure's #+begin_public has one
 #   section heading     a heading
 #   #+begin_public      a heading's words for the reader: a section's
 #                       opening (right under Structure, the document's), a
 #                       member's words in place of its heading.  A title on
 #                       a member's opens it in bold: only sections make the
 #                       document's headings
-#   ~[[truss-include:m7]]~  member m7, where the link stands: its words;
-#                       then what its links outside #+begin_public tell;
-#                       then the members under it
+#   ~[[truss-include:m7]]~  m7, where the link stands: a member's words,
+#                       then what its links outside #+begin_public tell,
+#                       then the members under it; a section's title in
+#                       bold and its lead, then what it holds
 #   ~[[#m7]]~           in #+begin_public, its words, else m7's heading
 #   Under a heading with TRUSS_BREAKDOWN, member or section, the headings
 #   are a list, numbered for steps; where the pattern names its roles, each
@@ -191,24 +193,27 @@
 #   Structure の下
 #     節：文書の章。語る部材を、展開するリンクで書く
 #
-# 部材への2つのリンク（部材に :CUSTOM_ID: m7 を付ける。番号は空いている次）
-#   ~[[#m7]]~               部材を指す。どこに書いても根拠になる
-#   ~[[truss-include:m7]]~  部材をそこで展開する。リンクを書いた場所に、
-#                           部材とその下の部材が書き出される。どの見出しに
-#                           でも、文の途中にでも書ける。説明はファイルで
-#                           見るためのもので、書き出されない。展開をたどって
-#                           自分の見出しに戻るリンクは、検査が指摘する
+# 見出しへの2つのリンク（見出しに :CUSTOM_ID: m7 を付ける。番号は空いている次）
+#   ~[[#m7]]~               見出しを指す。どこに書いても根拠になる
+#   ~[[truss-include:m7]]~  見出し（部材でも節でも）をそこで展開する。
+#                           リンクを書いた場所に、見出しとその下が書き出
+#                           される。どの見出しにでも、文の途中にでも書ける。
+#                           説明はファイルで見るためのもので、書き出されない。
+#                           展開をたどって自分の見出しに戻るリンクは、検査が
+#                           指摘する
 #
 # 書き出されるもの（Structure から辿れるものだけ）
-#   #+title                   文書のタイトル
+#   #+title                   文書のタイトル。Structure の #+begin_public に
+#                             題があれば、そちらが文書のタイトル
 #   節の見出し                文書の見出し
 #   #+begin_public            読み手に見せる言葉。節なら最初の文（Structure
 #                             直下なら文書の最初の文）、部材なら見出しの
 #                             代わりの言葉。部材の題は太字で頭に出る。文書の
 #                             見出しを作るのは節だけ
-#   ~[[truss-include:m7]]~    部材 m7 を、リンクの場所に。その言葉、
+#   ~[[truss-include:m7]]~    m7 を、リンクの場所に。部材なら、その言葉、
 #                             #+begin_public の外のリンクが展開するもの、
-#                             下の部材の順に出る
+#                             下の部材の順。節なら、太字の題と最初の文、
+#                             中身の順
 #   ~[[#m7]]~                 #+begin_public の中では、説明、なければ m7 の
 #                             見出しが出る
 #   TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書きで出る（steps

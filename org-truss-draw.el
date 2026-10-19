@@ -203,11 +203,11 @@ is pointed to, #m9; see `org-truss--id-text'."
   (if id (append line (list :id (propertize id 'face 'org-truss-dim))) line))
 
 (defun org-truss--id-text (member &optional ref)
-  "Return how the board names MEMBER by its CUSTOM_ID, or nil when it has none.
+  "Return how the board names MEMBER, any heading, by its CUSTOM_ID, or nil.
 REF, when the line calls it -- a link that tells it, a ground -- as
 [[#m9]]; else as anything points to it, #m9, where it is written."
   (cond (ref (format "[[%s]]" (org-truss--target ref)))
-        ((org-truss-member-id member) (concat "#" (org-truss-member-id member)))))
+        ((org-truss-cluster-id member) (concat "#" (org-truss-cluster-id member)))))
 
 (defun org-truss--leader (width)
   "Return WIDTH columns that lead the eye from the board's words to the file's.
@@ -316,11 +316,11 @@ member, or telling one, as the member's heading."
              (and (string-match "\\`\\(?:file:\\|\\.\\.?/\\)\\([^:]+\\)" target)
                   (file-name-nondirectory (org-link-unescape (match-string 1 target)))))
            (let ((member (and org-truss--model
-                              (org-truss-member-by-ref
+                              (org-truss-heading-by-ref
                                org-truss--model
                                (org-truss--ref (string-remove-prefix
                                                 (concat org-truss-include-type ":") target))))))
-             (and member (org-truss-member-label member)))
+             (and member (org-truss-cluster-label member)))
            target)))
    text t t))
 
@@ -591,13 +591,13 @@ KEY is MEMBER's line's.  Each goes to what it names."
         (cell (lambda (m uses) (or (gethash m uses) (puthash m (cons nil nil) uses)))))
     (dolist (c (org-truss-clusters model))
       (dolist (ref (seq-uniq (org-truss-cluster-includes c)))
-        (let ((m (org-truss-member-by-ref model ref)))
+        (let ((m (org-truss-heading-by-ref model ref)))
           (when m
             (let ((use (funcall cell m uses)))
               (setcar use (append (car use) (list c))))))))
     (dolist (c (org-truss-clusters model))
       (dolist (ref (org-truss-cluster-refs c))
-        (let ((ground (org-truss-member-by-ref model ref)))
+        (let ((ground (org-truss-heading-by-ref model ref)))
           (when ground
             (let ((use (funcall cell ground uses)))
               (setcdr use (append (cdr use) (list c))))))))
@@ -637,15 +637,16 @@ STEM starts each; KEY is CLUSTER's line's."
          (found-p (lambda (text) (not (seq-some (lambda (link) (string-search link text)) missing))))
          (member-line
           (lambda (ref word in-text)
-            (let ((ground (org-truss-member-by-ref model ref)))
+            (let ((ground (org-truss-heading-by-ref model ref)))
               (org-truss--ground-line
                stem (append key (list (if in-text 'cited 'ground) ref))
                (cond ((null ground) (propertize (concat "broken " word) 'face 'org-truss-attention))
                      ((org-truss-holds-p ground) word)
                      (t (concat word (propertize " [no grounds]" 'face 'org-truss-attention))))
-               (if ground (org-truss-member-label ground) (format "[[%s]]" (org-truss--target ref)))
-               (list :type 'member :pos (if ground (org-truss-member-pos ground) pos)
-                     :label (and ground (org-truss-member-label ground))
+               (if ground (org-truss-cluster-label ground) (format "[[%s]]" (org-truss--target ref)))
+               (list :type (if (org-truss-section-p ground) 'section 'member)
+                     :pos (if ground (org-truss-cluster-pos ground) pos)
+                     :label (and ground (org-truss-cluster-label ground))
                      :claim pos :ground ref :in-text in-text)
                (and ground (org-truss--id-text ground ref)))))))
     (append
@@ -815,17 +816,33 @@ HOLDER is any heading, and its links [[truss-include:m7]] are drawn in the
 order they are written, each member as `org-truss--member-lines' draws
 it.  PATH identifies HOLDER's lines."
   (mapcan (lambda (ref)
-            (let ((member (org-truss-member-by-ref model ref))
+            (let ((member (org-truss-heading-by-ref model ref))
                   (key (list 'link path ref)))
-              (if member
-                  (org-truss--member-lines model member indent key ref
-                                           (org-truss-cluster-pos holder))
+              (cond
+               ((org-truss-section-p member)
+                ;; A section told by a link is drawn where it is written, in
+                ;; the structure's tree; here it is one line, the end of
+                ;; the link.
+                (list (org-truss--with-id
+                       (org-truss--line
+                        (concat indent (org-truss--mark 'item) (org-truss--role-word model member))
+                        (org-truss-section-label member)
+                        (car (org-truss--reader-lines (cons (org-truss-section-title member)
+                                                            (cdr (org-truss-section-public member)))))
+                        (list :type 'section :pos (org-truss-section-pos member)
+                              :label (org-truss-section-label member)
+                              :link ref :holder (org-truss-cluster-pos holder) :key key))
+                       (org-truss--id-text member ref))))
+               (member
+                (org-truss--member-lines model member indent key ref
+                                         (org-truss-cluster-pos holder)))
+               (t
                 (list (org-truss--line
                        (concat indent (org-truss--mark 'item)
                                (propertize "broken link" 'face 'org-truss-attention))
                        (propertize (org-truss--include-link ref) 'face 'org-truss-attention)
                        nil (list :type 'broken :pos (org-truss-cluster-pos holder)
-                                 :link ref :holder (org-truss-cluster-pos holder) :key key))))))
+                                 :link ref :holder (org-truss-cluster-pos holder) :key key)))))))
           (seq-uniq (org-truss-cluster-includes holder))))
 
 (defun org-truss--pattern-line (cluster indent item)
@@ -881,10 +898,19 @@ PATH is the labels from the root, which identifies the line across redraws.
 PARENT is the section above.  A section that comes below one the
 parent's telling pattern tells after is marked.  Under a pattern written
 out as a list, its right opens with the number, the bullet or the role
-the reader sees it with, as a member's does."
+the reader sees it with, as a member's does.  It folds as a member does:
+holding more than `org-truss-board-fold-limit', it starts folded, and its
+line says how many it hides."
   (let* ((path (append path (list (org-truss-section-label section))))
          (inner (concat prefix (if last "  " "│ ")))
-         (children (org-truss-section-children section))
+         (key (list 'section path))
+         (includes (seq-uniq (org-truss-cluster-includes section)))
+         (all (org-truss-section-children section))
+         (nested (+ (length (org-truss--section-descendants section)) (length includes)))
+         (folded (and (> nested 0)
+                      (org-truss--folded-p key (> (+ (length all) (length includes))
+                                                  org-truss-board-fold-limit))))
+         (children (and (not folded) all))
          ;; Its notes and links have the line to the sections below run past.
          (stem (concat inner (if children "│ " "  ")))
          (above (cdr (assq section (plist-get org-truss--checks :out-of-order))))
@@ -912,26 +938,28 @@ the reader sees it with, as a member's does."
                      (list (propertize "noexport" 'face 'org-truss-dim))
                    (org-truss--reader-lines
                     (cons (if marker (concat (car marker) (cdr marker) title) title) (cdr public)))))
-         (item (list :type 'section :pos (org-truss-section-pos section)
-                     :label (org-truss-section-label section)
-                     :key (list 'section path))))
+         (item (append (list :type 'section :pos (org-truss-section-pos section)
+                             :label (org-truss-section-label section)
+                             :key key)
+                       (and (> nested 0) (list :fold key :folded folded)))))
     (append
      (list (org-truss--line (concat prefix (if last "└ " "├ ")
                                     (org-truss--role-word model section)
+                                    (if folded (org-truss--fold-mark nested) "")
                                     (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
                             (car label)
                             (car reader)
                             (append item (and (not (string-empty-p why)) (list :why why)))))
      (org-truss--lines-under-heading inner (cdr label) (org-truss-section-notes section) (cdr reader) item
-                             (org-truss--pattern-line section inner item) stem)
-     (org-truss--grounds-lines model section stem (plist-get item :key))
-     (org-truss--links-lines model section stem path)
+                             (and (not folded) (org-truss--pattern-line section inner item)) stem)
+     (and (not folded) (org-truss--grounds-lines model section stem (plist-get item :key)))
+     (and (not folded) (org-truss--links-lines model section stem path))
      (let ((n (length children)) (i 0))
        (mapcan (lambda (child)
                  (setq i (1+ i))
                  (org-truss--section-lines model child inner (= i n) path section))
                children))
-     (org-truss--section-gap-lines section (concat inner "  ") item))))
+     (and (not folded) (org-truss--section-gap-lines section (concat inner "  ") item)))))
 
 (defun org-truss--check-heading (name)
   "Return the line that heads the check NAME, saying what it finds on hover."
@@ -991,20 +1019,26 @@ finds it, as `org-truss-check-descriptions' names them."
          (refs (lambda (refs) (mapconcat (lambda (ref) (format "[[%s]]" (org-truss--target ref)))
                                          refs " ")))
          (broken (funcall in (plist-get checks :broken-links)))
-         (duplicates (and (eq part 'structure) (plist-get checks :duplicates)))
          (found (funcall in (append (plist-get checks :broken-grounds)
                                     (plist-get checks :broken-sources)
                                     (mapcar (lambda (l) (cons (car l) (list 'loop (cdr l))))
-                                            (plist-get checks :loops)))))
+                                            (plist-get checks :loops))
+                                    (mapcan (lambda (id)
+                                              (mapcar (lambda (c) (cons c (list 'duplicate id)))
+                                                      (seq-filter (lambda (c) (equal (org-truss-cluster-id c) id))
+                                                                  (org-truss-clusters model))))
+                                            (plist-get checks :duplicates)))))
          (lines
           (append
-           (and (or found broken duplicates)
+           (and (or found broken)
                 (cons (org-truss--check-heading "Broken links")
                       (append
                        (cdr (org-truss--check-group
                              model "Broken links" found
                              (lambda (e)
-                               (cond ((consp (cdr e))
+                               (cond ((eq (car-safe (cdr e)) 'duplicate)
+                                      (format "#%s, which another heading has too" (cadr (cdr e))))
+                                     ((consp (cdr e))
                                       (format "%s tells it back" (org-truss--include-link (cadr (cdr e)))))
                                      ((string-prefix-p "[[" (cdr e)) (format "%s not found" (cdr e)))
                                      (t (format "%s not found" (funcall refs (list (cdr e)))))))))
@@ -1017,14 +1051,7 @@ finds it, as `org-truss-check-descriptions' names them."
                                   nil (list :type 'broken :pos (org-truss-cluster-pos (car b))
                                             :link (cdr b) :holder (org-truss-cluster-pos (car b))
                                             :key (list 'broken (cdr b)))))
-                               broken)
-                       (and duplicates
-                            (list (org-truss--line "   "
-                                                   (propertize (mapconcat (lambda (id) (concat "#" id)) duplicates " · ")
-                                                               'face 'org-truss-attention)
-                                                   (propertize "each the CUSTOM_ID of more than one member"
-                                                               'face 'org-truss-dim)
-                                                   (list :key '(duplicates))))))))
+                               broken))))
            (org-truss--check-group
             model "No grounds" (funcall in (mapcar #'list (plist-get checks :no-grounds)))
             (lambda (_) "no grounds"))
@@ -1134,15 +1161,18 @@ followed by what is left to do there."
             (org-truss--check-lines model checks 'structure))))
 
 (defun org-truss--head-lines (model)
-  "Return the head of the board for MODEL: the title."
+  "Return the head of the board for MODEL: the title.
+In the middle the file's #+title, on the right the title the document is
+written under; see `org-truss-document-title'."
   (let ((title (org-truss-model-title model))
+        (told (org-truss-document-title model))
         (pos (alist-get '(title) (org-truss-model-locations model) nil nil #'equal)))
     (list (org-truss--line
            (concat " Title" (if (buffer-modified-p (org-truss-model-buffer model))
                                 (propertize "  unsaved" 'face 'org-truss-attention)
                               ""))
            (propertize (or title "") 'face 'org-truss-section)
-           (and title (propertize title 'face 'org-truss-reader))
+           (and told (propertize (org-truss--link-text told) 'face 'org-truss-reader))
            (and pos (list :type 'brief :pos pos :key '(brief title)))))))
 
 (defun org-truss--members-part (model checks)

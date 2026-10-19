@@ -793,9 +793,10 @@ before it reads it.")
 
 (defun org-truss-read (&optional buffer)
   "Read the truss file in BUFFER, or the current buffer, into a model.
-Every heading is read alike; see `org-truss-cluster'.  An id more than
-one member has is among its duplicates, and its index finds the first.
-See `org-truss-model'."
+Every heading is read alike; see `org-truss-cluster'.  Its index finds
+any heading by its CUSTOM_ID, a member or a section; an id more than one
+has is among its duplicates, and the index finds the first.  See
+`org-truss-model'."
   (with-current-buffer (or buffer (current-buffer))
     (org-with-wide-buffer
      (let* ((root (org-truss--root-pos))
@@ -817,12 +818,14 @@ See `org-truss-model'."
             (index (make-hash-table :test #'equal))
             (parents (make-hash-table :test #'eq))
             duplicates)
-       (dolist (m all)
-         (let ((id (org-truss-member-id m)))
+       (dolist (c (org-truss--by-position
+                   (append all
+                           (and structure (cons structure (org-truss--section-descendants structure))))))
+         (let ((id (org-truss-cluster-id c)))
            (when id
              (if (gethash id index)
                  (cl-pushnew id duplicates :test #'equal)
-               (puthash id m index)))))
+               (puthash id c index)))))
        (cl-labels ((walk (cluster)
                      (dolist (c (org-truss-cluster-children cluster))
                        (puthash c cluster parents)
@@ -850,8 +853,9 @@ See `org-truss-model'."
 
 ;;;; What a member is
 
-(defun org-truss-member-by-ref (model ref)
-  "Return the member of MODEL that REF, a link's or a ground's, points to, or nil."
+(defun org-truss-heading-by-ref (model ref)
+  "Return the heading of MODEL that REF, a link's or a ground's, points to, or nil.
+A member or a section: any heading with that CUSTOM_ID."
   (gethash ref (org-truss-model-index model)))
 
 (defun org-truss-member-by-label (model label)
@@ -1031,7 +1035,7 @@ member is asked to; see `org-truss-holds-p'.  Only one step: what that
 member points to in turn is asked of it there.  A link to no member is
 broken, not weak."
   (seq-filter (lambda (ref)
-                (let ((ground (org-truss-member-by-ref model ref)))
+                (let ((ground (org-truss-heading-by-ref model ref)))
                   (and ground (not (org-truss-holds-p ground)))))
               (org-truss-cluster-refs cluster)))
 
@@ -1092,6 +1096,17 @@ The parts, every member, and the structure and its sections."
   "Return the heading of MODEL at POS, or nil."
   (seq-find (lambda (c) (= (org-truss-cluster-pos c) pos)) (org-truss-clusters model)))
 
+(defun org-truss-document-title (model)
+  "Return the title MODEL's document is written under, or nil.
+The structure's public title, as any section's is its title, or else the
+file's #+title: the structure's heading names a part, and is never
+written out."
+  (let* ((root (org-truss-model-structure model))
+         (title (and root (car (org-truss-section-public root)))))
+    (if (and title (not (string-blank-p title)))
+        title
+      (org-truss-model-title model))))
+
 (defun org-truss-section-title (section)
   "Return the title SECTION is written under: its public title, or its heading."
   (let ((title (car (org-truss-section-public section))))
@@ -1133,16 +1148,16 @@ playing no role is not judged here."
         (lambda (a b) (< (org-truss-cluster-pos a) (org-truss-cluster-pos b)))))
 
 (defun org-truss--told-by (model cluster)
-  "Return the members CLUSTER of MODEL tells right where it is written.
-Those its links tell, [[truss-include:m7]], each with what is nested under
-it, in order."
-  (delq nil (mapcar (lambda (ref) (org-truss-member-by-ref model ref))
+  "Return the headings CLUSTER of MODEL tells right where it is written.
+Those its links tell, [[truss-include:m7]], each with what is under it,
+in order: members or sections."
+  (delq nil (mapcar (lambda (ref) (org-truss-heading-by-ref model ref))
                     (org-truss-cluster-includes cluster))))
 
 (defun org-truss-told (model)
-  "Return the members MODEL's document tells, in document order.
-Those the sections tell, with what is nested under them, and those they
-tell in turn."
+  "Return the headings MODEL's document tells by links, in document order.
+Those the sections tell, with what is under them, and those they tell in
+turn."
   (let* ((root (org-truss-model-structure model))
          (todo (and root (mapcan (lambda (s) (org-truss--told-by model s))
                                  (cons root (org-truss-sections model)))))
@@ -1163,7 +1178,7 @@ on; a link that leads back to CLUSTER in this way would tell it without
 end.  Each is a reference of CLUSTER's links."
   (seq-filter
    (lambda (ref)
-     (let ((todo (let ((m (org-truss-member-by-ref model ref))) (and m (list m))))
+     (let ((todo (let ((m (org-truss-heading-by-ref model ref))) (and m (list m))))
            seen found)
        (while (and todo (not found))
          (let ((member (pop todo)))
@@ -1198,7 +1213,7 @@ heading whose pattern asks, at the heading that lacks, at the link.
 :broken-grounds  (CLUSTER . REF) for links a heading stands on to no member
 :broken-sources  (CLUSTER . LINK) for links to sources, in TRUSS_GROUNDS or
                  the text, that point to nothing there
-:duplicates      CUSTOM_IDs more than one member has"
+:duplicates      CUSTOM_IDs more than one heading has"
   (let* ((clusters (org-truss-clusters model))
          (each (lambda (f) (mapcan (lambda (c) (mapcar (lambda (x) (cons c x)) (funcall f c)))
                                    clusters))))
@@ -1214,11 +1229,11 @@ heading whose pattern asks, at the heading that lacks, at the link.
           :no-grounds (seq-filter (lambda (c) (org-truss-missing-grounds model c)) clusters)
           :weak-grounds (funcall each (lambda (c) (org-truss-weak-grounds model c)))
           :broken-links (funcall each (lambda (c)
-                                        (seq-remove (lambda (ref) (org-truss-member-by-ref model ref))
+                                        (seq-remove (lambda (ref) (org-truss-heading-by-ref model ref))
                                                     (seq-uniq (org-truss-cluster-includes c)))))
           :loops (funcall each (lambda (c) (org-truss-include-loops model c)))
           :broken-grounds (funcall each (lambda (c)
-                                          (seq-remove (lambda (ref) (org-truss-member-by-ref model ref))
+                                          (seq-remove (lambda (ref) (org-truss-heading-by-ref model ref))
                                                       (org-truss-cluster-refs c))))
           :broken-sources (let ((file (buffer-file-name (org-truss-model-buffer model))))
                             (with-current-buffer (org-truss-model-buffer model)
@@ -1300,9 +1315,9 @@ of the file MODEL was read from."
                   (mapcar (lambda (b) (funcall cluster-line (car b) (format "%s not found" (cdr b))))
                           (plist-get checks :broken-sources))
                   (mapcan (lambda (id)
-                            (mapcar (lambda (m) (funcall cluster-line m (format "#%s, which another member has too" id)))
-                                    (seq-filter (lambda (m) (equal (org-truss-member-id m) id))
-                                                (org-truss-model-all model))))
+                            (mapcar (lambda (c) (funcall cluster-line c (format "#%s, which another heading has too" id)))
+                                    (seq-filter (lambda (c) (equal (org-truss-cluster-id c) id))
+                                                (org-truss-clusters model))))
                           (plist-get checks :duplicates))))
            (cons "No grounds"
                  (mapcar (lambda (m) (funcall cluster-line m "no grounds"))

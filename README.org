@@ -233,7 +233,7 @@ the subject it reads (see [[*Pointing to a member]]).  It is the same
 grounds written in ~TRUSS_GROUNDS~ or in the text, where it reads in a
 sentence: /as [[#m3]] shows/.  A link that tells a member,
 ~[[truss-include:m7]]~, is no ground: it says where the member is told (see
-[[*Two links to a member]]).
+[[*Two links to a heading]]).
 
 Whether a heading has grounds is read from what it writes, not from what
 that points to.  What it points to is asked something of its own, of
@@ -553,25 +553,30 @@ and a member moved under a section would be read as a section.  The board
 does not depend on where in the file a member is written -- only on what
 it is nested under and what links to it.
 
-** Two links to a member
+** Two links to a heading
 
-A member is linked to in one of two ways, and the kind of link alone says
-which -- not where it is written, nor whether it is a list item:
+A heading -- a member or a section -- is linked to in one of two ways,
+and the kind of link alone says which: not where it is written, nor
+whether it is a list item, nor what kind of heading it points to.
 
-| Link                   | What it does                                                                                          |
-|------------------------+-------------------------------------------------------------------------------------------------------|
-| ~[[#m7]]~              | points to member m7: a ground, in ~TRUSS_GROUNDS~ or in a heading's text                              |
-| ~[[truss-include:m7]]~ | tells member m7 there: the member, with what is nested under it, is written out where the link stands |
+| Link                   | What it does                                                                            |
+|------------------------+-----------------------------------------------------------------------------------------|
+| ~[[#m7]]~              | points to heading m7: a ground, in ~TRUSS_GROUNDS~ or in a heading's text               |
+| ~[[truss-include:m7]]~ | tells heading m7 there: it, with what is under it, is written out where the link stands |
 
-A link that tells a member can stand in any heading -- a section, or a
+A link that tells a heading can stand in any heading -- a section, or a
 member that brings another along -- on a line of its own, as a list item,
 or in a sentence, inside the public block or not.  Its description,
 ~[[truss-include:m7][words]]~, names it in the file alone and is never
-written out.  A link that points to one, written in a public block, reads
-as its description, or the member's heading.  What a member brings with
-it is told inside it, and so on down; a link that would tell what tells
-it back, without end, is reported under /Broken links/, and the document
-says so where it stops.
+written out.  A member told is written as it is anywhere; a section, as
+it is in a list item -- its title in bold, its lead, then what it holds --
+since it is told where the link stands, not in the document's outline.
+Two places that tell the same section tell its chapter twice: that is
+yours to want or not.  A link that points to a heading, written in a
+public block, reads as its description, or the heading.  What a heading
+brings with it is told inside it, and so on down; a link that would tell
+what tells it back, without end, is reported under /Broken links/, and
+the document says so where it stops.
 
 A section tells the members it shows by such links, ~- [[truss-include:m7]]~,
 from whatever part they are written in.  A section can hold sections of
@@ -579,8 +584,8 @@ its own.
 
 ** Pointing to a member
 
-Both links point to a member by its ~CUSTOM_ID~: ~m7~ is the member with
-~:CUSTOM_ID: m7~.  Org resolves ~[[#m7]]~ within the file alone -- ~C-c
+Both links point to a heading by its ~CUSTOM_ID~: ~m7~ is the heading
+with ~:CUSTOM_ID: m7~.  Org resolves ~[[#m7]]~ within the file alone -- ~C-c
 C-o~ follows it, in a section or in a property -- and, unlike ~:ID:~, it
 is not entered in ~org-id-locations~, nor made a node by org-roam; with
 org-truss loaded, ~C-c C-o~ follows ~[[truss-include:m7]]~ the same way.
@@ -593,9 +598,9 @@ editing the file -- and nothing breaks.
 
 A member is given an id only once something points to it: ~a~ placing it,
 ~b~ making it a ground, ~c~ writing it in a section.  An id is ~m~ and the
-next number free in the file; one you write yourself is kept.  Two members
-with one id, and a link or a ground that points to no member, are
-reported as /Broken links/.  ~a~ on a broken link places a member where it
+next number free in the file; one you write yourself is kept.  Two
+headings with one id, and a link or a ground that points to no heading,
+are reported as /Broken links/, at each in the part it is in.  ~a~ on a broken link places a member where it
 stands.
 
 A link written by heading, ~[[*heading]]~ or ~[[truss-include:*heading]]~
@@ -944,46 +949,46 @@ says itself, and on the patterns of any heading.  /See/ moves about the
 board and the document.  The foot of the board lists them in the same four
 lines.
 
-| Group | Key         | On a section                                          | On a member                                        |
-|-------+-------------+-------------------------------------------------------+----------------------------------------------------|
-| write | ~c~         | write a new member, placed in it                      | write a member under it, last                      |
-|       | ~e~         | edit its entry alone, beside the board                | same                                               |
-|       | ~R~         | rewrite its heading                                   | rewrite its heading                                |
-|       | ~t~         | name the source it stands on, in ~TRUSS_GROUNDS~      | same                                               |
-|       | ~b~         | make a member a ground of it, or not                  | same                                               |
-|       | ~A~         | tag it an assumption, or take the tag off             | same                                               |
-|       | ~Q~         | put the text copied last under it, as a quotation     | same                                               |
-|       | ~f~         | refile it, last under another section                 | refile it, last under a part or another member     |
-|       | ~D~         |                                                       | delete it from the file, after asking              |
-| place | ~a~         | place a member in it                                  | place it in a section, besides where it is         |
-|       | ~d~         | take it out, handing what it places up                | take it out of its section; it stays in the file   |
-|       | ~M-↑~ ~M-↓~ | move it among its siblings                            | move it among its siblings; listed, in its section |
-| shape | ~s~         | add a section under it; on a missing role, playing it |                                                    |
-|       | ~S~         | write its lead                                        | write the words it is told in                      |
-|       | ~u~         | take the sections below away, keeping their links     |                                                    |
-|       | ~p~         | apply a pattern of any kind, or take one off          | same                                               |
-|       | ~r~         | set the roles it plays in the patterns of the         | same                                               |
-|       |             | heading above                                         |                                                    |
-| see   | ~RET~       | go to it                                              | same                                               |
-|       | ~TAB~       | go to it in the other window                          | same                                               |
-|       | ~SPC~       | show it in the other window, staying on the board     | same                                               |
-|       | ~=~         |                                                       | go to where it is written, or there, to a call     |
-|       | ~O~         | open the members sections list where told, or         | same                                               |
-|       |             | where written                                         |                                                    |
-|       | ~E~         | show the text under every heading, or stop            |                                                    |
-|       | ~i~         | show it whole, with the text under it, or stop        | same                                               |
-|       | ~z~         | fold what is under it, or unfold it                   | fold what is nested under it, or unfold it         |
-|       | ~P~         | show the document in another window, kept current     |                                                    |
-|       | ~x~         | write the document                                    |                                                    |
-|       | ~g~         | draw again                                            |                                                    |
-|       | ~C-x C-s~   | save the truss file                                   |                                                    |
+| Group | Key         | On a section                                                                      | On a member                                        |
+|-------+-------------+-----------------------------------------------------------------------------------+----------------------------------------------------|
+| write | ~c~         | write a new member, placed in it                                                  | write a member under it, last                      |
+|       | ~e~         | edit its entry alone, beside the board                                            | same                                               |
+|       | ~R~         | rewrite its heading                                                               | rewrite its heading                                |
+|       | ~t~         | name the source it stands on, in ~TRUSS_GROUNDS~                                  | same                                               |
+|       | ~b~         | make a member a ground of it, or not                                              | same                                               |
+|       | ~A~         | tag it an assumption, or take the tag off                                         | same                                               |
+|       | ~Q~         | put the text copied last under it, as a quotation                                 | same                                               |
+|       | ~f~         | refile it, last under another section                                             | refile it, last under a part or another member     |
+|       | ~D~         |                                                                                   | delete it from the file, after asking              |
+| place | ~a~         | tell a heading in it, by a link                                                   | same                                               |
+|       | ~d~         | take it out, handing what it places up                                            | take it out of its section; it stays in the file   |
+|       | ~M-↑~ ~M-↓~ | move it among its siblings                                                        | move it among its siblings; listed, in its section |
+| shape | ~s~         | add a section under it; on a missing role, playing it, where the pattern lists it |                                                    |
+|       | ~S~         | write its lead                                                                    | write the words it is told in                      |
+|       | ~u~         | take the sections below away, keeping their links                                 |                                                    |
+|       | ~p~         | apply a pattern of any kind, or take one off                                      | same                                               |
+|       | ~r~         | set the roles it plays in the patterns of the                                     | same                                               |
+|       |             | heading above                                                                     |                                                    |
+| see   | ~RET~       | go to it                                                                          | same                                               |
+|       | ~TAB~       | go to it in the other window                                                      | same                                               |
+|       | ~SPC~       | show it in the other window, staying on the board                                 | same                                               |
+|       | ~=~         |                                                                                   | go to where it is written, or there, to a call     |
+|       | ~O~         | open the members sections list where told, or                                     | same                                               |
+|       |             | where written                                                                     |                                                    |
+|       | ~E~         | show the text under every heading, or stop                                        |                                                    |
+|       | ~i~         | show it whole, with the text under it, or stop                                    | same                                               |
+|       | ~z~         | fold what is under it, or unfold it                                               | fold what is nested under it, or unfold it         |
+|       | ~P~         | show the document in another window, kept current                                 |                                                    |
+|       | ~x~         | write the document                                                                |                                                    |
+|       | ~g~         | draw again                                                                        |                                                    |
+|       | ~C-x C-s~   | save the truss file                                                               |                                                    |
 
-~a~ writes a link that tells a member, ~- [[truss-include:m7]]~, in a
-section.  A member can be placed in as many sections as want it, and is
-told in each: ~a~ on a member placed already places it in another too,
-and on a section offers first the members placed nowhere; ~d~ takes it
-out of one.  On a broken link, ~a~ places the chosen member where the
-link stands, in its place: the way to mend one.  ~d~ loses nothing
+~a~ on any heading -- a section, a member, a part -- writes in it a link
+that tells the heading chosen, ~- [[truss-include:m7]]~: a member, those
+placed nowhere offered first, or a section.  A heading can be told in as
+many places as want it, and is told in each; ~d~ takes it out of one.
+On a broken link, ~a~ tells the heading chosen where the link stands, in
+its place: the way to mend one.  ~d~ loses nothing
 written: on a member a link tells, the link goes and the member stays in
 the file, whatever heading the link is in; a section taken out hands what
 it tells up, asking before its own title or notes are lost.  To be rid of
@@ -999,20 +1004,22 @@ the entry is finished.  On the /Structure/ line, it writes the document's
 opening.
 
 ~=~ goes between where a member is written and where it is called.  On a
-line calling it -- a section's link, =[[#m9]]=, or a ground -- or showing
-it under a member a section calls, it goes to where it is written, =#m9=,
+line calling it -- a link that tells it, =[[#m9]]=, or a ground -- or
+showing it under a member a link calls, it goes to where it is written, =#m9=,
 unfolding what hides it.  There, it goes to the next call after the one
 come from, and round, saying which of how many it is.  The line at point
 is lit, and so are the other lines naming the member on it -- where it is
 written, where it is called -- in the face ~org-truss-same~; set
 ~org-truss-board-highlight~ to nil for neither.
 
-~z~ folds what is nested under a member into its line, which then says
-how many it hides.  On a line with nothing under it, ~z~ folds what it is
-under.  A member holding more than ~org-truss-board-fold-limit~, five
-unless set, starts folded, so the conditions at the top of the board stay
-short as they fill; a member a link tells starts folded where it is not
-opened, as ~O~ says.
+~z~ folds what is under a heading into its line, which then says how many
+it hides: under a member, what is nested under it and what its links
+tell; under a section, the sections below it and what its links tell.  On
+a line with nothing under it, ~z~ folds what it is under.  A heading
+holding more than ~org-truss-board-fold-limit~, five unless set, starts
+folded, so the conditions at the top of the board stay short as they
+fill; a member a link tells starts folded where it is not opened, as ~O~
+says.
 
 A heading keeps the words of its source with it, in a ~#+begin_quote~
 block in its own text, which stays in the file as notes do, and gives it
@@ -1048,11 +1055,11 @@ so a key moved -- by an Evil configuration, say -- shows as it is.
 
 A statement can be started without deciding where it goes.  ~c~ asks for
 its heading, writes it, and opens it as ~e~ does, below the heading, to be
-written; ~C-c C-k~ there takes it away again.  It goes last under the
-heading the line at point is:
+written; ~C-c C-k~ there takes it away again.  It goes under the heading
+the line at point is:
 
 - a member, or the brief, the subject or the members; on a missing role,
-  playing that role;
+  playing that role, where the pattern lists it;
 - on a section, at the end of the members, and told in the section by a
   link;
 - anywhere else, at the end of the members, where order means nothing.
@@ -1060,7 +1067,9 @@ heading the line at point is:
 Under a heading with patterns, the new member plays a role in each: the
 one a pattern has alone -- a reason under reasons, a step under steps --
 without asking, and else the one asked for, those no heading plays yet
-first.
+first.  It goes where the patterns list the roles it plays: before the
+first heading there that plays one listed after its own, or else last --
+as ~p~ puts in what a pattern asks for, and ~s~ a section.
 
 ~f~ refiles a heading, as Org's ~C-c C-w~ does: it moves it, with what is
 under it, last under another -- a member under the brief, the subject, the
@@ -1099,7 +1108,9 @@ start of a paragraph.
 what the reader sees to ~out/truss.org~ (~org-truss-output-directory~), then runs
 pandoc, when it is installed, to make ~out/truss.md~.
 
-- The structure's lead, its public block's text, opens the document.
+- The document is titled by the structure's public block, as a section
+  is, or failing that by the file's ~#+title~; its lead, the block's text,
+  opens the document.
 - A section is titled by its public block, or failing that by its heading;
   the block's text, its lead, follows the title.  One tagged ~:noexport:~
   is left out, with what is under it, as a member is.

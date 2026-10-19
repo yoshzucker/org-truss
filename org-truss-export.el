@@ -63,20 +63,38 @@ TARGET is written as text, which nothing reads as a link again."
   (format (org-truss--pick "(broken link: %s)" "（リンク切れ: %s）") target))
 
 (defun org-truss--told-text (ref)
-  "Return the member REF told as Org text, with what is nested under it.
-What a link [[truss-include:REF]] is written out as, wherever it is."
-  (let ((member (org-truss-member-by-ref org-truss--model ref)))
-    (cond ((null member) (org-truss--broken-text (concat org-truss-include-type ":" ref)))
-          ((memq member org-truss--telling) (org-truss--loop-text ref))
-          (t (string-trim (org-truss--emit (org-truss--flow member 1)))))))
+  "Return the heading REF told as Org text, with what is under it.
+What a link [[truss-include:REF]] is written out as, wherever it is: a
+member as it is told anywhere, a section as it is inside a list item --
+its title in bold, its lead, then what it holds."
+  (let ((heading (org-truss-heading-by-ref org-truss--model ref)))
+    (cond ((null heading) (org-truss--broken-text (concat org-truss-include-type ":" ref)))
+          ((memq heading org-truss--telling) (org-truss--loop-text ref))
+          ((org-truss-section-p heading) (org-truss--section-text heading))
+          (t (string-trim (org-truss--emit (org-truss--flow heading 1)))))))
+
+(defun org-truss--section-text (section)
+  "Return SECTION told by a link, as Org text: no heading of the document,
+since it is told where the link stands, but its title in bold and its
+lead, then what it holds, as inside a list item.  Nothing when it is
+tagged :noexport:."
+  (if (org-truss-noexport-p section)
+      ""
+    (let ((org-truss--telling (cons section org-truss--telling)))
+      (string-join
+       (append (org-truss--blocks
+                (list (list 0 (cons (org-truss-section-title section)
+                                    (or (cdr (org-truss-section-public section)) "")))))
+               (org-truss--section-inside section))
+       "\n\n"))))
 
 (defun org-truss--pointed-text (target words)
   "Return the words a link to a member reads as in the document.
 WORDS, its description, when it has one; else the heading of the member
 TARGET names.  The document has no member to go to, so it is no link."
   (or words
-      (let ((member (org-truss-member-by-ref org-truss--model (org-truss--ref target))))
-        (if member (org-truss-member-label member) target))))
+      (let ((heading (org-truss-heading-by-ref org-truss--model (org-truss--ref target))))
+        (if heading (org-truss-cluster-label heading) target))))
 
 (defun org-truss--written (text)
   "Return TEXT as the document writes it.
@@ -132,11 +150,15 @@ that telling it again would never end."
   "Return the flow of the members CLUSTER tells by links outside its public
 block, at DEPTH, in the order of the links."
   (mapcan (lambda (ref)
-            (let ((member (org-truss-member-by-ref org-truss--model ref)))
-              (if member
-                  (org-truss--flow member depth)
-                (list (list depth (cons nil (org-truss--broken-text
-                                             (concat org-truss-include-type ":" ref))))))))
+            (let ((heading (org-truss-heading-by-ref org-truss--model ref)))
+              (cond ((null heading)
+                     (list (list depth (cons nil (org-truss--broken-text
+                                                  (concat org-truss-include-type ":" ref))))))
+                    ((org-truss-section-p heading)
+                     (list (list depth (cons nil (if (memq heading org-truss--telling)
+                                                     (org-truss--loop-text ref)
+                                                   (org-truss--section-text heading))))))
+                    (t (org-truss--flow heading depth)))))
           (org-truss-cluster-listed cluster)))
 
 (defun org-truss--list-items (member depth)
@@ -288,14 +310,15 @@ tagged :noexport: is left out, with what is under it, as a member is."
 
 (defun org-truss-render (model)
   "Return the document MODEL describes, as Org text.
-The structure's own lead, the text of its public block, opens it; then
-the members its links tell, and the sections below it."
+Under the title `org-truss-document-title' gives it, the structure's own
+lead, the text of its public block, opens it; then the members its links
+tell, and the sections below it."
   (let* ((org-truss--model model)
          (org-truss--telling nil)
          (root (org-truss-model-structure model))
          (lead (and root (org-truss--written (cdr (org-truss-section-public root))))))
     (concat (format "#+title: %s\n#+options: toc:nil num:nil\n\n"
-                    (or (org-truss-model-title model) ""))
+                    (or (org-truss--written (org-truss-document-title model)) ""))
             (if (or (null lead) (string-empty-p lead)) "" (concat lead "\n\n"))
             (if root
                 (concat (org-truss--emit (org-truss--listed-flow root 1))
