@@ -530,10 +530,9 @@ Meet every other week.
   "A heading plays a role in each pattern of the heading above, each in the
 property of its kind.  A pattern asks for its roles of what is right under
 it, and lacks those none plays: a breakdown of 5W1H its aspects, a telling
-pattern the places what is under the member fills -- not its point, which
-is the member itself, nor the point told again.  What fills a telling
-pattern's places is told in the order of the file, and what comes below
-one the pattern tells after it is out of order."
+pattern its places, PREP's point and its point again too.  What fills a
+telling pattern's places is told in the order of the file, and what comes
+below one the pattern tells after it is out of order."
   (org-truss-test--with org-truss-test--how-file
     (let* ((model (org-truss-read))
            (check (org-truss-test--m model "Check before every test"))
@@ -544,10 +543,8 @@ one the pattern tells after it is out of order."
       (should (eq (org-truss-member-breakdown follows) 'steps))
       (should (equal (org-truss-gaps check) '((breakdown what . 1) (breakdown why . 1))))
       (should-not (org-truss-gaps follows))
-      (should (equal (org-truss-kind-roles safer 'telling) '(reason example)))
-      (should-not (org-truss-gaps safer))
-      (should (org-truss-told-first-p safer))
-      (should (org-truss-told-again-p safer))
+      (should (equal (org-truss-kind-roles safer 'telling) '(point reason example recap)))
+      (should (equal (org-truss-gaps safer) '((telling point . 1) (telling recap . 1))))
       (should-not (org-truss-no-role check))
       (should (equal (mapcar (lambda (o) (cons (org-truss-member-label (car o))
                                                (org-truss-member-label (cdr o))))
@@ -557,7 +554,8 @@ one the pattern tells after it is out of order."
                          ":TRUSS_TELLING: prep" ":TRUSS_LOGIC: deduction\n:TRUSS_TELLING: prep"
                          org-truss-test--how-file)
     (let ((member (org-truss-test--m (org-truss-read) "Tests are safer checked")))
-      (should (equal (org-truss-gaps member) '((logic major . 1) (logic minor . 1))))
+      (should (equal (org-truss-gaps member) '((logic major . 1) (logic minor . 1)
+                                               (telling point . 1) (telling recap . 1))))
       (should (equal (mapcar (lambda (hit) (cons (org-truss-member-label (car hit)) (cdr hit)))
                              (org-truss-no-role member))
                      '(("A drunk driver crashed last year" . logic)
@@ -599,9 +597,9 @@ Two roles in one pattern's property are none of its roles."
 :PROPERTIES:
 :TRUSS_PART: members
 :END:
-** Told first
+** Told as SDS
 :PROPERTIES:
-:TRUSS_TELLING: first
+:TRUSS_TELLING: sds
 :END:
 *** Anything
 ** Broken down
@@ -622,16 +620,16 @@ Two roles in one pattern's property are none of its roles."
 :END:
 "
     (let ((model (org-truss-read)))
-      (should-not (org-truss-no-role (org-truss-test--m model "Told first")))
+      (should-not (org-truss-no-role (org-truss-test--m model "Told as SDS")))
       (should (equal (org-truss-test--labels
                       (mapcar #'car (org-truss-no-role (org-truss-test--m model "Broken down"))))
                      '("Both" "Elsewhere"))))))
 
 (ert-deftest org-truss-test-any-pattern-anywhere ()
-  "A member and a section take patterns alike, of every kind.  A section's
-telling pattern asks the sections right below for each of its places --
-deeper down, a place is filled for that section, not this one.  Roles are
-named in the file's language."
+  "A member and a section take patterns alike, of every kind.  A telling
+pattern asks the headings right below for each of its places -- deeper
+down, a place is filled for that heading, not this one.  Roles are named
+in the file's language."
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -674,7 +672,8 @@ named in the file's language."
       (should (equal (mapcar #'cadr (org-truss-gaps what)) '(reason who when where what how)))
       (should (equal (mapcar #'car (plist-get (org-truss-checks model) :gaps))
                      (list move root what)))
-      (should (equal (org-truss-gaps move) '((telling complication . 1) (telling question . 1))))
+      (should (equal (org-truss-gaps move)
+                     '((telling complication . 1) (telling question . 1) (telling answer . 1))))
       (should (equal (org-truss-role-label 'sky) "Sky"))
       (let ((org-truss-language 'ja))
         (should (equal (org-truss-role-label 'umbrella) "傘"))

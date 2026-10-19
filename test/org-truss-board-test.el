@@ -215,7 +215,7 @@ member playing none of them is marked, and r gives it a role."
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
-                       first last prep sds scqa sky-rain-umbrella (none . breakdown))))
+                       prep sds scqa sky-rain-umbrella (none . breakdown))))
       (org-truss-test--answering '("breakdown › Pros and cons")
         (org-truss-board-pattern))
       (should (equal (funcall property "Subject" "TRUSS_BREAKDOWN") "pros-cons"))
@@ -1223,13 +1223,13 @@ in, a heading for each role."
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
-                       first last prep sds scqa sky-rain-umbrella)))
+                       prep sds scqa sky-rain-umbrella)))
       (should (equal (last (funcall choices (org-truss-test--m model "Move to fortnightly")))
                      '((none . logic))))
       (should (equal (funcall choices (org-truss-model-structure model))
                      '(reasons deduction induction steps parts what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
-                       first last prep sds scqa sky-rain-umbrella (none . telling))))
+                       prep sds scqa sky-rain-umbrella (none . telling))))
       (should (equal (car (rassq 'prep (org-truss--pattern-choices
                                         (org-truss-test--m model "Lone remark"))))
                      "telling › PREP"))))
@@ -1244,7 +1244,8 @@ in, a heading for each role."
       (should (equal (mapcar (lambda (m) (cons (org-truss-member-label m) (org-truss-member-roles m)))
                              (org-truss-member-children (funcall member)))
                      '(("A meeting that repeats itself can meet less" (logic . major))
-                       ("Reason" (telling . reason)) ("Example" (telling . example)))))
+                       ("Point" (telling . point)) ("Reason" (telling . reason))
+                       ("Example" (telling . example)) ("Point again" (telling . recap)))))
       (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("no telling")
         (org-truss-board-pattern))
@@ -1760,67 +1761,6 @@ right, as the reader is told it: in the breakdown's list."
     (org-truss-test--goto-told-line-with "Less time in meetings")
     (should (string-match-p "Less time in meetings +- Pros: Less time in meetings$"
                             (buffer-substring (point) (line-end-position))))))
-
-(ert-deftest org-truss-test-board-tells-a-conclusion-last ()
-  "In the structure, a member told after what is under it has its words on
-a line below it, named for its place, as the document tells it; a line
-runs down to them from its own line, beside what is under it, so they
-line up with what is under it.  One inside another keeps both."
-  (let ((text "* M
-:PROPERTIES:
-:TRUSS_PART: members
-:END:
-** We move to fortnightly reviews
-:PROPERTIES:
-:CUSTOM_ID: move
-:TRUSS_TELLING: scqa
-:END:
-#+begin_closing
-So we hold the review every other week.
-#+end_closing
-*** Reviews are weekly
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: situation
-:END:
-*** Half the items repeat
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: complication
-:TRUSS_TELLING: last
-:END:
-**** The agenda diff shows it
-* S
-:PROPERTIES:
-:TRUSS_PART: structure
-:END:
-- [[#move]]
-"))
-    (org-truss-test--with-board text
-      ;; Where it is written, it is told the same, with where it is used
-      ;; beside what is under it; the structure lists it on one line, its
-      ;; words on its own.
-      (let ((text (buffer-string)))
-        (should (string-match-p
-                 (concat "We move to fortnightly reviews +┐\n"
-                         ".*(telling › SCQA) +│\n"
-                         ".*▤ Structure +│\n"
-                         ".*Reviews are weekly +│ Reviews are weekly\n")
-                 text))
-        (should (string-match-p " +answer +└ So we hold the review every other week\\.\n" text))
-        (should (string-match-p "member ▸3[ ·]+\\[\\[#move\\]\\] We move to fortnightly reviews +So we hold the review every other week\\.\n"
-                                text)))
-      (org-truss-test--goto-told-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?We move")
-      (let ((told (buffer-substring (point) (point-max))))
-        (should (string-match-p
-                 (concat "We move to fortnightly reviews +┐\n"
-                         ".*(telling › SCQA) +│\n"
-                         ".*Reviews are weekly +│ Reviews are weekly\n"
-                         ".*Half the items repeat +│ ┐\n"
-                         ".*(telling › conclusion last) +│ │\n"
-                         ".*The agenda diff shows it +│ │ The agenda diff shows it\n"
-                         " +conclusion +│ └ Half the items repeat\n"
-                         " +Question — +│\n"
-                         " +answer +└ So we hold the review every other week\\.\n")
-                 told))))))
 
 (ert-deftest org-truss-test-board-opens-members-where-told ()
   "O opens the members a section lists under it, with their uses, grounds

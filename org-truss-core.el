@@ -138,8 +138,6 @@ the directory attachments go in elsewhere."
     (future   "Future"        "未来")
     ;; Places in a telling pattern, in the order the patterns tell them.
     ;; PREP's reason is `reason' too, the role of TRUSS_TELLING_ROLE there.
-    (body     "Body"          "本文")
-    (conclusion "Conclusion"  "結論")
     (point    "Point"         "要点")
     (example  "Example"       "例")
     (recap    "Point again"   "まとめ")
@@ -218,29 +216,21 @@ here."
      :kind breakdown :name "Premises, Issue, Constraints" :list bulleted
      :roles ((premises :label t) (issue :label t) (constraints :label t))
      :about "what is taken as given, what the problem is, what cannot move")
-    (first
-     :kind telling :name "conclusion first"
-     :roles ((conclusion :self t) (body :any t :optional t))
-     :about "it, then what is under it; as it is told with no telling pattern")
-    (last
-     :kind telling :name "conclusion last"
-     :roles ((body :any t :optional t) (conclusion :self t))
-     :about "what is under it, then it")
     (prep
      :kind telling :name "PREP"
-     :roles ((point :self t) (reason) (example) (recap :again t))
+     :roles ((point) (reason) (example) (recap))
      :about "point, reasons, examples, the point again")
     (sds
      :kind telling :name "SDS"
-     :roles ((summary :self t) (details :any t) (recap :again t))
+     :roles ((summary) (details :any t) (recap))
      :about "summary, details, the summary again")
     (scqa
      :kind telling :name "SCQA"
-     :roles ((situation) (complication) (question) (answer :self t))
+     :roles ((situation) (complication) (question) (answer))
      :about "situation, complication, question, answer")
     (sky-rain-umbrella
      :kind telling :name "Sky, Rain, Umbrella"
-     :roles ((sky) (rain) (umbrella :self t))
+     :roles ((sky) (rain) (umbrella))
      :about "what is seen, what it means, what to do"))
   "Patterns a heading can name for the headings right under it.
 Each entry is (ID . PLIST).  :name is what the board calls it, and :about
@@ -255,19 +245,16 @@ pattern in the property of the same name with _ROLE after it:
              `org-truss-missing-grounds'.
 `breakdown'  TRUSS_BREAKDOWN: the headings under it are its breakdown, its
              parts, which need no grounds of their own.
-`telling'    TRUSS_TELLING: the order it and the headings under it are
-             told in, which is checked against the order of the file.
+`telling'    TRUSS_TELLING: the order the headings under it are told in,
+             which is checked against the order of the file.  The heading
+             itself is told before them, as it is written.
 
 Every pattern lists its :roles in order, each (ROLE . FLAGS), FLAGS a
 plist saying what the role asks for:
 
   :at-least N  N headings or more play it; one by default
-  :optional t  none need play it
   :any t       it takes, besides its own, what plays no role of the
                pattern, so none is said to play none
-  :self t      the heading itself plays it, told where the role comes:
-               before what is under it or after it
-  :again t     the heading itself, told once more where the role comes
   :label t     a heading playing it is written out opened by the role's
                name
 
@@ -325,10 +312,6 @@ FLAGS are what `org-truss-patterns' says a role asks for."
   "Return the FLAG of ROLE, a (ROLE . FLAGS) of a pattern."
   (plist-get (cdr role) flag))
 
-(defun org-truss--own-role-p (role)
-  "Non-nil when ROLE, a (ROLE . FLAGS), is the heading's own: :self or :again."
-  (or (org-truss-role-flag role :self) (org-truss-role-flag role :again)))
-
 (defun org-truss-patterns-of-kind (kind)
   "Return the ids of the patterns of KIND: `logic', `breakdown' or `telling'."
   (mapcar #'car (seq-filter (lambda (p) (eq (plist-get (cdr p) :kind) kind))
@@ -362,11 +345,9 @@ The pattern's property with _ROLE after it: TRUSS_LOGIC_ROLE, say."
   "^[ \t]*#\\+begin_public\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$")
 (defconst org-truss--public-end-re "^[ \t]*#\\+end_public[ \t]*$")
 (defconst org-truss--reader-block-re
-  "^[ \t]*#\\+begin_\\(public\\|opening\\|closing\\)\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$"
+  "^[ \t]*#\\+begin_\\(public\\)\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$"
   "The first line of a block of what the reader is told: its name, its title.
-A public block says what the reader sees of the heading.  On a member, an
-opening block says it where its telling pattern opens with the member,
-and a closing block where it closes with it again, as PREP and SDS do.")
+A public block says what the reader sees of the heading.")
 (defconst org-truss--properties-re "^[ \t]*:PROPERTIES:[ \t]*$")
 (defconst org-truss--drawer-re "^[ \t]*:[[:alnum:]_-]+:[ \t]*$")
 (defconst org-truss--end-re "^[ \t]*:END:[ \t]*$")
@@ -411,8 +392,7 @@ Own text runs from the line after the heading to the next heading of any level."
 Return a plist:
   :props   property drawer as an ordered alist
   :public  (TITLE . BODY) of the first public block, or nil
-  :opening, :closing  the same of the first opening and closing block
-  :public-raw  those blocks as written
+  :public-raw  that block as written
   :links   references of every link to a member outside drawers and those
            blocks; see `org-truss--ref'
   :items   references of the link-only list items, the ones edits move
@@ -481,8 +461,6 @@ Return a plist:
         (push (funcall closed) blocks)))
     (list :props (nreverse props)
           :public (cdr (assq 'public blocks))
-          :opening (cdr (assq 'opening blocks))
-          :closing (cdr (assq 'closing blocks))
           :public-raw (apply #'concat (nreverse public-raw))
           :links (nreverse links)
           :items (nreverse items)
@@ -565,7 +543,7 @@ A link stays as it is where the heading has no attachments to find."
 
 (defun org-truss--read-block (own key)
   "Return the block KEY of OWN, a parse of the heading at point, as read.
-KEY is :public, :opening or :closing.  Its body with links to attachments
+KEY is :public.  Its body with links to attachments
 as file links; see `org-truss--attachments-as-files'."
   (let ((block (plist-get own key)))
     (and block (cons (car block) (org-truss--attachments-as-files (cdr block))))))
@@ -665,12 +643,12 @@ what else TRUSS_GROUNDS says; TEXT-GROUNDS the references of the links to
 members in its text, but for the items that list members a section
 tells.  SOURCE-LINKS are its links to sources, in TRUSS_GROUNDS and its
 text; CITED the first in its text, and QUOTED what its text quotes, or
-nil.  PUBLIC, OPENING and CLOSING are what its public, opening and
-closing blocks say, (TITLE . BODY); NOTES, what else is written under it.
+nil.  PUBLIC is what its public block says, (TITLE . BODY); NOTES, what
+else is written under it.
 CHILDREN are the headings right under it."
   pos id label level tags roles logic breakdown telling
   grounds sources text-grounds source-links cited quoted
-  public opening closing notes children)
+  public notes children)
 
 (cl-defstruct (org-truss-member (:include org-truss-cluster)
                                 (:constructor org-truss--make-member)
@@ -733,8 +711,6 @@ members, - [[#m7]], are what it tells, as a section's are, and no grounds."
             :cited (car (org-truss--source-links-in text))
             :quoted (org-truss--quote-in text)
             :public (org-truss--read-block own :public)
-            :opening (org-truss--read-block own :opening)
-            :closing (org-truss--read-block own :closing)
             :notes (org-truss--read-notes own)))))
 
 (defun org-truss--read-member (pos home)
@@ -897,14 +873,9 @@ when it is tagged :noexport:."
   (alist-get kind (org-truss-cluster-roles cluster)))
 
 (defun org-truss-roles-under (cluster kind)
-  "Return the roles of CLUSTER's pattern of KIND that what is under it plays.
-Each (ROLE . FLAGS), in order.  The heading's own, :self and :again, are
-played by the heading; on a section, which says nothing itself, by the
-sections below like the rest."
-  (let ((roles (org-truss-pattern-roles (org-truss-cluster-pattern cluster kind))))
-    (if (org-truss-section-p cluster)
-        roles
-      (seq-remove #'org-truss--own-role-p roles))))
+  "Return the roles of CLUSTER's pattern of KIND, which what is under it plays.
+Each (ROLE . FLAGS), in order."
+  (org-truss-pattern-roles (org-truss-cluster-pattern cluster kind)))
 
 (defun org-truss-kind-roles (cluster kind)
   "Return the roles CLUSTER's pattern of KIND names for what is under it, in order."
@@ -912,17 +883,16 @@ sections below like the rest."
 
 (defun org-truss--takes-any-p (cluster kind)
   "Non-nil when CLUSTER's pattern of KIND has a role that takes what plays none.
-One flagged :any, as SDS's details and the body of conclusion first and
-last."
+One flagged :any, as SDS's details."
   (seq-some (lambda (role) (org-truss-role-flag role :any))
             (org-truss-roles-under cluster kind)))
 
 (defun org-truss-gaps (cluster)
   "Return the roles CLUSTER's patterns ask for and what is right under it lacks.
 Each gap is (KIND ROLE . SHORT-BY): the kind of the pattern that asks, the
-role, and how many more it wants.  A role is asked for unless :optional,
-:at-least times or once; one that takes anything, :any, is played by what
-plays no role of the pattern too.  Only what is right under CLUSTER
+role, and how many more it wants.  A role is asked for :at-least times,
+or once; one that takes anything, :any, is played by what plays no role of
+the pattern too.  Only what is right under CLUSTER
 counts."
   (let ((under (org-truss-cluster-children cluster)))
     (mapcan
@@ -933,13 +903,12 @@ counts."
                                   under)))
          (delq nil
                (mapcar (lambda (role)
-                         (unless (org-truss-role-flag role :optional)
-                           (let ((need (or (org-truss-role-flag role :at-least) 1))
-                                 (have (+ (seq-count (lambda (c) (eq (org-truss-cluster-role c kind)
-                                                                     (car role)))
-                                                     under)
-                                          (if (org-truss-role-flag role :any) outside 0))))
-                             (and (< have need) (cons kind (cons (car role) (- need have)))))))
+                         (let ((need (or (org-truss-role-flag role :at-least) 1))
+                               (have (+ (seq-count (lambda (c) (eq (org-truss-cluster-role c kind)
+                                                                   (car role)))
+                                                   under)
+                                        (if (org-truss-role-flag role :any) outside 0))))
+                           (and (< have need) (cons kind (cons (car role) (- need have))))))
                        roles))))
      (seq-filter (lambda (kind) (org-truss-cluster-pattern cluster kind))
                  org-truss-pattern-kinds))))
@@ -1064,35 +1033,11 @@ not there to look."
 
 ;;;; How a heading is told
 
-(defun org-truss-told-first-p (cluster)
-  "Non-nil when CLUSTER is told before what is under it.
-Its telling pattern says where it goes: its role flagged :self comes
-before the roles what is under it plays, as conclusion first, PREP and
-SDS put it, or after them, as conclusion last, SCQA and Sky, Rain,
-Umbrella do.  That is all a telling pattern changes in the order of the
-file, which cannot put a heading after what is nested under it.  With no
-telling pattern, first."
-  (let* ((roles (org-truss-pattern-roles (or (org-truss-cluster-telling cluster) 'first)))
-         (self (cl-position-if (lambda (role) (org-truss-role-flag role :self)) roles))
-         (other (cl-position-if (lambda (role) (not (org-truss--own-role-p role))) roles)))
-    (or (null self) (null other) (< self other))))
-
-(defun org-truss-told-again-p (cluster)
-  "Non-nil when CLUSTER's telling pattern closes by telling it again.
-As PREP and SDS do, after what is under it: a role flagged :again."
-  (seq-some (lambda (role) (org-truss-role-flag role :again))
-            (org-truss-pattern-roles (org-truss-cluster-telling cluster))))
-
-(defun org-truss-member-told (member where &optional wording)
+(defun org-truss-member-told (member &optional wording)
   "Return what the reader is told of MEMBER, as (TITLE . BODY), or nil.
-WHERE is `before' or `after' what is under it, as its telling pattern puts
-it; it is told after once more when the pattern closes with it again.  Its
-opening block before, and its closing block after, when it has them; else
 WORDING, the words the section listing it tells it in, when given; else
 its public block, or its heading.  Nil when it is tagged :noexport:."
   (cond ((org-truss-noexport-p member) nil)
-        ((and (eq where 'before) (org-truss-cluster-opening member)))
-        ((and (eq where 'after) (org-truss-cluster-closing member)))
         (wording (cons nil wording))
         (t (org-truss-member-shown member))))
 

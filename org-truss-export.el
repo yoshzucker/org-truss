@@ -44,13 +44,6 @@ do to Chinese, Japanese and Korean text."
 
 ;;;; Members
 
-(defun org-truss--restatement (shown depth)
-  "Return SHOWN told again, as the last item of a PREP or an SDS, at DEPTH.
-SHOWN is what the reader is told of the member there, as (TITLE . BODY):
-its text as a paragraph, or its title when that is all there is."
-  (let ((text (if (string-empty-p (or (cdr shown) "")) (car shown) (cdr shown))))
-    (and text (list (list depth (cons nil text) nil)))))
-
 (defun org-truss--labelled (shown label)
   "Return SHOWN, (TITLE . BODY), opened with LABEL: its title, else its body."
   (cond ((or (null label) (string-empty-p label)) shown)
@@ -59,7 +52,7 @@ its text as a paragraph, or its title when that is all there is."
         (t (cons (car shown) (concat label (or (cdr shown) ""))))))
 
 (defun org-truss--flow (member depth &optional wording label)
-  "Return (DEPTH SHOWN AFTER-SUPPORT) items for MEMBER and what is under it.
+  "Return (DEPTH SHOWN) items for MEMBER and what is under it.
 SHOWN is what the reader sees: of MEMBER, as `org-truss-member-told' says,
 WORDING being the words the section listing it tells it in, and opened
 with LABEL when given, the role it plays in a breakdown.  It is told as
@@ -72,33 +65,20 @@ does what is nested under it."
   "Return what is under MEMBER as flow items at DEPTH below it: one list."
   (let ((list (org-truss--list-text member)))
     (and (not (string-empty-p list))
-         (list (list (1+ depth) (cons nil list) nil)))))
+         (list (list (1+ depth) (cons nil list))))))
 
 (defun org-truss--tell (member depth &optional wording label)
   "Return the flow of MEMBER at DEPTH, as it is told.
-What is under it comes in the order of the file -- as one list when a
-pattern of MEMBER says so; see `org-truss-list-form'.  The member itself
-comes before all of
-it or after, as its telling pattern puts it, in the words
-`org-truss-member-told' gives it there, WORDING among them, and opened
-with LABEL.  A pattern that closes with it again, as PREP and SDS do,
-tells it once more at the end, in the words it is told in after."
-  (let* ((first (org-truss-told-first-p member))
-         (self (org-truss--labelled (org-truss-member-told member (if first 'before 'after) wording)
-                                    label))
-         (under (if (org-truss-list-form member)
-                    (org-truss--list-items member depth)
-                  (mapcan (lambda (m)
-                            (org-truss--flow m (1+ depth) nil (org-truss--role-label member m)))
-                          (org-truss-cluster-children member)))))
-    (if first
-        (append (list (list depth self nil))
-                under
-                (and (org-truss-told-again-p member)
-                     (org-truss--restatement (org-truss-member-told member 'after wording)
-                                             (1+ depth))))
-      (append under
-              (list (list depth self (and under t)))))))
+The member itself, in the words `org-truss-member-told' gives it, WORDING
+among them, and opened with LABEL; then what is under it, in the order of
+the file -- as one list when a pattern of MEMBER says so; see
+`org-truss-list-form'."
+  (cons (list depth (org-truss--labelled (org-truss-member-told member wording) label))
+        (if (org-truss-list-form member)
+            (org-truss--list-items member depth)
+          (mapcan (lambda (m)
+                    (org-truss--flow m (1+ depth) nil (org-truss--role-label member m)))
+                  (org-truss-cluster-children member)))))
 
 (defun org-truss--indent (text column)
   "Return TEXT with every line after the first indented COLUMN columns.
@@ -144,7 +124,7 @@ as a list again when it says so, else as paragraphs.  One tagged
     (mapconcat
      (lambda (child)
        (let* ((marker (org-truss--list-marker member child (setq n (1+ n))))
-              (shown (org-truss-member-told child 'before))
+              (shown (org-truss-member-told child))
               (own (string-trim (concat (cdr marker)
                                         (or (car shown) "")
                                         (if (car shown) "\n" "")
@@ -163,26 +143,21 @@ as a list again when it says so, else as paragraphs.  One tagged
 
 (defun org-truss--emit (items level)
   "Return Org text for ITEMS inside a section whose heading is at LEVEL.
-A titled member gets a heading, unless it comes after its support: there its
-support would already sit under the heading before it, so its title opens
-its paragraph in bold instead."
+A titled member gets a heading, under which what is under it is told."
   (let (stack out)
     (dolist (item items)
-      (pcase-let ((`(,depth ,public ,after) item))
+      (pcase-let ((`(,depth ,public) item))
         (when public
           (let ((title (car public))
                 (body (cdr public)))
             (cond
-             ((and title (not after))
+             (title
               (while (and stack (>= (car stack) depth))
                 (pop stack))
               (push (format "%s %s\n%s\n" (make-string (+ level 1 (length stack)) ?*)
                             title (if (string-empty-p body) "" (concat body "\n")))
                     out)
               (push depth stack))
-             (title
-              (push (format "*%s*\n%s\n" title (if (string-empty-p body) "" (concat body "\n")))
-                    out))
              ((not (string-empty-p body))
               (push (concat body "\n\n") out)))))))
     (apply #'concat (nreverse out))))

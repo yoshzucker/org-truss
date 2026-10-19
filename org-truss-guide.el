@@ -55,9 +55,9 @@
 #                    pros-cons short-long past-present-future 5w1h 6w1h
 #                    reader-question-response-constraints (Brief's at first)
 #                    premises-issue-constraints (Subject's at first)
-#   TRUSS_TELLING    the order it and they are told in.  first last prep sds
-#                    scqa sky-rain-umbrella.  Unset, first: it, then them.
-#                    They are told in the order they are written; the check
+#   TRUSS_TELLING    the order they are told in.  prep sds scqa
+#                    sky-rain-umbrella.  The heading itself is told before
+#                    them, and they in the order they are written; the check
 #                    points out what is out of the pattern's order
 #   Each heading right under one says the role it plays in each of its
 #   patterns, in the pattern's property with _ROLE after it: reason or
@@ -99,8 +99,6 @@
 #                       document's)
 #   ~- [[#m7][words]]~  member m7: the words, else its #+begin_public, else
 #                       its heading; then the members under it
-#   #+begin_opening     a member's words where its TRUSS_TELLING opens with
-#   #+begin_closing     it, and where it closes with it; else as above
 #   Under a member with TRUSS_BREAKDOWN, the members are a list, numbered
 #   for steps; where the pattern names its roles, each opens with its own,
 #   as Pros: or Who:
@@ -150,9 +148,9 @@
 #                    short-long past-present-future 5w1h 6w1h
 #                    reader-question-response-constraints（Brief の初期値）
 #                    premises-issue-constraints（Subject の初期値）
-#   TRUSS_TELLING    自分と下をどの順で語るか。first last prep sds scqa
-#                    sky-rain-umbrella。未設定なら first（自分が先、下が後）。
-#                    下は書いた順に語られ、型の順と違えば検査が指摘する
+#   TRUSS_TELLING    下をどの順で語るか。prep sds scqa sky-rain-umbrella。
+#                    見出し自身は下より先に語られ、下は書いた順に語られる。
+#                    型の順と違えば検査が指摘する
 #   すぐ下の見出しはそれぞれ、上の見出しの型の中で担う役を、その型の
 #   プロパティ名に _ROLE を付けたプロパティに書く。TRUSS_LOGIC_ROLE に
 #   reason や major、TRUSS_BREAKDOWN_ROLE に who や issue、
@@ -191,8 +189,6 @@
 #   #+begin_public            節の最初の文（Structure 直下なら文書の最初の文）
 #   節の ~- [[#m7][言い方]]~  部材 m7。言い方、なければ部材の #+begin_public、
 #                             なければ見出し。続けて下の部材が出る
-#   #+begin_opening           語り口が部材で始まるところでの部材の言い方、
-#   #+begin_closing           部材で結ぶところでの言い方。なければ上と同じ
 #   TRUSS_BREAKDOWN を持つ部材の下は、箇条書きで出る（steps は番号付き）。
 #   型が役の名前を出すものでは、それぞれ自分の役で始まる（メリット：、誰が：
 #   など）
@@ -298,8 +294,10 @@ TRUSS_GROUNDS (b on the board) or in its text, or cite a source (t, Q).  Tag
 :assumption: a reason taken as given without grounds (A).  Give what is
 to be done TRUSS_BREAKDOWN -- steps, parts, 5W1H (p on the board) -- and
 what is under it is its parts, which need no grounds, written out as a
-list.  A telling pattern, as PREP, says in what order it is written out.  Write each heading to
-make sense pulled out on its own: no \"the following\", no \"above\".
+list.  A member is written out before what is under it, and that in the
+order of the file; a story that keeps the conclusion for last is told by
+the sections of the structure.  Write each heading to make sense pulled
+out on its own: no \"the following\", no \"above\".
 Words fitted to the reader belong to the section that lists it (S on the
 board).  The text under a heading is never written out; tag :noexport: a
 member that should not be."
@@ -311,11 +309,12 @@ deduction、induction。理由はそれぞれ TRUSS_LOGIC_ROLE に役を書き�
 ~[[#m3]] [[#m7]]~ を TRUSS_GROUNDS（盤面の b）か本文に書くか、出典を引く
 （盤面の t、Q）。根拠なしで置く理由には :assumption: を付ける（盤面の A）。
 することに TRUSS_BREAKDOWN を付けると（steps、parts、5w1h など。盤面の p）、
-下の部材はその内訳になり、根拠は要らず、箇条書きで出る。PREP などの語り口は、
-書き出す順を決める。
-見出しは、抜き出して読んでも通じるように書く（「次の」「上記の」を使わ
-ない）。読み手に合わせた言い方は、載せる節の側で書く（盤面の S）。見出しの
-下の本文は書き出されない。書き出したくない部材には :noexport: を付ける。")
+下の部材はその内訳になり、根拠は要らず、箇条書きで出る。部材は下の部材より
+先に書き出され、下の部材はファイルの順に出る。結論を最後に置く話の運びは、
+Structure の節で組む。見出しは、抜き出して読んでも通じるように書く（「次の」
+「上記の」を使わない）。読み手に合わせた言い方は、載せる節の側で書く（盤面
+の S）。見出しの下の本文は書き出されない。書き出したくない部材には
+:noexport: を付ける。")
     (structure
      "The sections of the document.  Leave it empty while there is no
 document to make, as when a question is only being worked out.  A section

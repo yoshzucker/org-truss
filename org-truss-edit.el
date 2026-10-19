@@ -304,10 +304,10 @@ With ROLE nil, it plays none there."
     (org-entry-delete pos (org-truss-role-property kind))))
 
 (defun org-truss-set-pattern (pos kind pattern)
-  "Give the cluster at POS, a member or a section, PATTERN of KIND.
+  "Give the heading at POS PATTERN of KIND.
 KIND is `logic', `breakdown' or `telling'; see `org-truss-patterns'.  With
-PATTERN nil it has none of that kind: no reasons, no breakdown, or told
-conclusion first."
+PATTERN nil it has none of that kind: no reasons, no breakdown, or no
+order asked of what is under it."
   (let ((property (alist-get kind org-truss-pattern-properties)))
     (if pattern
         (org-entry-put pos property (symbol-name pattern))

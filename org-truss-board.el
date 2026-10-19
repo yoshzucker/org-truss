@@ -692,7 +692,7 @@ the board is drawn."
 (defconst org-truss--taking-off
   '((logic . "take the logic off: what is under it is no longer its reasons")
     (breakdown . "take the breakdown off: what is under it is no longer its parts")
-    (telling . "take the telling pattern off: told as conclusion first tells it"))
+    (telling . "take the telling pattern off: what is under it is told as written"))
   "What the board says beside taking off a pattern of each kind.")
 
 (defun org-truss--pattern-about (id)

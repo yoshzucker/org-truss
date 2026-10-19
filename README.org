@@ -25,7 +25,7 @@ So this package keeps three things apart:
 
 - *members* -- every statement, written once
 - *patterns* -- what the members under a heading are to it: its reasons,
-  its breakdown, and the order it is told in with them
+  its breakdown, and the order they are told in
 - *structure* -- sections that show the members in the order they are
   told
 
@@ -94,11 +94,11 @@ A heading names, in three properties, patterns for the headings right
 under it, and each of those says the role it plays in each pattern, in
 the pattern's property with ~_ROLE~ after it.
 
-| Pattern property  | Role property          | The headings right under it are      | Patterns                                                       |
-|-------------------+------------------------+--------------------------------------+----------------------------------------------------------------|
-| ~TRUSS_LOGIC~     | ~TRUSS_LOGIC_ROLE~     | its reasons                          | reasons, deduction, induction                                  |
-| ~TRUSS_BREAKDOWN~ | ~TRUSS_BREAKDOWN_ROLE~ | its breakdown: its parts             | steps, parts, 5W1H, 6W1H, pros and cons ...                    |
-| ~TRUSS_TELLING~   | ~TRUSS_TELLING_ROLE~   | told with it, in the pattern's order | conclusion first or last, PREP, SDS, SCQA, Sky, Rain, Umbrella |
+| Pattern property  | Role property          | The headings right under it are | Patterns                                    |
+|-------------------+------------------------+---------------------------------+---------------------------------------------|
+| ~TRUSS_LOGIC~     | ~TRUSS_LOGIC_ROLE~     | its reasons                     | reasons, deduction, induction               |
+| ~TRUSS_BREAKDOWN~ | ~TRUSS_BREAKDOWN_ROLE~ | its breakdown: its parts        | steps, parts, 5W1H, 6W1H, pros and cons ... |
+| ~TRUSS_TELLING~   | ~TRUSS_TELLING_ROLE~   | told in the pattern's order     | PREP, SDS, SCQA, Sky, Rain, Umbrella        |
 
 The three are apart.  A heading has at most one of each, and a heading
 under it plays a role in each it has: a reason that is also a pro, and
@@ -147,43 +147,23 @@ every test/, in steps: meet the driver, then read the checker; in another
 order, it is another procedure.
 
 /Telling/ is a framework of telling, which says nothing of what is told:
-its places in order.  On a member, the place that is its point -- PREP's
-point, SCQA's answer, the umbrella -- is the member itself, the claim at
-the head of the pyramid, and the rest are filled by what is under it;
-PREP and SDS tell the point again at the end.  A section says nothing
-itself, so on a section every place is a section.
+its places in order, each played by a heading right under the one that
+names it.  PREP is a point, a reason, an example and the point again;
+each is a heading you write, the point again too, in the words it is to
+be told in the second time.
 
-What fills the places is told in the order of the file, as everything in
-the document is: the order the headings are written in is the order the
-reader meets them, and the board shows it so.  What the file has below a
-heading the pattern tells after it is marked =⚠= and listed /Out of
-order/, to be moved in the file.  The one thing a pattern does that the
-file cannot is put a member after what is nested under it, since an
-outline always has a heading above what is under it: /conclusion first/
-tells a member and then what is under it, the pyramid read top down, as
-PREP, SDS and a member with no telling pattern do; /conclusion last/,
-SCQA and Sky, Rain, Umbrella tell it after.
+Everything is told in the order of the file: a heading before what is
+under it, and what is under it in the order it is written, the order the
+reader meets them; the board shows it so.  A telling pattern changes
+nothing of that order.  It asks for its places, and what the file has
+below a heading the pattern tells after it is marked =⚠= and listed /Out
+of order/, to be moved in the file.
 
-Where PREP or SDS tells the point again, the words can differ: a member's
-=#+begin_opening= block says what it is told in where it opens, and its
-=#+begin_closing= block where it closes.  Each, when it is not written,
-is the public block -- or the words the section listing the member tells
-it in, or its heading -- so with neither, the point is told twice in the
-same words.  A conclusion told last is told in its closing block, one
-told first in its opening block, when it has one.
-
-#+begin_src org
-,** We move to fortnightly reviews
-:PROPERTIES:
-:TRUSS_TELLING: prep
-:END:
-,#+begin_opening
-We should hold the review every other week.
-,#+end_opening
-,#+begin_closing
-So: every other week, starting next month.
-,#+end_closing
-#+end_src
+So a member's claim is told before its reasons: the pyramid, read top
+down.  A story that keeps the conclusion for the end -- SCQA, Sky, Rain,
+Umbrella -- is told by the sections of the structure, the claim listed in
+the last of them; its reasons come after it there, as they are nested
+under it.
 
 | On the board                      | Gives                                                        |
 |-----------------------------------+--------------------------------------------------------------|
@@ -198,8 +178,6 @@ So: every other week, starting next month.
 | breakdown › Past, present, future | what was, what is, what will be                              |
 | breakdown › 5W1H                  | who, when, where, what, why, how                             |
 | breakdown › 6W1H                  | who, whom, when, where, what, why, how                       |
-| telling › conclusion first        | it, then what is under it; also no telling pattern           |
-| telling › conclusion last         | what is under it, then it                                    |
 | telling › PREP                    | point, reason, example, the point again                      |
 | telling › SDS                     | summary, details, the summary again                          |
 | telling › SCQA                    | situation, complication, question, answer                    |
@@ -227,10 +205,7 @@ Each role can say how it is asked for:
 | Flag          | The role                                                               |
 |---------------+------------------------------------------------------------------------|
 | ~:at-least N~ | is asked of N headings or more: induction's cases, two                 |
-| ~:optional~   | is not asked for: conclusion last's body                               |
 | ~:any~        | takes what plays no role: SDS's details                                |
-| ~:self~       | is the heading itself on a member: PREP's point, SCQA's answer         |
-| ~:again~      | tells the heading itself again: PREP's and SDS's recap                 |
 | ~:label~      | opens each part playing it with its name when written out: Pros:, Who: |
 
 ~org-truss-patterns~ takes patterns of your own in the same form -- a
@@ -838,28 +813,12 @@ The other marks of the board are not links:
 | =▸5=                | after the role          | folded, five hidden; ~z~ opens it                                                    |
 | =⚠=                 | after the role          | out of the order of the telling pattern above                                        |
 | =Rain —=            | below what it holds     | a role a pattern asks for that nothing plays                                         |
-| =┐= … =└=           | the right               | told after what is under it, on the line =└= reaches                                 |
-| =again=             | below what it holds     | told again, as PREP and SDS close                                                    |
 
 In the structure a member a section lists is one line, as written, the
 words it is told in on its right; opened there, as told (~O~), it brings
 with it what the document tells -- what is nested under it -- beside its
 uses, what it stands on and its gaps, so the document can be read down
-the right.  A member PREP or SDS tells again has a line /again/ after what
-is under it, with the words it closes with, wherever it is opened.  A
-member told after what is under it -- conclusion last, SCQA's answer, the
-umbrella -- has its words there too, on a line named for its place, and a
-line runs down the right to them from its own line; folded, its line has
-them:
-
-#+begin_example
-   member ········ 会議を隔週にする                              ┐
-   (telling › SCQA)                                              │
-   ├ Situation ··· 毎週レビュー会議をしている                    │ 毎週レビュー会議をしている
-   ├ Complication  議題の半分が前週の繰り返し                    │ 議題の半分が前週の繰り返し
-   └ Question ···· 頻度を変えるべきか                            │ 頻度を変えるべきか
-     answer                                                      └ 会議を隔週にする
-#+end_example
+the right.
 
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Missing roles/, /No role/,
@@ -1107,10 +1066,8 @@ sections it takes away.
 and the board keeps it current while it is shown: the place to read it.
 The right of the board comes close but is not the same.  The brief and
 the subject under the title and the lists of what is left to do are not
-in the document; a
-conclusion that comes last is drawn above what is under it but written
-below it; and
-without ~E~ each line shows only a title or the start of a paragraph.
+in the document, and without ~E~ each line shows only a title or the
+start of a paragraph.
 
 ~M-x org-truss-export~, or ~x~ on the board, walks the structure and writes
 what the reader sees to ~out/truss.org~ (~org-truss-output-directory~), then runs
@@ -1124,18 +1081,12 @@ pandoc, when it is installed, to make ~out/truss.md~.
   paragraph.  One tagged ~:noexport:~ is left out, with what is nested under
   it.
 - A member is followed by what is nested under it, in the order of the
-  file.  A titled member becomes a heading under its section.  When its
-  conclusion comes last, what is under it comes first and its title opens
-  its paragraph in bold, since a heading after what is under it would
-  leave that under the heading before.
-- A member broken down with no reasons has its parts written as a list:
-  steps numbered, the rest bulleted, each part of a breakdown of more than
-  one role opening with its role.  What is nested under a part goes inside
-  its item, its own breakdown as a list again and the rest as paragraphs,
-  titles in bold.  A member with reasons has them written as paragraphs,
-  each labelled with the role it plays in its breakdown, if any.
-- A member told PREP comes first, then what is under it, and then once
-  more, as a paragraph: its public text, or its heading.
+  file.  A titled member becomes a heading under its section.
+- A member broken down has its parts written as a list, with reasons or
+  without: steps numbered, the rest bulleted, each part opening with its
+  role where the breakdown names its roles.  What is nested under a part
+  goes inside its item, its own breakdown as a list again and the rest as
+  paragraphs, titles in bold.  Other reasons are written as paragraphs.
 - A link to no member is written as /(broken link: …)/, where it will be seen.
 - A link to a file by a relative path -- a picture in ~attach/~, a source --
   is written relative to ~out/~, so the document still finds it, and pandoc
