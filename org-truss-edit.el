@@ -117,7 +117,7 @@ nothing written is changed; a section for the place, named in
 `org-truss-language', is added only where none does.  A section in none of
 the places is kept after the rest -- outside the pattern, to be moved by
 hand.  Links on the section itself stay on it."
-  (let* ((news (mapcar #'org-truss--place-snapshot (org-truss-pattern-places pattern)))
+  (let* ((news (mapcar #'org-truss--place-snapshot (org-truss-pattern-roles pattern)))
          (snapshot (org-truss--snapshot pos))
          (olds (plist-get snapshot :children))
          (place-of (lambda (old)
@@ -313,22 +313,55 @@ conclusion first."
         (org-entry-put pos property (symbol-name pattern))
       (org-entry-delete pos property))))
 
-(defun org-truss-add-places (pos gaps section)
+(defvar org-truss-place-text-function nil
+  "Function returning what a heading put in for a role says under its drawer.
+Called with the position of the heading it goes under and the role; nil,
+or the text.  The guidance sets it to give a role of a part its guide.")
+
+(defun org-truss--rank (pos kind role)
+  "Return where ROLE comes among the roles of the pattern of KIND at POS."
+  (or (seq-position (mapcar #'car (org-truss-pattern-roles
+                                   (org-truss--intern (org-entry-get pos (alist-get kind org-truss-pattern-properties)))))
+                    role)
+      most-positive-fixnum))
+
+(defun org-truss-add-place (pos kind role)
+  "Put under the heading at POS a heading for ROLE of its pattern of KIND.
+Named for the role in `org-truss-language' and playing it, it goes where
+the pattern lists the role: before the first heading there that plays a
+role the pattern lists after it, or else last.  Return a marker at it."
+  (let* ((rank (org-truss--rank pos kind role))
+         (before (seq-find (lambda (child)
+                             (let ((theirs (org-truss--intern (org-entry-get child (org-truss-role-property kind)))))
+                               (and theirs (> (org-truss--rank pos kind theirs) rank))))
+                           (org-truss--children pos)))
+         (text (concat (make-string (1+ (org-truss--level pos)) ?*) " " (org-truss-role-label role) "\n"
+                       (org-truss--drawer (org-truss--role-props (list (cons kind role))))
+                       (or (and org-truss-place-text-function
+                                (funcall org-truss-place-text-function pos role))
+                           "")
+                       "\n")))
+    (save-excursion
+      (if before
+          (goto-char before)
+        (goto-char pos)
+        (org-end-of-subtree t t)
+        (unless (bolp) (insert "\n")))
+      (let ((at (point-marker)))
+        (insert text)
+        at))))
+
+(defun org-truss-add-places (pos gaps)
   "Put under the heading at POS a heading for each role GAPS names.
 GAPS are (KIND ROLE . SHORT-BY), as `org-truss-gaps' gives them: as many
-headings for a role as it is short by, each named for its role in
-`org-truss-language' and playing it, after what is there.  They are
-sections when SECTION is non-nil, and members, to be written over, when it
-is not.  A pattern asks for headings a writer cannot be expected to make
-by hand; this makes them.  Return the number made."
+headings for a role as it is short by, each put in by
+`org-truss-add-place'.  A pattern asks for headings a writer cannot be
+expected to make by hand; this makes them.  Return the number made."
   (let ((n 0))
     (pcase-dolist (`(,kind ,role . ,short) gaps)
       (dotimes (_ short)
         (setq n (1+ n))
-        (if section
-            (org-truss-add-section pos (org-truss-role-label role) (list (cons kind role)))
-          (org-truss-add-member pos (org-truss-role-label role)
-                                (org-truss--role-props (list (cons kind role)))))))
+        (set-marker (org-truss-add-place pos kind role) nil)))
     n))
 
 (defun org-truss--write-member-after (pos level label props)
@@ -344,7 +377,7 @@ Return a marker at the new heading."
 
 (defun org-truss-add-member (parent label &optional props)
   "Write a member LABEL, with PROPS, as the last heading under PARENT.
-PARENT is the position of a part, a field or a member.  Return a marker at
+PARENT is the position of a part or a member.  Return a marker at
 the new heading."
   (org-truss--write-member-after parent (1+ (org-truss--level parent)) label props))
 
@@ -531,7 +564,7 @@ only be in the way."
 
 (defun org-truss-refile-member (pos parent)
   "Move the member at POS, with what is nested under it, to the end of PARENT.
-PARENT is the position of a part, a field or another member, outside the
+PARENT is the position of a part or another member, outside the
 subtree at POS.  Its headings take the levels of their new place.  Links
 and grounds point to it by its CUSTOM_ID, which goes with it, so they
 still find it.  Return a marker at its heading."

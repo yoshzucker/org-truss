@@ -50,8 +50,8 @@ The right of a member placed nowhere, nor under one placed."
 
 (defface org-truss-branch '((t :inherit org-truss-dim))
   "Face for the tree that joins a member to the members nested under it.
-The tree of the brief's fields and of the sections keeps the default face,
-so the two trees read apart where they meet."
+The tree of the sections keeps the default face, so the two trees read
+apart where they meet."
   :group 'org-truss)
 
 ;; Every line has three columns.  The left is what the board says the line
@@ -111,9 +111,9 @@ letter where the board is drawn, keeps the tree in line."
   :group 'org-truss)
 
 (defcustom org-truss-board-fold-limit 5
-  "How many members a field of the brief or the subject shows before folding.
-A field holding more starts folded on the board, as one line that says how
-many it holds; \\<org-truss-board-mode-map>\\[org-truss-board-fold] unfolds it."
+  "How many headings right under a member the board shows before folding it.
+A member holding more starts folded, as one line that says how many it
+hides; \\<org-truss-board-mode-map>\\[org-truss-board-fold] unfolds it."
   :type 'integer
   :group 'org-truss)
 
@@ -288,16 +288,17 @@ Joined, in the order of their kinds; nil when it plays none."
                           (seq-filter (lambda (kind) (alist-get kind roles)) org-truss-pattern-kinds)
                           " · "))))
 
-(defun org-truss--role-word (model member)
-  "Return the board's word for MEMBER of MODEL, on the left of its line.
-The roles it plays in the patterns of the member above, or `member' when
-it plays none; then [no role] when it plays none of a pattern above it,
-[assumed] when it is tagged :assumption:, and [no grounds] when it must
-have grounds and lacks them, each in its face."
-  (concat (or (org-truss--role-names member) "member")
-          (if (org-truss--no-role-p member) (propertize " [no role]" 'face 'org-truss-attention) "")
-          (if (org-truss-assumption-p member) (propertize " [assumed]" 'face 'org-truss-tentative) "")
-          (if (org-truss-missing-grounds model member)
+(defun org-truss--role-word (model cluster)
+  "Return the board's word for CLUSTER of MODEL, on the left of its line.
+The roles it plays in the patterns of the heading above, or `member' or
+`section' when it plays none; then [no role] when it plays none of a
+pattern above it, [assumed] when it is tagged :assumption:, and [no
+grounds] when it must have grounds and lacks them, each in its face."
+  (concat (or (org-truss--role-names cluster)
+              (if (org-truss-section-p cluster) "section" "member"))
+          (if (org-truss--no-role-p cluster) (propertize " [no role]" 'face 'org-truss-attention) "")
+          (if (org-truss-assumption-p cluster) (propertize " [assumed]" 'face 'org-truss-tentative) "")
+          (if (org-truss-missing-grounds model cluster)
               (propertize " [no grounds]" 'face 'org-truss-attention)
             "")))
 
@@ -558,7 +559,7 @@ MEMBER's line's.  Each goes to what it names."
       (mapcar (lambda (section)
                 (org-truss--line
                  (concat stem (org-truss--mark 'section)
-                         (if (eq section root) "Structure" (org-truss--section-word section)))
+                         (if (eq section root) "Structure" (org-truss--role-word model section)))
                  (and (not (eq section root))
                       (propertize (org-truss-section-label section) 'face 'org-truss-dim))
                  nil
@@ -568,10 +569,10 @@ MEMBER's line's.  Each goes to what it names."
       (mapcar (lambda (user)
                 (org-truss--line
                  (concat stem (org-truss--mark 'built) (org-truss--role-word model user))
-                 (propertize (org-truss-member-label user) 'face 'org-truss-dim)
+                 (propertize (org-truss-cluster-label user) 'face 'org-truss-dim)
                  nil
-                 (list :type 'use :pos (org-truss-member-pos user)
-                       :key (append key (list 'use (org-truss-member-pos user))))))
+                 (list :type 'use :pos (org-truss-cluster-pos user)
+                       :key (append key (list 'use (org-truss-cluster-pos user))))))
               (cdr use))))))
 
 (defun org-truss--told-wording (member)
@@ -596,12 +597,12 @@ MEMBER's line's.  Each goes to what it names."
             (when m
               (let ((use (funcall cell m uses)))
                 (setcar use (append (car use) (list section)))))))))
-    (dolist (m (org-truss-model-all model))
-      (dolist (ref (org-truss-member-grounds m))
+    (dolist (c (org-truss-clusters model))
+      (dolist (ref (org-truss-cluster-refs c))
         (let ((ground (org-truss-member-by-ref model ref)))
           (when ground
             (let ((use (funcall cell ground uses)))
-              (setcdr use (append (cdr use) (list m))))))))
+              (setcdr use (append (cdr use) (list c))))))))
     uses))
 
 (defun org-truss--branch (indent last)
@@ -613,11 +614,11 @@ carries the tree down past it to the next, unless the member is the LAST."
         (concat indent (propertize (if last "  " "│ ") 'face 'org-truss-branch))))
 
 (defun org-truss--point-name (member)
-  "Return what MEMBER's telling pattern calls the place that is the member.
-Answer, umbrella, conclusion: the place it fills in its own pattern."
-  (let ((place (seq-find (lambda (place) (memq :point (cdr place)))
-                         (org-truss-pattern-places (or (org-truss-member-telling member) 'first)))))
-    (if place (org-truss-role-name (car place)) "point")))
+  "Return what MEMBER's telling pattern calls the role the member plays itself.
+Answer, umbrella, conclusion: the role flagged :self."
+  (let ((role (seq-find (lambda (role) (org-truss-role-flag role :self))
+                        (org-truss-pattern-roles (or (org-truss-cluster-telling member) 'first)))))
+    (if role (org-truss-role-name (car role)) "point")))
 
 (defun org-truss--told-below (lines told left under item)
   "Return LINES, those under a member's own, then the member told below them.
@@ -660,31 +661,38 @@ is what it stands for, under KEY, and ID how it is called, if it is."
            id)
           (list :under stem :cut t)))
 
-(defun org-truss--grounds-lines (model member stem key)
-  "Return a line for each thing MEMBER of MODEL stands on, below it.
-The members its TRUSS_GROUNDS links to, each said to be a broken link when
+(defun org-truss--grounds-lines (model cluster stem key)
+  "Return a line for each thing CLUSTER of MODEL stands on, below it.
+The members it links to, each once: in its TRUSS_GROUNDS -- each a
+ground -- and in its text besides -- each cited -- said to be broken when
 it is no member, and to have no grounds when it does not hold; then the
 sources TRUSS_GROUNDS names besides, the first link to a source in its
 text, and the words it quotes, a link among them that points to nothing
-said not to be found.  STEM starts each; KEY is MEMBER's line's."
-  (let* ((pos (org-truss-member-pos member))
-         (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) member))
+said not to be found.
+STEM starts each; KEY is CLUSTER's line's."
+  (let* ((pos (org-truss-cluster-pos cluster))
+         (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) cluster))
                                             (plist-get org-truss--checks :broken-sources))))
-         (found-p (lambda (text) (not (seq-some (lambda (link) (string-search link text)) missing)))))
+         (found-p (lambda (text) (not (seq-some (lambda (link) (string-search link text)) missing))))
+         (member-line
+          (lambda (ref word in-text)
+            (let ((ground (org-truss-member-by-ref model ref)))
+              (org-truss--ground-line
+               stem (append key (list (if in-text 'cited 'ground) ref))
+               (cond ((null ground) (propertize (concat "broken " word) 'face 'org-truss-attention))
+                     ((org-truss-holds-p ground) word)
+                     (t (concat word (propertize " [no grounds]" 'face 'org-truss-attention))))
+               (if ground (org-truss-member-label ground) (format "[[%s]]" (org-truss--target ref)))
+               (list :type 'member :pos (if ground (org-truss-member-pos ground) pos)
+                     :label (and ground (org-truss-member-label ground))
+                     :claim pos :ground ref :in-text in-text)
+               (and ground (org-truss--id-text ground ref)))))))
     (append
-     (mapcar (lambda (ref)
-               (let ((ground (org-truss-member-by-ref model ref)))
-                 (org-truss--ground-line
-                  stem (append key (list 'ground ref))
-                  (cond ((null ground) (propertize "broken ground" 'face 'org-truss-attention))
-                        ((org-truss-holds-p ground) "ground")
-                        (t (concat "ground" (propertize " [no grounds]" 'face 'org-truss-attention))))
-                  (if ground (org-truss-member-label ground) (format "[[%s]]" (org-truss--target ref)))
-                  (list :type 'member :pos (if ground (org-truss-member-pos ground) pos)
-                        :label (and ground (org-truss-member-label ground))
-                        :claim pos :ground ref)
-                  (and ground (org-truss--id-text ground ref)))))
-             (org-truss-member-grounds member))
+     (mapcar (lambda (ref) (funcall member-line ref "ground" nil))
+             (seq-uniq (org-truss-cluster-grounds cluster)))
+     (mapcar (lambda (ref) (funcall member-line ref "cited" t))
+             (seq-difference (seq-uniq (org-truss-cluster-text-grounds cluster))
+                             (org-truss-cluster-grounds cluster)))
      (mapcar (lambda (source)
                (org-truss--ground-line stem (append key (list 'source (car source)))
                                        (concat (symbol-name (car source))
@@ -692,12 +700,12 @@ said not to be found.  STEM starts each; KEY is MEMBER's line's."
                                                  (propertize " [not found]" 'face 'org-truss-attention)))
                                        (org-truss--one-line (org-truss--link-text (cdr source)))
                                        (list :type 'member :pos pos)))
-             (delq nil (list (and (org-truss-member-sources member)
-                                  (cons 'source (org-truss-member-sources member)))
-                             (and (org-truss-member-cited member)
-                                  (cons 'cited (org-truss-member-cited member)))
-                             (and (org-truss-member-quoted member)
-                                  (cons 'quote (org-truss-member-quoted member)))))))))
+             (delq nil (list (and (org-truss-cluster-sources cluster)
+                                  (cons 'source (org-truss-cluster-sources cluster)))
+                             (and (org-truss-cluster-cited cluster)
+                                  (cons 'cited (org-truss-cluster-cited cluster)))
+                             (and (org-truss-cluster-quoted cluster)
+                                  (cons 'quote (org-truss-cluster-quoted cluster)))))))))
 
 (defun org-truss--member-lines (model member indent key
                                       &optional link section marker wording)
@@ -745,7 +753,7 @@ parent's telling pattern tells after it is marked."
          (up (org-truss-parent model member))
          ;; A part of a breakdown written out as a list opens its item,
          ;; whatever its telling pattern.
-         (item-of-list (and up (org-truss-breakdown-list up)))
+         (item-of-list (and up (org-truss-list-form up)))
          (children (org-truss-member-children member))
          (nested (length (mapcan #'org-truss--subtree children)))
          ;; It is opened in one place, by the order the board is drawn
@@ -754,7 +762,9 @@ parent's telling pattern tells after it is marked."
                         (and (not in-structure)
                              (car (and org-truss--uses (gethash member org-truss--uses))))
                       (and in-structure link)))
-         (folded (and (> nested 0) (org-truss--folded-p key (and elsewhere t))))
+         (folded (and (> nested 0)
+                      (org-truss--folded-p key (or (and elsewhere t)
+                                                   (> (length children) org-truss-board-fold-limit)))))
          (shown (and (not folded) children))
          ;; What it brings where it is written -- its uses, its grounds, its
          ;; gaps -- it brings where it is opened; not where it is one line.
@@ -784,7 +794,7 @@ parent's telling pattern tells after it is marked."
                       (let ((org-truss--right-width (- org-truss--right-width hang 2)))
                         (funcall untold
                                  (funcall marked (org-truss--member-reader member wording 'after))))))
-         (as-list (org-truss-breakdown-list member))
+         (as-list (org-truss-list-form member))
          (n 0)
          ;; What comes between its patterns and the members branching off
          ;; below -- its notes, its grounds -- has the tree's line run past.
@@ -796,7 +806,7 @@ parent's telling pattern tells after it is marked."
          (above (cdr (assq member (plist-get org-truss--checks :out-of-order))))
          (late (and above
                     (format "%s tells it before %s, which is above it in the file"
-                            (org-truss-pattern-name (org-truss-member-telling up))
+                            (org-truss-pattern-name (org-truss-cluster-telling up))
                             (org-truss-member-label above)))))
     (cons
      ;; Called from the structure, it names the member as the link does;
@@ -944,16 +954,6 @@ plays that role."
   "Non-nil when the board being drawn finds CLUSTER playing no role it should."
   (assq cluster (plist-get org-truss--checks :no-role)))
 
-(defun org-truss--section-word (section)
-  "Return the board's word for SECTION, on the left of its line: its roles.
-`no role', in the face of what wants doing, when it plays none of a
-pattern of the section above; else `section' when it plays none."
-  (let ((roles (org-truss--role-names section)))
-    (concat (or roles "section")
-            (if (org-truss--no-role-p section)
-                (propertize " [no role]" 'face 'org-truss-attention)
-              ""))))
-
 (defun org-truss--section-lines (model section prefix last path parent)
   "Return board lines for SECTION and the sections below it.
 PREFIX draws the tree to the left; LAST says SECTION ends its siblings.
@@ -988,13 +988,14 @@ parent's telling pattern tells after is marked."
                      :key (list 'section path))))
     (append
      (list (org-truss--line (concat prefix (if last "└ " "├ ")
-                                    (org-truss--section-word section)
+                                    (org-truss--role-word model section)
                                     (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
                             (car label)
                             (car reader)
                             (append item (and (not (string-empty-p why)) (list :why why)))))
      (org-truss--lines-under-heading inner (cdr label) (org-truss-section-notes section) (cdr reader) item
                              (org-truss--pattern-line section inner item) stem)
+     (org-truss--grounds-lines model section stem (plist-get item :key))
      (org-truss--links-lines model section stem path)
      (let ((n (length children)) (i 0))
        (mapcan (lambda (child)
@@ -1012,7 +1013,6 @@ parent's telling pattern tells after is marked."
   "Return the part CLUSTER is in: `brief', `subject', `members' or `structure'."
   (cond ((org-truss-member-p cluster) (org-truss-member-home cluster))
         ((org-truss-section-p cluster) 'structure)
-        ((org-truss-field-p cluster) (org-truss-field-part cluster))
         ((org-truss-part-p cluster) (org-truss-part-name cluster))))
 
 (defun org-truss--check-line (model cluster key right)
@@ -1024,9 +1024,8 @@ RET on it goes to the heading."
      (org-truss--line
       (concat "   " (cond ((org-truss-member-p cluster) (org-truss--role-word model cluster))
                          (root "Structure")
-                         ((org-truss-section-p cluster) (org-truss--section-word cluster))
-                         ((org-truss-field-p cluster) (org-truss-field-name cluster))
-                         (t (capitalize (symbol-name (org-truss-part-name cluster))))))
+                         ((org-truss-part-p cluster) (capitalize (symbol-name (org-truss-part-name cluster))))
+                         (t (org-truss--role-word model cluster))))
       (cond ((org-truss-member-p cluster) (org-truss--member-words cluster))
             ((or root (org-truss-part-p cluster)) nil)
             (t (org-truss-cluster-label cluster)))
@@ -1113,52 +1112,6 @@ finds it, as `org-truss-check-descriptions' names them."
             (lambda (e) (format "below %s" (org-truss-cluster-label (cdr e))))))))
     (and lines (cons (org-truss--line "") lines))))
 
-(defun org-truss--field-text (field)
-  "Return the text of FIELD as lines, or nil.
-One line; drawn whole, as many as it takes to break it to the room of the
-middle."
-  (let ((text (org-truss-field-notes field)))
-    (and text (not (string-empty-p text))
-         (mapcar (lambda (line) (propertize line 'face 'org-truss-dim))
-                 (if org-truss--whole
-                     (org-truss--fill text (- org-truss--middle-width 2))
-                   (list (org-truss--one-line text)))))))
-
-(defun org-truss--field-lines (model field part prefix inner)
-  "Return board lines for FIELD of PART, the brief or the subject, of MODEL.
-Its own line, PREFIX and the role it plays, with its text, and drawn
-whole the rest of its text below, from INNER; then the members written
-under it, so they can be gone to and placed from here.  A field that
-plays none of the roles PART's breakdown names is named in the face of
-what wants doing."
-  (let* ((key (list (org-truss-part-name part) (org-truss-field-label field)))
-         (text (org-truss--field-text field))
-         (members (org-truss-field-children field))
-         (fold (list 'field key))
-         (folded (and members (org-truss--folded-p
-                               fold (> (length members) org-truss-board-fold-limit))))
-         (stray (org-truss--no-role-p field))
-         (item (append (list :type 'brief :pos (org-truss-field-pos field)
-                             :key (cons 'brief key) :field key)
-                       (and stray
-                            (list :why (format "Plays no role of %s; %s gives it one"
-                                               (org-truss-patterns-label part)
-                                               (substitute-command-keys "\\[org-truss-board-roles]"))))
-                       (and members (list :fold fold :folded folded)))))
-    (append (list (org-truss--line (concat prefix
-                                           (if stray
-                                               (propertize (org-truss-field-name field)
-                                                           'face 'org-truss-attention)
-                                             (org-truss-field-name field))
-                                           (if folded (org-truss--fold-mark (length members)) ""))
-                                   (car text) nil item))
-            (org-truss--lines-under-heading inner (cdr text) nil nil item)
-            (and (not folded)
-                 (mapcan (lambda (m)
-                           (org-truss--member-lines model m (concat inner "  ")
-                                                    (list 'field key (org-truss-member-label m))))
-                         members)))))
-
 (defun org-truss--part-line (name gloss item &optional reader)
   "Return the line that opens the part NAME on the board.
 GLOSS says what is done there; READER, what the document opens with."
@@ -1167,24 +1120,20 @@ GLOSS says what is done there; READER, what the document opens with."
                    nil reader item))
 
 (defun org-truss--part-lines (model part gloss)
-  "Return the lines of PART of MODEL, the brief or the subject, on the board.
-Its own line, with GLOSS, saying what is done there; the breakdown it
-follows; its fields, as a tree; and a line for each role its breakdown
-asks for and no field plays, on which a new field plays it."
+  "Return the lines of PART of MODEL on the board: the brief, the subject or
+the members.  Its own line, with GLOSS, saying what is done there; the
+patterns it names; the members right under it, each drawn as any member
+is; and a line for each role its patterns ask for and none plays, on which
+a new member plays it."
   (let* ((name (org-truss-part-name part))
          (item (list :type 'brief :pos (org-truss-part-pos part)
-                     :key (list 'brief name) :part name))
-         (fields (org-truss-part-children part))
-         (n (length fields))
-         (i 0))
+                     :key (list 'brief name) :part name)))
     (append
      (list (org-truss--part-line (capitalize (symbol-name name)) gloss item))
      (delq nil (list (org-truss--pattern-line part " " item)))
-     (mapcan (lambda (field)
-               (let ((last (= (setq i (1+ i)) n)))
-                 (org-truss--field-lines model field part (if last " └ " " ├ ")
-                                         (if last "   " " │ "))))
-             fields)
+     (mapcan (lambda (m)
+               (org-truss--member-lines model m "   " (list 'member (org-truss-member-label m))))
+             (org-truss-part-children part))
      (mapcar (lambda (gap)
                (org-truss--line (concat "   " (org-truss--gap-text part gap)) nil nil
                                 (append (list :gap (cons (car gap) (cadr gap))
@@ -1262,26 +1211,22 @@ followed by what is left to do there."
 
 (defun org-truss--members-part (model checks)
   "Return the members part of the board for MODEL, then what is left to do.
-That is what CHECKS finds of the members part's own."
-  (let* ((root (with-current-buffer (org-truss-model-buffer model)
-                 (org-with-wide-buffer (org-truss--root-pos))))
-         (pos (or root
-                  (with-current-buffer (org-truss-model-buffer model)
-                    (org-with-wide-buffer (org-truss--part-pos "members"))))))
+Drawn as the brief and the subject are.  On the board of one heading of a
+file that is no truss file, that heading, as a part of its own."
+  (let ((root (with-current-buffer (org-truss-model-buffer model)
+                (org-with-wide-buffer (org-truss--root-pos))))
+        (part (org-truss-model-members-part model)))
     (append
-     (and pos
-          (append
-           (list (org-truss--line "")
-                 (if root
-                     (org-truss--part-line "Heading" "one heading, read as a truss file's members are"
-                                           (list :type 'brief :pos pos :part 'members
-                                                 :key '(brief (members))))
-                   (org-truss--part-line "Members" "what is made of it"
-                                         (list :type 'brief :pos pos :part 'members
-                                               :key '(brief (members))))))
-           (mapcan (lambda (m)
-                     (org-truss--member-lines model m "   " (list 'member (org-truss-member-label m))))
-                   (org-truss-model-members model))))
+     (cond (root
+            (cons (org-truss--line "")
+                  (cons (org-truss--part-line "Heading" "one heading, read as a truss file's members are"
+                                              (list :type 'brief :pos root :part 'members
+                                                    :key '(brief members)))
+                        (mapcan (lambda (m)
+                                  (org-truss--member-lines model m "   " (list 'member (org-truss-member-label m))))
+                                (org-truss-model-members model)))))
+           (part
+            (cons (org-truss--line "") (org-truss--part-lines model part "what is made of it"))))
      (org-truss--check-lines model checks 'members))))
 
 (defun org-truss--column (lines)

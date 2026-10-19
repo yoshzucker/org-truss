@@ -219,10 +219,11 @@ again."
                                     "- 誰に：Whoever drives\n- いつ：")
                             out))))
 
-(ert-deftest org-truss-test-render-aspects-of-reasons ()
-  "Reasons broken down by more than one role open with their role, as parts
-do: the reader is told which part of the breakdown each is.  What plays
-none is told as written."
+(ert-deftest org-truss-test-render-a-breakdown-of-reasons ()
+  "Reasons broken down are written out as the breakdown says, a list, with
+reasons as without; each opens with the role it plays, so the reader is
+told which part of the breakdown each is.  What plays none is told as
+written."
   (let ((text "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -253,12 +254,12 @@ Some items wait a week more.
 "))
     (should (string-match-p
              (concat "^We move to fortnightly reviews\n\n"
-                     "Pros: Less time in meetings\n\n"
-                     "\\* Cons: Slower answers\nSome items wait a week more\\.\n\n"
-                     "Robin likes it\n")
+                     "- Pros: Less time in meetings\n"
+                     "- Cons: Slower answers\n  Some items wait a week more\\.\n"
+                     "- Robin likes it\n")
              (org-truss-test--render text)))
     (let ((org-truss-language 'ja))
-      (should (string-match-p "^メリット：Less time in meetings$" (org-truss-test--render text))))))
+      (should (string-match-p "^- メリット：Less time in meetings$" (org-truss-test--render text))))))
 
 (defconst org-truss-test--telling-text "* M
 :PROPERTIES:

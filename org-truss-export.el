@@ -69,15 +69,16 @@ does what is nested under it."
     (org-truss--tell member depth wording label)))
 
 (defun org-truss--list-items (member depth)
-  "Return MEMBER's breakdown as flow items at DEPTH below it: one list."
+  "Return what is under MEMBER as flow items at DEPTH below it: one list."
   (let ((list (org-truss--list-text member)))
     (and (not (string-empty-p list))
          (list (list (1+ depth) (cons nil list) nil)))))
 
 (defun org-truss--tell (member depth &optional wording label)
   "Return the flow of MEMBER at DEPTH, as it is told.
-What is under it comes in the order of the file -- for a member broken
-down with no reasons, as one list.  The member itself comes before all of
+What is under it comes in the order of the file -- as one list when a
+pattern of MEMBER says so; see `org-truss-list-form'.  The member itself
+comes before all of
 it or after, as its telling pattern puts it, in the words
 `org-truss-member-told' gives it there, WORDING among them, and opened
 with LABEL.  A pattern that closes with it again, as PREP and SDS do,
@@ -85,11 +86,11 @@ tells it once more at the end, in the words it is told in after."
   (let* ((first (org-truss-told-first-p member))
          (self (org-truss--labelled (org-truss-member-told member (if first 'before 'after) wording)
                                     label))
-         (under (if (org-truss-breakdown-list member)
+         (under (if (org-truss-list-form member)
                     (org-truss--list-items member depth)
                   (mapcan (lambda (m)
                             (org-truss--flow m (1+ depth) nil (org-truss--role-label member m)))
-                          (org-truss-member-children member)))))
+                          (org-truss-cluster-children member)))))
     (if first
         (append (list (list depth self nil))
                 under
@@ -118,8 +119,8 @@ A heading cannot sit in a list, so a title opens its block in bold."
 
 (defun org-truss--role-label (member child)
   "Return what opens CHILD where it is told under MEMBER, or \"\" for nothing.
-When MEMBER's breakdown labels its parts, the role CHILD plays, named in
-`org-truss-language': the reader is told which part of the breakdown each
+The role CHILD plays in a pattern of MEMBER whose role is flagged :label,
+named in `org-truss-language': the reader is told which part of it each
 piece is."
   (let ((role (org-truss-role-label-under member child)))
     (if role
@@ -127,19 +128,18 @@ piece is."
       "")))
 
 (defun org-truss--list-marker (member child n)
-  "Return (BULLET . LABEL) for CHILD, the Nth item of MEMBER's breakdown.
-BULLET opens the list item, a number for a step; LABEL is the role it
-plays, as `org-truss--role-label' gives it."
-  (cons (if (eq (org-truss-breakdown-list member) 'numbered) (format "%d. " n) "- ")
+  "Return (BULLET . LABEL) for CHILD, the Nth item of the list under MEMBER.
+BULLET opens the list item, a number in a numbered list; LABEL is the role
+it plays, as `org-truss--role-label' gives it."
+  (cons (if (eq (org-truss-list-form member) 'numbered) (format "%d. " n) "- ")
         (org-truss--role-label member child)))
 
 (defun org-truss--list-text (member)
-  "Return MEMBER's breakdown as an Org list.
-Steps are numbered and the rest are not; a part of a breakdown that labels
-them opens with its role.  Each item is what the reader sees of it.  What
-is nested under it goes inside its item: its own breakdown, as a list
-again, or what is told under it as paragraphs.  One tagged :noexport: is
-left out, and the numbers close over it."
+  "Return what is under MEMBER as an Org list, numbered or not as it says.
+An item playing a role flagged :label opens with its role.  Each item is
+what the reader sees of it.  What is nested under it goes inside its item:
+as a list again when it says so, else as paragraphs.  One tagged
+:noexport: is left out, and the numbers close over it."
   (let ((n 0))
     (mapconcat
      (lambda (child)
@@ -149,16 +149,16 @@ left out, and the numbers close over it."
                                         (or (car shown) "")
                                         (if (car shown) "\n" "")
                                         (or (cdr shown) ""))))
-              (nested (if (org-truss-breakdown-list child)
+              (nested (if (org-truss-list-form child)
                           (list (org-truss--list-text child))
                         (org-truss--blocks
                          (mapcan (lambda (m) (org-truss--flow m 1 nil (org-truss--role-label child m)))
-                                 (org-truss-member-children child))))))
+                                 (org-truss-cluster-children child))))))
          (concat (car marker)
                  (org-truss--indent
                   (string-join (seq-remove #'string-empty-p (cons own nested)) "\n\n")
                   (length (car marker))))))
-     (seq-remove #'org-truss-noexport-p (org-truss-member-children member))
+     (seq-remove #'org-truss-noexport-p (org-truss-cluster-children member))
      "\n")))
 
 (defun org-truss--emit (items level)

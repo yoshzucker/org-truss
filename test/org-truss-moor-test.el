@@ -13,8 +13,8 @@
 (require 'org-moor)
 
 (ert-deftest org-truss-test-a-link-to-a-source-is-grounds ()
-  "A member whose text cites a source with a moor: link has grounds of its
-own; a link under a member nested in it gives the member none."
+  "A member whose text cites a source with a moor: link has grounds; a link
+under a member nested in it gives the member none."
   (org-truss-test--with
       (concat "* Subject\n:PROPERTIES:\n:TRUSS_PART: subject\n:END:\n"
               "** Premises\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: premises\n:END:\n"
@@ -25,10 +25,10 @@ own; a link under a member nested in it gives the member none."
               "**** Eight of twelve ran over\n[[moor:9a3e::3][Calendar l. 3]]\n")
     (let* ((model (org-truss-read))
            (approval (org-truss-test--m model "Approval goes to the head first")))
-      (should (org-truss-own-grounds-p approval))
+      (should (org-truss-has-grounds-p approval))
       (should (equal (org-truss-member-cited approval) "[[moor:6f1c::12][Approval manual p. 12]]"))
       (should (equal (org-truss-member-quoted approval) "The head approves before finance."))
-      (should-not (org-truss-own-grounds-p (org-truss-test--m model "Reviews run long"))))))
+      (should-not (org-truss-has-grounds-p (org-truss-test--m model "Reviews run long"))))))
 
 (ert-deftest org-truss-test-sources-beside-the-file ()
   "A truss file's sources are beside it; other files' are where they were."

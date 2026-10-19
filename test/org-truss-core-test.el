@@ -628,11 +628,10 @@ Two roles in one pattern's property are none of its roles."
                      '("Both" "Elsewhere"))))))
 
 (ert-deftest org-truss-test-any-pattern-anywhere ()
-  "A member and a section take patterns alike, but a section no logic: it
-says nothing reasons could hold up.  A section's telling pattern asks the
-sections right below for each of its places -- deeper down, a place is
-filled for that section, not this one.  Roles are named in the file's
-language."
+  "A member and a section take patterns alike, of every kind.  A section's
+telling pattern asks the sections right below for each of its places --
+deeper down, a place is filled for that section, not this one.  Roles are
+named in the file's language."
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -671,8 +670,8 @@ language."
            (what (cadr (org-truss-section-children root)))
            (move (org-truss-test--m model "We move to fortnightly reviews")))
       (should (equal (org-truss-gaps root) '((telling complication . 1) (telling question . 1))))
-      (should-not (org-truss-section-logic what))
-      (should (equal (mapcar #'cadr (org-truss-gaps what)) '(who when where what how)))
+      (should (eq (org-truss-section-logic what) 'reasons))
+      (should (equal (mapcar #'cadr (org-truss-gaps what)) '(reason who when where what how)))
       (should (equal (mapcar #'car (plist-get (org-truss-checks model) :gaps))
                      (list move root what)))
       (should (equal (org-truss-gaps move) '((telling complication . 1) (telling question . 1))))
@@ -682,29 +681,25 @@ language."
         (should (equal (org-truss-role-label 'who) "誰が"))))))
 
 (ert-deftest org-truss-test-breakdown-is-written-as-a-list ()
-  "A member broken down, with no reasons, is written out as a list of its
-parts: numbered for steps, bulleted else.  A breakdown of more than one
-role labels each part by its role; with reasons as well, the parts are
-told as reasons are, labelled all the same."
+  "What is under a heading is written out as a list when one of its
+patterns says so: a breakdown, numbered for steps, bulleted else, with
+reasons or without.  A part playing a role flagged :label opens with it."
   (org-truss-test--with org-truss-test--how-file
     (let* ((model (org-truss-read))
            (check (org-truss-test--m model "Check before every test"))
            (needs (org-truss-test--m model "What a check needs")))
-      (should (eq (org-truss-breakdown-list check) 'bulleted))
-      (should (org-truss-breakdown-label-p check))
+      (should (eq (org-truss-list-form check) 'bulleted))
       (should (eq (org-truss-role-label-under check (org-truss-test--m model "The driver's manager"))
                   'who))
-      (should (eq (org-truss-breakdown-list (org-truss-test--m model "As follows")) 'numbered))
-      (should (eq (org-truss-breakdown-list needs) 'bulleted))
-      (should-not (org-truss-breakdown-label-p needs))
+      (should (eq (org-truss-list-form (org-truss-test--m model "As follows")) 'numbered))
+      (should (eq (org-truss-list-form needs) 'bulleted))
       (should-not (org-truss-role-label-under needs (org-truss-test--m model "Someone to check")))
-      (should-not (org-truss-breakdown-list (org-truss-test--m model "Tests are safer checked")))))
+      (should-not (org-truss-list-form (org-truss-test--m model "Tests are safer checked")))))
   (org-truss-test--with (replace-regexp-in-string
                          ":TRUSS_BREAKDOWN: 5w1h" ":TRUSS_BREAKDOWN: 5w1h\n:TRUSS_LOGIC: reasons"
                          org-truss-test--how-file)
-    (let ((check (org-truss-test--m (org-truss-read) "Check before every test")))
-      (should-not (org-truss-breakdown-list check))
-      (should (org-truss-breakdown-label-p check)))))
+    (should (eq (org-truss-list-form (org-truss-test--m (org-truss-read) "Check before every test"))
+                'bulleted))))
 
 (ert-deftest org-truss-test-sections-out-of-order ()
   "A section the file has below one its parent's telling pattern tells after
@@ -836,9 +831,9 @@ See [[file:sources/a.pdf][the rule]].
   "Reasons with grounds of every kind, and without.")
 
 (ert-deftest org-truss-test-grounds-of-its-own ()
-  "A member has grounds of its own in TRUSS_GROUNDS, said besides links to
-members; in a quotation in its text; or in a link to a source there, past
-its property drawer."
+  "A member has grounds in TRUSS_GROUNDS, links to members or sources or
+words; in a quotation in its text; or in a link in its text, to a member
+or a source."
   (org-truss-test--with org-truss-test--grounds-file
     (let* ((model (org-truss-read))
            (m (lambda (label) (org-truss-test--m model label))))
@@ -849,9 +844,9 @@ its property drawer."
       (should (equal (org-truss-member-quoted (funcall m "By a quote")) "We agreed."))
       (should (equal (org-truss-member-cited (funcall m "In its text"))
                      "[[file:sources/a.pdf][the rule]]"))
-      (dolist (label '("By words" "By a link" "By a quote" "In its text"))
-        (should (org-truss-own-grounds-p (funcall m label))))
-      (should-not (org-truss-own-grounds-p (funcall m "Through a member")))
+      (dolist (label '("By words" "By a link" "By a quote" "In its text" "Through a member"))
+        (should (org-truss-has-grounds-p (funcall m label))))
+      (should-not (org-truss-has-grounds-p (funcall m "Nothing")))
       (should (equal (org-truss-member-grounds (funcall m "Through a bare one")) '("bare" "fact")))
       (should-not (org-truss-member-sources (funcall m "Through a bare one"))))))
 
@@ -908,6 +903,78 @@ pointing to each other holds, each having grounds written."
       (should (equal (mapcar (lambda (w) (cons (org-truss-member-label (car w)) (cdr w)))
                              (plist-get (org-truss-checks model) :weak-grounds))
                      '(("Through a bare one" . "bare") ("Points at a bare one" . "bare")))))))
+
+(ert-deftest org-truss-test-grounds-in-the-text ()
+  "A link in a heading's text to a member is grounds, as one in its
+TRUSS_GROUNDS is: it gives the heading grounds, and what it points to must
+hold and be there.  A section reads its text alike, but an item listing a
+member is what it tells, not grounds; and a section with a logic asks
+grounds of its reasons as a member does."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Claim
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** Cites a fact
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+As [[#fact]] says.
+*** Cites a bare one
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_GROUNDS: [[#bare]]
+:END:
+As [[#bare]] says, twice.
+*** Cites nothing there
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+As [[#gone]] says.
+** Fact
+:PROPERTIES:
+:CUSTOM_ID: fact
+:TRUSS_GROUNDS: minutes
+:END:
+** Bare
+:PROPERTIES:
+:CUSTOM_ID: bare
+:END:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:TRUSS_LOGIC: reasons
+:END:
+** Why
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+- [[#fact]]
+** Because
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+As [[#fact]] shows.
+- [[#bare]]
+"
+    (let* ((model (org-truss-read))
+           (checks (org-truss-checks model))
+           (section (lambda (label)
+                      (seq-find (lambda (s) (equal (org-truss-section-label s) label))
+                                (org-truss-sections model))))
+           (pairs (lambda (key)
+                    (mapcar (lambda (hit) (cons (org-truss-cluster-label (car hit)) (cdr hit)))
+                            (plist-get checks key)))))
+      (should (equal (org-truss-cluster-text-grounds (org-truss-test--m model "Cites a fact")) '("fact")))
+      (should (org-truss-has-grounds-p (org-truss-test--m model "Cites a fact")))
+      (should (equal (funcall pairs :weak-grounds) '(("Cites a bare one" . "bare"))))
+      (should (equal (funcall pairs :broken-grounds) '(("Cites nothing there" . "gone"))))
+      (should-not (org-truss-cluster-text-grounds (funcall section "Why")))
+      (should (equal (org-truss-cluster-text-grounds (funcall section "Because")) '("fact")))
+      (should (equal (mapcar #'org-truss-cluster-label (plist-get checks :no-grounds)) '("Why"))))))
 
 (ert-deftest org-truss-test-sources-must-be-there ()
   "A link to a source points to something there: a file, by a path from the
@@ -1107,8 +1174,8 @@ TRUSS_GROUNDS is a source."
                             (buffer-string)))))
 
 (defun org-truss-test--fields (part)
-  "Return the fields of PART as (ROLES . TEXT)."
-  (mapcar (lambda (field) (cons (org-truss-field-roles field) (org-truss-field-notes field)))
+  "Return the members right under PART, its fields, as (ROLES . TEXT)."
+  (mapcar (lambda (field) (cons (org-truss-member-roles field) (org-truss-member-notes field)))
           (org-truss-part-children part)))
 
 (ert-deftest org-truss-test-brief ()
@@ -1121,10 +1188,10 @@ role its TRUSS_BREAKDOWN_ROLE names."
                      '((((breakdown . reader)) . "The team leads.")))))))
 
 (ert-deftest org-truss-test-conditions ()
-  "A heading under a field of the brief or the subject is a member: linked and
-judged like one.  The field's text is apart.  The parts are broken down
-into their fields: what their breakdown asks for and no field plays is a
-missing role."
+  "A field of the brief or the subject is a member, read and judged as any
+other, as are the members under it; its text is its notes.  The parts are
+broken down into their fields: what their breakdown asks for and no field
+plays is a missing role."
   (org-truss-test--with org-truss-test--conditions-file
     (let* ((model (org-truss-read))
            (subject (org-truss-model-subject model)))
@@ -1132,10 +1199,11 @@ missing role."
                      '((((breakdown . issue)) . "")
                        (((breakdown . constraints)) . "Finance said so at the October meeting."))))
       (should (equal (org-truss-test--labels
-                      (org-truss-field-children (cadr (org-truss-part-children subject))))
+                      (org-truss-member-children (cadr (org-truss-part-children subject))))
                      '("No budget this year" "The schedule is fixed")))
-      (should (eq (org-truss-field-of model (org-truss-test--m model "The schedule is fixed"))
+      (should (eq (org-truss-parent model (org-truss-test--m model "The schedule is fixed"))
                   (cadr (org-truss-part-children subject))))
+      (should (eq (org-truss-parent model (cadr (org-truss-part-children subject))) subject))
       (should (equal (plist-get (org-truss-checks model) :gaps)
                      (list (cons (org-truss-model-brief model) '((breakdown constraints . 1)))
                            (cons subject '((breakdown premises . 1))))))
@@ -1143,7 +1211,8 @@ missing role."
       (should (eq (org-truss-member-home (org-truss-test--m model "No budget this year")) 'subject))
       (should (equal (org-truss-test--labels (org-truss-told model)) '("No budget this year")))
       (should (equal (org-truss-test--labels (org-truss-model-all model))
-                     '("Nobody checks before a test" "No budget this year"
+                     '("Reader" "Their question" "Response wanted" "Issue"
+                       "Nobody checks before a test" "Constraints" "No budget this year"
                        "The schedule is fixed" "Check with a breathalyser"))))))
 
 (ert-deftest org-truss-test-subject-and-members-alike ()
@@ -1181,7 +1250,7 @@ no reason either, unless the step has a logic."
   (org-truss-test--with org-truss-test--steps-file
     (let* ((model (org-truss-read))
            (check (org-truss-test--m model "Check before every test")))
-      (should (eq (org-truss-breakdown-list check) 'numbered))
+      (should (eq (org-truss-list-form check) 'numbered))
       (should (equal (org-truss-member-grounds check) '("law")))
       (should-not (org-truss-needs-grounds-p model (org-truss-test--m model "Meet the driver face to face")))
       (should-not (org-truss-needs-grounds-p model (org-truss-test--m model "A video call counts as face to face")))
@@ -1337,7 +1406,7 @@ at the end."
 property of the pattern's kind."
   (org-truss-test--with org-truss-test--file
     (let ((move (org-truss-test--heading-pos "Move to fortnightly")))
-      (should (= (org-truss-add-places move '((logic minor . 1)) nil) 1))
+      (should (= (org-truss-add-places move '((logic minor . 1))) 1))
       (should (string-match-p
                "^\\*\\*\\* Minor premise\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: minor\n:END:\n"
                (buffer-string)))
@@ -1598,17 +1667,19 @@ directories there."
         (should (org-truss-model-structure model))
         (should (null (org-truss-model-members model)))))))
 
-(ert-deftest org-truss-test-add-field ()
-  "A field put in for a role of the part's breakdown goes where the
-breakdown lists it among the fields there."
+(ert-deftest org-truss-test-add-place ()
+  "A heading put in for a role goes where the pattern lists it among the
+headings there, under any heading; a field is given its guide."
   (org-truss-test--with org-truss-test--conditions-file
-    (set-marker (org-truss-add-field (org-truss--part-pos "brief") 'constraints) nil)
-    (set-marker (org-truss-add-field (org-truss--part-pos "subject") 'premises) nil)
+    (set-marker (org-truss-add-place (org-truss--part-pos "brief") 'breakdown 'constraints) nil)
+    (set-marker (org-truss-add-place (org-truss--part-pos "subject") 'breakdown 'premises) nil)
     (let ((model (org-truss-read)))
-      (should (equal (mapcar #'org-truss-field-label (org-truss-part-children (org-truss-model-brief model)))
+      (should (equal (mapcar #'org-truss-member-label (org-truss-part-children (org-truss-model-brief model)))
                      '("Reader" "Their question" "Response wanted" "Constraints")))
-      (should (equal (mapcar #'org-truss-field-label (org-truss-part-children (org-truss-model-subject model)))
+      (should (equal (mapcar #'org-truss-member-label (org-truss-part-children (org-truss-model-subject model)))
                      '("Premises" "Issue" "Constraints")))
+      (should (string-match-p ":TRUSS_BREAKDOWN_ROLE: premises\n:END:\n:GUIDE:\nWhat is taken as given"
+                              (buffer-string)))
       (should-not (plist-get (org-truss-checks model) :gaps)))))
 
 (ert-deftest org-truss-test-refresh-guides ()
