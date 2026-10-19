@@ -855,18 +855,16 @@ Not placed: right under Members, and not told in the document."
                           (cons root (org-truss-sections model))))))
 
 (defun org-truss--place (pos to)
-  "Place the member at POS in the section at TO, and nowhere else.
+  "Place the member at POS in the section at TO, after what it tells there.
 Run in the truss file.  The member is given a CUSTOM_ID to be pointed to
 by, when it has none, and the section tells it by a link of its own,
-- [[truss-include:m7]].  A member is placed in one section at most: where
-it was placed, it is taken out."
+- [[truss-include:m7]].  Where else it is told stays as it is: a member
+can be told in as many sections as want it."
   (let* ((to (copy-marker to))
-         (ref (org-truss-ensure-id pos))
-         (from (mapcar #'org-truss-section-pos (org-truss--placings (org-truss-read) ref))))
-    (if (equal from (list (marker-position to)))
-        (message "Already placed there")
-      (dolist (pos (sort from #'>))
-        (org-truss-remove-link pos ref))
+         (ref (org-truss-ensure-id pos)))
+    (if (memq (marker-position to)
+              (mapcar #'org-truss-section-pos (org-truss--placings (org-truss-read) ref)))
+        (message "Already told there")
       (org-truss-add-link to ref))
     (set-marker to nil)))
 
@@ -874,9 +872,10 @@ it was placed, it is taken out."
   "Place a member in a section of the structure.
 On a section, ask which member to place in it, those not placed yet
 first.  On a broken link, ask which member to place where it stands, in
-its place.  On a member, ask which section to place it in.  A member is
-placed in one section at most, so one placed already is moved.  The member
-itself, in the file, does not move: the section lists it."
+its place.  On a member, ask which section to place it in.  A member can
+be placed in as many sections as want it; one placed already stays where
+it is placed, too.  The member itself, in the file, does not move: the
+section tells it by a link."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'section 'member 'broken))
          (model (org-truss-read org-truss--source)))
@@ -889,14 +888,10 @@ itself, in the file, does not move: the section lists it."
                    (format "Place instead of %s: " (org-truss--include-link (plist-get item :link)))
                    (org-truss--member-choices model))))
          (org-truss--editing
-           (let* ((section (copy-marker (plist-get item :holder)))
-                  (ref (org-truss-ensure-id pos)))
-             (dolist (pos (sort (mapcar #'org-truss-section-pos
-                                        (org-truss--placings (org-truss-read) ref))
-                                #'>))
-               (org-truss-remove-link pos ref))
-             (org-truss-replace-link section (plist-get item :link) ref)
-             (set-marker section nil)))))
+           (let ((holder (copy-marker (plist-get item :holder)))
+                 (ref (org-truss-ensure-id pos)))
+             (org-truss-replace-link holder (plist-get item :link) ref)
+             (set-marker holder nil)))))
       (_
        (let ((pos (or (and (plist-get item :label) (plist-get item :pos))
                       (user-error "Nothing to place here")))

@@ -1500,21 +1500,34 @@ copy is written back."
       (org-truss--catch-up (selected-window))
       (should (string-match-p "├ Sky[ ·]+\\(?:\\[*#[^] ]+]* \\)?Where we are" (buffer-string))))))
 
-(ert-deftest org-truss-test-board-moves-a-member ()
-  "a on a placed member moves it to the chosen section: a member is placed
-in one section at most."
+(ert-deftest org-truss-test-board-places-in-more-sections ()
+  "a on a placed member places it in the chosen section too: a member can be
+told in as many sections as want it, and the document tells it in each.
+Placed there already, nothing changes."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
     (org-truss-test--answering '("Structure › Umbrella › Umbrella")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
-      (should (null (org-truss-cluster-includes (car (org-truss-section-children root)))))
+      (should (equal (org-truss-cluster-includes (car (org-truss-section-children root)))
+                     '("long")))
       (should (equal (org-truss-cluster-includes (nth 2 (org-truss-section-children root)))
-                     '("move" "none" "long"))))))
+                     '("move" "none" "long"))))
+    (should (= (with-temp-buffer
+                 (insert (org-truss-render (org-truss-read source)))
+                 (count-matches "^Reviews ran past the hour" (point-min) (point-max)))
+               2))
+    (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long")
+    (org-truss-test--answering '("Structure › Sky › Sky")
+      (org-truss-board-place))
+    (should (equal (org-truss-cluster-includes
+                    (car (org-truss-section-children (org-truss-model-structure (org-truss-read source)))))
+                   '("long")))))
 
 (ert-deftest org-truss-test-board-places-an-unplaced-member ()
   "a on an unplaced member places it in the chosen section; on a section, a
-member placed elsewhere is moved there, and one placed there stays put."
+member placed elsewhere is placed there too, and one placed there stays
+put."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Lone remark")
     (org-truss-test--answering '("Structure › Sky › Sky")
@@ -1529,7 +1542,7 @@ member placed elsewhere is moved there, and one placed there stays put."
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
       (should (equal (org-truss-cluster-includes (car (org-truss-section-children root)))
-                     '("long")))
+                     '("long" "m1")))
       (should (equal (org-truss-cluster-includes (nth 2 (org-truss-section-children root)))
                      '("move" "none" "m1"))))
     (org-truss-test--goto-line-with "└ Umbrella[ ·]+\\(?:\\[*#[^] ]+]* \\)?Umbrella")
@@ -1541,8 +1554,8 @@ member placed elsewhere is moved there, and one placed there stays put."
                    '("move" "none" "m1")))))
 
 (ert-deftest org-truss-test-board-places-instead-of-a-broken-link ()
-  "a on a broken link places the chosen member where the link stands; one
-placed elsewhere is moved from there."
+  "a on a broken link places the chosen member where the link stands; where
+else it is placed, it stays."
   (org-truss-test--with-board org-truss-test--file
     (let ((links (lambda (n) (org-truss-cluster-includes
                               (nth n (org-truss-section-children
@@ -1561,7 +1574,8 @@ placed elsewhere is moved from there."
     (org-truss-test--answering '("Members › Reviews run long")
       (org-truss-board-place))
     (let ((root (org-truss-model-structure (org-truss-read source))))
-      (should (null (org-truss-cluster-includes (car (org-truss-section-children root)))))
+      (should (equal (org-truss-cluster-includes (car (org-truss-section-children root)))
+                     '("long")))
       (should (equal (org-truss-cluster-includes (nth 2 (org-truss-section-children root)))
                      '("move" "m1" "long" "last"))))))
 

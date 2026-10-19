@@ -955,7 +955,7 @@ lines.
 |       | ~Q~         | put the text copied last under it, as a quotation     | same                                               |
 |       | ~f~         | refile it, last under another section                 | refile it, last under a part or another member     |
 |       | ~D~         |                                                       | delete it from the file, after asking              |
-| place | ~a~         | place a member in it                                  | place it in a section, or move it to another       |
+| place | ~a~         | place a member in it                                  | place it in a section, besides where it is         |
 |       | ~d~         | take it out, handing what it places up                | take it out of its section; it stays in the file   |
 |       | ~M-↑~ ~M-↓~ | move it among its siblings                            | move it among its siblings; listed, in its section |
 | shape | ~s~         | add a section under it; on a missing role, playing it |                                                    |
@@ -979,9 +979,10 @@ lines.
 |       | ~C-x C-s~   | save the truss file                                   |                                                    |
 
 ~a~ writes a link that tells a member, ~- [[truss-include:m7]]~, in a
-section.  A member is placed in one section at most: ~a~ on a member
-placed already moves it, and on a section offers first the members
-placed nowhere.  On a broken link, ~a~ places the chosen member where the
+section.  A member can be placed in as many sections as want it, and is
+told in each: ~a~ on a member placed already places it in another too,
+and on a section offers first the members placed nowhere; ~d~ takes it
+out of one.  On a broken link, ~a~ places the chosen member where the
 link stands, in its place: the way to mend one.  ~d~ loses nothing
 written: on a member a link tells, the link goes and the member stays in
 the file, whatever heading the link is in; a section taken out hands what
