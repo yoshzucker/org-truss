@@ -144,10 +144,10 @@ names of what was made."
 ;;;###autoload
 (defun org-truss-init (directory)
   "Set up DIRECTORY to make a document in, and open its truss file.
-A new truss file when there is none.  Beside it, what is missing of the
-directories its head comment names, of `org-truss-agent-file' and of
-`org-truss-project-file'; see `org-truss-set-up-directory'.  A truss file
-written before its
+A new truss file, written to disk, when there is none.  Beside it, what
+is missing of the directories its head comment names, of
+`org-truss-agent-file' and of `org-truss-project-file'; see
+`org-truss-set-up-directory'.  A truss file written before its
 attachments were kept beside it is given the line that keeps them there,
 left unsaved to be looked over."
   (interactive (list (read-directory-name "Directory: " (org-truss--default-directory))))
@@ -155,13 +155,13 @@ left unsaved to be looked over."
          (new (not (file-exists-p file)))
          (title (and new (read-string "Title: "))))
     (make-directory directory t)
+    ;; Written before it is visited, so that the file is there from the
+    ;; start and its first line's variables are taken as on any visit.
+    (when new
+      (let ((coding-system-for-write 'utf-8-unix))
+        (with-temp-file file (insert (org-truss-skeleton title)))))
     (find-file file)
-    (if new
-        (progn
-          (insert (org-truss-skeleton title))
-          (setq-local org-attach-id-dir
-                      (file-name-as-directory org-truss-attach-directory))
-          (goto-char (point-min)))
+    (unless new
       (org-truss-put-file-variables))
     (let ((made (org-truss-set-up-directory directory)))
       (when made

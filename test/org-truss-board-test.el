@@ -1398,6 +1398,8 @@ beside it, unsaved."
         (should (string-prefix-p "# -*- org-attach-id-dir: \"attach/\"; -*-\n#+title: New\n"
                                  (buffer-string)))
         (should (equal org-attach-id-dir "attach/"))
+        (should-not (buffer-modified-p))
+        (should (equal (funcall read "new/truss.org") (buffer-string)))
         (dolist (sub '("new/sources" "new/notes"))
           (should (file-directory-p (expand-file-name sub dir))))
         (should (string-match-p "read the comment at the head of truss\\.org"
