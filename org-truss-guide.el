@@ -124,7 +124,8 @@
 #                     none
 #   :noexport:        not written out
 #
-# After editing, check (what is left to do, by line)
+# After editing, check (what is left to do, by line).  When you edited a
+# copy of this file you were handed, check the copy in place of FILE
 #   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
 #TAKE
 #
@@ -228,7 +229,8 @@
 #   :assumption:      根拠を持つべき見出しを、根拠なしでそうであるとする
 #   :noexport:        書き出さない
 #
-# 編集したら確かめる（残りの作業を行番号付きで出す）
+# 編集したら確かめる（残りの作業を行番号付きで出す）。渡された写しを編集
+# したときは、FILE の代わりにその写しを確かめる
 #   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
 #TAKE
 #

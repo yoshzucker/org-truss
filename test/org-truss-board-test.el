@@ -1380,13 +1380,11 @@ the link that placed it, and leaves the file unmodified when it was."
 
 (ert-deftest org-truss-test-init-sets-up-the-directory ()
   "init writes a truss file and puts beside it the directories its head
-comment names, the file telling a coding agent where the rules are, and,
-when one is named, the file marking a project, leaving what is there
-already.  A file written before gets the line that keeps its attachments
+comment names and, when one is named, the file marking a project,
+leaving what is there already.  A file written before gets the line that keeps its attachments
 beside it, unsaved."
   (org-truss-test--in-directory
-      '(("old/truss.org" . "#+title: Old\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n")
-        ("old/CLAUDE.md" . "Mine.\n"))
+      '(("old/truss.org" . "#+title: Old\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"))
     (let ((org-truss-language 'en)
           (read (lambda (file)
                   (with-temp-buffer (insert-file-contents (expand-file-name file dir))
@@ -1402,15 +1400,12 @@ beside it, unsaved."
         (should (equal (funcall read "new/truss.org") (buffer-string)))
         (dolist (sub '("new/sources" "new/notes"))
           (should (file-directory-p (expand-file-name sub dir))))
-        (should (string-match-p "read the comment at the head of truss\\.org"
-                                (funcall read "new/CLAUDE.md")))
         (should-not (file-exists-p (expand-file-name "new/.project" dir)))
         (let ((org-truss-project-file ".project"))
           (org-truss-init (expand-file-name "old" dir)))
         (should (string-prefix-p "# -*- org-attach-id-dir: \"attach/\"; -*-\n#+title: Old\n"
                                  (buffer-string)))
         (should (buffer-modified-p))
-        (should (equal (funcall read "old/CLAUDE.md") "Mine.\n"))
         (should (file-directory-p (expand-file-name "old/sources" dir)))
         (should (equal (funcall read "old/.project") ""))))))
 

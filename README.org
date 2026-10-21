@@ -281,7 +281,6 @@ adds what is missing and leaves what is there.
 | ~notes/~    | what is ours and not a source: memos, slides, minutes                  |
 | ~attach/~   | what ~org-attach~ (~C-c C-a~) attaches to a heading: a picture, a file |
 | ~out/~      | the document, written by ~x~ on the board or ~M-x org-truss-export~    |
-| ~CLAUDE.md~ | for a coding agent: where the rules are, and when to read them         |
 
 So the directory can be moved, or handed over, whole.  With org-moor, a
 source taken from a truss file goes in its ~sources/~: a directory named by
@@ -297,14 +296,6 @@ heading's in a directory named by its ~ID~; it is a file variable Org
 declares safe, so it holds whether org-truss is loaded or not.  The board
 and the document read a link to an attachment, ~[[attachment:NAME]]~, as a
 link to its file.
-
-~CLAUDE.md~ does not repeat the rules.  They are in the comment block at
-the head of ~truss.org~, which an agent reads as it reads the file; the
-agent file says only to read it before working there, to read a part's
-~:GUIDE:~ before writing in it, and to run the check after.  So the rules
-have one home, kept current by ~org-truss-refresh-guides~, and what is
-loaded into every session stays a few lines.  ~org-truss-agent-file~ names
-the file, or is ~nil~ for none.
 
 ~org-truss-project-file~, when it names one, is an empty file written there
 too, that marks the directory as a project: ~".project"~, say, with
@@ -1159,7 +1150,6 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-sources-directory~  | ~"sources"~                    | what was read, beside the truss file          |
 | ~org-truss-notes-directory~    | ~"notes"~                      | what is ours and not a source                 |
 | ~org-truss-attach-directory~   | ~"attach"~                     | what ~org-attach~ attaches to its headings    |
-| ~org-truss-agent-file~         | ~"CLAUDE.md"~                  | for a coding agent; ~nil~ for none            |
 | ~org-truss-project-file~       | ~nil~                          | an empty file marking the directory a project |
 | ~org-truss-pandoc-program~     | ~"pandoc"~                     |                                               |
 | ~org-truss-board-middle-width~ | ~nil~, half the window         | room for the file's words before the right    |
