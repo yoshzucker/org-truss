@@ -1165,50 +1165,115 @@ Its blocks and drawers are open, as they are part of what it says."
       (org-fold-show-children)
       (org-fold-show-all '(blocks drawers)))))
 
+(defun org-truss-check-command (file)
+  "Return the command line that checks FILE, as this Emacs runs it.
+With org-moor when it is loaded, so that its links are checked too."
+  (let* ((moor (featurep 'org-moor))
+         (dir-of (lambda (library)
+                   (shell-quote-argument
+                    (directory-file-name (file-name-directory (locate-library library))) t))))
+    (format "%s --batch -L %s -L %s%s -l org-truss%s -f org-truss-batch-check %s"
+            (shell-quote-argument (expand-file-name invocation-name invocation-directory) t)
+            (funcall dir-of "org-truss") (funcall dir-of "org-dock")
+            (if moor (concat " -L " (funcall dir-of "org-moor")) "")
+            (if moor " -l org-moor" "")
+            (shell-quote-argument file t))))
+
+(defun org-truss--dock-patterns (copy)
+  "Return the patterns of the headings in the buffer COPY, each once, in order."
+  (with-current-buffer copy
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (let ((case-fold-search t)
+           found)
+       (while (re-search-forward
+               "^[ \t]*:TRUSS_\\(?:LOGIC\\|BREAKDOWN\\|TELLING\\):[ \t]*\\(\\S-+\\)" nil t)
+         (let ((id (intern (match-string 1))))
+           (when (org-truss-pattern id)
+             (cl-pushnew id found))))
+       (nreverse found)))))
+
+(defun org-truss--dock-plays (copy origin line)
+  "Return what the copy's first heading plays in the patterns above it.
+COPY is the copy's buffer, ORIGIN the buffer it came from and LINE the
+line of ORIGIN the copy starts at.  As (TITLE . PLAYS): the title of the
+heading right above, and each (PATTERN . ROLE) of it the copy's heading
+plays a role of; nil when it plays none."
+  (let ((roles (with-current-buffer copy
+                 (org-with-wide-buffer
+                  (goto-char (point-min))
+                  (when (or (org-at-heading-p) (outline-next-heading))
+                    (mapcar (lambda (kind)
+                              (cons kind (org-entry-get nil (org-truss-role-property (car kind)))))
+                            org-truss-pattern-properties))))))
+    (with-current-buffer origin
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (forward-line (1- line))
+       (when (and (org-at-heading-p) (org-up-heading-safe))
+         (let ((plays (delq nil
+                            (mapcar (lambda (kind)
+                                      (let* ((id (org-entry-get nil (cdar kind)))
+                                             (id (and id (intern id)))
+                                             (role (and (cdr kind) (intern (cdr kind)))))
+                                        (and (assq role (org-truss-pattern-roles id))
+                                             (cons id role))))
+                                    roles))))
+           (and plays (cons (org-get-heading t t t t) plays))))))))
+
 (defun org-truss-dock-request (request)
-  "Tell an agent what the patterns of a heading taken out ask for.
-REQUEST is the plist `org-dock-agent-function' gets.  Said wherever the
-heading is from, since a heading of any Org file can have patterns; nil
-when none in the copy has one."
-  (let ((ids (with-current-buffer (find-file-noselect (plist-get request :copy))
-               (org-with-wide-buffer
-                (goto-char (point-min))
-                (let ((case-fold-search t)
-                      found)
-                  (while (re-search-forward
-                          "^[ \t]*:TRUSS_\\(?:LOGIC\\|BREAKDOWN\\|TELLING\\):[ \t]*\\(\\S-+\\)" nil t)
-                    (let ((id (intern (match-string 1))))
-                      (when (org-truss-pattern id)
-                        (cl-pushnew id found))))
-                  (nreverse found))))))
-    (when ids
+  "Tell an agent how the copy REQUEST names is written, and how to check it.
+REQUEST is the plist `org-dock-agent-function' gets.  Said of a copy out
+of a truss file, and of one out of any Org file whose headings, or the
+heading right above the copy, have patterns; nil otherwise.  The same
+words whatever was taken out: the patterns there, with what the copy's
+heading plays in the one above it; where the rest of a truss file's rules
+are; and the command that checks the copy, written back where it came
+from.  Each only when it has something to say."
+  (let* ((copy (find-file-noselect (plist-get request :copy)))
+         (file (plist-get (org-dock-copy-origin (plist-get request :copy)) :file))
+         (origin (if file (find-file-noselect file) (get-buffer (plist-get request :origin))))
+         (lines (plist-get request :lines))
+         (plays (and origin lines (not (plist-get request :whole))
+                     (org-truss--dock-plays copy origin (car lines))))
+         (ids (seq-uniq (append (mapcar #'car (cdr plays)) (org-truss--dock-patterns copy))))
+         (truss (and origin (org-truss-file-p origin))))
+    (when (or ids truss)
       (concat
-       "## Patterns\n\n"
-       "TRUSS_LOGIC, TRUSS_BREAKDOWN and TRUSS_TELLING on a heading each name a\n"
-       "pattern for the headings right under it.  Each of those says the role it\n"
-       "plays in it in the same property with _ROLE after it: TRUSS_LOGIC_ROLE,\n"
-       "TRUSS_BREAKDOWN_ROLE, TRUSS_TELLING_ROLE.  The patterns in the copy, with\n"
-       "their roles and, in brackets, the title of a subheading put in for a\n"
-       "role and not written yet:\n\n"
-       (mapconcat (lambda (id)
-                    (let ((pattern (org-truss-pattern id)))
-                      (format "- %s (%s): %s.\n  Roles: %s" id
-                              (alist-get (plist-get pattern :kind) org-truss-pattern-properties)
-                              (plist-get pattern :about)
-                              (mapconcat (lambda (role)
-                                           (format "%s (%s)" role (org-truss-role-label role)))
-                                         (mapcar #'car (plist-get pattern :roles))
-                                         ", "))))
-                  ids "\n")
-       "\n\nUnder a heading with a pattern, write a subheading for each role:\n\n"
-       "- its title is one sentence that states what plays the role;\n"
-       "- its role property names the role;\n"
-       "- under TRUSS_LOGIC, it has grounds: a TRUSS_GROUNDS property, a\n"
-       "  #+begin_quote block, or a link in its text to a member, [[#m3]], or\n"
-       "  to a source.  It needs none when it has TRUSS_LOGIC itself, with its\n"
-       "  reasons under it, or the tag :assumption:.\n\n"
-       "A subheading whose title is still the one in brackets is written by\n"
-       "replacing its title.  Do not change existing properties.\n"))))
+       "## Truss\n\n"
+       (when ids
+         (concat
+          "A heading's TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING names a pattern\n"
+          "for the headings right under it; each of those names its role in the same\n"
+          "property with _ROLE after it.  The patterns here, with their roles and, in\n"
+          "brackets, the title of a heading put in for a role and not written yet:\n\n"
+          (mapconcat (lambda (id)
+                       (let ((pattern (org-truss-pattern id)))
+                         (format "- %s (%s): %s.\n  Roles: %s" id
+                                 (alist-get (plist-get pattern :kind) org-truss-pattern-properties)
+                                 (plist-get pattern :about)
+                                 (mapconcat (lambda (role)
+                                              (format "%s [%s]" role (org-truss-role-label role)))
+                                            (mapcar #'car (plist-get pattern :roles))
+                                            ", "))))
+                     ids "\n")
+          "\n\n"
+          (when plays
+            (format "The copy's heading plays %s of %S, above the copy.\n\n"
+                    (mapconcat (lambda (play) (format "%s in the %s" (cdr play) (car play)))
+                               (cdr plays) ", and ")
+                    (car plays)))
+          "- Under a heading with a pattern, write a subheading for each role: its\n"
+          "  title one sentence that states what plays the role, its _ROLE property\n"
+          "  naming the role.  Write over a title that is still the one in brackets.\n"
+          "- Under TRUSS_LOGIC, give each such subheading grounds: TRUSS_GROUNDS, a\n"
+          "  #+begin_quote, or a link in its text to a heading, [[#m3]], or to a\n"
+          "  source.  It needs none with TRUSS_LOGIC of its own or the tag :assumption:.\n\n"))
+       (when truss
+         "The other rules of the file are in the comment at its head.\n\n")
+       (when file
+         (concat "After editing, check the copy, not the file it came from:\n\n"
+                 "    " (org-truss-check-command (plist-get request :copy)) "\n"))))))
 
 (add-hook 'org-dock-request-functions #'org-truss-dock-request 20)
 

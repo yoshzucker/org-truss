@@ -831,7 +831,10 @@ has is among its duplicates, and the index finds the first.  See
                        (puthash c cluster parents)
                        (walk c))))
          (dolist (c (delq nil (list brief subject members-part structure)))
-           (walk c)))
+           (walk c))
+         ;; The heading read alone has no part above it to be walked from.
+         (when root
+           (dolist (c tops) (walk c))))
        (org-truss--make-model
         :buffer (current-buffer)
         :title (cadr (assoc "TITLE" (org-collect-keywords '("TITLE"))))
@@ -1282,14 +1285,38 @@ Under the name of each check that finds something, and what it finds,
 one line per thing: FILE:LINE: and what is there, as compilation mode
 reads it.  FILE is the name the lines give the file, by default the name
 of the file MODEL was read from."
+  (let ((file (or file (let* ((buffer (org-truss-model-buffer model))
+                              (name (buffer-file-name buffer)))
+                         (if name (file-name-nondirectory name) (buffer-name buffer))))))
+    (org-truss-check-text
+     (mapcar (lambda (group)
+               (cons (car group)
+                     (mapcar (lambda (item) (list file (car item) (cdr item))) (cdr group))))
+             (org-truss-check-groups model)))))
+
+(defun org-truss-check-text (groups)
+  "Return GROUPS as `org-truss-check-report' prints them.
+GROUPS are (NAME . ITEMS), as `org-truss-check-groups' gives them, but
+each item (FILE LINE TEXT): the name its line is given by, as well."
+  (let ((found (seq-filter #'cdr groups)))
+    (if (null found)
+        "Nothing is left to do.\n"
+      (mapconcat (lambda (group)
+                   (format "%s -- %s\n%s\n" (car group) (org-truss-check-about (car group))
+                           (mapconcat (lambda (item) (apply #'format "%s:%d: %s" item))
+                                      (cdr group) "\n")))
+                 found "\n"))))
+
+(defun org-truss-check-groups (model)
+  "Return what MODEL leaves undone, under the name of each check.
+As (NAME . ITEMS), every check in the order the report prints them; each
+item (LINE . TEXT), the line of MODEL's buffer and what is there."
   (let* ((checks (org-truss-checks model))
          (buffer (org-truss-model-buffer model))
-         (file (or file (let ((name (buffer-file-name buffer)))
-                          (if name (file-name-nondirectory name) (buffer-name buffer)))))
          (line (lambda (pos)
                  (with-current-buffer buffer
                    (org-with-wide-buffer (line-number-at-pos pos)))))
-         (at (lambda (pos text) (format "%s:%d: %s" file (funcall line pos) text)))
+         (at (lambda (pos text) (cons (funcall line pos) text)))
          (cluster-line (lambda (c &optional more)
                          (funcall at (org-truss-cluster-pos c)
                                   (concat (org-truss-cluster-label c) (if more (concat " -- " more) "")))))
@@ -1351,14 +1378,8 @@ of the file MODEL was read from."
                            (funcall cluster-line (car o)
                                     (format "below %s, which TRUSS_TELLING tells after it"
                                             (org-truss-cluster-label (cdr o)))))
-                         (plist-get checks :out-of-order)))))
-         (found (seq-filter #'cdr groups)))
-    (if (null found)
-        "Nothing is left to do.\n"
-      (mapconcat (lambda (group)
-                   (format "%s -- %s\n%s\n" (car group) (org-truss-check-about (car group))
-                           (mapconcat #'identity (cdr group) "\n")))
-                 found "\n"))))
+                         (plist-get checks :out-of-order))))))
+    groups))
 
 ;;;; Finding the file
 

@@ -125,7 +125,7 @@
 #   :noexport:        not written out
 #
 # After editing, check (what is left to do, by line)
-#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss -f org-truss-batch-check FILE
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
 #TAKE
 #
 # M-x org-truss-refresh-guides brings this text and the :GUIDE:s up to date.
@@ -229,7 +229,7 @@
 #   :noexport:        書き出さない
 #
 # 編集したら確かめる（残りの作業を行番号付きで出す）
-#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss -f org-truss-batch-check FILE
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
 #TAKE
 #
 # この文面と :GUIDE: は M-x org-truss-refresh-guides で最新に戻せます。
@@ -388,11 +388,14 @@ directories beside it are named as they are set here."
                          (directory-file-name
                           (abbreviate-file-name (file-name-directory library)))
                        "DIR"))))
+         (text (string-replace "#MOOR"
+                               (if (locate-library "org-moor") " -L ORG-MOOR-DIR -l org-moor" "")
+                               (apply #'org-truss--pick org-truss--preamble-text)))
          (text (string-replace "#TAKE\n"
                                (if (locate-library "org-moor")
                                    (apply #'org-truss--pick org-truss--take-text)
                                  "")
-                               (apply #'org-truss--pick org-truss--preamble-text))))
+                               text)))
     (pcase-dolist (`(,placeholder . ,value)
                    `(("ORG-TRUSS-DIR" . ,(funcall dir-of "org-truss"))
                      ("ORG-DOCK-DIR" . ,(funcall dir-of "org-dock"))

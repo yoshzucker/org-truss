@@ -2080,11 +2080,11 @@ one is written, and which must have grounds."
             (org-dock-ask-agent)
             (let ((text (with-temp-buffer (insert-file-contents (plist-get got :request))
                                           (buffer-string))))
-              (should (string-match-p "^## Patterns$" text))
+              (should (string-match-p "^## Truss$" text))
               (should (string-match-p "pros-cons (TRUSS_BREAKDOWN)" text))
-              (should (string-match-p "Roles: pros (Pros), cons (Cons)" text))
-              (should (string-match-p "its title is one sentence that states what plays the role" text))
-              (should (string-match-p "under TRUSS_LOGIC, it has grounds" text)))))))))
+              (should (string-match-p "Roles: pros \\[Pros\\], cons \\[Cons\\]" text))
+              (should (string-match-p "title one sentence that states what plays the role" text))
+              (should (string-match-p "Under TRUSS_LOGIC, give each such subheading grounds" text)))))))))
 
 (ert-deftest org-truss-test-apply-a-pattern-in-the-file ()
   "A pattern is applied from the file as from the board: in a file that is
@@ -2113,6 +2113,83 @@ pattern; in a truss file to the member the heading is."
         (org-truss-apply-pattern))
       (should (equal (org-entry-get (point) "TRUSS_LOGIC") "deduction"))
       (should (re-search-forward "^\\*\\*\\* Major premise\n" nil t)))))
+
+(defconst org-truss-test--steps
+  (concat "** Procedure\n:PROPERTIES:\n:TRUSS_BREAKDOWN: steps\n:END:\n"
+          "*** First step\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: step\n:END:\n")
+  "A heading with steps, and a step under it.")
+
+(defun org-truss-test--request-of (file heading)
+  "Return what an agent is told of HEADING in FILE, taken out by org-dock."
+  (let* (got
+         (org-dock-agent-function (lambda (request) (setq got request))))
+    (with-current-buffer (find-file-noselect file)
+      (goto-char (point-min))
+      (re-search-forward (concat "^\\*+ " (regexp-quote heading) "$"))
+      (with-current-buffer (save-current-buffer (org-dock-heading (line-beginning-position)))
+        (org-dock-ask-agent)
+        (prog1 (with-temp-buffer (insert-file-contents (plist-get got :request)) (buffer-string))
+          (org-dock-abort))))))
+
+(ert-deftest org-truss-test-dock-request-the-same-words ()
+  "A copy out of a truss file and one out of any other file are told the
+same: the patterns there, the one above the copy's heading among them,
+what the heading plays in it, and how to check the copy.  Where the rest
+of the rules are only of a truss file; nothing of a heading with no
+pattern near it."
+  (org-truss-test--in-directory
+      (list (cons "doc/truss.org"
+                  (concat "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+                          org-truss-test--steps))
+            (cons "project.org" (concat "* Tasks\n" org-truss-test--steps "* Log\n")))
+    (let ((truss (org-truss-test--request-of (expand-file-name "doc/truss.org" dir) "First step"))
+          (project (org-truss-test--request-of (expand-file-name "project.org" dir) "First step")))
+      (dolist (text (list truss project))
+        (should (string-match-p "^- steps (TRUSS_BREAKDOWN): .*\n  Roles: step \\[Step\\]$" text))
+        (should (string-match-p "plays step in the steps of \"Procedure\", above the copy" text))
+        (should (string-match-p "-f org-truss-batch-check [^ ]*First-step\\.org$" text)))
+      (should (string-match-p "rules of the file are in the comment at its head" truss))
+      (should-not (string-match-p "comment at its head" project))
+      (should-not (string-match-p "## Truss"
+                                  (org-truss-test--request-of (expand-file-name "project.org" dir) "Log"))))))
+
+(ert-deftest org-truss-test-check-copy ()
+  "A copy is checked written back where it came from: what is in it by its
+own lines, and outside it only what it brings about, by the file's lines
+as they are."
+  (org-truss-test--in-directory
+      (list (cons "truss.org"
+                  (concat "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+                          "** Base\n:PROPERTIES:\n:CUSTOM_ID: m1\n:END:\n[[file:x.txt]]\n"
+                          "** Claim\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
+                          "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:TRUSS_GROUNDS: [[#m1]]\n:END:\n"
+                          "*** Bare reason\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n"))
+            (cons "x.txt" "x\n"))
+    (let ((file (expand-file-name "truss.org" dir)))
+      (with-current-buffer (find-file-noselect file)
+        (goto-char (point-min))
+        (re-search-forward "^\\*\\* Base$")
+        (with-current-buffer (save-current-buffer (org-dock-heading (line-beginning-position)))
+          (goto-char (point-min))
+          (re-search-forward ":CUSTOM_ID: m1")
+          (replace-match ":CUSTOM_ID: m9\n:TRUSS_BREAKDOWN: steps")
+          (save-buffer)
+          (let ((report (org-truss-check-copy buffer-file-name (org-dock-copy-origin buffer-file-name))))
+            (should (string-match-p (concat "^" (regexp-quote buffer-file-name) ":1: Base -- lacks") report))
+            (should (string-match-p (concat "^" (regexp-quote file) ":15: A fact -- \\[\\[#m1\\]\\] not found") report))
+            (should-not (string-match-p "Bare reason" report)))
+          (org-truss-test--let-go))))))
+
+(ert-deftest org-truss-test-check-a-file-that-is-no-truss-file ()
+  "Any other Org file is checked as boards of one heading read it, each
+heading with a pattern and none above it with one."
+  (org-truss-test--with
+      (concat "* Tasks\n** Procedure\n:PROPERTIES:\n:TRUSS_BREAKDOWN: steps\n:END:\n"
+              "* Plan\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
+              "** Why\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n")
+    (let ((report (org-truss--check-in "p.org" (org-truss--check-groups-here))))
+      (should (string-match-p "^p\\.org:2: Procedure -- lacks TRUSS_BREAKDOWN_ROLE step" report))
+      (should (string-match-p "^p\\.org:10: Why -- no grounds" report)))))
 
 (provide 'org-truss-board-test)
 

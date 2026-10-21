@@ -628,7 +628,8 @@ role, to be written over -- and in the file itself, in a truss file or any
 other, ~M-x org-truss-apply-pattern~ does what ~p~ does, on the heading at
 point; written over with the statement that plays it, a role still shows
 on the right what it is -- /Who:/, /When:/ -- so the heading need not say
-it.  An agent asked about it with org-dock is told what its patterns ask.
+it.  An agent asked about it with org-dock is told what its patterns ask,
+and how to check its copy; see [[*Batch][Batch]].
 It can be called from anywhere: when no ~truss.org~ is near the current
 buffer, or with a prefix argument, it asks for one as ~find-file~ asks for
 a file -- the file, its directory, or anything below it -- and offers to
@@ -1192,7 +1193,18 @@ line for each thing, ~truss.org:42: …~.  Anything that edits the file
 without the board -- you by hand, or a model working in the file -- can
 run it to see what it broke or left undone.  The comment block at the head
 of a truss file gives this line, with the directories org-truss and
-org-dock are loaded from.  The second prints the board as text, for
+org-dock are loaded from, and org-moor, when it is there, so that ~moor:~
+links are checked too.
+
+Any other Org file is checked as the board of one heading reads it: each
+heading with a pattern and none above it with one.  A copy taken out by
+org-dock is checked written back where it came from, so that its links,
+grounds and sources are found as they will be: what is in the copy is
+given by the copy's lines, and what is outside it only when the copy
+brings it about.  An agent handed a copy is told to check it so, with its
+patterns, what its heading plays in the pattern above it, and -- out of a
+truss file -- that the rest of the rules are in the file's head comment;
+the same words whichever heading, or the whole file, was taken out.  The second prints the board as text, for
 anything that reads the structure without Emacs open.
 
 The last, with org-moor, takes a file -- copied, never moved -- or a web

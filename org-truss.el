@@ -218,15 +218,126 @@ unsaved, to be looked over."
                (abbreviate-file-name file)))))
 
 (defun org-truss-batch-check ()
-  "Print what the truss file named on the command line leaves undone.
+  "Print what the Org file named on the command line leaves undone.
 
   emacs --batch -L DIR -l org-truss -f org-truss-batch-check truss.org
 
 Each line reads FILE:LINE: and what is there, under the check that
-finds it."
-  (let ((file (pop command-line-args-left)))
-    (with-current-buffer (find-file-noselect file)
-      (princ (org-truss-check-report (org-truss-read) file)))))
+finds it.  A truss file is read whole; any other Org file as the board
+of one heading reads it, each heading with a pattern and none above it
+with one.  A copy org-dock took out is read written back where it came
+from; see `org-truss-check-copy'."
+  (let* ((file (pop command-line-args-left))
+         (origin (org-dock-copy-origin (expand-file-name file))))
+    (princ
+     (if origin
+         (org-truss-check-copy file origin)
+       (with-current-buffer (find-file-noselect file)
+         (org-truss--check-in file (org-truss--check-groups-here)))))))
+
+(defun org-truss--check-in (file groups)
+  "Return GROUPS, of `org-truss-check-groups', as a report on FILE's lines."
+  (org-truss-check-text
+   (mapcar (lambda (group)
+             (cons (car group)
+                   (mapcar (lambda (item) (list file (car item) (cdr item))) (cdr group))))
+           groups)))
+
+(defun org-truss--pattern-tops ()
+  "Return markers at the headings with a pattern and none above them with one."
+  (org-with-wide-buffer
+   (delq nil (org-map-entries
+              (lambda ()
+                (and (org-truss--patterned-p)
+                     (save-excursion
+                       (not (cl-loop while (org-up-heading-safe)
+                                     thereis (org-truss--patterned-p))))
+                     (point-marker)))))))
+
+(defun org-truss--check-groups-here ()
+  "Return what this buffer leaves undone, as `org-truss-check-groups' does.
+A truss file is read whole.  Any other Org file is read as the board of
+one heading reads it, for each heading with a pattern and none above it
+with one; what they find is put together."
+  (if (org-truss-file-p)
+      (org-truss-check-groups (org-truss-read))
+    (let (groups)
+      (dolist (top (org-truss--pattern-tops))
+        (setq org-truss--root top)
+        (dolist (group (org-truss-check-groups (org-truss-read)))
+          (let ((cell (assoc (car group) groups)))
+            (if cell
+                (setcdr cell (seq-uniq (append (cdr cell) (cdr group))))
+              (push (cons (car group) (cdr group)) groups))))
+        (set-marker top nil))
+      (setq org-truss--root nil)
+      (nreverse groups))))
+
+(defun org-truss--check-as (file text)
+  "Return what FILE would leave undone, holding TEXT, by its groups.
+Read in a buffer of its own, as FILE is read by its name and directory,
+with the file's safe variables; FILE itself is not visited."
+  (with-temp-buffer
+    (let ((coding-system-for-read 'utf-8))
+      (insert text))
+    (let ((buffer-file-name file)
+          (default-directory (file-name-directory file))
+          (enable-local-variables :safe))
+      (delay-mode-hooks (org-mode))
+      (hack-local-variables)
+      (prog1 (org-truss--check-groups-here)
+        (set-buffer-modified-p nil)))))
+
+(defun org-truss--line-count (text)
+  "Return the number of lines TEXT takes."
+  (+ (cl-count ?\n text)
+     (if (or (string-empty-p text) (string-suffix-p "\n" text)) 0 1)))
+
+(defun org-truss-check-copy (copy origin)
+  "Return what the copy in the file COPY leaves undone, as a report.
+ORIGIN is what `org-dock-copy-origin' says of it.  The copy is read
+written back over what was taken out of the file it came from, so that
+links, grounds and sources are found as they will be: what is in the
+copy is given by the copy's lines, and what is outside it only when the
+copy brings it about, by the file's lines."
+  (let* ((file (plist-get origin :file))
+         (old (plist-get origin :original))
+         (read (lambda (f) (with-temp-buffer
+                             (let ((coding-system-for-read 'utf-8))
+                               (insert-file-contents f))
+                             (buffer-string))))
+         (new (funcall read copy))
+         (new (if (and (string-suffix-p "\n" old) (not (string-suffix-p "\n" new)))
+                  (concat new "\n")
+                new))
+         (before (funcall read file))
+         (at (if (string= old before)
+                 0
+               (let ((i (string-search old before)))
+                 (and i (not (string-search old before (1+ i))) i)))))
+    (unless at
+      (error "org-truss: %s has changed where the copy was taken out" file))
+    (let* ((first (1+ (cl-count ?\n (substring before 0 at))))
+           (old-n (org-truss--line-count old))
+           (new-n (org-truss--line-count new))
+           (after (concat (substring before 0 at) new (substring before (+ at (length old)))))
+           (base (org-truss--check-as file before)))
+      (org-truss-check-text
+       (mapcar
+        (lambda (group)
+          (let ((was (cdr (assoc (car group) base))))
+            (cons (car group)
+                  (delq nil
+                        (mapcar
+                         (lambda (item)
+                           (let ((line (car item)))
+                             (cond ((and (>= line first) (< line (+ first new-n)))
+                                    (list copy (1+ (- line first)) (cdr item)))
+                                   ((let ((line (if (< line first) line (- line (- new-n old-n)))))
+                                      (and (not (member (cons line (cdr item)) was))
+                                           (list file line (cdr item))))))))
+                         (cdr group))))))
+        (org-truss--check-as file after))))))
 
 (defun org-truss-batch-board ()
   "Print the board of the truss file named on the command line.

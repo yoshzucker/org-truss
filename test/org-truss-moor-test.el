@@ -69,14 +69,36 @@ the one chosen with a link; other words are written as they are."
 how an agent takes a source when org-moor is there."
   (let ((org-truss-language 'en))
     (let ((text (org-truss--preamble)))
-      (should (string-match-p "-L [^ ]+ -L [^ ]+ -l org-truss -f org-truss-batch-check truss\\.org" text))
+      (should (string-match-p "-L [^ ]+ -L [^ ]+ -l org-truss -L [^ ]+ -l org-moor -f org-truss-batch-check truss\\.org" text))
       (should-not (string-match-p "ORG-DOCK-DIR\\|ORG-MOOR-DIR\\|#TAKE" text))
       (should (string-match-p "-f org-truss-batch-take truss\\.org PATH-OR-URL" text)))
     (cl-letf (((symbol-function 'locate-library)
                (let ((locate (symbol-function 'locate-library)))
                  (lambda (name &rest args)
                    (unless (equal name "org-moor") (apply locate name args))))))
-      (should-not (string-match-p "batch-take\\|#TAKE" (org-truss--preamble))))))
+      (let ((text (org-truss--preamble)))
+        (should-not (string-match-p "batch-take\\|#TAKE\\|#MOOR\\|-l org-moor" text))
+        (should (string-match-p "-l org-truss -f org-truss-batch-check truss\\.org" text))))))
+
+(ert-deftest org-truss-test-check-copy-finds-its-sources ()
+  "A copy out of a truss file finds the file's sources when it is checked,
+though it is kept elsewhere."
+  (org-truss-test--in-directory '(("doc/truss.org" . "") ("manual.txt" . "Approve first.\n"))
+    (let* ((file (expand-file-name "doc/truss.org" dir))
+           (org-dock-directory (expand-file-name "dock/" dir))
+           (link (org-moor-link (org-moor-take-file-to (expand-file-name "manual.txt" dir)
+                                                       (org-moor-sources file) "Manual"))))
+      (with-temp-file file
+        (insert "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+                "** Claim\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
+                "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:TRUSS_GROUNDS: " link "\n:END:\n"))
+      (with-current-buffer (find-file-noselect file)
+        (goto-char (point-min))
+        (re-search-forward "^\\*\\* Claim$")
+        (with-current-buffer (save-current-buffer (org-dock-heading (line-beginning-position)))
+          (should (equal (org-truss-check-copy buffer-file-name (org-dock-copy-origin buffer-file-name))
+                         "Nothing is left to do.\n"))
+          (org-dock-abort))))))
 
 (provide 'org-truss-moor-test)
 ;;; org-truss-moor-test.el ends here
