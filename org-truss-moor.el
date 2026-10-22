@@ -16,11 +16,12 @@
 ;; A truss file keeps what was read beside it, in
 ;; `org-truss-sources-directory', so that the directory can be handed over
 ;; whole.  org-moor keeps a source as a directory there -- its copy and its
-;; record -- and a member cites one with a `moor:' link, in its text or in
-;; TRUSS_GROUNDS; either gives it grounds.
+;; record -- and a member cites one with a `moor:' link in its text, which
+;; gives it grounds.
 ;;
-;; Here: the sources of a truss file are put beside it; `t' on the board
-;; offers them, or takes one there and then, for a member to stand on; the
+;; Here: the sources of a truss file are put beside it; `m' on the board
+;; takes one for a heading as org-moor takes one -- a page, a file, the
+;; clipboard -- or links one taken before, for it to stand on; the
 ;; check finds a `moor:' link to a source that is not there; the document
 ;; links to where a source came from, not to the copy; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
@@ -29,9 +30,9 @@
 ;;; Code:
 
 (require 'org-truss-core)
+(require 'org-truss-board)
 (require 'org-moor)
 
-(defvar org-truss-read-source-function)
 (defvar org-truss-moor-missing-function)
 (defvar org-truss-moor-export-function)
 
@@ -43,45 +44,70 @@
 
 (add-hook 'org-moor-sources-directory-functions #'org-truss-moor-sources)
 
-(defconst org-truss-moor--take-file "Take a file..."
-  "What `org-truss-moor-read-source' offers to take a file by.")
+(defun org-truss-moor--at-heading (command)
+  "Call COMMAND, an org-moor command, at the heading of the board's line.
+As if typed there: it reads what it reads, takes the source into the
+truss file's sources, and writes the link on a line of its own after the
+heading's text, outside its public block."
+  (let ((item (org-truss--want (org-truss--item) 'member 'section)))
+    (org-truss--fresh)
+    (with-current-buffer org-truss--source
+      (save-excursion
+        (goto-char (plist-get item :pos))
+        (let ((current-prefix-arg nil))
+          (call-interactively command))))
+    (org-truss-board-redraw)))
 
-(defconst org-truss-moor--take-url "Take a web page..."
-  "What `org-truss-moor-read-source' offers to take a web page by.")
+(defun org-truss-board-take-url ()
+  "Take a web page or a file on the web for the heading at point.
+Its copy is fetched in the background, as `org-moor-take-url' fetches it,
+and the link to it written under the heading: grounds."
+  (interactive)
+  (org-truss-moor--at-heading #'org-moor-take-url))
 
-(defun org-truss-moor-read-source (default file)
-  "Read a source a member stands on: a source of FILE's, one taken now, or words.
-A source of the truss file FILE, by its title, is cited by a link to it;
-a file or a web page can be taken into its sources there and then; any
-other answer is written as it is.  DEFAULT is what is named now."
-  (let* ((sources (org-moor-sources file))
-         (records (sort (org-moor-sources-in sources)
-                        (lambda (a b) (string< (or (plist-get a :title) "")
-                                               (or (plist-get b :title) "")))))
-         (table (append (mapcar (lambda (r) (cons (or (plist-get r :title) (plist-get r :id)) r))
-                                records)
-                        (list (cons org-truss-moor--take-file 'file)
-                              (cons org-truss-moor--take-url 'url))))
-         (answer (string-trim (completing-read "Source (a source, or words): "
-                                               (mapcar #'car table) nil nil nil nil
-                                               default))))
-    (pcase (cdr (assoc answer table))
-      ('file
-       (let ((path (read-file-name "Take file: " nil nil t)))
-         (org-moor-link
-          (org-moor-take-file-to path sources
-                                 (read-string "Title: " (file-name-sans-extension
-                                                         (file-name-nondirectory path)))))))
-      ('url
-       (let ((url (read-string "URL: ")))
-         (org-moor-link
-          (org-moor-take-url-to url sources
-                                (read-string "Title: " (let ((name (org-moor-url-file-name url)))
-                                                         (and name (file-name-sans-extension name))))))))
-      ((and (pred consp) record) (org-moor-link record))
-      (_ answer))))
+(defun org-truss-board-take-file ()
+  "Take a file for the heading at point, as `org-moor-take-file' does.
+The link to it is written under the heading: grounds."
+  (interactive)
+  (org-truss-moor--at-heading #'org-moor-take-file))
 
-(setq org-truss-read-source-function #'org-truss-moor-read-source)
+(defun org-truss-board-take-clipboard ()
+  "Take the clipboard for the heading at point, as `org-moor-take-clipboard' does.
+The link to it is written under the heading: grounds."
+  (interactive)
+  (org-truss-moor--at-heading #'org-moor-take-clipboard))
+
+(defun org-truss-board-keep-copy ()
+  "Keep a copy of the sources the heading at point links to that have none.
+From their origins, as `org-moor-keep-copy' does: for sources an agent
+took, which could not fetch them as you, signed in."
+  (interactive)
+  (org-truss-moor--at-heading #'org-moor-keep-copy))
+
+(defun org-truss-board-link-source ()
+  "Link the heading at point to a source the truss file has: grounds.
+On a line of its own after the heading's text, outside its public block."
+  (interactive)
+  (let ((item (org-truss--want (org-truss--item) 'member 'section)))
+    (org-truss--fresh)
+    (with-current-buffer org-truss--source
+      (let ((records (org-moor-sources-in (org-moor-sources))))
+        (unless records
+          (user-error "No sources in %s" (abbreviate-file-name (org-moor-sources))))
+        (let* ((table (mapcar (lambda (r) (cons (or (plist-get r :title) (plist-get r :id)) r))
+                              (sort records (lambda (a b) (string> (or (plist-get a :taken) "")
+                                                                   (or (plist-get b :taken) ""))))))
+               (record (cdr (assoc (completing-read "Source: " table nil t) table)))
+               (at (copy-marker (plist-get item :pos))))
+          (set-marker (org-moor-insert-link-line at nil (org-moor-link record)) nil)
+          (set-marker at nil))))
+    (org-truss-board-redraw)))
+
+(define-key org-truss-board-moor-map (kbd "w") #'org-truss-board-take-url)
+(define-key org-truss-board-moor-map (kbd "f") #'org-truss-board-take-file)
+(define-key org-truss-board-moor-map (kbd "c") #'org-truss-board-take-clipboard)
+(define-key org-truss-board-moor-map (kbd "k") #'org-truss-board-keep-copy)
+(define-key org-truss-board-moor-map (kbd "l") #'org-truss-board-link-source)
 
 (defun org-truss-moor-missing-p (id file)
   "Non-nil when the sources of FILE hold no source ID.
@@ -121,7 +147,7 @@ For an agent working in the file, which cannot ask Emacs:
 
 A file is copied, never moved, and titled by its name unless TITLE is
 given.  The link printed names the source by its title; written in a
-member's TRUSS_GROUNDS or its text, it cites the source, and with a place,
+member's text, it cites the source, and with a place,
 ::12 after the id, a page of a PDF or a line of anything else."
   (let* ((truss (expand-file-name (or (pop command-line-args-left)
                                       (error "org-truss: no truss file"))))

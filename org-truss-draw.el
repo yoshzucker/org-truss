@@ -99,9 +99,8 @@ the column and no taller than this; elsewhere it is its file's name."
   "The marks of the lines that are an end of a link, by what they name.
 Each line is under a member or a section and names a member, or a
 section, and its mark says what what it names is to the one above:
-`ground', what the member above stands on -- a member its TRUSS_GROUNDS
-links to, a source it names there or links to in its text, the words it
-quotes -- drawn below it; `built', a member standing
+`ground', what the member above stands on -- a member or a source its
+text links to, the words it quotes -- drawn below it; `built', a member standing
 on the member above, which names it in its own -- drawn below it all the
 same, so the mark points up; `section', a heading whose link tells the
 member above, where the document tells it; and `item', a member the
@@ -475,6 +474,17 @@ the room of the middle, since the line is then read rather than scanned."
       (org-truss--break label (- org-truss--middle-width 2))
     (list label)))
 
+(defconst org-truss--link-line-re
+  "^[ \t]*\\(?:[-+] \\)?\\[\\[[^]\n]+\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*\\(?:\n\\|\\'\\)"
+  "A line holding nothing but a link, as a list item or not.")
+
+(defun org-truss--notes-shown (notes)
+  "Return NOTES without the lines holding nothing but a link.
+Such a line is a ground, a member or a source the heading stands on,
+which the board draws on a line of its own, marked; it would be drawn
+twice."
+  (and notes (string-trim (replace-regexp-in-string org-truss--link-line-re "" notes))))
+
 (defun org-truss--lines-under-heading (left more notes below item &optional head stem)
   "Return the lines under a heading's own line on the board.
 HEAD, if any, is the line that says how what is under the heading is
@@ -535,8 +545,8 @@ under the heading; this breaks the rest: a ground, what a check lists."
                                      '(:bare t)))))))
 
 (defconst org-truss--mark-help
-  '((ground . "Its grounds: what the member above stands on, in its TRUSS_GROUNDS or its text")
-    (built . "Built on it: this member stands on the member above, which its TRUSS_GROUNDS names")
+  '((ground . "Its grounds: what the member above stands on, linked in its text")
+    (built . "Built on it: this member stands on the member above, which its text links to")
     (section . "Told here: a link in this heading tells the member above, and the document tells it here")
     (item . "Told by the heading above: its link tells this member, [[truss-include:id]], and the document tells it here"))
   "What the mark of each kind of line naming the other end of a link says.")
@@ -624,22 +634,20 @@ is what it stands for, under KEY, and ID how it is called, if it is."
 
 (defun org-truss--grounds-lines (model cluster stem key)
   "Return a line for each thing CLUSTER of MODEL stands on, below it.
-The members it links to, each once: in its TRUSS_GROUNDS -- each a
-ground -- and in its text besides -- each cited -- said to be broken when
-it is no member, and to have no grounds when it does not hold; then the
-sources TRUSS_GROUNDS names besides, the first link to a source in its
-text, and the words it quotes, a link among them that points to nothing
-said not to be found.
+The members its text links to, each once, said to be broken when it is
+no member, and to have no grounds when it does not hold; then the
+sources its text links to, each once, and the words it quotes, a link
+among them that points to nothing said not to be found.
 STEM starts each; KEY is CLUSTER's line's."
   (let* ((pos (org-truss-cluster-pos cluster))
          (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) cluster))
                                             (plist-get org-truss--checks :broken-sources))))
          (found-p (lambda (text) (not (seq-some (lambda (link) (string-search link text)) missing))))
          (member-line
-          (lambda (ref word in-text)
+          (lambda (ref word)
             (let ((ground (org-truss-heading-by-ref model ref)))
               (org-truss--ground-line
-               stem (append key (list (if in-text 'cited 'ground) ref))
+               stem (append key (list 'ground ref))
                (cond ((null ground) (propertize (concat "broken " word) 'face 'org-truss-attention))
                      ((org-truss-holds-p ground) word)
                      (t (concat word (propertize " [no grounds]" 'face 'org-truss-attention))))
@@ -647,14 +655,11 @@ STEM starts each; KEY is CLUSTER's line's."
                (list :type (if (org-truss-section-p ground) 'section 'member)
                      :pos (if ground (org-truss-cluster-pos ground) pos)
                      :label (and ground (org-truss-cluster-label ground))
-                     :claim pos :ground ref :in-text in-text)
+                     :claim pos :ground ref)
                (and ground (org-truss--id-text ground ref)))))))
     (append
-     (mapcar (lambda (ref) (funcall member-line ref "ground" nil))
-             (seq-uniq (org-truss-cluster-grounds cluster)))
-     (mapcar (lambda (ref) (funcall member-line ref "cited" t))
-             (seq-difference (seq-uniq (org-truss-cluster-text-grounds cluster))
-                             (org-truss-cluster-grounds cluster)))
+     (mapcar (lambda (ref) (funcall member-line ref "ground"))
+             (org-truss-cluster-refs cluster))
      (mapcar (lambda (source)
                (org-truss--ground-line stem (append key (list 'source (car source)))
                                        (concat (symbol-name (car source))
@@ -662,12 +667,10 @@ STEM starts each; KEY is CLUSTER's line's."
                                                  (propertize " [not found]" 'face 'org-truss-attention)))
                                        (org-truss--one-line (org-truss--link-text (cdr source)))
                                        (list :type 'member :pos pos)))
-             (delq nil (list (and (org-truss-cluster-sources cluster)
-                                  (cons 'source (org-truss-cluster-sources cluster)))
-                             (and (org-truss-cluster-cited cluster)
-                                  (cons 'cited (org-truss-cluster-cited cluster)))
-                             (and (org-truss-cluster-quoted cluster)
-                                  (cons 'quote (org-truss-cluster-quoted cluster)))))))))
+             (append (mapcar (lambda (link) (cons 'source link))
+                             (seq-uniq (org-truss-cluster-source-links cluster)))
+                     (and (org-truss-cluster-quoted cluster)
+                          (list (cons 'quote (org-truss-cluster-quoted cluster)))))))))
 
 (defun org-truss--member-lines (model member indent key
                                       &optional link holder marker)
@@ -774,7 +777,7 @@ parent's telling pattern tells after it is marked."
       (and (or link (not in-structure)) (org-truss--id-text member link)))
      (append
        (org-truss--lines-under-heading
-        under (cdr label) (org-truss-member-notes member) (cdr reader) item
+        under (cdr label) (org-truss--notes-shown (org-truss-member-notes member)) (cdr reader) item
         (and patterned (not folded)
              (org-truss--line
               (concat under (propertize (format "(%s)" (org-truss-patterns-label member))
@@ -950,7 +953,7 @@ line says how many it hides."
                             (car label)
                             (car reader)
                             (append item (and (not (string-empty-p why)) (list :why why)))))
-     (org-truss--lines-under-heading inner (cdr label) (org-truss-section-notes section) (cdr reader) item
+     (org-truss--lines-under-heading inner (cdr label) (org-truss--notes-shown (org-truss-section-notes section)) (cdr reader) item
                              (and (not folded) (org-truss--pattern-line section inner item)) stem)
      (and (not folded) (org-truss--grounds-lines model section stem (plist-get item :key)))
      (and (not folded) (org-truss--links-lines model section stem path))
@@ -1123,7 +1126,7 @@ a new member plays it."
            (append
             (list (org-truss--part-line "Structure" "how it is told: sections, telling members"
                                         item (car lead)))
-            (org-truss--lines-under-heading " " nil (org-truss-section-notes root) (cdr lead) item
+            (org-truss--lines-under-heading " " nil (org-truss--notes-shown (org-truss-section-notes root)) (cdr lead) item
                                     (org-truss--pattern-line root " " item) stem)))
          (org-truss--links-lines model root stem '(root))
          (let* ((children (org-truss-section-children root)) (n (length children)) (i 0))

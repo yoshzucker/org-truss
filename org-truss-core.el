@@ -30,12 +30,12 @@
 ;;   TRUSS_TELLING    the order they are told   TRUSS_TELLING_ROLE
 ;;
 ;; A heading that plays a role of the TRUSS_LOGIC above it is a reason, and
-;; must have grounds -- TRUSS_GROUNDS, a quotation, or a link to a source in
-;; its text -- unless it has reasons of its own or is an assumption.
+;; must have grounds -- a quotation, or a link in its text to a member or a
+;; source -- unless it has reasons of its own or is an assumption.
 ;;
 ;; A member is pointed to by its CUSTOM_ID, which Org resolves within the
-;; file alone: a link [[#m7]], a ground [[#m7]] in TRUSS_GROUNDS.  Its
-;; heading can be rewritten without breaking either.
+;; file alone: a link [[#m7]].  Its heading can be rewritten without
+;; breaking it.
 ;;
 ;; Nothing here writes to the file, draws or exports.  See
 ;; org-truss-edit.el, org-truss-guide.el, org-truss-draw.el,
@@ -612,26 +612,6 @@ not depending on what has been shown; a label is the words."
   "Return the label of the heading at POS: its text without tags or keyword."
   (org-with-point-at pos (org-truss--heading-text)))
 
-(defun org-truss--grounds-refs (value)
-  "Return the references of the links to members in VALUE, a TRUSS_GROUNDS value."
-  (org-truss--refs-in value))
-
-(defun org-truss--grounds-sources (value)
-  "Return what VALUE, a TRUSS_GROUNDS value, says besides links to members.
-Its sources: links to files or pages, and words naming what has no file.
-Nil when it says nothing else."
-  (let ((rest (and value (string-trim (replace-regexp-in-string
-                                       "[ \t]+" " "
-                                       (replace-regexp-in-string org-truss--link-re "" value))))))
-    (and rest (not (string-empty-p rest)) rest)))
-
-(defun org-truss--grounds-value (refs &optional sources)
-  "Return the TRUSS_GROUNDS value that lists REFS, then SOURCES."
-  (string-join (delq nil (list (and refs (mapconcat (lambda (ref) (format "[[%s]]" (org-truss--target ref)))
-                                                    refs " "))
-                               sources))
-               " "))
-
 (defun org-truss--intern (value)
   "Return VALUE as a symbol, or nil when it is empty."
   (and value (not (string-blank-p value)) (intern (string-trim value))))
@@ -674,18 +654,16 @@ of the four parts.  POS is where its heading is, LABEL its words, LEVEL
 its level, ID its CUSTOM_ID and TAGS its tags.  LOGIC, BREAKDOWN and
 TELLING are its patterns, one of each kind; ROLES the roles it plays in
 the patterns of the heading above, as (KIND . ROLE), from its
-TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE and TRUSS_TELLING_ROLE.  GROUNDS are
-the references of the links to members in its TRUSS_GROUNDS, and SOURCES
-what else TRUSS_GROUNDS says; TEXT-GROUNDS the references of the links
-pointing to members in its text.  SOURCE-LINKS are its links to sources,
-in TRUSS_GROUNDS and its text; CITED the first in its text, and QUOTED
+TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE and TRUSS_TELLING_ROLE.
+TEXT-GROUNDS are the references of the links pointing to members in its
+text.  SOURCE-LINKS are its links to sources there; CITED the first, and QUOTED
 what its text quotes, or nil.  INCLUDES are the references of the links
 that tell members, [[truss-include:m7]], in its text, in order; LISTED
 those outside its public block.  PUBLIC is what its public block says,
 \(TITLE . BODY); NOTES, what else is written under it.  CHILDREN are the
 headings right under it."
   pos id label level tags roles logic breakdown telling
-  grounds sources text-grounds source-links cited quoted
+  text-grounds source-links cited quoted
   includes listed public notes children)
 
 (cl-defstruct (org-truss-member (:include org-truss-cluster)
@@ -723,8 +701,7 @@ STRUCTURE is the root section."
   "Return what the heading at POS says, as arguments for its structure.
 OWN is the parse of its own text."
   (org-with-point-at pos
-    (let ((grounds (org-entry-get nil "TRUSS_GROUNDS"))
-          (text (org-truss--text own)))
+    (let ((text (org-truss--text own)))
       (list :pos pos
             :id (let ((id (org-entry-get nil "CUSTOM_ID")))
                   (and id (not (string-blank-p id)) (string-trim id)))
@@ -735,13 +712,10 @@ OWN is the parse of its own text."
             :logic (org-truss--pattern-here 'logic)
             :breakdown (org-truss--pattern-here 'breakdown)
             :telling (org-truss--pattern-here 'telling)
-            :grounds (org-truss--grounds-refs grounds)
-            :sources (org-truss--grounds-sources grounds)
             :text-grounds (org-truss--refs-in text)
             :includes (plist-get own :includes)
             :listed (plist-get own :listed)
-            :source-links (append (org-truss--source-links-in grounds)
-                                  (org-truss--source-links-in text))
+            :source-links (org-truss--source-links-in text)
             :cited (car (org-truss--source-links-in text))
             :quoted (org-truss--quote-in text)
             :public (org-truss--read-block own :public)
@@ -985,22 +959,22 @@ The first, in the order of the kinds, whose role is flagged :label."
 ;;;; Grounds
 
 ;; A heading that plays a role of the logic above it is a reason, and must
-;; have grounds: TRUSS_GROUNDS, a quotation in its text, or a link in its
-;; text, to a member or a source.  One with reasons of its own leaves that
+;; have grounds: a quotation in its text, or a link in its text, to a
+;; member or a source.  One with reasons of its own leaves that
 ;; to them, and an assumption is taken without.  What any heading points to
 ;; as grounds must hold as what it is: a member, as a heading that must
 ;; have grounds is asked to; a source or a file, by being there.
 
 (defun org-truss-cluster-refs (cluster)
   "Return the references of every link to a member CLUSTER stands on.
-In its TRUSS_GROUNDS, then in its text; each once."
-  (seq-uniq (append (org-truss-cluster-grounds cluster) (org-truss-cluster-text-grounds cluster))))
+In its text, in order; each once."
+  (seq-uniq (org-truss-cluster-text-grounds cluster)))
 
 (defun org-truss-has-grounds-p (cluster)
-  "Non-nil when CLUSTER has grounds: its TRUSS_GROUNDS names something, or
-its text quotes a source or links to a member or a source.  What a link
-points to is not read here; see `org-truss-weak-grounds'."
-  (or (org-truss-cluster-sources cluster) (org-truss-cluster-source-links cluster)
+  "Non-nil when CLUSTER has grounds: its text quotes a source or links to
+a member or a source.  What a link points to is not read here; see
+`org-truss-weak-grounds'."
+  (or (org-truss-cluster-source-links cluster)
       (org-truss-cluster-quoted cluster) (org-truss-cluster-refs cluster)))
 
 (defun org-truss-holds-p (cluster)
@@ -1214,7 +1188,7 @@ heading whose pattern asks, at the heading that lacks, at the link.
 :loops           (CLUSTER . REF) for links that tell a member telling the
                  heading back; see `org-truss-include-loops'
 :broken-grounds  (CLUSTER . REF) for links a heading stands on to no member
-:broken-sources  (CLUSTER . LINK) for links to sources, in TRUSS_GROUNDS or
+:broken-sources  (CLUSTER . LINK) for links to sources, in
                  the text, that point to nothing there
 :duplicates      CUSTOM_IDs more than one heading has"
   (let* ((clusters (org-truss-clusters model))
@@ -1254,9 +1228,9 @@ heading whose pattern asks, at the heading that lacks, at the link.
   '(("Broken links"
      . "links that point to nothing: a link that tells a member, [[truss-include:id]], or one a heading stands on, [[#id]], to no member -- each wants one member with that CUSTOM_ID, and two with one are reported too; a link to a source taken by org-moor, or to a file, that is not there; and a link that tells a member which, with what is nested under it, tells the heading back, without end")
     ("No grounds"
-     . "headings that play a role of the TRUSS_LOGIC above them, with no TRUSS_LOGIC of their own and no :assumption: tag, and no grounds: no TRUSS_GROUNDS, no #+begin_quote and no link in their text, to a member or a source")
+     . "headings that play a role of the TRUSS_LOGIC above them, with no TRUSS_LOGIC of their own and no :assumption: tag, and no grounds: no #+begin_quote and no link in their text, to a member or a source")
     ("Weak grounds"
-     . "links a heading stands on, in TRUSS_GROUNDS or its text, to members that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
+     . "links a heading stands on, in its text, to members that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
     ("Missing roles"
      . "roles the TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING of a heading asks for that no heading right under it plays, by its TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE")
     ("No role"

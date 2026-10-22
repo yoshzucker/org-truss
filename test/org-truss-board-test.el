@@ -303,8 +303,8 @@ The constraints, LONG.
 *** A fact, LONG
 :PROPERTIES:
 :CUSTOM_ID: m1
-:TRUSS_GROUNDS: the minutes, LONG
 :END:
+[[https://e.x/the-minutes-long][the minutes, LONG]]
 *** A question, LONG
 * Members
 :PROPERTIES:
@@ -313,9 +313,9 @@ The constraints, LONG.
 ** A claim, LONG
 :PROPERTIES:
 :CUSTOM_ID: m2
-:TRUSS_GROUNDS: [[#m1]]
 :TRUSS_BREAKDOWN: 6w1h
 :END:
+[[#m1]]
 *** Who does it, LONG
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: who
@@ -395,7 +395,7 @@ the line naming its pattern."
                                       "   │ ▤ Rain[ ·]+Rain\n"
                                       "   │ ↥ member[ ·]+Move to fortnightly\n"
                                       "   │ ⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
-                                      "   │ ⏚ cited[ ·]+\\[\\[#diff\\]\\] Agenda diff\n"
+                                      "   │ ⏚ ground[ ·]+\\[\\[#diff\\]\\] Agenda diff\n"
                                       "   ├ Reason[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff +noexport$")
                               text))
       ;; The members' tree is drawn in a face of its own, the sections' not.
@@ -410,7 +410,7 @@ the line naming its pattern."
                                       " │   (logic › reasons)\n"
                                       " │   │ ↥ member[ ·]+Move to fortnightly\n"
                                       " │   │ ⏚ ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?Reviews run long\n"
-                                      " │   │ ⏚ cited[ ·]+\\[\\[#diff\\]\\] Agenda diff\n"
+                                      " │   │ ⏚ ground[ ·]+\\[\\[#diff\\]\\] Agenda diff\n"
                                       " │   ├ Reason[ ·]+\\(?:\\[*#[^] ]+]* \\)?Agenda diff")
                               text))
       (should (string-match-p (concat "^ │   └ Reason \\[no grounds\\][ ·]+Some items are urgent .*\n"
@@ -522,8 +522,8 @@ past what is under a member."
 **** A fact, LONG
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: s
 :END:
+[[https://e.x/s][s]]
 A note under it, LONG.
 **** Another fact
 :PROPERTIES:
@@ -589,8 +589,8 @@ and every line any of them is broken onto."
 *** A fact, LONG
 :PROPERTIES:
 :CUSTOM_ID: m1
-:TRUSS_GROUNDS: s
 :END:
+[[https://e.x/s][s]]
 * Members
 :PROPERTIES:
 :TRUSS_PART: members
@@ -598,14 +598,14 @@ and every line any of them is broken onto."
 ** A claim
 :PROPERTIES:
 :CUSTOM_ID: m2
-:TRUSS_GROUNDS: [[#m1]]
 :TRUSS_LOGIC: reasons
 :END:
+[[#m1]]
 *** A reason
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: s
 :END:
+[[https://e.x/s][s]]
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure
@@ -846,7 +846,7 @@ its own text, and replaces it the next time, after asking."
         (org-truss-test--answering '(t)
           (org-truss-board-quote)))
       (should (equal (funcall own)
-                     (concat ":PROPERTIES:\n:CUSTOM_ID: aside\n:TRUSS_GROUNDS: hallway\n:END:\n"
+                     (concat ":PROPERTIES:\n:CUSTOM_ID: aside\n:END:\n[[https://e.x/hallway][hallway]]\n"
                              "#+begin_quote\nSaid in the hallway.\n * not a heading\n#+end_quote\n\n")))
       (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
       (let ((kill-ring (list "Said twice.")))
@@ -1097,7 +1097,7 @@ taking it back leaves the file as it was."
 pointing to nothing; each is listed under its check, at the member that
 points to it."
   (org-truss-test--with-board (replace-regexp-in-string
-                               ":TRUSS_GROUNDS: hallway" ":TRUSS_GROUNDS: [[#lone]] [[file:nowhere.pdf][the memo]]"
+                               "^\\[\\[https://e\\.x/hallway\\]\\[hallway\\]\\]$" "[[#lone]]\n[[file:nowhere.pdf][the memo]]"
                                (replace-regexp-in-string "^\\*\\* Lone remark$"
                                                          "** Lone remark\n:PROPERTIES:\n:CUSTOM_ID: lone\n:END:"
                                                          org-truss-test--file))
@@ -1107,35 +1107,16 @@ points to it."
       (should (string-match-p "^ Weak grounds\n   member[ ·]+#aside Unused aside +\\[\\[#lone\\]\\] has no grounds$" text))
       (should (string-match-p "^ Broken links\n   member[ ·]+#aside Unused aside +\\[\\[file:nowhere\\.pdf\\]\\[the memo\\]\\] not found$" text)))))
 
-(ert-deftest org-truss-test-board-sources-and-assumptions ()
-  "t names the source a member stands on in its TRUSS_GROUNDS, the members
-it links to there staying, and nothing takes it away; A tags a member
-:assumption: or takes the tag off.  A reason that lacked grounds has them
-then, and the board says so."
+(ert-deftest org-truss-test-board-assumptions ()
+  "A tags a member :assumption: or takes the tag off.  A reason that lacked
+grounds has them then, and the board says so."
   (org-truss-test--with-board org-truss-test--file
-    (let ((grounds (lambda (label)
-                     (with-current-buffer source
-                       (org-entry-get (org-truss-test--heading-pos label) "TRUSS_GROUNDS")))))
-      (org-truss-test--goto-line-with "Reason \\[no grounds\\][ ·]+Some items are urgent")
-      (org-truss-test--answering '("minutes, 2 October")
-        (org-truss-board-source))
-      (should (equal (funcall grounds "Some items are urgent") "minutes, 2 October"))
-      (should-not (string-match-p "Reason \\[no grounds\\][ ·]+Some items are urgent" (buffer-string)))
-      (should (string-match-p "⏚ source[ ·]+minutes, 2 October" (buffer-string)))
-      (org-truss-test--goto-line-with "member[ ·]+#move Move to fortnightly")
-      (org-truss-test--answering '("the minutes")
-        (org-truss-board-source))
-      (should (equal (funcall grounds "Move to fortnightly") "[[#half]] the minutes"))
-      (org-truss-test--goto-line-with "member[ ·]+#move Move to fortnightly")
-      (org-truss-test--answering '("")
-        (org-truss-board-source))
-      (should (equal (funcall grounds "Move to fortnightly") "[[#half]]"))
-      (org-truss-test--goto-line-with "Major premise \\[no grounds\\]")
-      (org-truss-board-assume)
-      (should (string-match-p "Major premise \\[assumed\\][ ·]+A meeting" (buffer-string)))
-      (org-truss-test--goto-line-with "Major premise \\[assumed\\]")
-      (org-truss-board-assume)
-      (should (string-match-p "Major premise \\[no grounds\\][ ·]+A meeting" (buffer-string))))))
+    (org-truss-test--goto-line-with "Major premise \\[no grounds\\]")
+    (org-truss-board-assume)
+    (should (string-match-p "Major premise \\[assumed\\][ ·]+A meeting" (buffer-string)))
+    (org-truss-test--goto-line-with "Major premise \\[assumed\\]")
+    (org-truss-board-assume)
+    (should (string-match-p "Major premise \\[no grounds\\][ ·]+A meeting" (buffer-string)))))
 
 (ert-deftest org-truss-test-board-files-a-member ()
   "f moves a member, with what is nested under it, last under a part or
@@ -1492,7 +1473,7 @@ copy is written back."
       (goto-char (point-min))
       (search-forward "Robin keeps")
       (should-not (invisible-p (point)))
-      (search-forward ":TRUSS_GROUNDS: agendas")
+      (search-forward "[[https://e.x/agendas")
       (should (invisible-p (point)))
       (goto-char (point-min))
       (end-of-line)
@@ -1600,7 +1581,7 @@ lines that call it, lit together."
     (org-truss-test--answering '("Structure › Sky › Sky")
       (org-truss-board-ground))
     (let ((model (org-truss-read source)))
-      (should (equal (org-truss-cluster-grounds (org-truss-test--m model "Move to fortnightly"))
+      (should (equal (org-truss-cluster-refs (org-truss-test--m model "Move to fortnightly"))
                      '("half" "m1")))
       (should (equal (org-truss-cluster-id (car (org-truss-section-children (org-truss-model-structure model))))
                      "m1")))
@@ -1662,7 +1643,7 @@ grounds that named it to show as broken."
       (should-not (org-truss-member-by-label model "Agenda diff"))
       (should (null (org-truss-cluster-includes
                      (nth 1 (org-truss-section-children (org-truss-model-structure model))))))
-      (should (equal (org-truss-member-grounds (org-truss-member-by-label model "Move to fortnightly"))
+      (should (equal (org-truss-cluster-refs (org-truss-member-by-label model "Move to fortnightly"))
                      '("half"))))
     (should (string-match-p "⏚ broken ground[ ·]+\\(?:\\[*#[^] ]+]* \\)?\\[\\[#half\\]\\]" (buffer-string)))
     (should (string-match-p "^ Broken links\n +member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly +\\[\\[#half\\]\\] not found$"
@@ -1672,7 +1653,7 @@ grounds that named it to show as broken."
   "b makes another member a ground, or no longer one; on a ground's own line
 it takes that ground away."
   (org-truss-test--with-board org-truss-test--file
-    (let ((grounds (lambda () (org-truss-member-grounds
+    (let ((grounds (lambda () (org-truss-cluster-refs
                                (org-truss-member-by-label (org-truss-read source) "Move to fortnightly")))))
       (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("Members › Unused aside")
@@ -1685,7 +1666,7 @@ it takes that ground away."
         (org-truss-board-ground))
       (should (equal (funcall grounds) '("half" "aside" "m1")))
       (should (with-current-buffer source
-                (string-match-p ":TRUSS_GROUNDS: \\[\\[#half\\]\\] \\[\\[#aside\\]\\] \\[\\[#m1\\]\\]$"
+                (string-match-p "^#\\+end_public\n\\[\\[#aside\\]\\]\n\\[\\[#m1\\]\\]\n"
                                 (buffer-string))))
       (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Move to fortnightly")
       (org-truss-test--answering '("Members › Lone remark")
@@ -1698,7 +1679,7 @@ it takes that ground away."
       (org-truss-board-ground)
       (should (null (funcall grounds)))
       (should-not (with-current-buffer source
-                    (string-match-p "TRUSS_GROUNDS: *$" (buffer-string)))))))
+                    (string-match-p "^\\[\\[#\\(?:half\\|aside\\|m1\\)\\]\\]$" (buffer-string)))))))
 
 (ert-deftest org-truss-test-board-unwrap-asks-before-losing ()
   "u asks before discarding a title, and does nothing when told no."
@@ -1886,8 +1867,8 @@ right, as the reader is told it: in the breakdown's list."
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :TRUSS_BREAKDOWN_ROLE: pros
-:TRUSS_GROUNDS: the calendar
 :END:
+[[https://e.x/the-calendar][the calendar]]
 * S
 :PROPERTIES:
 :TRUSS_PART: structure
@@ -2157,7 +2138,7 @@ as they are."
                   (concat "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
                           "** Base\n:PROPERTIES:\n:CUSTOM_ID: m1\n:END:\n[[file:x.txt]]\n"
                           "** Claim\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
-                          "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:TRUSS_GROUNDS: [[#m1]]\n:END:\n"
+                          "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n[[#m1]]\n"
                           "*** Bare reason\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n"))
             (cons "x.txt" "x\n"))
     (let ((file (expand-file-name "truss.org" dir)))

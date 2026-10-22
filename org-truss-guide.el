@@ -68,12 +68,14 @@
 # Grounds
 #   A heading that plays a role right under a TRUSS_LOGIC heading must have
 #   grounds, unless it has TRUSS_LOGIC itself or the tag :assumption:.  It
-#   has grounds when it has one of these
-#     TRUSS_GROUNDS     a link to a member, ~[[#m3]]~, or to a source, or
-#                       words naming a source
-#     #+begin_quote     the source's own words, quoted in its text
-#     a link in its text  to a member, or to a source: moor:, file:, URL.
-#                       A link that tells a member is no ground
+#   has grounds when its text has one of these
+#     a link            to a member, ~[[#m3]]~, or to a source: moor:,
+#                       file:, URL.  A link that tells a member is no
+#                       ground
+#     #+begin_quote     the source's own words, quoted
+#   Outside #+begin_public a link is for the file alone; inside, it is the
+#   reader's citation too.  Words naming what has no file -- an agreement,
+#   a talk -- are no grounds: tag :assumption: what stands on them
 #   What any heading points to as grounds must hold as what it is: a member
 #   has grounds, TRUSS_LOGIC or the tag :assumption:; a source taken by
 #   org-moor or a file is there.  A URL and words are not checked.  The
@@ -176,12 +178,14 @@
 # 根拠
 #   TRUSS_LOGIC の見出しのすぐ下で役を担う見出しは、根拠を持つべき見出し。
 #   ただし、自分も TRUSS_LOGIC を持つ見出しと、:assumption: を付けた見出しは
-#   除く。根拠を持つとは、次のどれかを持つこと
-#     TRUSS_GROUNDS     資料へのリンク、資料を名指す言葉、部材へのリンク
-#                       ~[[#m3]]~
-#     #+begin_quote     本文に引いた資料の原文
-#     本文のリンク      部材へのリンク、または資料への moor:・file:・URL の
-#                       リンク。部材を展開するリンクは根拠ではない
+#   除く。根拠を持つとは、本文に次のどれかを持つこと
+#     リンク            部材へのリンク ~[[#m3]]~ か、資料への moor:・
+#                       file:・URL のリンク。部材を展開するリンクは根拠
+#                       ではない
+#     #+begin_quote     資料の原文の引用
+#   #+begin_public の外のリンクはファイルの中だけのもの。中に書けば、読み手
+#   への出典にもなる。ファイルのないもの（合意、口頭の話）を名指す言葉は根拠
+#   ではない。それに立つ見出しには :assumption: を付ける
 #   どの見出しでも、根拠として指したものは、その種類として成り立って
 #   いなければならない。部材なら、根拠か TRUSS_LOGIC か :assumption: を
 #   持つこと。org-moor の資料やファイルなら、それがあること。URL と言葉は
@@ -292,7 +296,8 @@ Brief line changes it."
      "What was found.  Write each fact as a member under the role of
 TRUSS_BREAKDOWN it belongs to, with its grounds: the source's own words
 in a quote block, a #+begin_quote (Q on the board), or a link to the
-source, in TRUSS_GROUNDS (t on the board) or in its text.  Sum up facts
+source in its text (m on the board takes one): inside its #+begin_public
+it is the reader's citation too.  Sum up facts
 that belong together: nest them under a member that says in one sentence
 what they say together, and no more, with TRUSS_LOGIC: reasons (p on the
 board) -- each fact is then a reason, and must have its grounds.  What the
@@ -301,9 +306,10 @@ out; a member a section lists is, with the members under it.  p on the
 board's Subject line changes the breakdown."
      "調べたこと。事実は一つずつ、合う TRUSS_BREAKDOWN の役の下に部材として
 書き、根拠を付ける。出典の原文を本文の引用ブロック #+begin_quote に残すか
-（盤面の Q）、出典へのリンクを TRUSS_GROUNDS か本文に書く（盤面の t）。関係
-する事実はまとめる。下の事実が合わせて言っていることを一文で書いた部材の下に
-入れ子にし、その一文には下の事実が言っている以上のことを書かない。上の部材
+（盤面の Q）、出典へのリンクを本文に書く（盤面の m で取り込める）。リンク
+を #+begin_public の中に書けば、読み手への出典にもなる。関係する事実はまと
+める。下の事実が合わせて言っていることを一文で書いた部材の下に入れ子にし、
+その一文には下の事実が言っている以上のことを書かない。上の部材
 には TRUSS_LOGIC: reasons を付ける（盤面の p）。下の事実はその理由になり、
 それぞれ根拠を持つべき見出しになる。事実の意味と、することは Members に書く。
 ここは書き出されない。節に載せた部材は、下の部材と一緒に書き出される。内訳の
@@ -324,7 +330,7 @@ Nest under a claim the members that are its reasons, and give the claim
 TRUSS_LOGIC (p on the board): reasons, deduction or induction.  Each
 reason plays a role of it in TRUSS_LOGIC_ROLE, and must have grounds:
 link to the facts of the subject it stands on, ~[[#m3]] [[#m7]]~, in its
-TRUSS_GROUNDS (b on the board) or in its text, or cite a source (t, Q).  Tag
+text (b on the board), or cite a source (m, Q).  Tag
 :assumption: a reason taken as given without grounds (A).  Give what is
 to be done TRUSS_BREAKDOWN -- steps, parts, 5W1H (p on the board) -- and
 what is under it is its parts, which need no grounds, written out as a
@@ -340,8 +346,8 @@ is never written out; tag :noexport: a member that should not be."
 その下に入れ子にし、主張には TRUSS_LOGIC を付ける（盤面の p）：reasons、
 deduction、induction。理由はそれぞれ TRUSS_LOGIC_ROLE に役を書き、根拠を
 持つべき見出しになる。根拠には、支えにする Subject の事実へのリンク
-~[[#m3]] [[#m7]]~ を TRUSS_GROUNDS（盤面の b）か本文に書くか、出典を引く
-（盤面の t、Q）。根拠なしで置く理由には :assumption: を付ける（盤面の A）。
+~[[#m3]] [[#m7]]~ を本文に書くか（盤面の b）、出典を引く
+（盤面の m、Q）。根拠なしで置く理由には :assumption: を付ける（盤面の A）。
 することに TRUSS_BREAKDOWN を付けると（steps、parts、5w1h など。盤面の p）、
 下の部材はその内訳になり、根拠は要らず、箇条書きで出る。部材は下の部材より
 先に書き出され、下の部材はファイルの順に出る。結論を最後に置く話の運びは、

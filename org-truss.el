@@ -52,7 +52,7 @@
 (require 'org-truss-board)
 
 ;; Sources taken by org-moor, when it is there: a truss file's go beside
-;; it, and a member can cite one, or take one, from the board.
+;; it, and a heading can take one, or cite one, from the board.
 (with-eval-after-load 'org-moor
   (require 'org-truss-moor))
 
@@ -154,7 +154,7 @@ finds and where, by line.  RET on a line visits it."
 ;;;###autoload
 (defun org-truss-convert-references ()
   "Make the nearest truss file point to its members by CUSTOM_ID.
-A link [[*heading]], in the structure or in TRUSS_GROUNDS, becomes
+A link [[*heading]], wherever it is, becomes
 [[#id]], and the member named is given an id when it has none; a link
 keeps its words.  For a link written by heading, with Org's completion,
 say.  The buffer is left
@@ -165,6 +165,21 @@ unsaved, to be looked over."
     (with-current-buffer (find-file-noselect file)
       (message "org-truss: %d references in %s point by id now; not saved yet"
                (org-truss-convert-references-in-buffer)
+               (abbreviate-file-name file)))))
+
+;;;###autoload
+(defun org-truss-convert-grounds ()
+  "Move the nearest truss file's TRUSS_GROUNDS into the text of their headings.
+For a file written while grounds were a property: each link it held goes
+on a line of its own after the heading's text, outside its public block,
+and the words it held after them; a heading the words alone grounded is
+tagged :assumption:.  The buffer is left unsaved, to be looked over."
+  (interactive)
+  (let ((file (or (org-truss-locate)
+                  (user-error "No %s here or above" org-truss-file-name))))
+    (with-current-buffer (find-file-noselect file)
+      (message "org-truss: %d headings in %s ground in their text now; not saved yet"
+               (org-truss-convert-grounds-in-buffer)
                (abbreviate-file-name file)))))
 
 (defun org-truss-batch-check ()

@@ -80,7 +80,7 @@ The work on a document goes in three steps, one part each.
   ~reasons~: each fact under it is one of its reasons.
 - /Make sense/, in the members.  Say what the facts mean here, and what is
   to be done.  A claim's reasons are nested under it, and stand on the
-  facts they read through ~TRUSS_GROUNDS~; what is to be done is broken
+  facts they link to in their text; what is to be done is broken
   down into steps or parts.
 - /Tell/, in the structure.  Sections, each playing a role in how the
   document is told, list the members the reader is shown, from any part.
@@ -222,16 +222,25 @@ reasons must have them instead, or is tagged ~:assumption:~, taken as
 given.  Whether a heading must have grounds comes from its role alone: not
 from the part it is written in, nor from whether anything uses it.
 
-A heading has grounds when it has one of these:
+A heading has grounds when its text has one of these:
 
-| ~TRUSS_GROUNDS~    | a link to a member, ~[[#m3]]~, or to a source -- a ~moor:~ link, a file, a page -- or words naming one that has no file: /calendar export/, /team agreement/ |
-| ~#+begin_quote~    | the source's own words, quoted in its text                                                                                                                   |
-| a link in its text | to a member, or to a source: a ~moor:~, ~file:~ or URL link                                                                                                  |
+| a link          | to a member, ~[[#m3]]~, or to a source: a ~moor:~, ~file:~ or URL link |
+| ~#+begin_quote~ | the source's own words, quoted                                         |
 
 A link to a member stands on it: a reason in the members on the facts of
-the subject it reads (see [[*Pointing to a member]]).  It is the same
-grounds written in ~TRUSS_GROUNDS~ or in the text, where it reads in a
-sentence: /as [[#m3]] shows/.  A link that tells a member,
+the subject it reads (see [[*Pointing to a member]]).  It is grounds on a
+line of its own, as ~b~ on the board writes it, or in a sentence: /as
+[[#m3]] shows/.  Outside the heading's public block it is for the file
+alone; inside it, the reader sees it too, as the citation it is -- a
+~moor:~ link written out as a link to where its source came from (see
+[[*The document]]).  So a source is written once, where it is cited.
+
+Words naming what has no file -- /team agreement/, /what was said in the
+hallway/ -- are no grounds: nothing in the file can be gone back to.
+Write them in the text, and tag the heading ~:assumption:~: it is then
+taken as given, as what no text records is, and the board lists it so.
+
+A link that tells a member,
 ~[[truss-include:m7]]~, is no ground: it says where the member is told (see
 [[*Two links to a heading]]).
 
@@ -245,7 +254,7 @@ to as grounds must hold as what it is.
 | a member, ~[[#m3]]~ | it has grounds, or a ~TRUSS_LOGIC~, or the tag ~:assumption:~ -- as a heading that must have grounds is asked |
 | a source, ~moor:~   | the truss file's ~sources/~ holds it                                                                          |
 | a file, ~file:~     | it is there                                                                                                   |
-| a URL, words        | not checked: nothing in the file can tell                                                                     |
+| a URL               | not checked: nothing in the file can tell                                                                     |
 
 It is asked one step: what a member pointed to points to in turn is asked
 of that member, where it is written.  Whether a source says what it is
@@ -265,7 +274,7 @@ Six checks, each found where the problem is:
 | No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them                                                              |
 | Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                                                     |
 | No grounds    | the heading that lacks them    | must have grounds and has none                                                                                                                                    |
-| Weak grounds  | the heading that points        | points as grounds, in ~TRUSS_GROUNDS~ or its text, to a member that does not hold                                                                                 |
+| Weak grounds  | the heading that points        | points as grounds, in its text, to a member that does not hold                                                                                                    |
 | Broken links  | the link                       | a link to nothing: one that tells or points to no member, one to no source or file; a ~CUSTOM_ID~ two members have; a link that tells what tells its heading back |
 
 They say what is so; what to do about it is written in the file.
@@ -286,10 +295,8 @@ So the directory can be moved, or handed over, whole.  With org-moor, a
 source taken from a truss file goes in its ~sources/~: a directory named by
 the source's id, holding its copy and its record -- a title, where it came
 from, how and when.  A member cites it with a ~moor:~ link, ~[[moor:ID::12][Manual
-p. 12]]~ for a page or a line, in its text beside the words it quotes, or in
-~TRUSS_GROUNDS~; either gives it grounds.  ~TRUSS_GROUNDS~ also takes words,
-for a source that is not a file: /calendar export/, /team agreement/.
-The first line of
+p. 12]]~ for a page or a line, in its text, beside the words it quotes or
+on a line of its own; either gives it grounds.  The first line of
 ~truss.org~ sets ~org-attach-id-dir~ to ~attach/~, so what ~org-attach~ puts
 on its headings is kept there, not where attachments go elsewhere, each
 heading's in a directory named by its ~ID~; it is a file variable Org
@@ -368,23 +375,23 @@ Reviews ran past the hour eight times this quarter.
 ,**** Eight of twelve reviews ran past the hour
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: calendar export
 :END:
+[[https://calendar.example.com/export][calendar export]]
 ,**** The longest ran forty minutes over
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: calendar export
 :END:
+[[https://calendar.example.com/export][calendar export]]
 ,*** Six of twelve items each week come back from the week before
 :PROPERTIES:
 :CUSTOM_ID: m2
-:TRUSS_GROUNDS: agendas, weeks 1-12
 :END:
-,*** Urgent items are raised in the team chat
+[[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]]
+,*** Urgent items are raised in the team chat                :assumption:
 :PROPERTIES:
 :CUSTOM_ID: m3
-:TRUSS_GROUNDS: team agreement
 :END:
+Agreed in the team; nothing written.
 ,** The weekly review costs the team more time than it gives back
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: issue
@@ -406,8 +413,8 @@ Half of each agenda repeats the week before.
 ,*** Six of twelve items come back each week
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[#m2]]
 :END:
+[[#m2]]
 ,*** Items need a week to move                                  :assumption:
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
@@ -423,12 +430,13 @@ We assume most items need more than a week to change.
 ,** Move to fortnightly
 :PROPERTIES:
 :CUSTOM_ID: m5
-:TRUSS_GROUNDS: [[#m4]] [[#m3]]
 :TRUSS_BREAKDOWN: steps
 :END:
 ,#+begin_public
 Hold the review every other week.
 ,#+end_public
+[[#m4]]
+[[#m3]]
 ,*** Cancel every second review in the calendar
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -552,7 +560,7 @@ whether it is a list item, nor what kind of heading it points to.
 
 | Link                   | What it does                                                                            |
 |------------------------+-----------------------------------------------------------------------------------------|
-| ~[[#m7]]~              | points to heading m7: a ground, in ~TRUSS_GROUNDS~ or in a heading's text               |
+| ~[[#m7]]~              | points to heading m7: a ground, in a heading's text                                     |
 | ~[[truss-include:m7]]~ | tells heading m7 there: it, with what is under it, is written out where the link stands |
 
 A link that tells a heading can stand in any heading -- a section, or a
@@ -596,8 +604,15 @@ stands.
 
 A link written by heading, ~[[*heading]]~ or ~[[truss-include:*heading]]~
 -- with Org's completion, say -- points to no member and shows as broken.
-~M-x org-truss-convert-references~ points each by id, wherever it is and
-in ~TRUSS_GROUNDS~, giving the member named one, and keeps a link's words.
+~M-x org-truss-convert-references~ points each by id, wherever it is,
+giving the member named one, and keeps a link's words.
+
+A file written while grounds were a property, ~TRUSS_GROUNDS~, is read
+without them; ~M-x org-truss-convert-grounds~ moves each into the text of
+its heading -- each link on a line of its own after the heading's text,
+outside its public block, the words after them -- and tags
+~:assumption:~ a heading the words alone grounded.  Both leave the buffer
+unsaved, to be looked over.
 
 * The board
 
@@ -655,9 +670,8 @@ This is the board of the file above:
    ├ member ········· #m2 Six of twelve items each week come back from the w…  Six of twelve items each week come back from the week before
    │   ↥ Reason ········· Six of twelve items come back each week
    │   ⏚ source ········· agendas, weeks 1-12
-   └ member ········· #m3 Urgent items are raised in the team chat             Urgent items are raised in the team chat
+   └ member [assumed] #m3 Urgent items are raised in the team chat             Urgent items are raised in the team chat
        ↥ member ········· Move to fortnightly
-       ⏚ source ········· team agreement
    Issue ················ The weekly review costs the team more time than it…  The weekly review costs the team more time than it gives back
    Constraints —
 
@@ -781,7 +795,7 @@ prose beside its logic where it is written.
 
 There are two kinds of link, and the board draws each at both its ends.
 A ground is written by the heading that stands on it, ~[[#m12]]~, in its
-~TRUSS_GROUNDS~ or its text: logic, never told.  A link that tells a
+text: logic, never told.  A link that tells a
 member, ~[[truss-include:m12]]~, is written by the heading that tells it,
 a section or a member: what the reader is shown, and where.  Every line drawn for an end of a link is marked, and a line
 with no mark is written where it stands, as a heading in the file.  The
@@ -790,7 +804,7 @@ the section the line hangs from:
 
 | Mark | Names                                  | To the one above                                       |
 |------+----------------------------------------+--------------------------------------------------------|
-| =⏚=  | a member, by its id and heading; or a  | what it stands on: in its ~TRUSS_GROUNDS~, or its text |
+| =⏚=  | a member, by its id and heading; or a  | what it stands on, linked in its text                  |
 |      | source, or the words it quotes         |                                                        |
 | =↥=  | a member, by its roles and heading     | built on it: this stands on it, in its own grounds     |
 | =•=  | a member, by its roles, id and heading | told by the one above: its link tells it here          |
@@ -800,9 +814,10 @@ the section the line hangs from:
 id; =↥= and =▤= are the other end, where a member is written.  What a
 member stands on is drawn below it, as the ground is below a building:
 =⏚ ground= a member it points to -- with =[no grounds]= when it does not
-hold -- =⏚ source= a source named in ~TRUSS_GROUNDS~, =⏚ cited= the first
-link to a source in its text -- each with =[not found]= when a link there
-points to nothing -- and =⏚ quote= the words it quotes.  What stands on a
+hold -- =⏚ source= each source it links to, with =[not found]= when the
+link points to nothing -- and =⏚ quote= the words it quotes.  A line of
+its text holding nothing but such a link is not drawn again among its
+notes.  What stands on a
 member is drawn below it too, as everything under a line is, so its mark
 points up, from the member to it.  A line marked =⏚=, =↥= or
 =▤= is cut to the middle, its whole heading in the tooltip; the mouse on
@@ -946,7 +961,7 @@ lines.
 | write | ~c~         | write a new member, placed in it                                                  | write a member under it, last                      |
 |       | ~e~         | edit its entry alone, beside the board                                            | same                                               |
 |       | ~R~         | rewrite its heading                                                               | rewrite its heading                                |
-|       | ~t~         | name the source it stands on, in ~TRUSS_GROUNDS~                                  | same                                               |
+|       | ~m~         | take a source for it, or link one taken before (with org-moor)                    | same                                               |
 |       | ~b~         | make a heading a ground of it, or not                                             | same                                               |
 |       | ~A~         | tag it an assumption, or take the tag off                                         | same                                               |
 |       | ~Q~         | put the text copied last under it, as a quotation                                 | same                                               |
@@ -1020,14 +1035,20 @@ heading puts it there, or, after asking, in place of the quotation already
 there.  With org-moor, reading a source beside it -- ~org-moor-noter~ --
 writes the quotation and the link to its page or line in one go.
 
-~t~ names the source a heading stands on in its ~TRUSS_GROUNDS~, offering
-what is named there now besides members; nothing takes it away, and the
-members it points to stay.  With org-moor, it offers the file's sources by
-their titles, cited by a link to the one chosen, or takes a file or a
-page there and then.  ~b~ makes a heading -- a member or a section --
-something it stands on, in ~TRUSS_GROUNDS~: it offers what it stands on
-there first, and choosing one takes it away; any other is added, and
-given a ~CUSTOM_ID~ when it has none.  On a ground's own line, the one marked =⏚=, ~b~ takes that ground
+~m~, with org-moor, takes a source for the heading as org-moor takes one,
+into the truss file's ~sources/~, and writes the link to it on a line of
+its own after the heading's text, outside its public block: ~m w~ a page
+or a file on the web, its copy fetched in the background
+(~org-moor-take-url~); ~m f~ a file (~org-moor-take-file~); ~m c~ the
+clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file
+has, by its title, and ~m k~ keeps a copy, from their origins, of the
+sources the heading links to that have none -- those an agent took
+without being able to fetch them as you, signed in (~org-moor-keep-copy~).
+A link moved into the public block is the reader's citation too.  ~b~
+makes a heading -- a member or a section -- something it stands on, a
+link to it on a line of its own after the heading's text: it offers what
+it stands on first, and choosing one takes that line away; any other is
+added, and given a ~CUSTOM_ID~ when it has none.  On a ground's own line, the one marked =⏚=, ~b~ takes that ground
 away at once; one linked in the text is edited there, with ~e~.  ~A~ tags
 a heading ~:assumption:~, or takes the tag off.  Each works on a section
 as on a member: a section has grounds as any heading does.
@@ -1206,7 +1227,7 @@ anything that reads the structure without Emacs open.
 The last, with org-moor, takes a file -- copied, never moved -- or a web
 page into the truss file's ~sources/~ and prints a link to it named by its
 title, for a model working in the file, which cannot ask Emacs: written
-in a member's ~TRUSS_GROUNDS~ or its text, it cites the source.  The comment block gives this line
+in a member's text, it cites the source.  The comment block gives this line
 too when org-moor is there.
 
 * Tests

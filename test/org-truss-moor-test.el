@@ -10,6 +10,7 @@
 (require 'ert)
 (require 'org-truss)
 (require 'org-truss-core-test)
+(require 'org-truss-board-test)
 (require 'org-moor)
 
 (ert-deftest org-truss-test-a-link-to-a-source-is-grounds ()
@@ -51,18 +52,40 @@ printed a link to cite it by."
         (should (plist-get record :copy)))
       (should (file-exists-p file)))))
 
-(ert-deftest org-truss-test-a-source-from-the-sources ()
-  "A member given a source is offered the file's sources by title, and cites
-the one chosen with a link; other words are written as they are."
-  (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
+(ert-deftest org-truss-test-board-takes-a-source ()
+  "m on the board takes a source for the heading of the line as org-moor
+takes one, into the truss file's sources, and writes the link under the
+heading, outside its public block: grounds.  m l links one taken before."
+  (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file)
+                                      (cons "read/minutes.txt" "We agreed.\n"))
     (let* ((truss (expand-file-name "truss.org" dir))
-           (record (org-moor-new-source "Calendar export" "/x/cal.csv" 'file
-                                        (org-moor-sources truss))))
-      (cl-letf (((symbol-function 'completing-read) (lambda (&rest _) "Calendar export")))
-        (should (equal (org-truss-moor-read-source nil truss)
-                       (format "[[moor:%s][Calendar export]]" (plist-get record :id)))))
-      (cl-letf (((symbol-function 'completing-read) (lambda (&rest _) "team agreement")))
-        (should (equal (org-truss-moor-read-source nil truss) "team agreement"))))))
+           (source (find-file-noselect truss))
+           (org-truss-language 'en)
+           (org-moor-move-directories nil))
+      (with-temp-buffer
+        (org-truss-board-mode)
+        (setq org-truss--source source)
+        (org-truss-board-redraw)
+        (org-truss-test--goto-line-with "Reason \\[no grounds\\][ ·]+Some items are urgent")
+        (cl-letf (((symbol-function 'read-file-name)
+                   (lambda (&rest _) (expand-file-name "read/minutes.txt" dir)))
+                  ((symbol-function 'read-string) (lambda (&rest _) "Minutes")))
+          (org-truss-board-take-file))
+        (let ((record (car (org-moor-sources-in (expand-file-name "sources/" dir)))))
+          (should (equal (plist-get record :title) "Minutes"))
+          (should (plist-get record :copy))
+          (with-current-buffer source
+            (should (string-search (concat "Some items cannot wait two weeks.\n#+end_public\n"
+                                           (org-moor-link record) "\n")
+                                   (buffer-string))))
+          (should-not (string-match-p "Reason \\[no grounds\\][ ·]+Some items are urgent" (buffer-string)))
+          (should (string-match-p "⏚ source[ ·]+Minutes" (buffer-string)))
+          (org-truss-test--goto-line-with "member[ ·]+Lone remark")
+          (cl-letf (((symbol-function 'completing-read) (lambda (&rest _) "Minutes")))
+            (org-truss-board-link-source))
+          (with-current-buffer source
+            (should (string-search (concat "** Lone remark\n" (org-moor-link record) "\n")
+                                   (buffer-string)))))))))
 
 (ert-deftest org-truss-test-preamble-says-how-to-take ()
   "The head comment gives the check as it runs here, org-dock and all, and
@@ -91,7 +114,7 @@ though it is kept elsewhere."
       (with-temp-file file
         (insert "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
                 "** Claim\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
-                "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:TRUSS_GROUNDS: " link "\n:END:\n"))
+                "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n" link "\n"))
       (with-current-buffer (find-file-noselect file)
         (goto-char (point-min))
         (re-search-forward "^\\*\\* Claim$")

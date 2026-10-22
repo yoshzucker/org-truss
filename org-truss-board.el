@@ -96,9 +96,14 @@ on it -- where it is written, where it is called, wherever else it shows
 
 ;;;; The board's buffer
 
+(define-prefix-command 'org-truss-board-moor-map)
+(put 'org-truss-board-moor-map 'variable-documentation
+     "Keys taking a source for the heading at point, as org-moor takes one.
+Filled by org-truss-moor.el; empty without org-moor.")
+
 (defconst org-truss--board-help
   "write  \\[org-truss-board-new] new  \\[org-truss-board-edit] edit  \
-\\[org-truss-board-rename] rename  \\[org-truss-board-source] source  \
+\\[org-truss-board-rename] rename  \\[org-truss-board-moor-map] source  \
 \\[org-truss-board-ground] ground  \\[org-truss-board-quote] quote  \
 \\[org-truss-board-assume] assume  \\[org-truss-board-refile] refile  \
 \\[org-truss-board-delete] delete
@@ -195,7 +200,7 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "z") #'org-truss-board-fold)
     (define-key map (kbd "c") #'org-truss-board-new)
     (define-key map (kbd "R") #'org-truss-board-rename)
-    (define-key map (kbd "t") #'org-truss-board-source)
+    (define-key map (kbd "m") 'org-truss-board-moor-map)
     (define-key map (kbd "A") #'org-truss-board-assume)
     (define-key map (kbd "b") #'org-truss-board-ground)
     (define-key map (kbd "Q") #'org-truss-board-quote)
@@ -958,27 +963,28 @@ stood on it can be seen."
 
 (defun org-truss-board-ground ()
   "Make a heading a ground of the heading at point, or no longer one.
-A member or a section, in its TRUSS_GROUNDS, which points to it by its
-CUSTOM_ID; one is given to it when it has none.  Its grounds there now
-are offered first, and choosing one takes it away.  On a ground's own
-line, the one marked ⏚, take it away from the heading it grounds without
-asking; one linked in the text is edited there."
+A member or a section, linked to by its CUSTOM_ID, [[#m3]], on a line of
+its own after the heading's text, outside its public block; one is given
+to it when it has none.  Its grounds now are offered first, and choosing
+one takes it away.  On a ground's own line, the one marked ⏚, take it
+away from the heading it grounds without asking.  A link among other
+words is edited there, with the words."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'member 'section))
-         (model (org-truss-read org-truss--source)))
+         (model (org-truss-read org-truss--source))
+         (away (lambda (pos ref)
+                 (unless (org-truss-remove-ground pos ref)
+                   (user-error "This ground is linked among other words; %s edits it there"
+                               (substitute-command-keys "\\[org-truss-board-edit]"))))))
     (if (plist-get item :claim)
         (let* ((claim (org-truss-cluster-at model (plist-get item :claim)))
                (ground (plist-get item :ground)))
-          (when (plist-get item :in-text)
-            (user-error "This ground is a link in the text; %s edits it there"
-                        (substitute-command-keys "\\[org-truss-board-edit]")))
           (org-truss--editing
-            (org-truss-set-grounds (org-truss-cluster-pos claim)
-                                   (remove ground (org-truss-cluster-grounds claim))))
+            (funcall away (org-truss-cluster-pos claim) ground))
           (message "%s no longer grounds %s" (or (plist-get item :label) ground)
                    (org-truss-cluster-label claim)))
       (let* ((heading (org-truss-cluster-at model (plist-get item :pos)))
-             (grounds (org-truss-cluster-grounds heading))
+             (grounds (org-truss-cluster-refs heading))
              (inside (org-truss--subtree heading))
              (others (seq-remove (lambda (h) (memq h inside))
                                  (append (org-truss-model-all model)
@@ -995,9 +1001,8 @@ asking; one linked in the text is edited there."
         (org-truss--editing
           (let ((at (copy-marker (plist-get item :pos))))
             (if (memq ground current)
-                (org-truss-set-grounds at (remove (org-truss-cluster-id ground) grounds))
-              (let ((ref (org-truss-ensure-id (org-truss-cluster-pos ground))))
-                (org-truss-set-grounds at (append grounds (list ref)))))
+                (funcall away at (org-truss-cluster-id ground))
+              (org-truss-add-ground at (org-truss-ensure-id (org-truss-cluster-pos ground))))
             (set-marker at nil)))))))
 
 (defun org-truss-board-unwrap ()
@@ -1266,9 +1271,9 @@ from.  Each only when it has something to say."
           "- Under a heading with a pattern, write a subheading for each role: its\n"
           "  title one sentence that states what plays the role, its _ROLE property\n"
           "  naming the role.  Write over a title that is still the one in brackets.\n"
-          "- Under TRUSS_LOGIC, give each such subheading grounds: TRUSS_GROUNDS, a\n"
-          "  #+begin_quote, or a link in its text to a heading, [[#m3]], or to a\n"
-          "  source.  It needs none with TRUSS_LOGIC of its own or the tag :assumption:.\n\n"))
+          "- Under TRUSS_LOGIC, give each such subheading grounds: a #+begin_quote,\n"
+          "  or a link in its text to a heading, [[#m3]], or to a source.  It needs\n"
+          "  none with TRUSS_LOGIC of its own or the tag :assumption:.\n\n"))
        (when truss
          "The other rules of the file are in the comment at its head.\n\n")
        (when file
@@ -1407,31 +1412,6 @@ away."
     (org-truss--goto-label label)
     (org-truss--edit (marker-position at) t session)
     (set-marker at nil)))
-
-(defvar org-truss-read-source-function #'org-truss-read-source
-  "Function reading a source a member stands on.
-Called with what TRUSS_GROUNDS names now besides members, or nil, and the
-truss file, or nil; returns the source as it is to be written there: a
-link, or words naming one that has no file.  With org-moor, a source of
-the file's, or one taken there and then; see org-truss-moor.el.")
-
-(defun org-truss-read-source (default _file)
-  "Read a source, as words; DEFAULT is what is named now."
-  (read-string "Source: " default))
-
-(defun org-truss-board-source ()
-  "Name the source the heading at point stands on, in its TRUSS_GROUNDS.
-What is named there now, besides members, is offered to change, and empty
-takes it away; the members it links to stay.  With org-moor, a source of
-the file's is cited by a link to it, or one is taken there and then."
-  (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member 'section))
-         (cluster (org-truss-cluster-at (org-truss-read org-truss--source) (plist-get item :pos)))
-         (source (string-trim (funcall org-truss-read-source-function
-                                       (org-truss-cluster-sources cluster)
-                                       (buffer-file-name org-truss--source)))))
-    (org-truss--editing
-      (org-truss-set-sources (plist-get item :pos) source))))
 
 (defun org-truss-board-assume ()
   "Tag the heading at point :assumption:, or take the tag off.

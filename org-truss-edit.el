@@ -188,18 +188,22 @@ sections holding it are returned."
 
 ;;;; Links and properties
 
-(defun org-truss-add-link (pos ref)
-  "Tell the member REF under the heading at POS, after its last line of text.
-In a list item of its own, - [[truss-include:REF]]; REF is the member's
-CUSTOM_ID, see `org-truss-ensure-id'."
+(defun org-truss--add-line (pos line)
+  "Write LINE under the heading at POS, after its last line of text."
   (save-excursion
     (let* ((bounds (org-truss--own-bounds pos))
            (heading-end (progn (goto-char pos) (line-end-position))))
       (goto-char (cdr bounds))
       (skip-chars-backward " \t\n" heading-end)
-      (insert "\n" (string-remove-suffix "\n" (org-truss--link-item ref)))
+      (insert "\n" line)
       (unless (looking-at "\n")
         (insert "\n")))))
+
+(defun org-truss-add-link (pos ref)
+  "Tell the member REF under the heading at POS, after its last line of text.
+In a list item of its own, - [[truss-include:REF]]; REF is the member's
+CUSTOM_ID, see `org-truss-ensure-id'."
+  (org-truss--add-line pos (string-remove-suffix "\n" (org-truss--link-item ref))))
 
 (defun org-truss-remove-link (pos ref)
   "Stop telling the member REF under the heading at POS.
@@ -349,25 +353,33 @@ Where the patterns there list the roles PROPS give it, as
 new heading."
   (org-truss-add-heading parent label props))
 
-(defun org-truss--put-grounds (pos refs sources)
-  "Write TRUSS_GROUNDS at POS: links to the members REFS, then SOURCES.
-With neither, take it away."
-  (if (or refs sources)
-      (org-entry-put pos "TRUSS_GROUNDS" (org-truss--grounds-value refs sources))
-    (org-entry-delete pos "TRUSS_GROUNDS")))
+(defun org-truss-add-ground (pos ref)
+  "Make the member REF a ground of the heading at POS.
+A link to it, [[#REF]], on a line of its own after the heading's last
+line of text, outside its public block, where the reader does not see
+it.  REF is a CUSTOM_ID; see `org-truss-ensure-id'."
+  (org-truss--add-line pos (format "[[%s]]" (org-truss--target ref))))
 
-(defun org-truss-set-grounds (pos refs)
-  "Make the members REFS the grounds of the member at POS, or none if nil.
-REFS are CUSTOM_IDs; see `org-truss-ensure-id'.  The sources TRUSS_GROUNDS
-names besides stay."
-  (org-truss--put-grounds pos refs (org-truss--grounds-sources (org-entry-get pos "TRUSS_GROUNDS"))))
+(defun org-truss--pointing-line (pos ref)
+  "Return (BEG . END) of the line pointing to REF in the own text at POS, or nil.
+A line holding nothing but the link, [[#REF]], as a list item or not."
+  (let* ((bounds (org-truss--own-bounds pos))
+         (re (format "^[ \t]*\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[%s\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
+                     (regexp-quote (org-truss--target ref)))))
+    (save-excursion
+      (goto-char (car bounds))
+      (when (re-search-forward re (cdr bounds) t)
+        (cons (line-beginning-position)
+              (min (point-max) (1+ (line-end-position))))))))
 
-(defun org-truss-set-sources (pos sources)
-  "Make SOURCES what TRUSS_GROUNDS at POS names besides members, or nothing.
-A link to a source, or words naming one that has no file.  The links to
-members stay."
-  (org-truss--put-grounds pos (org-truss--grounds-refs (org-entry-get pos "TRUSS_GROUNDS"))
-                          (and sources (not (string-blank-p sources)) (string-trim sources))))
+(defun org-truss-remove-ground (pos ref)
+  "Stop the heading at POS standing on the member REF.
+The line that holds nothing but the link to it goes.  A link among other
+words is left, for the words to be rewritten; nil is returned then."
+  (let ((at (org-truss--pointing-line pos ref)))
+    (when at
+      (delete-region (car at) (cdr at))
+      t)))
 
 (defun org-truss-toggle-assumption (pos)
   "Tag the member at POS :assumption:, or take the tag off.  Return non-nil if on."
@@ -564,8 +576,7 @@ A label another member has is refused: a statement is written once."
 (defun org-truss-convert-references-in-buffer ()
   "Make every link and ground that names a member by its heading point by id.
 A link [[*heading]] becomes [[#id]], and [[truss-include:*heading]]
-\[[truss-include:id]], wherever it is, keeping its words, and so does a
-ground in TRUSS_GROUNDS, keeping the sources named there; the member named
+\[[truss-include:id]], wherever it is, keeping its words; the member named
 is given a CUSTOM_ID when it has none.  A heading no member has is left as
 it is, and the checks show it as broken.  Return the number of references
 changed."
@@ -581,39 +592,62 @@ changed."
                                nil t)
        ;; Giving the member an id writes above, so where the link is is
        ;; kept in markers.
-       (unless (save-excursion (beginning-of-line) (looking-at-p "^[ \t]*:TRUSS_GROUNDS:"))
-         (let* ((beg (copy-marker (match-beginning 0)))
-                (end (copy-marker (match-end 0)))
-                (include (not (string-empty-p (match-string-no-properties 1))))
-                (id (save-excursion (funcall id-of (match-string-no-properties 2)))))
-           (when id
-             (goto-char beg)
-             (delete-region beg end)
-             (insert "[[" (if include (concat org-truss-include-type ":" id) (concat "#" id)) "]")
-             (setq count (1+ count)))
-           (goto-char end)
-           (set-marker beg nil)
-           (set-marker end nil))))
+       (let* ((beg (copy-marker (match-beginning 0)))
+              (end (copy-marker (match-end 0)))
+              (include (not (string-empty-p (match-string-no-properties 1))))
+              (id (save-excursion (funcall id-of (match-string-no-properties 2)))))
+         (when id
+           (goto-char beg)
+           (delete-region beg end)
+           (insert "[[" (if include (concat org-truss-include-type ":" id) (concat "#" id)) "]")
+           (setq count (1+ count)))
+         (goto-char end)
+         (set-marker beg nil)
+         (set-marker end nil))))
+    count))
+
+(defconst org-truss--any-link-re "\\[\\[[^]\n]+\\]\\(?:\\[[^]\n]*\\]\\)?\\]"
+  "Any Org link, with its words or without.")
+
+(defun org-truss-convert-grounds-in-buffer ()
+  "Move what each TRUSS_GROUNDS says into its heading's text, and drop it.
+Grounds are read from a heading's text alone.  Each link there -- to a
+member, to a source -- goes on a line of its own after the heading's last
+line of text, outside its public block; the words naming what has no
+file go on a line after them.  Words are no grounds: a heading they alone
+grounded, with nothing else in its text to stand on, is tagged
+:assumption:, taken as given, as what no text records is.  Return the
+number of headings changed."
+  (let ((count 0)
+        (case-fold-search t))
+    (org-with-wide-buffer
      (goto-char (point-min))
-     (while (re-search-forward "^[ \t]*:TRUSS_GROUNDS:[ \t]+\\(.*?\\)[ \t]*$" nil t)
-       (let* ((at (copy-marker (line-beginning-position)))
-              (value (match-string-no-properties 1))
-              (refs (org-truss--grounds-refs value))
-              (new (mapcar (lambda (ref)
-                             (or (and (string-prefix-p "*" ref)
-                                      (save-excursion (funcall id-of (substring ref 1))))
-                                 ref))
-                           refs)))
-         (unless (equal refs new)
-           (setq count (+ count (seq-count #'identity (seq-mapn (lambda (a b) (not (equal a b)))
-                                                                refs new))))
-           (goto-char at)
-           (org-back-to-heading t)
-           (org-entry-put nil "TRUSS_GROUNDS"
-                          (org-truss--grounds-value new (org-truss--grounds-sources value))))
-         (goto-char at)
-         (forward-line 1)
-         (set-marker at nil))))
+     (while (re-search-forward "^[ \t]*:TRUSS_GROUNDS:[ \t]*\\(.*?\\)[ \t]*$" nil t)
+       (let* ((value (match-string-no-properties 1))
+              (pos (progn (org-back-to-heading t) (point-marker)))
+              (links (let ((from 0) found)
+                       (while (string-match org-truss--any-link-re value from)
+                         (push (match-string 0 value) found)
+                         (setq from (match-end 0)))
+                       (nreverse found)))
+              (words (string-trim (replace-regexp-in-string
+                                   "[ \t]+" " "
+                                   (replace-regexp-in-string org-truss--any-link-re "" value)))))
+         (org-entry-delete pos "TRUSS_GROUNDS")
+         (dolist (link links)
+           (org-truss--add-line pos link))
+         (unless (string-empty-p words)
+           (org-truss--add-line pos words)
+           (unless (or links
+                       (let ((text (org-truss--text (org-truss--own pos))))
+                         (or (org-truss--refs-in text)
+                             (org-truss--source-links-in text)
+                             (org-truss--quote-in text))))
+             (org-with-point-at pos
+               (org-toggle-tag org-truss-assumption-tag 'on))))
+         (setq count (1+ count))
+         (goto-char pos)
+         (set-marker pos nil))))
     count))
 
 (provide 'org-truss-edit)

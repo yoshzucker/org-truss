@@ -138,7 +138,7 @@ telling pattern or none, it is told the same."
                        "** Claim\n:PROPERTIES:\n:CUSTOM_ID: claim\n:TRUSS_TELLING: prep\n:END:\n"
                        "#+begin_public The claim\nClaim body.\n#+end_public\n"
                        "*** Doubt\n"
-                       "*** Ground\n:PROPERTIES:\n:TRUSS_GROUNDS: s\n:END:\n"
+                       "*** Ground\n[[https://e.x/s][s]]\n"
                        "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[truss-include:claim]]\n"))
          (out (org-truss-test--render text)))
     (should (string-match-p "^\\*The claim\\*\nClaim body\\.\n\nDoubt\n\nGround\n" out))
@@ -197,8 +197,8 @@ whatever its telling pattern."
              out))
     (should-not (string-match-p "Note the reading" out)))
   (let ((out (org-truss-test--render
-              (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps\n:TRUSS_GROUNDS"
-                                        ":TRUSS_BREAKDOWN: steps\n:TRUSS_TELLING: scqa\n:TRUSS_GROUNDS"
+              (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps\n:END:\n\\[\\[#law"
+                                        ":TRUSS_BREAKDOWN: steps\n:TRUSS_TELLING: scqa\n:END:\n[[#law"
                                         org-truss-test--steps-file))))
     (should (string-match-p "^Check before every test\n\n1\\. Meet" out))))
 

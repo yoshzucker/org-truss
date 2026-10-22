@@ -33,8 +33,8 @@ The team leads.
 ** Reviews run long
 :PROPERTIES:
 :CUSTOM_ID: long
-:TRUSS_GROUNDS: calendar export
 :END:
+[[https://e.x/calendar-export][calendar export]]
 #+begin_public
 Reviews ran past the hour eight times this quarter.
 #+end_public
@@ -43,8 +43,8 @@ Reviews ran past the hour eight times this quarter.
 :PROPERTIES:
 :CUSTOM_ID: half
 :TRUSS_LOGIC: reasons
-:TRUSS_GROUNDS: [[#long]]
 :END:
+[[#long]]
 Robin keeps raising the same items; see [[#diff]].
 #+begin_public Most items come back unchanged
 Half of each agenda repeats the week before, as [[#long]] shows.
@@ -53,8 +53,8 @@ Half of each agenda repeats the week before, as [[#long]] shows.
 :PROPERTIES:
 :CUSTOM_ID: diff
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: agendas, weeks 1-12
 :END:
+[[https://e.x/agendas-weeks-1-12][agendas, weeks 1-12]]
 *** Items need a week to move                                    :assumption:
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
@@ -73,8 +73,8 @@ Some items cannot wait two weeks.
 **** Urgent items go to chat
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: part
-:TRUSS_GROUNDS: team agreement
 :END:
+[[https://e.x/team-agreement][team agreement]]
 **** Who decides what is urgent
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: part
@@ -83,9 +83,9 @@ Some items cannot wait two weeks.
 ** Move to fortnightly
 :PROPERTIES:
 :CUSTOM_ID: move
-:TRUSS_GROUNDS: [[#half]]
 :TRUSS_LOGIC: deduction
 :END:
+[[#half]]
 #+begin_public
 Hold the review every other week.
 #+end_public
@@ -97,8 +97,8 @@ Hold the review every other week.
 ** Unused aside
 :PROPERTIES:
 :CUSTOM_ID: aside
-:TRUSS_GROUNDS: hallway
 :END:
+[[https://e.x/hallway][hallway]]
 
 ** Lone remark
 
@@ -170,8 +170,8 @@ Finance said so at the October meeting.
 *** No budget this year
 :PROPERTIES:
 :CUSTOM_ID: budget
-:TRUSS_GROUNDS: finance, 3 October
 :END:
+[[https://e.x/finance-3-october][finance, 3 October]]
 *** The schedule is fixed
 
 * Members
@@ -223,27 +223,27 @@ The rules ask for a check before and after driving.
 **** The rule asks for a check before driving
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: rule 6
 :END:
+[[https://e.x/rule-6][rule 6]]
 **** The rule asks for a check after driving
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: rule 6
 :END:
+[[https://e.x/rule-6][rule 6]]
 **** The check may be made by video
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: notice 2(2)
 :END:
+[[https://e.x/notice-2-2][notice 2(2)]]
 *** A manager is named for five cars or more
 :PROPERTIES:
 :CUSTOM_ID: five
-:TRUSS_GROUNDS: law 74-3
 :END:
+[[https://e.x/law-74-3][law 74-3]]
 *** The law binds us, so we must check
 :PROPERTIES:
-:TRUSS_GROUNDS: [[#five]]
 :END:
+[[#five]]
 
 * Members
 :PROPERTIES:
@@ -252,14 +252,15 @@ The rules ask for a check before and after driving.
 ** The rule may apply to us
 :PROPERTIES:
 :CUSTOM_ID: may
-:TRUSS_GROUNDS: [[#five]]
 :END:
+[[#five]]
 ** Drivers are checked before and after driving
 :PROPERTIES:
 :CUSTOM_ID: checked
-:TRUSS_GROUNDS: [[#may]] [[#rule]]
 :TRUSS_BREAKDOWN: steps
 :END:
+[[#may]]
+[[#rule]]
 *** The driver blows into the tester
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -270,8 +271,8 @@ The rules ask for a check before and after driving.
 :END:
 ** The tester reads zero when sober
 :PROPERTIES:
-:TRUSS_GROUNDS: tester manual
 :END:
+[[https://e.x/tester-manual][tester manual]]
 
 * Structure
 :PROPERTIES:
@@ -300,22 +301,22 @@ the reasons of, and whose members hold steps.")
 ** The law asks for a check
 :PROPERTIES:
 :CUSTOM_ID: law
-:TRUSS_GROUNDS: ordinance, article 9-10
 :END:
+[[https://e.x/ordinance-article-9-10][ordinance, article 9-10]]
 ** Check before every test
 :PROPERTIES:
 :CUSTOM_ID: check
 :TRUSS_BREAKDOWN: steps
-:TRUSS_GROUNDS: [[#law]]
 :END:
+[[#law]]
 *** Meet the driver face to face
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
 :END:
 **** A video call counts as face to face
 :PROPERTIES:
-:TRUSS_GROUNDS: notice, 2022
 :END:
+[[https://e.x/notice-2022][notice, 2022]]
 *** Note the reading                                              :noexport:
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -409,13 +410,13 @@ The driver breathes into the checker.
 *** A drunk driver crashed last year
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: example
-:TRUSS_GROUNDS: incident log
 :END:
+[[https://e.x/incident-log][incident log]]
 *** Alcohol slows reactions
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: reason
-:TRUSS_GROUNDS: textbook
 :END:
+[[https://e.x/textbook][textbook]]
 
 * Structure
 :PROPERTIES:
@@ -611,8 +612,8 @@ below one the pattern tells after it is out of order."
 *** One
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: case
-:TRUSS_GROUNDS: x
 :END:
+[[https://e.x/x][x]]
 "
     (should (equal (org-truss-gaps (org-truss-test--m (org-truss-read) "General"))
                    '((logic case . 1))))))
@@ -765,13 +766,13 @@ place is not judged."
 *** By words
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: the minutes of May
 :END:
+the minutes of May
 *** By a link
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[moor:6f1c::3][Minutes l. 3]]
 :END:
+[[moor:6f1c::3][Minutes l. 3]]
 *** By a quote
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
@@ -787,23 +788,24 @@ See [[file:sources/a.pdf][the rule]].
 *** Through a member
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[#fact]]
 :END:
+[[#fact]]
 *** Through an argument
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[#argued]]
 :END:
+[[#argued]]
 *** Through a bare one
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[#bare]] [[#fact]]
 :END:
+[[#bare]]
+[[#fact]]
 *** On a cycle
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[#a]]
 :END:
+[[#a]]
 *** Assumed                                                       :assumption:
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
@@ -824,18 +826,19 @@ See [[file:sources/a.pdf][the rule]].
 *** Only broken
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[#gone]]
 :END:
+[[#gone]]
 *** No role
 ** Points at a bare one
 :PROPERTIES:
-:TRUSS_GROUNDS: [[#bare]] [[#argued]]
 :END:
+[[#bare]]
+[[#argued]]
 ** Fact
 :PROPERTIES:
 :CUSTOM_ID: fact
-:TRUSS_GROUNDS: minutes
 :END:
+[[https://e.x/minutes][minutes]]
 ** Bare
 :PROPERTIES:
 :CUSTOM_ID: bare
@@ -848,13 +851,13 @@ See [[file:sources/a.pdf][the rule]].
 ** A
 :PROPERTIES:
 :CUSTOM_ID: a
-:TRUSS_GROUNDS: [[#b]]
 :END:
+[[#b]]
 ** B
 :PROPERTIES:
 :CUSTOM_ID: b
-:TRUSS_GROUNDS: [[#a]]
 :END:
+[[#a]]
 ** Plan
 :PROPERTIES:
 :TRUSS_BREAKDOWN: steps
@@ -867,24 +870,22 @@ See [[file:sources/a.pdf][the rule]].
   "Reasons with grounds of every kind, and without.")
 
 (ert-deftest org-truss-test-grounds-of-its-own ()
-  "A member has grounds in TRUSS_GROUNDS, links to members or sources or
-words; in a quotation in its text; or in a link in its text, to a member
-or a source."
+  "A member has grounds in a quotation in its text, or in a link in its
+text, to a member or a source.  Words naming a source are none."
   (org-truss-test--with org-truss-test--grounds-file
     (let* ((model (org-truss-read))
            (m (lambda (label) (org-truss-test--m model label))))
-      (should (equal (org-truss-member-sources (funcall m "By words")) "the minutes of May"))
-      (should (equal (org-truss-member-sources (funcall m "By a link"))
+      (should (equal (org-truss-member-cited (funcall m "By a link"))
                      "[[moor:6f1c::3][Minutes l. 3]]"))
-      (should-not (org-truss-member-cited (funcall m "By a link")))
       (should (equal (org-truss-member-quoted (funcall m "By a quote")) "We agreed."))
       (should (equal (org-truss-member-cited (funcall m "In its text"))
                      "[[file:sources/a.pdf][the rule]]"))
-      (dolist (label '("By words" "By a link" "By a quote" "In its text" "Through a member"))
+      (dolist (label '("By a link" "By a quote" "In its text" "Through a member"))
         (should (org-truss-has-grounds-p (funcall m label))))
+      (should-not (org-truss-has-grounds-p (funcall m "By words")))
       (should-not (org-truss-has-grounds-p (funcall m "Nothing")))
-      (should (equal (org-truss-member-grounds (funcall m "Through a bare one")) '("bare" "fact")))
-      (should-not (org-truss-member-sources (funcall m "Through a bare one"))))))
+      (should (equal (org-truss-cluster-refs (funcall m "Through a bare one")) '("bare" "fact")))
+      (should-not (org-truss-member-cited (funcall m "Through a bare one"))))))
 
 (ert-deftest org-truss-test-what-must-have-grounds ()
   "A heading that plays a role of the logic of the member above must have
@@ -900,20 +901,21 @@ a heading playing no role, a member under no logic."
         (should-not (funcall needs label))))))
 
 (ert-deftest org-truss-test-missing-grounds ()
-  "A heading that must have grounds lacks them when its TRUSS_GROUNDS names
-nothing -- a link to a member or a source, or words -- and its text neither
-quotes a source nor links to one.  What a link points to is not read."
+  "A heading that must have grounds lacks them when its text neither quotes
+a source nor links to one or to a member; words naming one are not
+enough.  What a link points to is not read."
   (org-truss-test--with org-truss-test--grounds-file
     (let* ((model (org-truss-read))
            (missing (lambda (label) (org-truss-missing-grounds model (org-truss-test--m model label)))))
-      (dolist (label '("By words" "By a link" "By a quote" "In its text" "Through a member"
+      (dolist (label '("By a link" "By a quote" "In its text" "Through a member"
                        "Through an argument" "Through a bare one" "On a cycle" "Only broken"
                        "Assumed" "Argued below" "No role"))
         (should-not (funcall missing label)))
+      (should (funcall missing "By words"))
       (should (funcall missing "Unsupported"))
       (should (funcall missing "Nothing"))
       (should (equal (org-truss-test--labels (plist-get (org-truss-checks model) :no-grounds))
-                     '("Unsupported" "Nothing"))))))
+                     '("By words" "Unsupported" "Nothing"))))))
 
 (ert-deftest org-truss-test-holds ()
   "A member holds when it has grounds, a logic, or the tag :assumption: --
@@ -926,8 +928,8 @@ what is asked of a heading that must have grounds."
         (should-not (org-truss-holds-p (org-truss-test--m model label)))))))
 
 (ert-deftest org-truss-test-weak-grounds ()
-  "What any heading points to as grounds must hold: a link in TRUSS_GROUNDS
-to a member that does not is weak, wherever it is written, whether the
+  "What any heading points to as grounds must hold: a link in its text to
+a member that does not is weak, wherever it is written, whether the
 heading must have grounds or not.  One step only: a cycle of members
 pointing to each other holds, each having grounds written."
   (org-truss-test--with org-truss-test--grounds-file
@@ -941,9 +943,8 @@ pointing to each other holds, each having grounds written."
                      '(("Through a bare one" . "bare") ("Points at a bare one" . "bare")))))))
 
 (ert-deftest org-truss-test-grounds-in-the-text ()
-  "A link in a heading's text to a member is grounds, as one in its
-TRUSS_GROUNDS is: it gives the heading grounds, and what it points to must
-hold and be there.  A section reads its text alike, but an item listing a
+  "A link in a heading's text to a member is grounds: it gives the heading
+grounds, and what it points to must hold and be there.  A section reads its text alike, but an item listing a
 member is what it tells, not grounds; and a section with a logic asks
 grounds of its reasons as a member does."
   (org-truss-test--with "* M
@@ -962,8 +963,8 @@ As [[#fact]] says.
 *** Cites a bare one
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
-:TRUSS_GROUNDS: [[#bare]]
 :END:
+[[#bare]]
 As [[#bare]] says, twice.
 *** Cites nothing there
 :PROPERTIES:
@@ -973,8 +974,8 @@ As [[#gone]] says.
 ** Fact
 :PROPERTIES:
 :CUSTOM_ID: fact
-:TRUSS_GROUNDS: minutes
 :END:
+[[https://e.x/minutes][minutes]]
 ** Bare
 :PROPERTIES:
 :CUSTOM_ID: bare
@@ -1079,13 +1080,14 @@ web is not looked for.  Each that points to nothing is a broken link."
 :END:
 ** Cites what is there
 :PROPERTIES:
-:TRUSS_GROUNDS: [[file:sources/law.pdf::3][the law]] [[moor:kept::2][kept]]
 :END:
+[[file:sources/law.pdf::3][the law]]
+[[moor:kept::2][kept]]
 See [[./sources/law.pdf]] and [[https://example.com/gone]].
 ** Cites what is not
 :PROPERTIES:
-:TRUSS_GROUNDS: [[moor:lost][lost]]
 :END:
+[[moor:lost][lost]]
 See [[file:sources/gone.pdf][gone]], and [[attachment:shot.png]].
 "))
       (with-current-buffer (find-file-noselect file)
@@ -1104,22 +1106,21 @@ See [[file:sources/gone.pdf][gone]], and [[attachment:shot.png]].
           (should (equal (length (plist-get (org-truss-checks (org-truss-read)) :broken-sources)) 2)))))))
 
 (ert-deftest org-truss-test-grounds-are-written ()
-  "TRUSS_GROUNDS lists links to members, then sources.  Setting either keeps
-the other, and with neither it goes."
-  (should (equal (org-truss--grounds-sources "[[#a]]  the  minutes [[#b]]") "the minutes"))
-  (should-not (org-truss--grounds-sources "[[#a]] [[#b]]"))
-  (should (equal (org-truss--grounds-value '("a" "*B") "minutes") "[[#a]] [[*B]] minutes"))
-  (should (equal (org-truss--grounds-value nil "minutes") "minutes"))
+  "A ground is written in the text, a link on a line of its own after the
+heading's last line, outside its public block; taking it away takes that
+line, and leaves a link among other words, for the words to be rewritten."
   (org-truss-test--with org-truss-test--file
     (let ((half (org-truss-test--heading-pos "Half the items repeat")))
-      (org-truss-set-sources half "the agendas")
-      (should (equal (org-entry-get half "TRUSS_GROUNDS") "[[#long]] the agendas"))
-      (org-truss-set-grounds half '("long" "aside"))
-      (should (equal (org-entry-get half "TRUSS_GROUNDS") "[[#long]] [[#aside]] the agendas"))
-      (org-truss-set-grounds half nil)
-      (should (equal (org-entry-get half "TRUSS_GROUNDS") "the agendas"))
-      (org-truss-set-sources half " ")
-      (should-not (org-entry-get half "TRUSS_GROUNDS")))
+      (org-truss-add-ground half "aside")
+      (should (string-match-p "^#\\+end_public\n\\[\\[#aside\\]\\]\n\\*\\*\\* Agenda diff" (buffer-string)))
+      (should (equal (org-truss-cluster-refs (org-truss-test--m (org-truss-read) "Half the items repeat"))
+                     '("long" "diff" "aside")))
+      (should (org-truss-remove-ground half "aside"))
+      (should (org-truss-remove-ground half "long"))
+      (should-not (org-truss-remove-ground half "diff"))
+      (should (equal (org-truss-cluster-refs (org-truss-test--m (org-truss-read) "Half the items repeat"))
+                     '("diff" "long")))
+      (should (string-match-p "^:END:\nRobin keeps" (buffer-string))))
     (let ((pos (org-truss-test--heading-pos "Lone remark")))
       (should (org-truss-toggle-assumption pos))
       (should (org-truss-assumption-p (org-truss-test--m (org-truss-read) "Lone remark")))
@@ -1146,7 +1147,7 @@ them, a broken link where it is written."
       (should-not (plist-get checks :broken-grounds))
       (should-not (plist-get checks :duplicates))))
   (org-truss-test--with (replace-regexp-in-string
-                         ":TRUSS_GROUNDS: \\[\\[#half\\]\\]" ":TRUSS_GROUNDS: [[#half]] [[#gone]]"
+                         "^\\[\\[#half\\]\\]$" "[[#half]] [[#gone]]"
                          org-truss-test--file)
     (let ((checks (org-truss-checks (org-truss-read))))
       (should (equal (mapcar (lambda (b) (cons (org-truss-member-label (car b)) (cdr b)))
@@ -1238,27 +1239,23 @@ block, is a reference; one in a drawer is not.  Nor is a link that tells
 a member."
   (org-truss-test--with org-truss-test--file
     (let ((own (org-truss--own (org-truss-test--heading-pos "Half the items repeat"))))
-      (should (equal (org-truss--refs-in (org-truss--text own)) '("diff" "long")))
+      (should (equal (org-truss--refs-in (org-truss--text own)) '("long" "diff" "long")))
       (should-not (plist-get own :includes))
       (should (equal (plist-get (org-truss--own (org-truss-test--heading-pos "Sky")) :includes)
                      '("long")))
       (should (equal (car (plist-get own :public)) "Most items come back unchanged"))
       (should (string-match-p "\\`Half of each agenda" (cdr (plist-get own :public))))
       (should (equal (plist-get own :props) '(("CUSTOM_ID" . "half")
-                                              ("TRUSS_LOGIC" . "reasons")
-                                              ("TRUSS_GROUNDS" . "[[#long]]")))))))
+                                              ("TRUSS_LOGIC" . "reasons")))))))
 
 (ert-deftest org-truss-test-references ()
   "A link or a ground points to a member by its CUSTOM_ID, and a link that
 tells one names it by its CUSTOM_ID too.  One that names a heading points
-to no member, and shows as broken; anything else in TRUSS_GROUNDS is a
-source."
+to no member, and shows as broken."
   (should (equal (org-truss--refs-in "[[#a]] and [[#b][words]], [[*C]] [[https://x]] [[truss-include:d]]")
                  '("a" "b" "*C")))
   (should (equal (org-truss--includes-in "[[truss-include:d]] [[#a]] [[truss-include:e][E]]")
                  '("d" "e")))
-  (should (equal (org-truss--grounds-refs "[[#a]] [[#b]]") '("a" "b")))
-  (should-not (org-truss--grounds-refs "Old one; Old two"))
   (should (equal (org-truss--link-item "a") "- [[truss-include:a]]\n"))
   (org-truss-test--with org-truss-test--file
     (let ((model (org-truss-read)))
@@ -1278,7 +1275,7 @@ source."
     (should (string-match-p "^\\*\\* Lone remark\n:PROPERTIES:\n:CUSTOM_ID: m5\n:END:\n" (buffer-string)))
     (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Urgent items go to chat")) "m6"))
     (should (string-match-p (concat "Urgent items go to chat\n:PROPERTIES:\n:CUSTOM_ID: m6\n"
-                                    ":TRUSS_BREAKDOWN_ROLE: part\n:TRUSS_GROUNDS: team agreement\n:END:\n")
+                                    ":TRUSS_BREAKDOWN_ROLE: part\n:END:\n")
                             (buffer-string)))))
 
 (defun org-truss-test--fields (part)
@@ -1359,7 +1356,7 @@ no reason either, unless the step has a logic."
     (let* ((model (org-truss-read))
            (check (org-truss-test--m model "Check before every test")))
       (should (eq (org-truss-list-form check) 'numbered))
-      (should (equal (org-truss-member-grounds check) '("law")))
+      (should (equal (org-truss-cluster-refs check) '("law")))
       (should-not (org-truss-needs-grounds-p model (org-truss-test--m model "Meet the driver face to face")))
       (should-not (org-truss-needs-grounds-p model (org-truss-test--m model "A video call counts as face to face")))
       (should-not (plist-get (org-truss-checks model) :no-grounds))
@@ -1407,16 +1404,16 @@ See [[attachment:shot.png][the shot]].
 
 (ert-deftest org-truss-test-convert-references ()
   "Links and grounds that name headings come to point by id, the member
-named being given one, and the sources named beside stay; a heading no
-member has stays, broken."
+named being given one, and the words beside stay; a heading no member
+has stays, broken."
   (org-truss-test--with (replace-regexp-in-string
                          "^- \\[\\[truss-include:\\(long\\|half\\)\\]"
                          (lambda (m) (if (equal (match-string 1 m) "long")
                                          "- [[truss-include:*Reviews run long]"
                                        "- [[truss-include:*Half the items repeat]"))
                          (replace-regexp-in-string
-                          ":TRUSS_GROUNDS: \\[\\[#half\\]\\]"
-                          ":TRUSS_GROUNDS: [[*Half the items repeat]] [[*Lone remark]] [[*Nobody]] the agendas"
+                          "^\\[\\[#half\\]\\]$"
+                          "[[*Half the items repeat]] [[*Lone remark]] [[*Nobody]] the agendas"
                           (replace-regexp-in-string ":CUSTOM_ID: half\n" "" org-truss-test--file)))
     (should (= (org-truss-convert-references-in-buffer) 4))
     (let* ((model (org-truss-read))
@@ -1424,16 +1421,67 @@ member has stays, broken."
            (half (org-truss-member-id (org-truss-test--m model "Half the items repeat")))
            (move (org-truss-test--m model "Move to fortnightly")))
       (should (equal (list half lone) '("m1" "m2")))
-      (should (equal (org-truss-member-grounds move) '("m1" "m2" "*Nobody")))
-      (should (equal (org-truss-member-sources move) "the agendas"))
-      (should (equal (org-truss-member-grounds (org-truss-test--m model "Half the items repeat"))
-                     '("long")))
+      (should (equal (org-truss-cluster-refs move) '("m1" "m2" "*Nobody")))
+      (should (string-match-p "^\\[\\[#m1\\]\\] \\[\\[#m2\\]\\] \\[\\[\\*Nobody\\]\\] the agendas$"
+                              (buffer-string)))
+      (should (equal (org-truss-cluster-refs (org-truss-test--m model "Half the items repeat"))
+                     '("long" "diff")))
       (should (equal (org-truss-cluster-includes (car (org-truss-section-children
                                                     (org-truss-model-structure model))))
                      '("long")))
       (should (string-match-p "^- \\[\\[truss-include:m1\\]\\]$" (buffer-string)))
       (should (string-match-p "as \\[\\[#long\\]\\] shows" (buffer-string))))
     (should (= (org-truss-convert-references-in-buffer) 0))))
+
+(ert-deftest org-truss-test-convert-grounds ()
+  "What TRUSS_GROUNDS said goes into the text, outside the public block:
+each link on a line of its own, the words after them.  A heading the
+words alone grounded is taken as given."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Claim
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** Linked
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_GROUNDS: [[#fact]] [[moor:6f1c::3][Minutes l. 3]] the agendas
+:END:
+#+begin_public
+Said so.
+#+end_public
+*** Agreed
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_GROUNDS: team agreement
+:END:
+*** Quoted
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_GROUNDS: the minutes
+:END:
+#+begin_quote
+We agreed.
+#+end_quote
+** Fact
+:PROPERTIES:
+:CUSTOM_ID: fact
+:END:
+"
+    (should (= (org-truss-convert-grounds-in-buffer) 3))
+    (should-not (string-search "TRUSS_GROUNDS" (buffer-string)))
+    (should (string-search (concat "#+end_public\n[[#fact]]\n[[moor:6f1c::3][Minutes l. 3]]\n"
+                                   "the agendas\n*** Agreed")
+                           (buffer-string)))
+    (let ((model (org-truss-read)))
+      (should (org-truss-assumption-p (org-truss-test--m model "Agreed")))
+      (should-not (org-truss-assumption-p (org-truss-test--m model "Linked")))
+      (should-not (org-truss-assumption-p (org-truss-test--m model "Quoted")))
+      (should-not (plist-get (org-truss-checks model) :no-grounds)))
+    (should (= (org-truss-convert-grounds-in-buffer) 0))))
 
 (ert-deftest org-truss-test-apply-section-telling ()
   "A section takes the place of the one new section whose telling role it
@@ -1643,7 +1691,7 @@ by its id, and still find it.  A label another member has is refused."
                                                before))))
     (let ((model (org-truss-read)))
       (should (equal (org-truss-member-label (org-truss-heading-by-ref model "half")) "Agendas repeat"))
-      (should (equal (org-truss-member-grounds (org-truss-test--m model "Move to fortnightly"))
+      (should (equal (org-truss-cluster-refs (org-truss-test--m model "Move to fortnightly"))
                      '("half"))))
     (org-truss-rename (org-truss-test--heading-pos "Agendas repeat") "Agendas repeat")
     (should-error (org-truss-rename (org-truss-test--heading-pos "Agendas repeat") "Lone remark")
