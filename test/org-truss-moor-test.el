@@ -100,5 +100,21 @@ though it is kept elsewhere."
                          "Nothing is left to do.\n"))
           (org-dock-abort))))))
 
+(ert-deftest org-truss-test-export-links-to-the-origin ()
+  "In the document a `moor:' link goes where its source came from: a page
+on the web, at the page of a PDF; a source from a file is named as text."
+  (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
+    (let* ((truss (expand-file-name "truss.org" dir))
+           (sources (org-moor-sources truss))
+           (law (org-moor-new-source "Act" "https://e.x/act.pdf" 'web sources))
+           (page (org-moor-new-source "Guide" "https://e.x/guide" 'web sources))
+           (memo (org-moor-new-source "Memo" "/x/memo.txt" 'file sources)))
+      (org-moor-record-set law :file "act.pdf")
+      (should (equal (org-truss--export-moor-links
+                      (format "As [[moor:%s::14][Act p. 14]] says, [[moor:%s::3]] and [[moor:%s][the memo]]; [[#m7]]."
+                              (plist-get law :id) (plist-get page :id) (plist-get memo :id))
+                      truss)
+                     "As [[https://e.x/act.pdf#page=14][Act p. 14]] says, [[https://e.x/guide][Guide]] and the memo; [[#m7]].")))))
+
 (provide 'org-truss-moor-test)
 ;;; org-truss-moor-test.el ends here

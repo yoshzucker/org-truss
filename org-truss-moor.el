@@ -21,7 +21,8 @@
 ;;
 ;; Here: the sources of a truss file are put beside it; `t' on the board
 ;; offers them, or takes one there and then, for a member to stand on; the
-;; check finds a `moor:' link to a source that is not there; and
+;; check finds a `moor:' link to a source that is not there; the document
+;; links to where a source came from, not to the copy; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
 ;; cannot ask Emacs, and prints the link to cite it with.
 
@@ -32,6 +33,7 @@
 
 (defvar org-truss-read-source-function)
 (defvar org-truss-moor-missing-function)
+(defvar org-truss-moor-export-function)
 
 (defun org-truss-moor-sources (file)
   "Return the sources directory of FILE when it is a truss file, else nil."
@@ -87,6 +89,28 @@ FILE is the file the link to it is in; with none, the current buffer's."
   (not (org-moor-record id (org-moor-sources file))))
 
 (setq org-truss-moor-missing-function #'org-truss-moor-missing-p)
+
+(defun org-truss-moor-export-link (path words file)
+  "Return the `moor:' link to PATH, named WORDS, as the reader of FILE follows it.
+The reader has no copy of the source, so the link goes to its origin: a
+page on the web, at the page of a PDF the link names.  A source that came
+from no such page -- a file, a mail -- is named by WORDS, or its title, as
+text, since nothing there can be opened by the reader."
+  (pcase-let* ((`(,id . ,place) (org-moor-link-parse path))
+               (record (org-moor-record id (org-moor-sources file)))
+               (origin (plist-get record :origin))
+               (name (or words (plist-get record :title) id)))
+    (if (not (and origin (string-match-p "\\`https?://" origin)))
+        name
+      (org-link-make-string
+       (if (and (integerp place)
+                (not (string-search "#" origin))
+                (equal (org-moor-extension (or (plist-get record :file) origin)) "pdf"))
+           (format "%s#page=%d" origin place)
+         origin)
+       name))))
+
+(setq org-truss-moor-export-function #'org-truss-moor-export-link)
 
 (defun org-truss-batch-take ()
   "Take a file or a web page into a truss file's sources, and print a link to it.

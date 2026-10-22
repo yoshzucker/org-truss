@@ -364,18 +364,45 @@ written.  A path past `::', a search in the file, is kept as it is."
                      (if search (substring written search) "")))))))
    text t t))
 
+(defvar org-truss-moor-export-function nil
+  "Function writing a `moor:' link as the reader is to follow it, or nil.
+Called with the link's path, its words or nil, and the truss file; returns
+what the document says in its place.  Set by org-truss-moor.el; without
+org-moor a `moor:' link is written as it is.")
+
+(defconst org-truss--moor-link-re
+  "\\[\\[moor:\\([^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]"
+  "A `moor:' link: its path, the id and any place, and its words.")
+
+(defun org-truss--export-moor-links (text file)
+  "Return TEXT with each `moor:' link written for the reader of FILE's document.
+The copy a link opens is the writer's; the reader is sent where the source
+came from, by `org-truss-moor-export-function'."
+  (if (not org-truss-moor-export-function)
+      text
+    (replace-regexp-in-string
+     org-truss--moor-link-re
+     (lambda (link)
+       (let ((path (match-string 1 link))
+             (words (match-string 2 link)))
+         (save-match-data
+           (funcall org-truss-moor-export-function path words file))))
+     text t t)))
+
 (defun org-truss-export-buffer (buffer)
   "Write the document of the truss file in BUFFER.  Return the files written.
 The Org file always; the pandoc output when pandoc is found and succeeds.
 A link to a file by a relative path -- a picture -- is written relative to
-where the document is, so it still finds the file."
+where the document is, so it still finds the file; a `moor:' link goes
+where its source came from."
   (let* ((file (or (buffer-file-name buffer) (user-error "The truss buffer has no file")))
          (base (org-truss--output-base file))
          (org-file (concat base ".org"))
          (out-file (concat base "." org-truss-output-extension))
-         (text (org-truss--rebase-file-links (org-truss-render (org-truss-read buffer))
-                                  (file-name-directory file)
-                                  (file-name-directory org-file))))
+         (text (org-truss--rebase-file-links
+                (org-truss--export-moor-links (org-truss-render (org-truss-read buffer)) file)
+                (file-name-directory file)
+                (file-name-directory org-file))))
     (make-directory (file-name-directory org-file) t)
     (with-temp-file org-file
       (insert text))

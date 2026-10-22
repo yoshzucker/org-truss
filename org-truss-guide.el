@@ -111,6 +111,8 @@
 #                       then the members under it; a section's title in
 #                       bold and its lead, then what it holds
 #   ~[[#m7]]~           in #+begin_public, its words, else m7's heading
+#   ~[[moor:ID::14]]~   the source's origin, a web page (at page 14 of a
+#                       PDF); a source from a file or a mail, its words
 #   Under a heading with TRUSS_BREAKDOWN, member or section, the headings
 #   are a list, numbered for steps; where the pattern names its roles, each
 #   opens with its own, as Pros: or Who:.  A section in a list is an item,
@@ -217,6 +219,8 @@
 #                             中身の順
 #   ~[[#m7]]~                 #+begin_public の中では、説明、なければ m7 の
 #                             見出しが出る
+#   ~[[moor:ID::14]]~         資料の取り込み元の URL（PDF なら 14 ページ目）。
+#                             ファイルやメールから取り込んだ資料は、説明だけ
 #   TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書きで出る（steps
 #   は番号付き）。型が役の名前を出すものでは、それぞれ自分の役で始まる
 #   （メリット：、誰が：など）。箇条書きの中の節は見出しでなく項目になり、

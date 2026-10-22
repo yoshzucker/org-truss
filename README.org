@@ -1130,6 +1130,12 @@ pandoc, when it is installed, to make ~out/truss.md~.
 - A link to a file by a relative path -- a picture in ~attach/~, a source --
   is written relative to ~out/~, so the document still finds it, and pandoc
   makes a picture an image.  ~P~ shows the pictures where they are.
+- A ~moor:~ link, with org-moor, goes where its source came from, since
+  the copy in ~sources/~ is yours and the reader has none: to the page on
+  the web, at the page the link names when it is a PDF,
+  ~[[https://e.x/act.pdf#page=14][Act p. 14]]~.  A source that came from
+  no such page -- a file, a mail -- is named by the link's words, or its
+  title, as text.  ~P~ keeps the link to the copy, to be followed in Emacs.
 
 pandoc is given ~org+east_asian_line_breaks~, so a filled paragraph of
 Chinese, Japanese or Korean does not gain a space at every line break.
