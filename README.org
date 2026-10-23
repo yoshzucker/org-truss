@@ -1044,6 +1044,13 @@ clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file
 has, by its title, and ~m k~ keeps a copy, from their origins, of the
 sources the heading links to that have none -- those an agent took
 without being able to fetch them as you, signed in (~org-moor-keep-copy~).
+~m o~ opens a source to check what a heading says against it: on a
+source's own line, the one marked =⏚=, that source; on a quotation's, the
+source it quotes, linked in it or else the first the text cites; on a
+heading's, one its own text links to, asked for when there are several.
+The copy, at the page or line the link names, as following the link
+does; ~m O~ where it came from instead, the page on the web.  A link to
+anything but a source org-moor took is followed as it is, with either.
 A link moved into the public block is the reader's citation too.  ~b~
 makes a heading -- a member or a section -- something it stands on, a
 link to it on a line of its own after the heading's text: it offers what

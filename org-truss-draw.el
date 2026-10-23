@@ -637,7 +637,9 @@ is what it stands for, under KEY, and ID how it is called, if it is."
 The members its text links to, each once, said to be broken when it is
 no member, and to have no grounds when it does not hold; then the
 sources its text links to, each once, and the words it quotes, a link
-among them that points to nothing said not to be found.
+among them that points to nothing said not to be found.  Each keeps the
+links to sources it opens, as :links: a source's own, and the quotation's,
+or else the first the text cites.
 STEM starts each; KEY is CLUSTER's line's."
   (let* ((pos (org-truss-cluster-pos cluster))
          (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) cluster))
@@ -666,7 +668,11 @@ STEM starts each; KEY is CLUSTER's line's."
                                                (if (funcall found-p (cdr source)) ""
                                                  (propertize " [not found]" 'face 'org-truss-attention)))
                                        (org-truss--one-line (org-truss--link-text (cdr source)))
-                                       (list :type 'member :pos pos)))
+                                       (list :type 'member :pos pos
+                                             :links (if (eq (car source) 'source)
+                                                        (list (cdr source))
+                                                      (or (org-truss--source-links-in (cdr source))
+                                                          (ensure-list (org-truss-cluster-cited cluster)))))))
              (append (mapcar (lambda (link) (cons 'source link))
                              (seq-uniq (org-truss-cluster-source-links cluster)))
                      (and (org-truss-cluster-quoted cluster)

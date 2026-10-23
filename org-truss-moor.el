@@ -21,9 +21,11 @@
 ;;
 ;; Here: the sources of a truss file are put beside it; `m' on the board
 ;; takes one for a heading as org-moor takes one -- a page, a file, the
-;; clipboard -- or links one taken before, for it to stand on; the
-;; check finds a `moor:' link to a source that is not there; the document
-;; links to where a source came from, not to the copy; and
+;; clipboard -- or links one taken before, for it to stand on; `m o' and
+;; `m O' open a source the board's line names, its copy or where it came
+;; from, so what a heading stands on is read beside it; the check finds a
+;; `moor:' link to a source that is not there; the document links to
+;; where a source came from, not to the copy; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
 ;; cannot ask Emacs, and prints the link to cite it with.
 
@@ -103,6 +105,56 @@ On a line of its own after the heading's text, outside its public block."
           (set-marker at nil))))
     (org-truss-board-redraw)))
 
+(defun org-truss-moor--open (origin how)
+  "Open a source of the board's line, as following its link does.
+A source's line opens its own; a quotation's, a link in it or else the
+first the text cites; a heading's, one its own text links to, asked for
+when several -- not those of the headings under it, which the board shows
+under them.  ORIGIN opens where a source taken by org-moor came from
+rather than its copy; any other link is followed either way.  HOW is the
+prefix, as for following a link."
+  (let* ((item (org-truss--want (org-truss--item) 'member 'section))
+         (pos (plist-get item :pos)))
+    (org-truss--fresh)
+    (with-current-buffer org-truss--source
+      (let* ((links (or (plist-get item :links)
+                        (seq-uniq (org-truss--source-links-in
+                                   (org-truss--text (org-truss--own pos))))
+                        (user-error "No source here")))
+             (link (if (cdr links)
+                       (org-truss--read-choice
+                        "Source: " (mapcar (lambda (l) (cons (concat (org-truss--link-text l) "  " l) l))
+                                           links))
+                     (car links)))
+             (end (cdr (org-truss--own-bounds pos))))
+        (save-excursion
+          ;; Point on the link, so it is followed from where it is written:
+          ;; a file beside the truss file, the heading a copy is read for.
+          (goto-char pos)
+          (unless (search-forward link end t)
+            (user-error "The link is no longer under the heading: %s" link))
+          (goto-char (match-beginning 0))
+          (if (and origin (string-prefix-p "[[moor:" link))
+              (org-moor-open-origin how)
+            (org-open-at-point how)))))))
+
+(defun org-truss-board-open-source (&optional how)
+  "Open the copy of a source of the board's line, or follow its link.
+On a source's line, its own; on a quotation's, the one it quotes; on a
+heading's, one its text links to.  HOW, the prefix, as for following a
+link: \\[universal-argument] in Emacs, two in the program the system opens it with."
+  (interactive "P")
+  (org-truss-moor--open nil how))
+
+(defun org-truss-board-open-origin (&optional how)
+  "Open where a source of the board's line came from.
+As `org-truss-board-open-source' finds it; a link to anything but a
+source taken by org-moor is followed as it is."
+  (interactive "P")
+  (org-truss-moor--open t how))
+
+(define-key org-truss-board-moor-map (kbd "o") #'org-truss-board-open-source)
+(define-key org-truss-board-moor-map (kbd "O") #'org-truss-board-open-origin)
 (define-key org-truss-board-moor-map (kbd "w") #'org-truss-board-take-url)
 (define-key org-truss-board-moor-map (kbd "f") #'org-truss-board-take-file)
 (define-key org-truss-board-moor-map (kbd "c") #'org-truss-board-take-clipboard)

@@ -87,6 +87,46 @@ heading, outside its public block: grounds.  m l links one taken before."
             (should (string-search (concat "** Lone remark\n" (org-moor-link record) "\n")
                                    (buffer-string)))))))))
 
+(ert-deftest org-truss-test-board-opens-a-source ()
+  "m o on the board follows the link of a source's line, the one a
+quotation quotes, or one the heading's own text has, asked for; m O opens
+where a source taken by org-moor came from, and follows any other link."
+  (org-truss-test--in-directory '(("truss.org" . ""))
+    (let* ((truss (expand-file-name "truss.org" dir))
+           (org-truss-language 'en)
+           followed origins)
+      (with-temp-file truss
+        (insert "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+                "** Approval goes to the head first\n"
+                "#+begin_quote\nThe head approves before finance.\n"
+                "[[moor:6f1c::12][Manual p. 12]]\n#+end_quote\n"
+                "[[file:minutes.txt][Minutes]]\n"
+                "*** Under it\n[[moor:9a3e][Calendar]]\n"))
+      (with-temp-buffer
+        (org-truss-board-mode)
+        (setq org-truss--source (find-file-noselect truss))
+        (org-truss-board-redraw)
+        (cl-letf (((symbol-function 'org-link-open)
+                   (lambda (link &rest _) (push (org-element-property :raw-link link) followed)))
+                  ((symbol-function 'org-moor-open-origin)
+                   (lambda (&rest _) (push (org-moor-link-at-point) origins)))
+                  ((symbol-function 'completing-read)
+                   (lambda (_ table &rest _)
+                     (seq-find (lambda (name) (string-search "Minutes" name))
+                               (all-completions "" table)))))
+          (org-truss-test--goto-line-with "⏚ source.*Minutes")
+          (org-truss-board-open-source)
+          (org-truss-test--goto-line-with "⏚ quote")
+          (org-truss-board-open-source)
+          (org-truss-board-open-origin)
+          (org-truss-test--goto-line-with "⏚ source.*Minutes")
+          (org-truss-board-open-origin)
+          (org-truss-test--goto-line-with "member[ ·]+Approval goes")
+          (org-truss-board-open-source))
+        (should (equal (reverse followed)
+                       '("file:minutes.txt" "moor:6f1c::12" "file:minutes.txt" "file:minutes.txt")))
+        (should (equal origins '("6f1c")))))))
+
 (ert-deftest org-truss-test-preamble-says-how-to-take ()
   "The head comment gives the check as it runs here, org-dock and all, and
 how an agent takes a source when org-moor is there."
