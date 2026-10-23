@@ -474,6 +474,30 @@ the pattern's words run into their column."
     (org-truss-board-entry-text)
     (should-not (string-match-p "Robin" (buffer-string)))))
 
+(ert-deftest org-truss-test-board-quotes-as-grounds ()
+  "Each quotation is a ground of its own, drawn above the sources, and is
+left out of the notes shown under its heading.  Drawn whole, its line is
+broken to its column."
+  (org-truss-test--with-board
+      (concat "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+              "** Approval goes to the head first\n"
+              "Read in the manual.\n"
+              "#+begin_quote\nThe head approves.\n#+end_quote\n"
+              "#+begin_quote\nEvery request waits a week or more before finance looks at its lines.\n"
+              "#+end_quote\n"
+              "#+begin_quote\nFinance comes after.\n#+end_quote\n"
+              "[[file:manual.txt][Manual]]\n")
+    (should (string-match-p (concat "⏚ quote[ ·]+The head approves\\.\n"
+                                    ".*⏚ quote[ ·]+Every request.*…\n"
+                                    ".*⏚ quote[ ·]+Finance comes after\\.\n"
+                                    ".*⏚ source.*Manual")
+                            (buffer-string)))
+    (org-truss-board-entry-text)
+    (should (string-match-p "Read in the manual" (buffer-string)))
+    (should (string-match-p "⏚ quote[ ·]+Every request[^…\n]*\n +[^⏚\n]*its lines\\." (buffer-string)))
+    (should (= (how-many "The head approves" (point-min) (point-max)) 1))
+    (should (= (how-many "Finance comes after" (point-min) (point-max)) 1))))
+
 (ert-deftest org-truss-test-board-wraps-a-line ()
   "w draws the line at point whole, as E draws every line, and leaves the
 rest on one line; w again, from any of its lines, puts it back.  With entry
@@ -833,31 +857,6 @@ many it hides; one holding more than the limit starts folded."
     (org-truss-test--with-board org-truss-test--file
       (should (string-match-p "└ Umbrella ▸2[ ·]+Umbrella" (buffer-string)))
       (should (string-match-p "├ Sky[ ·]+Sky" (buffer-string))))))
-
-(ert-deftest org-truss-test-board-quotes ()
-  "Q puts the text copied last under a member as its quotation, at the end of
-its own text, and replaces it the next time, after asking."
-  (org-truss-test--with-board org-truss-test--file
-    (let ((own (lambda () (with-current-buffer source
-                            (let ((b (org-truss--own-bounds (org-truss-test--heading-pos "Unused aside"))))
-                              (buffer-substring-no-properties (car b) (cdr b)))))))
-      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
-      (let ((kill-ring (list "Said in the hallway.\n* not a heading")))
-        (org-truss-test--answering '(t)
-          (org-truss-board-quote)))
-      (should (equal (funcall own)
-                     (concat ":PROPERTIES:\n:CUSTOM_ID: aside\n:END:\n[[https://e.x/hallway][hallway]]\n"
-                             "#+begin_quote\nSaid in the hallway.\n * not a heading\n#+end_quote\n\n")))
-      (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
-      (let ((kill-ring (list "Said twice.")))
-        (org-truss-test--answering '(nil)
-          (org-truss-board-quote))
-        (should (string-match-p "Said in the hallway" (funcall own)))
-        (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Unused aside")
-        (org-truss-test--answering '(t)
-          (org-truss-board-quote)))
-      (should (string-match-p "#\\+begin_quote\nSaid twice\\.\n#\\+end_quote\n\n\\'" (funcall own)))
-      (should-not (string-match-p "hallway\\." (funcall own))))))
 
 (ert-deftest org-truss-test-board-visits-a-ground ()
   "RET on a ground goes to the member it names, not to the claim above it."

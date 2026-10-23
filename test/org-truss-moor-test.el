@@ -28,7 +28,7 @@ under a member nested in it gives the member none."
            (approval (org-truss-test--m model "Approval goes to the head first")))
       (should (org-truss-has-grounds-p approval))
       (should (equal (org-truss-member-cited approval) "[[moor:6f1c::12][Approval manual p. 12]]"))
-      (should (equal (org-truss-member-quoted approval) "The head approves before finance."))
+      (should (equal (org-truss-member-quoted approval) '("The head approves before finance.")))
       (should-not (org-truss-has-grounds-p (org-truss-test--m model "Reviews run long"))))))
 
 (ert-deftest org-truss-test-sources-beside-the-file ()

@@ -509,15 +509,24 @@ written."
       (setq from (match-end 0)))
     (nreverse found)))
 
-(defun org-truss--quote-in (text)
-  "Return what the first #+begin_quote block in TEXT says, trimmed, or nil.
-\"\" for an empty one; one left open runs to the end of TEXT."
-  (let ((case-fold-search t))
-    (when (and text (string-match "^[ \t]*#\\+begin_quote\\b.*\\(?:\n\\|\\'\\)" text))
-      (let ((start (match-end 0)))
-        (string-trim (substring text start
-                                (and (string-match "^[ \t]*#\\+end_quote" text start)
-                                     (match-beginning 0))))))))
+(defun org-truss--quote-blocks (text)
+  "Return each #+begin_quote block in TEXT, in order, as (BEG END WORDS).
+BEG and END bound the block, its last line's newline with it; WORDS is
+what it says, trimmed, \"\" for an empty one.  One left open runs to the
+end of TEXT."
+  (let ((case-fold-search t) (from 0) found)
+    (while (and text (string-match "^[ \t]*#\\+begin_quote\\b.*\\(?:\n\\|\\'\\)" text from))
+      (let* ((beg (match-beginning 0))
+             (start (match-end 0))
+             (close (string-match "^[ \t]*#\\+end_quote.*\\(?:\n\\|\\'\\)" text start))
+             (end (if close (match-end 0) (length text))))
+        (push (list beg end (string-trim (substring text start close))) found)
+        (setq from (max end (1+ beg)))))
+    (nreverse found)))
+
+(defun org-truss--quotes-in (text)
+  "Return what each #+begin_quote block in TEXT says, trimmed, in order."
+  (mapcar #'caddr (org-truss--quote-blocks text)))
 
 (defun org-truss--own (pos)
   "Parse the own text of the heading at POS."
@@ -657,7 +666,7 @@ the patterns of the heading above, as (KIND . ROLE), from its
 TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE and TRUSS_TELLING_ROLE.
 TEXT-GROUNDS are the references of the links pointing to members in its
 text.  SOURCE-LINKS are its links to sources there; CITED the first, and QUOTED
-what its text quotes, or nil.  INCLUDES are the references of the links
+what each quotation in its text says, in order.  INCLUDES are the references of the links
 that tell members, [[truss-include:m7]], in its text, in order; LISTED
 those outside its public block.  PUBLIC is what its public block says,
 \(TITLE . BODY); NOTES, what else is written under it.  CHILDREN are the
@@ -717,7 +726,7 @@ OWN is the parse of its own text."
             :listed (plist-get own :listed)
             :source-links (org-truss--source-links-in text)
             :cited (car (org-truss--source-links-in text))
-            :quoted (org-truss--quote-in text)
+            :quoted (org-truss--quotes-in text)
             :public (org-truss--read-block own :public)
             :notes (org-truss--read-notes own)))))
 

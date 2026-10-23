@@ -877,7 +877,7 @@ text, to a member or a source.  Words naming a source are none."
            (m (lambda (label) (org-truss-test--m model label))))
       (should (equal (org-truss-member-cited (funcall m "By a link"))
                      "[[moor:6f1c::3][Minutes l. 3]]"))
-      (should (equal (org-truss-member-quoted (funcall m "By a quote")) "We agreed."))
+      (should (equal (org-truss-member-quoted (funcall m "By a quote")) '("We agreed.")))
       (should (equal (org-truss-member-cited (funcall m "In its text"))
                      "[[file:sources/a.pdf][the rule]]"))
       (dolist (label '("By a link" "By a quote" "In its text" "Through a member"))

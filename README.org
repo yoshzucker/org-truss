@@ -814,10 +814,11 @@ the section the line hangs from:
 id; =↥= and =▤= are the other end, where a member is written.  What a
 member stands on is drawn below it, as the ground is below a building:
 =⏚ ground= a member it points to -- with =[no grounds]= when it does not
-hold -- =⏚ source= each source it links to, with =[not found]= when the
-link points to nothing -- and =⏚ quote= the words it quotes.  A line of
-its text holding nothing but such a link is not drawn again among its
-notes.  What stands on a
+hold -- then =⏚ quote= each quotation in its text, and below them
+=⏚ source= each source it links to, with =[not found]= when the link
+points to nothing: the words are read from the source, so the source is
+furthest down.  A quotation, and a line of its text holding nothing but
+such a link, is not drawn again among its notes.  What stands on a
 member is drawn below it too, as everything under a line is, so its mark
 points up, from the member to it.  A line marked =⏚=, =↥= or
 =▤= is cut to the middle, its whole heading in the tooltip; the mouse on
@@ -964,7 +965,6 @@ lines.
 |       | ~m~         | take a source for it, or link one taken before (with org-moor)                    | same                                               |
 |       | ~b~         | make a heading a ground of it, or not                                             | same                                               |
 |       | ~A~         | tag it an assumption, or take the tag off                                         | same                                               |
-|       | ~Q~         | put the text copied last under it, as a quotation                                 | same                                               |
 |       | ~f~         | refile it, last under another section                                             | refile it, last under a part or another member     |
 |       | ~D~         |                                                                                   | delete it from the file, after asking              |
 | place | ~a~         | tell a heading in it, by a link                                                   | same                                               |
@@ -1030,10 +1030,10 @@ says.
 
 A heading keeps the words of its source with it, in a ~#+begin_quote~
 block in its own text, which stays in the file as notes do, and gives it
-grounds.  Copy the passage, in Emacs or in a browser, and ~Q~ on the
-heading puts it there, or, after asking, in place of the quotation already
-there.  With org-moor, reading a source beside it -- ~org-moor-noter~ --
-writes the quotation and the link to its page or line in one go.
+grounds; it may keep several, each drawn as a =⏚ quote= line of its own.
+~e~ on the heading, or on a quotation's line, writes one or rewrites it.
+With org-moor, reading a source beside it -- ~org-moor-noter~ -- writes
+the quotation and the link to its page or line in one go.
 
 ~m~, with org-moor, takes a source for the heading as org-moor takes one,
 into the truss file's ~sources/~, and writes the link to it on a line of

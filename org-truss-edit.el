@@ -445,46 +445,6 @@ broken what stood on it or told it.  Return the labels deleted."
                           (min (point-max) (1+ (line-end-position))))))))
     (nreverse labels)))
 
-(defun org-truss--quote-bounds (pos)
-  "Return (BEG . END) of the first quotation in the own text at POS, or nil.
-A #+begin_quote block outside the public block, from its first line to the
-end of its last."
-  (let ((bounds (org-truss--own-bounds pos))
-        (case-fold-search t)
-        public found)
-    (save-excursion
-      (goto-char (car bounds))
-      (while (and (not found) (< (point) (cdr bounds)))
-        (cond ((looking-at org-truss--public-begin-re) (setq public t))
-              ((looking-at org-truss--public-end-re) (setq public nil))
-              ((and (not public) (looking-at "^[ \t]*#\\+begin_quote\\b"))
-               (let ((beg (point)))
-                 (when (re-search-forward "^[ \t]*#\\+end_quote[ \t]*$" (cdr bounds) t)
-                   (setq found (cons beg (min (point-max) (1+ (line-end-position)))))))))
-        (forward-line 1)))
-    found))
-
-(defun org-truss-set-quote (pos text)
-  "Put TEXT under the member at POS as its quotation, in place of any there.
-A #+begin_quote block in its own text: what the source says, in the
-source's words, kept in the file as notes are.  A new one goes at the end
-of its own text.  A line of TEXT that would read as a heading is moved off
-the left margin.  Return non-nil when one was replaced."
-  (let* ((body (replace-regexp-in-string "^\\*" " *" (string-trim text)))
-         (block (concat "#+begin_quote\n" body "\n#+end_quote\n"))
-         (old (org-truss--quote-bounds pos)))
-    (save-excursion
-      (if old
-          (progn (goto-char (car old))
-                 (delete-region (car old) (cdr old))
-                 (insert block))
-        (let ((heading-end (progn (goto-char pos) (line-end-position))))
-          (goto-char (cdr (org-truss--own-bounds pos)))
-          (skip-chars-backward " \t\n" heading-end)
-          (insert "\n" (string-remove-suffix "\n" block))
-          (when (eobp) (insert "\n")))))
-    (and old t)))
-
 (defun org-truss-public-body (pos)
   "Return where the text of the public block under the heading at POS starts.
 It is what the reader is told there: a section's lead, or a member's words
@@ -642,7 +602,7 @@ number of headings changed."
                        (let ((text (org-truss--text (org-truss--own pos))))
                          (or (org-truss--refs-in text)
                              (org-truss--source-links-in text)
-                             (org-truss--quote-in text))))
+                             (org-truss--quotes-in text))))
              (org-with-point-at pos
                (org-toggle-tag org-truss-assumption-tag 'on))))
          (setq count (1+ count))

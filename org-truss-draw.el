@@ -479,11 +479,14 @@ the room of the middle, since the line is then read rather than scanned."
   "A line holding nothing but a link, as a list item or not.")
 
 (defun org-truss--notes-shown (notes)
-  "Return NOTES without the lines holding nothing but a link.
-Such a line is a ground, a member or a source the heading stands on,
-which the board draws on a line of its own, marked; it would be drawn
+  "Return NOTES without its quotations and the lines holding nothing but a link.
+Each is a ground, words quoted or a member or a source the heading stands
+on, which the board draws on a line of its own, marked; it would be drawn
 twice."
-  (and notes (string-trim (replace-regexp-in-string org-truss--link-line-re "" notes))))
+  (when notes
+    (dolist (block (reverse (org-truss--quote-blocks notes)))
+      (setq notes (concat (substring notes 0 (car block)) (substring notes (cadr block)))))
+    (string-trim (replace-regexp-in-string org-truss--link-line-re "" notes))))
 
 (defun org-truss--lines-under-heading (left more notes below item &optional head stem)
   "Return the lines under a heading's own line on the board.
@@ -635,11 +638,12 @@ is what it stands for, under KEY, and ID how it is called, if it is."
 (defun org-truss--grounds-lines (model cluster stem key)
   "Return a line for each thing CLUSTER of MODEL stands on, below it.
 The members its text links to, each once, said to be broken when it is
-no member, and to have no grounds when it does not hold; then the
-sources its text links to, each once, and the words it quotes, a link
-among them that points to nothing said not to be found.  Each keeps the
-links to sources it opens, as :links: a source's own, and the quotation's,
-or else the first the text cites.
+no member, and to have no grounds when it does not hold; then the words
+it quotes, each quotation, and below them the sources its text links to,
+each once, as the words are read from the source; a link among them that
+points to nothing said not to be found.  Each keeps the links to sources
+it opens, as :links: a source's own, and a quotation's, or else the first
+the text cites.
 STEM starts each; KEY is CLUSTER's line's."
   (let* ((pos (org-truss-cluster-pos cluster))
          (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) cluster))
@@ -673,10 +677,10 @@ STEM starts each; KEY is CLUSTER's line's."
                                                         (list (cdr source))
                                                       (or (org-truss--source-links-in (cdr source))
                                                           (ensure-list (org-truss-cluster-cited cluster)))))))
-             (append (mapcar (lambda (link) (cons 'source link))
-                             (seq-uniq (org-truss-cluster-source-links cluster)))
-                     (and (org-truss-cluster-quoted cluster)
-                          (list (cons 'quote (org-truss-cluster-quoted cluster)))))))))
+             (append (mapcar (lambda (words) (cons 'quote words))
+                             (org-truss-cluster-quoted cluster))
+                     (mapcar (lambda (link) (cons 'source link))
+                             (seq-uniq (org-truss-cluster-source-links cluster))))))))
 
 (defun org-truss--member-lines (model member indent key
                                       &optional link holder marker)

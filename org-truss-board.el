@@ -104,8 +104,7 @@ Filled by org-truss-moor.el; empty without org-moor.")
 (defconst org-truss--board-help
   "write  \\[org-truss-board-new] new  \\[org-truss-board-edit] edit  \
 \\[org-truss-board-rename] rename  \\[org-truss-board-moor-map] source  \
-\\[org-truss-board-ground] ground  \\[org-truss-board-quote] quote  \
-\\[org-truss-board-assume] assume  \\[org-truss-board-refile] refile  \
+\\[org-truss-board-ground] ground  \\[org-truss-board-assume] assume  \\[org-truss-board-refile] refile  \
 \\[org-truss-board-delete] delete
 place  \\[org-truss-board-place] place  \\[org-truss-board-take-out] take out  \
 \\[org-truss-board-up] \\[org-truss-board-down] order
@@ -203,7 +202,6 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "m") 'org-truss-board-moor-map)
     (define-key map (kbd "A") #'org-truss-board-assume)
     (define-key map (kbd "b") #'org-truss-board-ground)
-    (define-key map (kbd "Q") #'org-truss-board-quote)
     (define-key map (kbd "f") #'org-truss-board-refile)
     (define-key map (kbd "D") #'org-truss-board-delete)
     (define-key map (kbd "a") #'org-truss-board-place)
@@ -1422,28 +1420,6 @@ An assumption is taken as given: as a reason, it needs no grounds."
     (org-truss--editing
       (setq on (org-truss-toggle-assumption (plist-get item :pos))))
     (message "%s %s" (plist-get item :label) (if on "is an assumption" "is no assumption"))))
-
-(defun org-truss-board-quote ()
-  "Put the text copied last under the heading at point, as its quotation.
-The words of its source, kept with it in a #+begin_quote block that stays
-in the file as notes do: grounds it stands on.  Copy the passage -- here or
-in a browser -- then press this on the heading.  It replaces a quotation
-already there, after asking."
-  (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member 'section))
-         (pos (plist-get item :pos))
-         (label (org-truss-cluster-label (org-truss-cluster-at (org-truss-read org-truss--source) pos)))
-         (text (string-trim (or (ignore-errors (current-kill 0)) "")))
-         (old (with-current-buffer org-truss--source (org-truss--quote-bounds pos)))
-         (preview (truncate-string-to-width (replace-regexp-in-string "[ \t\n]+" " " text)
-                                            40 nil nil "…")))
-    (when (string-empty-p text)
-      (user-error "Nothing has been copied"))
-    (when (y-or-n-p (if old
-                        (format "Replace the quotation under %s with “%s”? " label preview)
-                      (format "Quote “%s” under %s? " preview label)))
-      (org-truss--editing
-        (org-truss-set-quote pos text)))))
 
 (defun org-truss--file-choices (model member)
   "Return (NAME . POS) for every place in MODEL MEMBER can be moved under.

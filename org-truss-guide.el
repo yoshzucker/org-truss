@@ -295,7 +295,7 @@ Brief line changes it."
     (subject
      "What was found.  Write each fact as a member under the role of
 TRUSS_BREAKDOWN it belongs to, with its grounds: the source's own words
-in a quote block, a #+begin_quote (Q on the board), or a link to the
+in a quote block, a #+begin_quote (e on the board), or a link to the
 source in its text (m on the board takes one): inside its #+begin_public
 it is the reader's citation too.  Sum up facts
 that belong together: nest them under a member that says in one sentence
@@ -306,7 +306,7 @@ out; a member a section lists is, with the members under it.  p on the
 board's Subject line changes the breakdown."
      "調べたこと。事実は一つずつ、合う TRUSS_BREAKDOWN の役の下に部材として
 書き、根拠を付ける。出典の原文を本文の引用ブロック #+begin_quote に残すか
-（盤面の Q）、出典へのリンクを本文に書く（盤面の m で取り込める）。リンク
+（盤面の e）、出典へのリンクを本文に書く（盤面の m で取り込める）。リンク
 を #+begin_public の中に書けば、読み手への出典にもなる。関係する事実はまと
 める。下の事実が合わせて言っていることを一文で書いた部材の下に入れ子にし、
 その一文には下の事実が言っている以上のことを書かない。上の部材
