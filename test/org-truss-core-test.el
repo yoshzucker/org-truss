@@ -184,9 +184,9 @@ Finance said so at the October meeting.
 :PROPERTIES:
 :TRUSS_PART: structure
 :END:
-** Premises
+** Constraints
 :PROPERTIES:
-:TRUSS_TELLING_ROLE: premises
+:TRUSS_TELLING_ROLE: constraints
 :END:
 - [[truss-include:budget]]
 "

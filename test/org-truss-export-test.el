@@ -32,7 +32,7 @@ written as its heading; notes, :noexport: and unplaced members stay behind."
   "A member written under a field of the subject is written where it is placed,
 and the field's own text is not."
   (let ((out (org-truss-test--render org-truss-test--conditions-file)))
-    (should (string-match-p "^\\* Premises\n\nNo budget this year$" out))
+    (should (string-match-p "^\\* Constraints\n\nNo budget this year$" out))
     (should-not (string-match-p "Finance\\|schedule" out))))
 
 (ert-deftest org-truss-test-render-subject-like-members ()

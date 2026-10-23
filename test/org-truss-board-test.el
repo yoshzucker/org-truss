@@ -167,7 +167,7 @@ them, and is listed under the part."
                      "   └ member[ ·]+Nobody checks before a test +Nobody checks before a test\n"
                      "   Constraints[ ·]+Constraints +Constraints\n"
                      "   ├ member[ ·]+#budget No budget this year +No budget this year\n"
-                     "   │   ▤ Premises[ ·]+Premises\n"
+                     "   │   ▤ Constraints[ ·]+Constraints\n"
                      "   │   ⏚ source[ ·]+finance, 3 October\n"
                      "   └ member[ ·]+The schedule is fixed +The schedule is fixed\n"
                      "   Premises —\n\n"
@@ -178,7 +178,7 @@ them, and is listed under the part."
     (save-window-excursion
       (org-truss-board-visit)
       (should (equal (org-get-heading t t t t) "Issue")))
-    (org-truss-test--goto-line-with "^ └ Premises")
+    (org-truss-test--goto-line-with "^ └ Constraints")
     (org-truss-test--answering '("Subject › Constraints › The schedule is fixed")
       (org-truss-board-place))
     ;; Placed, it is given an id to be pointed to by.
@@ -221,7 +221,7 @@ member playing none of them is marked, and r gives it a role."
       (should (equal (funcall property "Subject" "TRUSS_BREAKDOWN") "pros-cons"))
       (should (equal (seq-drop (funcall headings) 3)
                      '("Pros" "Cons" "Tests are random" "Issue" "Constraints"
-                       "Check with a breathalyser" "Premises")))
+                       "Check with a breathalyser" "Constraints")))
       (org-truss-test--goto-line-with "^   Issue \\[no role\\]")
       (should (eq (get-text-property (+ (point) 9) 'face) 'org-truss-attention))
       (should (string-match-p "^ No role\n\\(?:   .*\n\\)*   Issue \\[no role\\][ ·]+Issue +plays no role of breakdown › Pros and cons$"
