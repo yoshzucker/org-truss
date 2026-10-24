@@ -365,7 +365,7 @@ It points to the member, and tells nothing of it.  Its target is read by
 (defconst org-truss--include-re
   "\\[\\[truss-include:\\([^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]"
   "A link that tells a member where it is written: [[truss-include:m7]].
-Its description, if any, names it in the file and is never written out.")
+Its description, if any, is the words the member is told by there.")
 (defconst org-truss--include-line-re
   "^[ \t]*\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[truss-include:\\([^]\n]+\\)\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
   "A line holding nothing but a link that tells a member, as a list item or
@@ -391,6 +391,14 @@ refers to no member and shows as a broken link, to be turned into one by
       (setq from (match-end 0)))
     (nreverse refs)))
 
+(defun org-truss--include-links-in (text)
+  "Return the links that tell members in TEXT, as written, in order."
+  (let ((from 0) links)
+    (while (and text (string-match org-truss--include-re text from))
+      (push (match-string 0 text) links)
+      (setq from (match-end 0)))
+    (nreverse links)))
+
 (defun org-truss--refs-in (text)
   "Return the references of the links pointing to members in TEXT, in order.
 Not those that tell one; see `org-truss--includes-in'."
@@ -415,7 +423,7 @@ Return a plist:
   :public  (TITLE . BODY) of the first public block, or nil
   :public-raw  that block as written
   :includes  references of every link that tells a member, in order
-  :listed  those outside the public block
+  :listed  those links outside the public block, as written
   :items   those of them on a line of their own, the ones edits move
   :drawers drawers other than the property drawer, as written
   :notes   everything else, as written"
@@ -468,14 +476,16 @@ Return a plist:
                (push raw drawers)
                (setq state 'drawer))
               ((string-match org-truss--include-line-re line)
-               (let ((ref (org-truss--ref (match-string 1 line))))
-                 (push ref items)
-                 (push ref listed)
+               (push (org-truss--ref (match-string 1 line)) items)
+               (dolist (link (org-truss--include-links-in line))
+                 (push link listed))
+               (dolist (ref (org-truss--includes-in line))
                  (push ref includes)))
               (t
                (push raw notes)
+               (dolist (link (org-truss--include-links-in line))
+                 (push link listed))
                (dolist (ref (org-truss--includes-in line))
-                 (push ref listed)
                  (push ref includes))))))
           (forward-line 1)))
       (when (eq state 'block)
@@ -667,8 +677,8 @@ TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE and TRUSS_TELLING_ROLE.
 TEXT-GROUNDS are the references of the links pointing to members in its
 text.  SOURCE-LINKS are its links to sources there; CITED the first, and QUOTED
 what each quotation in its text says, in order.  INCLUDES are the references of the links
-that tell members, [[truss-include:m7]], in its text, in order; LISTED
-those outside its public block.  PUBLIC is what its public block says,
+that tell members, [[truss-include:m7]], on its heading's line and in its
+text, in order; LISTED those links outside its public block, as written.  PUBLIC is what its public block says,
 \(TITLE . BODY); NOTES, what else is written under it.  CHILDREN are the
 headings right under it."
   pos id label level tags roles logic breakdown telling
@@ -722,7 +732,8 @@ OWN is the parse of its own text."
             :breakdown (org-truss--pattern-here 'breakdown)
             :telling (org-truss--pattern-here 'telling)
             :text-grounds (org-truss--refs-in text)
-            :includes (plist-get own :includes)
+            :includes (append (org-truss--includes-in (org-truss--heading-text))
+                              (plist-get own :includes))
             :listed (plist-get own :listed)
             :source-links (org-truss--source-links-in text)
             :cited (car (org-truss--source-links-in text))

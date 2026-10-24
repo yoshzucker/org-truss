@@ -1058,7 +1058,7 @@ which, with what is nested under it, tells the heading back is a loop."
            (pairs (lambda (key) (mapcar (lambda (hit) (cons (org-truss-cluster-label (car hit)) (cdr hit)))
                                         (plist-get checks key)))))
       (should (equal (org-truss-cluster-includes move) '("long" "loop")))
-      (should (equal (org-truss-cluster-listed move) '("loop")))
+      (should (equal (org-truss-cluster-listed move) '("[[truss-include:loop]]")))
       (should-not (org-truss-cluster-text-grounds move))
       (should (equal (org-truss-test--labels (org-truss-told model))
                      '("Move to fortnightly" "Reviews run long" "Loops back" "Under it")))

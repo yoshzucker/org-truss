@@ -565,11 +565,14 @@ whether it is a list item, nor what kind of heading it points to.
 
 A link that tells a heading can stand in any heading -- a section, or a
 member that brings another along -- on a line of its own, as a list item,
-or in a sentence, inside the public block or not.  Its description,
-~[[truss-include:m7][words]]~, names it in the file alone and is never
-written out.  A member told is written as it is anywhere; a section, as
-it is in a list item -- its title in bold, its lead, then what it holds --
-since it is told where the link stands, not in the document's outline.
+or in a sentence, inside the public block or not; or on a section's
+heading line, ~*** [[truss-include:m7]]~.  Where it stands says how it is
+told.  On a heading line, it is a heading of the document: its words,
+then what is under it, under headings a level down.  In text, it is its
+words in the sentence, and the rest -- its body, then what is under it --
+follows the paragraph, or goes inside the list item, as a list.  Its
+description, ~[[truss-include:m7][words]]~, is its words there.  A
+section told is told as a member is.
 Two places that tell the same section tell its chapter twice: that is
 yours to want or not.  A link that points to a heading, written in a
 public block, reads as its description, or the heading.  What a heading
@@ -876,8 +879,8 @@ has some; else the title of the line's public block, or the start of the
 block's text when it has no title, or else its heading -- for a section,
 its heading in the document; /noexport/ when the reader sees nothing of
 it.  On the /Structure/ line is the structure's own lead.  A title the
-reader sees -- a section's heading in the document, a member's title in
-bold -- is drawn as one; what becomes body text, in the faint face the
+reader sees -- a section's heading in the document, a member's title --
+is drawn as one; what becomes body text, in the faint face the
 notes in the middle take.  The brief is the reader's only through the title.
 Under the title come the brief, then the subject, each drawn as the
 members are: its line, its patterns, and the members under it, each named
@@ -1137,23 +1140,29 @@ pandoc, when it is installed, to make ~out/truss.md~.
   the block's text, its lead, follows the title.  One tagged ~:noexport:~
   is left out, with what is under it, as a member is.
 - A link that tells a member, ~[[truss-include:m7]]~, is the member
-  written where it stands -- in a section, in a member, in a sentence.  A
-  member is written as its public block, or failing that as its heading,
-  a paragraph.  One tagged ~:noexport:~ is left out, with what is nested
-  under it.  A link that points to one, ~[[#m7]]~, in a public block, is
-  written as its description, or the member's heading.
-- A member is followed by what its links outside its public block tell,
-  and then by what is nested under it, in the order of the file.  Its
-  title, when its public block has one, opens its paragraph in bold: the
-  document's headings are its sections' alone, as the structure shows
-  them.
+  written where it stands, in its words: its link's description, else
+  the title of its public block, else the block's text, else its heading.
+  What follows its words is its block's text, when its title was its
+  words; then what its links outside its public block tell, each an item
+  of a list; then what is nested under it, in the order of the file.  One
+  tagged ~:noexport:~ is left out, with what is nested under it.  A link
+  that points to one, ~[[#m7]]~, in a public block, is written as its
+  description, or the member's heading.
+- Where the link stands says the shape.  On a section's heading line,
+  ~*** [[truss-include:m7]]~, the member's words are that heading, and
+  what is nested under it is told under headings a level down, as the
+  sections are.  In text -- a section's lead, a list item, a sentence --
+  its words are written in place and the rest follows the paragraph, or
+  goes inside the list item, as a list one level in.  Once a list, what
+  is nested stays a list.  A member with no title, only a block's text,
+  is no heading: what is under it is a list.  Below the sixth level,
+  Markdown's last, what is under a heading is a list.
 - A heading broken down, member or section, has its parts written as a
   list, with reasons or without: steps numbered, the rest bulleted, each
   part opening with its role where the breakdown names its roles.  What
-  is nested under a part goes inside its item, its own breakdown as a list
-  again and the rest as paragraphs, titles in bold; a section's title and
-  lead open its item, and the members it lists and the sections below it
-  follow inside.  Other reasons are written as paragraphs.
+  is nested under a part goes inside its item, as a list again; a
+  section's title and lead open its item, and the members it lists and
+  the sections below it follow inside.
 - A link that tells no member is written as /(broken link: …)/, and one
   that would tell without end as /(told without end: …)/, where it will
   be seen.

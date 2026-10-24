@@ -96,22 +96,25 @@
 #   ~[[truss-include:m7]]~  tells it there: the heading, a member or a
 #                           section, with what is under it, is written out
 #                           where the link stands, in any heading, in a
-#                           sentence too.  Its description is for the file
-#                           alone.  The check points out a link that tells
-#                           what tells its heading back
+#                           sentence too, or on a section's heading line.
+#                           Its description is its words there.  The check
+#                           points out a link that tells what tells its
+#                           heading back
 #
 # Written out (only what Structure reaches)
 #   #+title             the title, unless Structure's #+begin_public has one
 #   section heading     a heading
 #   #+begin_public      a heading's words for the reader: a section's
 #                       opening (right under Structure, the document's), a
-#                       member's words in place of its heading.  A title on
-#                       a member's opens it in bold: only sections make the
-#                       document's headings
-#   ~[[truss-include:m7]]~  m7, where the link stands: a member's words,
-#                       then what its links outside #+begin_public tell,
-#                       then the members under it; a section's title in
-#                       bold and its lead, then what it holds
+#                       member's words in place of its heading, its title
+#                       first
+#   ~*** [[truss-include:m7]]~  m7 as a heading: its words, then its
+#                       text, then the members under it as headings a
+#                       level down
+#   ~- [[truss-include:m7]]~  m7 in text: its words where the link is,
+#                       then its text, what its links outside
+#                       #+begin_public tell, and the members under it, as
+#                       a list after the paragraph or inside the item
 #   ~[[#m7]]~           in #+begin_public, its words, else m7's heading
 #   ~[[moor:ID::14]]~   the source's origin, a web page (at page 14 of a
 #                       PDF); a source from a file or a mail, its words
@@ -204,8 +207,9 @@
 #   ~[[#m7]]~               見出しを指す。どこに書いても根拠になる
 #   ~[[truss-include:m7]]~  見出し（部材でも節でも）をそこで展開する。
 #                           リンクを書いた場所に、見出しとその下が書き出
-#                           される。どの見出しにでも、文の途中にでも書ける。
-#                           説明はファイルで見るためのもので、書き出されない。
+#                           される。どの見出しにでも、文の途中にでも、節の
+#                           見出しの行にも書ける。説明はそこでの言い方として
+#                           書き出される。
 #                           展開をたどって自分の見出しに戻るリンクは、検査が
 #                           指摘する
 #
@@ -215,12 +219,12 @@
 #   節の見出し                文書の見出し
 #   #+begin_public            読み手に見せる言葉。節なら最初の文（Structure
 #                             直下なら文書の最初の文）、部材なら見出しの
-#                             代わりの言葉。部材の題は太字で頭に出る。文書の
-#                             見出しを作るのは節だけ
-#   ~[[truss-include:m7]]~    m7 を、リンクの場所に。部材なら、その言葉、
-#                             #+begin_public の外のリンクが展開するもの、
-#                             下の部材の順。節なら、太字の題と最初の文、
-#                             中身の順
+#                             代わりの言葉。題があれば題が先に出る
+#   ~*** [[truss-include:m7]]~  m7 を見出しとして。その言葉、本文、下の
+#                             部材を一段下の見出しで
+#   ~- [[truss-include:m7]]~  m7 を本文の中に。その言葉をリンクの場所に、
+#                             本文、#+begin_public の外のリンクが展開する
+#                             もの、下の部材を、段落の後か箇条の中に箇条で
 #   ~[[#m7]]~                 #+begin_public の中では、説明、なければ m7 の
 #                             見出しが出る
 #   ~[[moor:ID::14]]~         資料の取り込み元の URL（PDF なら 14 ページ目）。
@@ -360,8 +364,10 @@ Structure の節で組む。見出しは、抜き出して読んでも通じる�
 document to make, as when a question is only being worked out.  A section
 tells the members it shows by links that tell them, as
 ~- [[truss-include:m7]]~ with m7 the member's CUSTOM_ID (a on the board):
-each is written out where its link stands, with what is under it.  A
-pattern here, or on a section (p on the board) -- a telling pattern as
+each is written out where its link stands, with what is under it, as a
+list.  A link that is a section's heading, ~*** [[truss-include:m7]]~,
+makes the member a heading of the document instead, what is under it
+headings a level down, in its place among the sections.  A pattern here, or on a section (p on the board) -- a telling pattern as
 Sky, Rain, Umbrella, SCQA, PREP -- gives the sections right below their
 roles, each written in a section's property of its kind, as
 TRUSS_TELLING_ROLE; a role none plays is listed under Missing roles.  A
@@ -375,7 +381,9 @@ as deep as the document needs."
      "書き出す文書の節。相談して考えをまとめるだけなど、文書を作らないうちは
 空のままにしておく。節は、語る部材を、展開するリンクの箇条
 ~- [[truss-include:m7]]~ で書く（m7 は部材の CUSTOM_ID。盤面の a）。部材は
-リンクの場所に、下の部材ごと書き出される。ここや節に型（語り口なら Sky, Rain,
+リンクの場所に、下の部材ごと箇条で書き出される。リンクを節の見出しにすると
+（~*** [[truss-include:m7]]~）、部材は文書の見出しになり、下の部材は一段下の
+見出しになる。ほかの節との順はファイルの順。ここや節に型（語り口なら Sky, Rain,
 Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節が担う役が
 決まり、節はその種類のプロパティ（TRUSS_TELLING_ROLE など）に役を書く。
 どの節も担っていない役は Missing roles に出る。節の見出しは文書の見出しに

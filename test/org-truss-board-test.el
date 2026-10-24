@@ -1535,7 +1535,7 @@ Told there already, nothing changes."
                      '("move" "none" "long"))))
     (should (= (with-temp-buffer
                  (insert (org-truss-render (org-truss-read source)))
-                 (count-matches "^Reviews ran past the hour" (point-min) (point-max)))
+                 (count-matches "^ *- Reviews ran past the hour" (point-min) (point-max)))
                2))
     (org-truss-test--goto-line-with "├ Sky[ ·]+Sky")
     (org-truss-test--answering '("Members › Reviews run long")
@@ -1594,7 +1594,7 @@ section in a list item."
                      '("m1" "m2")))
       (should (equal (org-truss-cluster-id (car (org-truss-section-children (org-truss-model-structure model))))
                      "m2"))
-      (should (string-match-p "^Hold the review every other week\\.\n\nLone remark\n\n\\*Sky\\*\n\nReviews ran past"
+      (should (string-match-p "^- Hold the review every other week\\.\n\n  - Lone remark\n  - Sky\n\n    - Reviews ran past"
                               (org-truss-render model))))))
 
 (ert-deftest org-truss-test-board-links-to-sections ()
