@@ -380,14 +380,16 @@ before it goes down with it."
         (setq line (string-trim-left (substring line at)))))
     (nreverse (cons line out))))
 
-(defun org-truss--fill (text width)
+(defun org-truss--fill (text width &optional as-written)
   "Return TEXT as lines no wider than WIDTH, as it reads.
 A paragraph of prose is joined and broken again.  A table, a block or a list
 keeps its lines; a table's are cut where they run over.  Links read as their
-descriptions, and a blank line stays between paragraphs.  A picture linked
+descriptions, or, AS-WRITTEN, stay links, and a blank line stays between
+paragraphs.  A picture linked
 on a line of its own is drawn, where the board can show one, on the lines
 it takes; see `org-truss--picture-lines'."
-  (let (out)
+  (let ((read (if as-written #'identity #'org-truss--link-text))
+        out)
     (dolist (para (split-string (string-trim text) "\n[ \t]*\n" t))
       (when out (push "" out))
       (let ((lines (split-string para "\n")))
@@ -398,12 +400,12 @@ it takes; see `org-truss--picture-lines'."
                           (mapcan (lambda (l)
                                     (let ((picture (org-truss--picture l)))
                                       (or (and picture (org-truss--picture-lines picture width))
-                                          (let ((l (org-truss--link-text l)))
+                                          (let ((l (funcall read l)))
                                             (if (string-match-p "\\`[ \t]*|" l)
                                                 (list (truncate-string-to-width l width))
                                               (org-truss--break l width))))))
                                   lines)
-                        (org-truss--break (org-truss--one-line (org-truss--link-text para))
+                        (org-truss--break (org-truss--one-line (funcall read para))
                                           width)))
           (push line out))))
     (nreverse out)))
@@ -493,7 +495,8 @@ twice."
 HEAD, if any, is the line that says how what is under the heading is
 arranged.  Drawn whole, MORE, the rest of the heading's own words, and
 then NOTES, what is written under the heading and stays in the file, go in
-the middle; BELOW, the rest of what the reader sees, on the right.  LEFT
+the middle, its links as written, since the lines below draw what they
+point to; BELOW, the rest of what the reader sees, on the right.  LEFT
 starts each line, and STEM, when given, each line below HEAD, or every
 line without one: the line of the tree down to what branches off under
 the heading.  ITEM is the heading's line's, kept under a key of its own.
@@ -505,7 +508,7 @@ that line to them."
   (if (not org-truss--whole)
       (and head (list head))
     (let* ((notes (mapcar (lambda (line) (propertize line 'face 'org-truss-dim))
-                          (org-truss--fill (or notes "") (- org-truss--middle-width 2))))
+                          (org-truss--fill (or notes "") (- org-truss--middle-width 2) t)))
            (wide (and head (> (+ (string-width (plist-get head :left)) 2)
                               org-truss--middle-column)))
            (at (cond (wide (length more)) (head 0) (t -1)))

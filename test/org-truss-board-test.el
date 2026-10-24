@@ -262,6 +262,32 @@ lines below instead of cut short."
                                         " +(logic › deduction) +quarter, for every team\n")
                                 board))))))
 
+(ert-deftest org-truss-test-board-draws-notes-links-as-written ()
+  "With entry text shown, a link in a heading's notes is drawn as it is
+written, described or not: what it points to is drawn on the line below."
+  (let ((org-truss-language 'en))
+    (org-truss-test--with "* Subject
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** Reviews run long
+:PROPERTIES:
+:CUSTOM_ID: m1
+:END:
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:TRUSS_LOGIC: reasons
+:END:
+** Time is wasted
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+As [[#m1]] and [[moor:6f1c][the minutes]] show.
+"
+      (let ((board (org-truss-board-text (org-truss-read) t 200)))
+        (should (string-match-p "^ +As \\[\\[#m1]] and \\[\\[moor:6f1c]\\[the minutes]] show\\.$" board))))))
+
 (ert-deftest org-truss-test-board-fits-entry-text-to-the-window ()
   "Entry text breaks what the reader sees at the window's edge, or at a width
 set for it; without entry text nothing is broken."

@@ -818,7 +818,9 @@ hold -- then =⏚ quote= each quotation in its text, and below them
 =⏚ source= each source it links to, with =[not found]= when the link
 points to nothing: the words are read from the source, so the source is
 furthest down.  A quotation, and a line of its text holding nothing but
-such a link, is not drawn again among its notes.  What stands on a
+such a link, is not drawn again among its notes, and a link in a sentence
+there is drawn as it is written, =[[#m3]]= or =[[moor:6f1c::12][Manual
+p. 12]]=, the words it points to left to the line below.  What stands on a
 member is drawn below it too, as everything under a line is, so its mark
 points up, from the member to it.  A line marked =⏚=, =↥= or
 =▤= is cut to the middle, its whole heading in the tooltip; the mouse on
