@@ -240,14 +240,17 @@ hallway/ -- are no grounds: nothing in the file can be gone back to.
 Write them in the text, and tag the heading ~:assumption:~: it is then
 taken as given, as what no text records is, and the board lists it so.
 
-A link that tells a member,
-~[[truss-include:m7]]~, is no ground: it says where the member is told (see
-[[*Two links to a heading]]).  But a reason whose heading's line tells a
-member, ~*** [[truss-include:m7]]~, is that member there, as it is, and
-stands on it: a fact that needs no words of yours to be the reason is
-not said again by a member of its own.  On the line of a heading that
-plays no role of a logic -- a part of a breakdown, a section -- the link
-only tells.
+A link that tells a member, ~[[truss-include:m7]]~, says where the member
+is told (see [[*Two links to a heading]]); in a reason it is a ground as
+well.  What a link means is what the heading is asked: a reason is asked
+why it holds, and a reason that tells the reader m7 and did not stand on
+it would put beside itself what has nothing to do with it.  So in a
+reason the link both tells m7 and stands on it, on its heading's line or
+in its text, and ~[[#m7]]~ stands on m7 without telling it.  On its
+heading's line, ~*** [[truss-include:m7]]~, the reason is m7 there, as it
+is: a fact that needs no words of yours to be the reason is not said
+again by a member of its own.  In a heading that is no reason -- a part
+of a breakdown, a section -- the link only tells.
 
 Whether a heading has grounds is read from what it writes, not from what
 that points to.  What it points to is asked something of its own, of
@@ -729,11 +732,11 @@ This is the board of the file above:
  Structure  how it is told: sections, telling members
  (telling › Sky, Rain, Umbrella)
  ├ Sky ·················· Sky                                                  Sky
- │   • member ▸2  [[#m1]] Reviews run long                                     Reviews ran past the hour eight times this quarter.
+ │   • told ▸2    [[#m1]] Reviews run long                                     Reviews ran past the hour eight times this quarter.
  ├ Rain ················· Rain                                                 Why it drags
- │   • member ▸3  [[#m4]] Half the items repeat                                Most items come back unchanged
+ │   • told ▸3    [[#m4]] Half the items repeat                                Most items come back unchanged
  └ Umbrella ············· Umbrella                                             What we propose
-     • member ▸2  [[#m5]] Move to fortnightly                                  Hold the review every other week.
+     • told ▸2    [[#m5]] Move to fortnightly                                  Hold the review every other week.
 #+end_example
 
 /order/ opens the members links tell where they are told instead: under
@@ -750,14 +753,14 @@ down the page, beside the logic each sentence rests on:
  Structure  how it is told: sections, telling members
  (telling › Sky, Rain, Umbrella)
  ├ Sky ···················· Sky                                                 Sky
- │   • member ····· [[#m1]] Reviews run long                                    Reviews ran past the hour eight times this quarter.
+ │   • told ······· [[#m1]] Reviews run long                                    Reviews ran past the hour eight times this quarter.
  │   (logic › reasons)
  │   ├ Reason ············· Eight of twelve reviews ran past the hour           Eight of twelve reviews ran past the hour
  │   │   ⏚ source ········· calendar export
  │   └ Reason ············· The longest ran forty minutes over                  The longest ran forty minutes over
  │       ⏚ source ········· calendar export
  ├ Rain ··················· Rain                                                Why it drags
- │   • member ····· [[#m4]] Half the items repeat                               Most items come back unchanged
+ │   • told ······· [[#m4]] Half the items repeat                               Most items come back unchanged
  │   (logic › reasons)
  │   │ ↥ member ··········· Move to fortnightly
  │   ├ Reason ············· Six of twelve items come back each week             Six of twelve items come back each week
@@ -765,7 +768,7 @@ down the page, beside the logic each sentence rests on:
  │   ├ Reason [assumed] ··· Items need a week to move                           We assume most items need more than a week to change.
  │   └ Reason [no grounds]  Nothing urgent waits for the review                 Nothing urgent waits for the review
  └ Umbrella ··············· Umbrella                                            What we propose
-     • member ····· [[#m5]] Move to fortnightly                                 Hold the review every other week.
+     • told ······· [[#m5]] Move to fortnightly                                 Hold the review every other week.
      (breakdown › steps)
      │ ⏚ ground ··· [[#m4]] Half the items repeat
      │ ⏚ ground ··· [[#m3]] Urgent items are raised in the team chat
@@ -835,11 +838,16 @@ the section the line hangs from:
 | =⏚=  | a member, by its id and heading; or a  | what it stands on, linked in its text                  |
 |      | source, or the words it quotes         |                                                        |
 | =↥=  | a member, by its roles and heading     | built on it: this stands on it, in its own grounds     |
-| =•=  | a member, by its roles, id and heading | told by the one above: its link tells it here          |
+| =•=  | a member, as =told=, by its id and     | told by the one above: its link tells it here          |
+|      | heading                                |                                                        |
 | =▤=  | a heading, by its role and heading     | told here: this heading's link tells it there          |
 
 =⏚= and =•= are where a link is written, and name what it calls by its
-id; =↥= and =▤= are the other end, where a member is written.  What a
+id; =↥= and =▤= are the other end, where a member is written.  A line at
+the end where a link is written says what the link is to its heading --
+=⏚ ground=, =• told= -- not the role the member plays where it is
+written, which says nothing there; a line at the other end names the
+heading the link is in by the role that heading plays.  What a
 member stands on is drawn below it, as the ground is below a building:
 =⏚ ground= a member it points to -- with =[no grounds]= when it does not
 hold -- then =⏚ quote= each quotation in its text, and below them
@@ -928,7 +936,7 @@ the tree and the notes it was built from:
 
 #+begin_example
  ├ Rain ··················· Rain                                                Why it drags
- │   • member ····· [[#m4]] Half the items repeat                               Most items come back unchanged
+ │   • told ······· [[#m4]] Half the items repeat                               Most items come back unchanged
  │   (logic › reasons)      Robin keeps raising the same items.  Not something  Half of each agenda repeats the week before.
  │   │                      to put in writing.
  │   │ ↥ member ··········· Move to fortnightly
@@ -1014,12 +1022,12 @@ those with a key, in the same four lines.
 |       | visit-other-window | ~o~         | go to it in the other window                                                      | same                                               |
 |       | show               |             | show it in the other window, staying on the board                                 | same                                               |
 |       | cycle              | ~TAB~       | fold it, show what is right under it, or all under it                             | same                                               |
-|       | cycle-all          | ~S-TAB~     | fold every line, or open every one                                                | same                                               |
+|       | cycle-all          | ~C-u TAB~   | fold every line, or open every one; ~S-TAB~ too                                   | same                                               |
 |       | fold               |             | fold what is under it, or unfold it                                               | fold what is nested under it, or unfold it         |
 |       | same               |             | go to where it is written, or there, to a call                                    | same                                               |
 |       | order              |             | open the members sections list where told, or                                     | same                                               |
 |       |                    |             | where written                                                                     |                                                    |
-|       | entry-text         |             | show the text under every heading, or stop                                        |                                                    |
+|       | entry-text         | ~C-u i~     | show the text under every heading, or stop                                        |                                                    |
 |       | wrap               | ~i~         | show it whole, with the text under it, or stop                                    | same                                               |
 |       | view               |             | show the document in another window, kept current                                 |                                                    |
 |       | export             | ~x~         | write the document                                                                |                                                    |
@@ -1061,22 +1069,29 @@ it opens; again, it folds into its line, which then says how many it
 hides.  Under a member, that is what is nested under it and what its
 links tell; under a section, the sections below it and what its links
 tell.  On a line with nothing under it, the line it is under cycles.
-~S-TAB~ opens every line while any is folded, and else folds them all.
-/fold/ folds one line or unfolds it, without the cycle.  The board starts
-open; with ~org-truss-board-fold-limit~ set, a heading holding more than
-that starts folded.  A member a link tells starts folded where it is not
-opened, as /order/ says, since it is drawn whole where it is.
+~C-u TAB~, or ~S-TAB~, opens every line while any is folded, and else
+folds them all.  /fold/ folds one line or unfolds it, without the cycle.
+The board starts open, each line on one line.
+~org-truss-board-fold-limit~, nil unless set, is how many a heading may
+hold and still start open; 0 starts it as an Org file does in overview,
+every line with something under it folded.  A member a link tells
+starts folded where it is not opened, as /order/ says, since it is drawn
+whole where it is.
 
 Folding and drawing a line whole are apart: ~TAB~ shapes the tree, ~i~
-reads one line through, and each leaves the other as it is.
+reads one line through, and each leaves the other as it is.  Each line
+starts on one line; ~C-u i~ draws every line whole, as /entry-text/ does,
+and again every line on one.
 
-A reason whose heading's line tells a member and says nothing else,
-~*** [[truss-include:m7]]~, is that member there, and the board draws it
-so: one line, marked as a link's end, in m7's words and called by its
-link, =• Reason [[#m7]] …=, with =[no grounds]= when m7 does not hold.  No
-ground and no member told is drawn under it, as both are m7.  Under m7,
-where it is written, it is one line too, built on it, named by the claim
-it is a reason of.
+A link is drawn as what it is to its heading.  In a reason every link
+to a member is a ground, so each is a =⏚ ground= under it, in m7's words
+and called as the link is written: =[[#m7]]= stands on m7 alone,
+=[[truss-include:m7]]= tells it as well, wherever in the reason it is
+written.  None is drawn there besides as a member told.  A reason whose
+heading's line is the link, ~*** [[truss-include:m7]]~, is drawn as
+written, its role and the link.  Under m7, where it is written, each
+reason is one line, =↥=, built on it.  In a heading that is no reason
+the link only tells, and is drawn as =• told=.
 
 A heading keeps the words of its source with it, in a ~#+begin_quote~
 block in its own text, which stays in the file as notes do, and gives it
@@ -1251,7 +1266,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-middle-width~ | ~nil~, half the window         | room for the file's words before the right    |
 | ~org-truss-board-right-width~  | ~nil~, the window's edge       | where a line drawn whole breaks its right     |
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
-| ~org-truss-board-fold-limit~   | ~nil~, no limit                | members one shows before it starts folded     |
+| ~org-truss-board-fold-limit~   | ~nil~, all open; 0, all folded | headings one holds before it starts folded    |
 | ~org-truss-board-marks~        | =⏚= =↥= =•= =▤=                | marks of the lines that are an end of a link  |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
 |                                |                                | the same member                               |

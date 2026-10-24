@@ -111,11 +111,13 @@ letter where the board is drawn, keeps the tree in line."
   :group 'org-truss)
 
 (defcustom org-truss-board-fold-limit nil
-  "How many headings right under a member the board shows before folding it.
-A member holding more starts folded, as one line that says how many it
-hides; \\<org-truss-board-mode-map>\\[org-truss-board-cycle] unfolds it.
-Nil, as it is at first, for no limit: the board starts open."
-  :type '(choice (const :tag "No limit" nil) integer)
+  "How many headings right under a heading the board shows before folding it.
+A heading holding more -- members, sections, members its links tell --
+starts folded, as one line that says how many it hides;
+\\<org-truss-board-mode-map>\\[org-truss-board-cycle] unfolds it.  Nil, as
+it is at first, starts the board open, each line on one line; 0 starts
+every one folded, as an Org file starts in overview."
+  :type '(choice (const :tag "Start open" nil) integer)
   :group 'org-truss)
 
 (defun org-truss--over-limit-p (n)
@@ -473,17 +475,6 @@ file's, which is there only where the file has been shown."
   (propertize (org-truss-member-label member)
               'face (org-truss--level-face (org-truss-member-level member))))
 
-(defun org-truss--stand-in-words (model member)
-  "Return MEMBER's words as the board draws them, MODEL being its file's.
-Its heading, as `org-truss--member-words' draws it; for a heading that
-stands for a member, `org-truss-stand-in', that member's heading."
-  (let* ((ref (org-truss-stand-in member))
-         (target (and ref (org-truss-heading-by-ref model ref))))
-    (if target
-        (propertize (org-truss-cluster-label target)
-                    'face (org-truss--level-face (org-truss-member-level member)))
-      (org-truss--member-words member))))
-
 (defun org-truss--label-lines (label)
   "Return LABEL as the lines it is drawn on.
 One, cut short if need be; drawn whole, as many as it takes to break it to
@@ -588,18 +579,9 @@ telling it, and then each heading it is a ground of, by its roles and its
 heading, marked as built on it: the other end of a link, as the line of a
 ground it stands on is of one.  In the structure, where it is drawn under
 the heading that tells it, that goes without saying.  STEM starts each;
-KEY is MEMBER's line's.  Each goes to what it names.  A heading that
-stands for MEMBER, its line telling it and nothing else, tells it and is
-built on it at once: it is one line, built on it, named by the heading it
-is under, since its own words are the link."
-  (let* ((use (and org-truss--uses (gethash member org-truss--uses)))
-         (root (org-truss-model-structure model))
-         (standing (lambda (c) (let ((ref (org-truss-stand-in c)))
-                                 (and ref (eq (org-truss-heading-by-ref model ref) member)))))
-         (named (lambda (c) (if (funcall standing c)
-                                (let ((up (org-truss-parent model c)))
-                                  (if up (org-truss-cluster-label up) (org-truss-cluster-label c)))
-                              (org-truss-cluster-label c)))))
+KEY is MEMBER's line's.  Each goes to what it names."
+  (let ((use (and org-truss--uses (gethash member org-truss--uses)))
+        (root (org-truss-model-structure model)))
     (mapcar
      (lambda (line) (append line (list :under stem :cut t)))
      (append
@@ -612,13 +594,11 @@ is under, since its own words are the link."
                  nil
                  (list :type 'use :pos (org-truss-cluster-pos teller)
                        :key (append key (list 'use (org-truss-cluster-pos teller))))))
-              (and (not org-truss--in-structure)
-                   (seq-remove (lambda (c) (and (funcall standing c) (memq c (cdr use))))
-                               (car use))))
+              (and (not org-truss--in-structure) (car use)))
       (mapcar (lambda (user)
                 (org-truss--line
                  (concat stem (org-truss--mark 'built) (org-truss--role-word model user))
-                 (propertize (funcall named user) 'face 'org-truss-dim)
+                 (propertize (org-truss-cluster-label user) 'face 'org-truss-dim)
                  nil
                  (list :type 'use :pos (org-truss-cluster-pos user)
                        :key (append key (list 'use (org-truss-cluster-pos user))))))
@@ -628,12 +608,21 @@ is under, since its own words are the link."
   "Return LINES, what the reader would see, in the face of what is not told."
   (mapcar (lambda (line) (and line (propertize line 'face 'org-truss-untold))) lines))
 
+(defun org-truss--told-links (cluster)
+  "Return the references of the links CLUSTER tells members by, each once.
+Not those it stands on, `org-truss-standing-includes': the board draws a
+link as what it is to the heading, and those are its grounds."
+  (seq-difference (seq-uniq (org-truss-cluster-includes cluster))
+                  (org-truss-standing-includes cluster)))
+
 (defun org-truss--member-uses (model)
-  "Return how each member of MODEL is used, as `org-truss--uses' keeps it."
+  "Return how each member of MODEL is used, as `org-truss--uses' keeps it.
+A link a heading stands on is a ground of it, though it tells it too; see
+`org-truss-standing-includes'."
   (let ((uses (make-hash-table :test #'eq))
         (cell (lambda (m uses) (or (gethash m uses) (puthash m (cons nil nil) uses)))))
     (dolist (c (org-truss-clusters model))
-      (dolist (ref (seq-uniq (org-truss-cluster-includes c)))
+      (dolist (ref (org-truss--told-links c))
         (let ((m (org-truss-heading-by-ref model ref)))
           (when m
             (let ((use (funcall cell m uses)))
@@ -665,17 +654,17 @@ is what it stands for, under KEY, and ID how it is called, if it is."
            id)
           (list :under stem :cut t)))
 
-(defun org-truss--grounds-lines (model cluster stem key &optional skip)
+(defun org-truss--grounds-lines (model cluster stem key)
   "Return a line for each thing CLUSTER of MODEL stands on, below it.
 The members its text links to, each once, said to be broken when it is
-no member, and to have no grounds when it does not hold; then the words
+no member, and to have no grounds when it does not hold, each called as
+its link is written, [[#m7]] or [[truss-include:m7]]; then the words
 it quotes, each quotation, and below them the sources its text links to,
 each once, as the words are read from the source; a link among them that
 points to nothing said not to be found.  Each keeps the links to sources
 it opens, as :links: a source's own, and a quotation's, or else the first
 the text cites.
-STEM starts each; KEY is CLUSTER's line's.  SKIP is a reference not drawn:
-the member CLUSTER's own line stands for."
+STEM starts each; KEY is CLUSTER's line's."
   (let* ((pos (org-truss-cluster-pos cluster))
          (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) cluster))
                                             (plist-get org-truss--checks :broken-sources))))
@@ -693,10 +682,14 @@ the member CLUSTER's own line stands for."
                      :pos (if ground (org-truss-cluster-pos ground) pos)
                      :label (and ground (org-truss-cluster-label ground))
                      :claim pos :ground ref)
-               (and ground (org-truss--id-text ground ref)))))))
+               ;; Called as the link is written: one that tells it as well
+               ;; says so, wherever in the heading it stands.
+               (and ground (if (member ref (org-truss-standing-includes cluster))
+                               (org-truss--include-link ref)
+                             (org-truss--id-text ground ref))))))))
     (append
      (mapcar (lambda (ref) (funcall member-line ref "ground"))
-             (remove skip (org-truss-cluster-refs cluster)))
+             (org-truss-cluster-refs cluster))
      (mapcar (lambda (source)
                (org-truss--ground-line stem (append key (list 'source (car source)))
                                        (concat (symbol-name (car source))
@@ -745,12 +738,7 @@ parent's telling pattern tells after it is marked."
          (indent (if (consp indent) (car indent) indent))
          (in-structure org-truss--in-structure)
          (patterned (org-truss-cluster-patterns member))
-         ;; A heading whose line tells a member and says nothing else is
-         ;; that member there: one line, in its words, which stands for
-         ;; the ground and the link alike.
-         (stand-in (org-truss-stand-in member))
-         (target (and stand-in (org-truss-heading-by-ref model stand-in)))
-         (label (org-truss--label-lines (org-truss--stand-in-words model member)))
+         (label (org-truss--label-lines (org-truss--member-words member)))
          ;; A marker opens the first line, and the lines after it are
          ;; indented as far, as a list item's are.
          (hang (if marker (string-width marker) 0))
@@ -765,7 +753,7 @@ parent's telling pattern tells after it is marked."
                      lines)))
          (up (org-truss-parent model member))
          (children (org-truss-member-children member))
-         (includes (remove (and target stand-in) (org-truss-cluster-includes member)))
+         (includes (org-truss--told-links member))
          (nested (+ (length (mapcan #'org-truss--subtree children)) (length includes)))
          ;; It is opened in one place, by the order the board is drawn
          ;; in, and starts folded in the other: as written, where it is
@@ -777,7 +765,8 @@ parent's telling pattern tells after it is marked."
          (folded (or (and looping (> nested 0))
                      (and (> nested 0)
                           (org-truss--folded-p key (or (and elsewhere t)
-                                                       (org-truss--over-limit-p (length children)))))))
+                                                       (org-truss--over-limit-p
+                                                        (+ (length children) (length includes))))))))
          (shown (and (not folded) children))
          ;; What it brings where it is written -- its uses, its grounds, its
          ;; gaps -- it brings where it is opened; not where it is one line.
@@ -812,20 +801,16 @@ parent's telling pattern tells after it is marked."
        (concat indent
                ;; Listed by a section, it is an end of a link, marked as
                ;; the lines naming one are.
-               (if (or link target) (org-truss--mark 'item) "")
-               (org-truss--role-word model member)
-               (if (and target (org-truss-cluster-role member 'logic) (not (org-truss-holds-p target)))
-                   (propertize " [no grounds]" 'face 'org-truss-attention)
-                 "")
+               ;; Told where a link stands, it is named by that: the role
+               ;; it plays where it is written says nothing here.
+               (if link (concat (org-truss--mark 'item) "told") (org-truss--role-word model member))
                (if folded (org-truss--fold-mark nested) "")
                (if looping (propertize " [loop]" 'face 'org-truss-attention) "")
                (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
        (car label)
        (car reader)
        (if late (append item (list :why late)) item))
-      (if target
-          (org-truss--id-text target stand-in)
-        (and (or link (not in-structure)) (org-truss--id-text member link))))
+      (and (or link (not in-structure)) (org-truss--id-text member link)))
      (append
        (org-truss--lines-under-heading
         under (cdr label) (org-truss--notes-shown (org-truss-member-notes member)) (cdr reader) item
@@ -837,8 +822,8 @@ parent's telling pattern tells after it is marked."
                             :key (append key '(pattern)))))
         stem)
        (and full (org-truss--use-lines model member stem key))
-       (and full (org-truss--grounds-lines model member stem key (and target stand-in)))
-       (and (not folded) (org-truss--links-lines model member stem key (and target stand-in)))
+       (and full (org-truss--grounds-lines model member stem key))
+       (and (not folded) (org-truss--links-lines model member stem key))
        ;; Under that line, what is under the member leaves its columns at
        ;; the start of the right.
        (let ((i 0))
@@ -864,12 +849,12 @@ parent's telling pattern tells after it is marked."
                                 :key (append key (list 'gap (car gap) (cadr gap))))))
                (and full (org-truss-gaps member))))))))
 
-(defun org-truss--links-lines (model holder indent path &optional skip)
+(defun org-truss--links-lines (model holder indent path)
   "Return board lines for the members HOLDER of MODEL tells by its links.
 HOLDER is any heading, and its links [[truss-include:m7]] are drawn in the
 order they are written, each member as `org-truss--member-lines' draws
-it.  PATH identifies HOLDER's lines.  SKIP is a reference not drawn: the
-member HOLDER's own line stands for."
+it.  PATH identifies HOLDER's lines.  A link HOLDER stands on is drawn as
+its ground instead; see `org-truss--told-links'."
   (mapcan (lambda (ref)
             (let ((member (org-truss-heading-by-ref model ref))
                   (key (list 'link path ref)))
@@ -880,7 +865,7 @@ member HOLDER's own line stands for."
                 ;; the link.
                 (list (org-truss--with-id
                        (org-truss--line
-                        (concat indent (org-truss--mark 'item) (org-truss--role-word model member))
+                        (concat indent (org-truss--mark 'item) "told")
                         (org-truss-section-label member)
                         (car (org-truss--reader-lines (cons (org-truss-section-title member)
                                                             (cdr (org-truss-section-public member)))))
@@ -898,7 +883,7 @@ member HOLDER's own line stands for."
                        (propertize (org-truss--include-link ref) 'face 'org-truss-attention)
                        nil (list :type 'broken :pos (org-truss-cluster-pos holder)
                                  :link ref :holder (org-truss-cluster-pos holder) :key key)))))))
-          (remove skip (seq-uniq (org-truss-cluster-includes holder)))))
+          (org-truss--told-links holder)))
 
 (defun org-truss--pattern-line (cluster indent item)
   "Return the line naming the patterns CLUSTER follows, or nil if it follows none.
@@ -959,7 +944,7 @@ line says how many it hides."
   (let* ((path (append path (list (org-truss-section-label section))))
          (inner (concat prefix (if last "  " "│ ")))
          (key (list 'section path))
-         (includes (seq-uniq (org-truss-cluster-includes section)))
+         (includes (org-truss--told-links section))
          (all (org-truss-section-children section))
          (nested (+ (length (org-truss--section-descendants section)) (length includes)))
          (folded (and (> nested 0)
@@ -1038,7 +1023,7 @@ RET on it goes to the heading."
                          (root "Structure")
                          ((org-truss-part-p cluster) (capitalize (symbol-name (org-truss-part-name cluster))))
                          (t (org-truss--role-word model cluster))))
-      (cond ((org-truss-member-p cluster) (org-truss--stand-in-words model cluster))
+      (cond ((org-truss-member-p cluster) (org-truss--member-words cluster))
             ((or root (org-truss-part-p cluster)) nil)
             (t (org-truss-cluster-label cluster)))
       (and right (propertize right 'face 'org-truss-attention))

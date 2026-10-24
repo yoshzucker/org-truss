@@ -944,9 +944,10 @@ pointing to each other holds, each having grounds written."
 
 (ert-deftest org-truss-test-grounds-in-the-text ()
   "A link in a heading's text to a member is grounds: it gives the heading
-grounds, and what it points to must hold and be there.  A section reads its text alike, but an item listing a
-member is what it tells, not grounds; and a section with a logic asks
-grounds of its reasons as a member does."
+grounds, and what it points to must hold and be there.  A section reads
+its text alike, and a section with a logic asks grounds of its reasons as
+a member does: a reason stands on what it tells, an item listing a member
+too."
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -1007,11 +1008,12 @@ As [[#fact]] shows.
                             (plist-get checks key)))))
       (should (equal (org-truss-cluster-text-grounds (org-truss-test--m model "Cites a fact")) '("fact")))
       (should (org-truss-has-grounds-p (org-truss-test--m model "Cites a fact")))
-      (should (equal (funcall pairs :weak-grounds) '(("Cites a bare one" . "bare"))))
+      (should (equal (funcall pairs :weak-grounds) '(("Cites a bare one" . "bare") ("Because" . "bare"))))
       (should (equal (funcall pairs :broken-grounds) '(("Cites nothing there" . "gone"))))
       (should-not (org-truss-cluster-text-grounds (funcall section "Why")))
-      (should (equal (org-truss-cluster-text-grounds (funcall section "Because")) '("fact")))
-      (should (equal (mapcar #'org-truss-cluster-label (plist-get checks :no-grounds)) '("Why"))))))
+      (should (equal (org-truss-cluster-refs (funcall section "Why")) '("fact")))
+      (should (equal (org-truss-cluster-refs (funcall section "Because")) '("bare" "fact")))
+      (should-not (plist-get checks :no-grounds)))))
 
 (ert-deftest org-truss-test-reason-told-on-its-line ()
   "A reason whose heading's line tells a member is that member there, and

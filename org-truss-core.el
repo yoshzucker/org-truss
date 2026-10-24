@@ -982,27 +982,26 @@ The first, in the order of the kinds, whose role is flagged :label."
 
 ;; A heading that plays a role of the logic above it is a reason, and must
 ;; have grounds: a quotation in its text, or a link in its text, to a
-;; member or a source.  A reason whose heading's line tells a member,
-;; *** [[truss-include:m7]], is that member there, and stands on it.  One
+;; member or a source.  A link a reason tells a member by, in its text or
+;; on its heading's line, *** [[truss-include:m7]], it stands on too.  One
 ;; with reasons of its own leaves that to them, and an assumption is taken
 ;; without.  What any heading points to as grounds must hold as what it
 ;; is: a member, as a heading that must have grounds is asked to; a source
 ;; or a file, by being there.
 
-(defun org-truss-stand-in (cluster)
-  "Return the reference of the member CLUSTER's heading stands for, or nil.
-A heading whose line holds nothing but a link that tells a member,
-*** [[truss-include:m7]], is that member there."
-  (let ((label (org-truss-cluster-label cluster)))
-    (and label (string-match org-truss--include-line-re label)
-         (org-truss--ref (match-string 1 label)))))
+(defun org-truss-standing-includes (cluster)
+  "Return the references of the links telling members CLUSTER stands on.
+Every one, on its heading's line or in its text, when it plays a role of
+a logic: a reason is asked why it holds, and what it tells the reader
+there it stands on.  None for any other heading, which only tells."
+  (and (org-truss-cluster-role cluster 'logic)
+       (seq-uniq (org-truss-cluster-includes cluster))))
 
 (defun org-truss-cluster-refs (cluster)
   "Return the references of every link to a member CLUSTER stands on.
-In its text, in order, and first the links telling members on its
-heading's line when it plays a role of a logic; each once."
-  (seq-uniq (append (and (org-truss-cluster-role cluster 'logic)
-                         (org-truss--includes-in (org-truss-cluster-label cluster)))
+In its text, in order, and first those of `org-truss-standing-includes';
+each once."
+  (seq-uniq (append (org-truss-standing-includes cluster)
                     (org-truss-cluster-text-grounds cluster))))
 
 (defun org-truss-has-grounds-p (cluster)

@@ -1140,13 +1140,21 @@ it has gone ten levels down."
       (org-truss-board-redraw)
       (setq n (1+ n)))))
 
-(defun org-truss-board-cycle ()
+(defun org-truss-board-cycle (&optional all)
   "Fold the line at point, show what is right under it, or show all under it.
 As TAB cycles a heading in Org: a folded line opens to what is right
 under it, each of those folded; pressed again, everything under it opens;
 again, it folds.  On a line with nothing under it, the line it is under
-cycles.  A folded line says how many it hides."
-  (interactive)
+cycles.  A folded line says how many it hides.  With a prefix argument
+ALL, as \\[universal-argument] TAB in Org, the whole board cycles instead;
+see `org-truss-board-cycle-all'."
+  (interactive "P")
+  (if all
+      (org-truss-board-cycle-all)
+    (org-truss--cycle-line)))
+
+(defun org-truss--cycle-line ()
+  "Cycle the line at point, as `org-truss-board-cycle' says."
   (let* ((line (org-truss--fold-at))
          (key (plist-get line :fold))
          (under (lambda () (seq-filter (lambda (fold) (org-truss--key-under-p (car fold) key))
@@ -1209,13 +1217,21 @@ the same way again, whatever \\[org-truss-board-wrap] did to it."
   (org-truss-board-redraw)
   (message "Entry text %s" (if org-truss--entry-text "shown" "hidden")))
 
-(defun org-truss-board-wrap ()
+(defun org-truss-board-wrap (&optional all)
   "Draw the line at point whole, or on one line again; the rest stay as they are.
 Whole is as \\[org-truss-board-entry-text] draws every line: its words
 broken to fit, and under a heading what is written under it.  So the board
 can be scanned a line each and a line read through.  While entry text is
-shown, this puts the line back on one line instead."
-  (interactive)
+shown, this puts the line back on one line instead.  With a prefix
+argument ALL, every line is drawn whole, or every one on one line again,
+as `org-truss-board-entry-text' does."
+  (interactive "P")
+  (if all
+      (org-truss-board-entry-text)
+    (org-truss--wrap-line)))
+
+(defun org-truss--wrap-line ()
+  "Draw the line at point the other way, as `org-truss-board-wrap' says."
   (let ((key (org-truss--owner (plist-get (org-truss--item) :key)))
         (start (point)))
     (unless key (user-error "Nothing to wrap here"))

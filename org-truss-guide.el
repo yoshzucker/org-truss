@@ -70,10 +70,12 @@
 #   grounds, unless it has TRUSS_LOGIC itself or the tag :assumption:.  It
 #   has grounds when its text has one of these
 #     a link            to a member, ~[[#m3]]~, or to a source: moor:,
-#                       file:, URL.  A link that tells a member is no
-#                       ground, but on the heading's line,
-#                       ~*** [[truss-include:m3]]~: the reason is that
-#                       member there, as it is
+#                       file:, URL.  A link that tells a member,
+#                       ~[[truss-include:m3]]~, is a ground too: what a
+#                       reason tells the reader it stands on.  On the
+#                       heading's line, ~*** [[truss-include:m3]]~, the
+#                       reason is that member there, as it is.  In a
+#                       heading that is no reason, it only tells
 #     #+begin_quote     the source's own words, quoted
 #   Outside #+begin_public a link is for the file alone; inside, it is the
 #   reader's citation too.  Words naming what has no file -- an agreement,
@@ -196,10 +198,12 @@
 #   ただし、自分も TRUSS_LOGIC を持つ見出しと、:assumption: を付けた見出しは
 #   除く。根拠を持つとは、本文に次のどれかを持つこと
 #     リンク            部材へのリンク ~[[#m3]]~ か、資料への moor:・
-#                       file:・URL のリンク。部材を展開するリンクは根拠
-#                       ではない。ただし見出しの行に書いた
+#                       file:・URL のリンク。部材を展開するリンク
+#                       ~[[truss-include:m3]]~ も根拠になる。理由が読み手に
+#                       語るものに、理由は立つ。見出しの行に書いた
 #                       ~*** [[truss-include:m3]]~ では、その部材が
-#                       そのまま理由になる
+#                       そのまま理由になる。理由でない見出しでは、展開する
+#                       だけ
 #     #+begin_quote     資料の原文の引用
 #   #+begin_public の外のリンクはファイルの中だけのもの。中に書けば、読み手
 #   への出典にもなる。ファイルのないもの（合意、口頭の話）を名指す言葉は根拠
