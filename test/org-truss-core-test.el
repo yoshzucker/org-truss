@@ -16,6 +16,7 @@
 * Brief
 :PROPERTIES:
 :TRUSS_PART: brief
+:TRUSS_BREAKDOWN: reader-question-response-constraints
 :END:
 ** Reader
 :PROPERTIES:
@@ -185,9 +186,6 @@ Finance said so at the October meeting.
 :TRUSS_PART: structure
 :END:
 ** Constraints
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: constraints
-:END:
 - [[truss-include:budget]]
 "
   "A truss file with members written under fields of the subject.")
@@ -202,6 +200,7 @@ Finance said so at the October meeting.
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
+:TRUSS_BREAKDOWN: premises-issue-constraints
 :END:
 ** Premises
 :PROPERTIES:
@@ -277,6 +276,7 @@ The rules ask for a check before and after driving.
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure
+:TRUSS_TELLING: scqa
 :END:
 ** Background
 :PROPERTIES:
@@ -285,7 +285,7 @@ The rules ask for a check before and after driving.
 - [[truss-include:rule]]
 ** What we do
 :PROPERTIES:
-:TRUSS_TELLING_ROLE: conclusion
+:TRUSS_TELLING_ROLE: answer
 :END:
 - [[truss-include:checked]]
 "
@@ -662,6 +662,41 @@ Two roles in one pattern's property are none of its roles."
       (should (equal (org-truss-test--labels
                       (mapcar #'car (org-truss-no-role (org-truss-test--m model "Broken down"))))
                      '("Both" "Elsewhere"))))))
+
+(ert-deftest org-truss-test-no-pattern ()
+  "A heading that says a role of a kind the heading above has no pattern
+of is found, whatever patterns of other kinds that one has: reasons moved
+under another reason, which takes parts.  The report names the patterns
+the role belongs to."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Claim
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** First reason
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_BREAKDOWN: parts
+:END:
+**** Moved under it
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+[[https://e.x/s][s]]
+"
+    (let* ((model (org-truss-read))
+           (checks (org-truss-checks model)))
+      (should (equal (mapcar (lambda (hit) (list (org-truss-cluster-label (car hit)) (cadr hit)
+                                                 (org-truss-cluster-label (cddr hit))))
+                             (plist-get checks :no-pattern))
+                     '(("Moved under it" logic "First reason"))))
+      (should (equal (org-truss-patterns-with-role 'logic 'reason) '(reasons)))
+      (should (string-match-p
+               "^f:[0-9]+: Moved under it -- TRUSS_LOGIC_ROLE reason, but First reason has no TRUSS_LOGIC (reasons has it)$"
+               (org-truss-check-report model "f"))))))
 
 (ert-deftest org-truss-test-any-pattern-anywhere ()
   "A member and a section take patterns alike, of every kind.  A telling
@@ -1277,8 +1312,11 @@ them, a broken link where it is written."
            (checks (org-truss-checks model)))
       (should (equal (mapcar (lambda (g) (cons (org-truss-cluster-label (car g)) (cdr g)))
                              (plist-get checks :gaps))
-                     '(("Move to fortnightly" (logic minor . 1)))))
+                     '(("Brief" (breakdown question . 1) (breakdown response . 1)
+                        (breakdown constraints . 1))
+                       ("Move to fortnightly" (logic minor . 1)))))
       (should-not (plist-get checks :no-role))
+      (should-not (plist-get checks :no-pattern))
       (should-not (plist-get checks :out-of-order))
       (should (equal (org-truss-test--labels (plist-get checks :no-grounds))
                      '("Some items are urgent" "A meeting that repeats itself can meet less")))
@@ -1301,7 +1339,7 @@ and gives each thing found a line of its own that compilation mode reads."
       (should (string-match-p "^Broken links -- links that point to nothing" report))
       (should (string-match-p "^truss\\.org:[0-9]+: \\[\\[truss-include:none\\]\\] in Umbrella not found$"
                               report))
-      (should (string-match-p "^truss\\.org:[0-9]+: Some items are urgent -- no grounds$" report))
+      (should (string-match-p "^truss\\.org:[0-9]+: Some items are urgent -- no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:$" report))
       (should (string-match-p
                "^truss\\.org:[0-9]+: Move to fortnightly -- lacks TRUSS_LOGIC_ROLE minor (logic › deduction)$"
                report))

@@ -293,14 +293,15 @@ the members alone, where each reason shows what it reads.
 
 ** What is left to do
 
-Seven checks, each found where the problem is:
+Eight checks, each found where the problem is:
 
 | Check         | Found at                       | What it finds                                                                                                                                                     |
 |---------------+--------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Missing roles | the heading whose pattern asks | a role its pattern asks for that no heading right under it plays                                                                                                  |
 | No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them                                                              |
+| No pattern    | the heading right under it     | says a role in ~TRUSS_LOGIC_ROLE~, ~TRUSS_BREAKDOWN_ROLE~ or ~TRUSS_TELLING_ROLE~ of a kind the heading above has no pattern of; names the patterns with it       |
 | Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                                                     |
-| No grounds    | the heading that lacks them    | must have grounds and has none                                                                                                                                    |
+| No grounds    | the heading that lacks them    | must have grounds and has none: a link or a quote, a ~TRUSS_LOGIC~ over reasons of its own, or ~:assumption:~ makes it hold                                       |
 | Weak grounds  | the heading that points        | points as grounds, in its text, to a member that does not hold                                                                                                    |
 | Mixed sources | the heading that brings them   | points into more than one source where it keeps to one: parts with nothing under them, or a ~TRUSS_LOGIC~ in the subject (see [[*One source at a time]])          |
 | Broken links  | the link                       | a link to nothing: one that tells or points to no member, one to no source or file; a ~CUSTOM_ID~ two members have; a link that tells what tells its heading back |
@@ -727,7 +728,7 @@ This is the board of the file above:
    └ Step ··············· Carry what is still open to the next one             2. Carry what is still open to the next one
 
  No grounds
-   Reason [no grounds] ·· Nothing urgent waits for the review                  no grounds
+   Reason [no grounds] ·· Nothing urgent waits for the review                  no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
 
  Structure  how it is told: sections, telling members
  (telling › Sky, Rain, Umbrella)
@@ -785,7 +786,8 @@ Each line has three columns.  On the left is what the board says the line
 is: the role a section or a member plays in the patterns above
 it -- /member/ for one that plays none -- and the tree that joins them.
 After the role come, in brackets, what wants seeing to: =[no role]= for a
-heading that plays no role of a pattern above it, =[assumed]= for an
+heading that plays no role of a pattern above it, =[no pattern]= for one
+that plays a role the heading above has no pattern for, =[assumed]= for an
 assumption, =[no grounds]= for a reason that must have grounds and has
 none.  At the end of the left, just before its heading, a member is named
 by its ~CUSTOM_ID~ as the file names it: =#m9= where it is written, in the
@@ -880,6 +882,7 @@ The other marks of the board are not links:
 | =#m9=               | end of the left         | the member, where it is written                                                      |
 | =[[#m9]]=           | end of the left         | the member, where a link that tells it or a ground calls it                          |
 | =[no role]=         | after the role          | plays no role of a pattern of the heading above                                      |
+| =[no pattern]=      | after the role          | plays a role, but the heading above has no pattern of its kind                       |
 | =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
 | =[no grounds]=      | after the role          | must have grounds, and has none; after ⏚ ground, the member pointed to does not hold |
 | =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |
@@ -897,7 +900,7 @@ the right.
 
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Mixed sources/, /Missing
-roles/, /No role/, /Out of order/
+roles/, /No role/, /No pattern/, /Out of order/
 (see [[*What is left to do]]) -- each thing listed in the part it is found
 in, and ~RET~ on it goes there.  The mouse on the name of a check says
 what it finds.

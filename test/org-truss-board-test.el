@@ -123,7 +123,7 @@ and what is undone."
       (should (string-match-p "Minor premise —" text))
       (should (string-match-p "broken link[ ·]+\\[\\[truss-include:none\\]\\]" text))
       (should (string-match-p "^ Broken links\n +\\[\\[truss-include:none\\]\\] ← Umbrella$" text))
-      (should (string-match-p "^ No grounds\n   Reason \\[no grounds\\][ ·]+Some items are urgent +no grounds$" text))
+      (should (string-match-p "^ No grounds\n   Reason \\[no grounds\\][ ·]+Some items are urgent +no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:$" text))
       (should (string-match-p "^ Missing roles\n   member[ ·]+#move Move to fortnightly +Minor premise$" text))
       (should (string-match-p "RET visit" text)))))
 
@@ -172,7 +172,7 @@ them, and is listed under the part."
                      "   └ member[ ·]+Nobody checks before a test +Nobody checks before a test\n"
                      "   Constraints[ ·]+Constraints +Constraints\n"
                      "   ├ member[ ·]+#budget No budget this year +No budget this year\n"
-                     "   │   ▤ Constraints[ ·]+Constraints\n"
+                     "   │   ▤ section[ ·]+Constraints\n"
                      "   │   ⏚ source[ ·]+finance, 3 October\n"
                      "   └ member[ ·]+The schedule is fixed +The schedule is fixed\n"
                      "   Premises —\n\n"
@@ -183,7 +183,7 @@ them, and is listed under the part."
     (save-window-excursion
       (org-truss-board-visit)
       (should (equal (org-get-heading t t t t) "Issue")))
-    (org-truss-test--goto-line-with "^ └ Constraints")
+    (org-truss-test--goto-line-with "^ └ section[ ·]+Constraints")
     (org-truss-test--answering '("Subject › Constraints › The schedule is fixed")
       (org-truss-board-place))
     ;; Placed, it is given an id to be pointed to by.
@@ -565,6 +565,7 @@ past what is under a member."
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
+:TRUSS_BREAKDOWN: premises-issue-constraints
 :END:
 ** Constraints
 :PROPERTIES:
@@ -636,6 +637,7 @@ and every line any of them is broken onto."
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
+:TRUSS_BREAKDOWN: premises-issue-constraints
 :END:
 ** Constraints
 :PROPERTIES:
@@ -1948,6 +1950,7 @@ is what the document tells of it, and outside the structure, lines marked
     (let ((text (buffer-string)))
       (should (string-match-p
                (concat "^ Subject .*\n"
+                       " (breakdown › Premises, Issue, Constraints)\n"
                        "   Premises[ ·]+Premises +Premises\n"
                        "   └ member[ ·]+How many cars we run +How many cars we run\n"
                        "   Constraints[ ·]+Constraints +Constraints\n"
@@ -1967,7 +1970,7 @@ is what the document tells of it, and outside the structure, lines marked
                  (string-match "^ Structure " text)))
       (should (string-match-p (concat "├ Situation[ ·]+\\(?:\\[*#[^] ]+]* \\)?Background +Background\n"
                                       " │   • told ▸3[ ·]+\\(?:\\[*#[^] ]+]* \\)?The manager checks.* +The rules ask for a check before and after driving\\.\n"
-                                      " └ Conclusion")
+                                      " └ Answer")
                               text))
       (should (string-match-p "Step[ ·]+\\(?:\\[*#[^] ]+]* \\)?The driver blows into the tester +1\\. The driver blows" text)))))
 

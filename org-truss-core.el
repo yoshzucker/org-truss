@@ -962,6 +962,22 @@ a role that takes anything leaves none out."
                                        (org-truss-cluster-children cluster))))))
           org-truss-pattern-kinds))
 
+(defun org-truss-no-pattern (cluster)
+  "Return (CHILD . KIND) for what is right under CLUSTER out of its patterns.
+Each heading there whose role property of KIND names a role, while
+CLUSTER has no pattern of KIND: a reason under a heading with no
+TRUSS_LOGIC, say, left there when it was moved under another."
+  (mapcan (lambda (child)
+            (mapcar (lambda (role) (cons child (car role)))
+                    (seq-remove (lambda (role) (org-truss-cluster-pattern cluster (car role)))
+                                (org-truss-cluster-roles child))))
+          (org-truss-cluster-children cluster)))
+
+(defun org-truss-patterns-with-role (kind role)
+  "Return the ids of the patterns of KIND that have ROLE, in order."
+  (seq-filter (lambda (id) (assq role (org-truss-pattern-roles id)))
+              (org-truss-patterns-of-kind kind)))
+
 (defun org-truss-list-form (cluster)
   "Return how what is under CLUSTER is written out as a list, or nil.
 `numbered' or `bulleted': the :list of the first of its patterns that
@@ -1256,6 +1272,9 @@ heading whose pattern asks, at the heading that lacks, at the link.
                  plays, as `org-truss-gaps' gives them
 :no-role         (CHILD KIND . CLUSTER) for each heading right under one
                  with a pattern of KIND that plays no role of it
+:no-pattern      (CHILD KIND . CLUSTER) for each heading right under one
+                 that says a role of KIND while that one has no pattern
+                 of KIND; see `org-truss-no-pattern'
 :out-of-order    (CHILD . ABOVE) for headings the file has below one their
                  parent's telling pattern tells after them
 :no-grounds      headings that must have grounds and have none; see
@@ -1283,6 +1302,10 @@ heading whose pattern asks, at the heading that lacks, at the link.
                              (mapcar (lambda (hit) (cons (car hit) (cons (cdr hit) c)))
                                      (org-truss-no-role c)))
                            clusters)
+          :no-pattern (mapcan (lambda (c)
+                                (mapcar (lambda (hit) (cons (car hit) (cons (cdr hit) c)))
+                                        (org-truss-no-pattern c)))
+                              clusters)
           :out-of-order (mapcan #'org-truss-out-of-order clusters)
           :no-grounds (seq-filter (lambda (c) (org-truss-missing-grounds model c)) clusters)
           :weak-grounds (funcall each (lambda (c) (org-truss-weak-grounds model c)))
@@ -1313,7 +1336,7 @@ heading whose pattern asks, at the heading that lacks, at the link.
   '(("Broken links"
      . "links that point to nothing: a link that tells a member, [[truss-include:id]], or one a heading stands on, [[#id]], to no member -- each wants one member with that CUSTOM_ID, and two with one are reported too; a link to a source taken by org-moor, or to a file, that is not there; and a link that tells a member which, with what is nested under it, tells the heading back, without end")
     ("No grounds"
-     . "headings that play a role of the TRUSS_LOGIC above them, with no TRUSS_LOGIC of their own and no :assumption: tag, and no grounds: no #+begin_quote and no link in their text, to a member or a source")
+     . "headings that play a role of the TRUSS_LOGIC above them, with no TRUSS_LOGIC of their own and no :assumption: tag, and no grounds: no #+begin_quote and no link in their text, to a member or a source; give them one, a TRUSS_LOGIC over reasons of their own, or the :assumption: tag")
     ("Weak grounds"
      . "links a heading stands on, in its text, to members that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
     ("Mixed sources"
@@ -1322,10 +1345,17 @@ heading whose pattern asks, at the heading that lacks, at the link.
      . "roles the TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING of a heading asks for that no heading right under it plays, by its TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE")
     ("No role"
      . "headings right under one with a pattern that play no role of it: the role property of that kind is missing, or names a role the pattern does not have")
+    ("No pattern"
+     . "headings that say a role, in TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE, while the heading right above has no pattern of that kind: give it the pattern the role belongs to, or take the role off")
     ("Out of order"
      . "headings the file has below one that the TRUSS_TELLING of the heading above tells after them; the document follows the file, so move them there"))
   "What each check finds, by the name the board and the report give it.
 In the order the report prints them.")
+
+(defconst org-truss-no-grounds-text
+  "no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:"
+  "What the board and the report say of a heading with no grounds, and how
+it comes to hold.")
 
 (defun org-truss-check-about (name)
   "Return what the check NAME finds, or nil."
@@ -1408,7 +1438,7 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                                                 (org-truss-clusters model))))
                           (plist-get checks :duplicates))))
            (cons "No grounds"
-                 (mapcar (lambda (m) (funcall cluster-line m "no grounds"))
+                 (mapcar (lambda (m) (funcall cluster-line m org-truss-no-grounds-text))
                          (plist-get checks :no-grounds)))
            (cons "Weak grounds"
                  (mapcar (lambda (w) (funcall cluster-line (car w)
@@ -1438,6 +1468,20 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                                             (org-truss-pattern-label (org-truss-cluster-pattern (cddr n) (cadr n)))
                                             (org-truss-cluster-label (cddr n)))))
                          (plist-get checks :no-role)))
+           (cons "No pattern"
+                 (mapcar (lambda (n)
+                           (let* ((kind (cadr n))
+                                  (role (org-truss-cluster-role (car n) kind))
+                                  (ids (org-truss-patterns-with-role kind role)))
+                             (funcall cluster-line (car n)
+                                      (format "%s %s, but %s has no %s%s"
+                                              (org-truss-role-property kind) role
+                                              (org-truss-cluster-label (cddr n))
+                                              (alist-get kind org-truss-pattern-properties)
+                                              (if ids
+                                                  (format " (%s has it)" (mapconcat #'symbol-name ids ", "))
+                                                "")))))
+                         (plist-get checks :no-pattern)))
            (cons "Out of order"
                  (mapcar (lambda (o)
                            (funcall cluster-line (car o)

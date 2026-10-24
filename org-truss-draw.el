@@ -317,11 +317,13 @@ Joined, in the order of their kinds; nil when it plays none."
   "Return the board's word for CLUSTER of MODEL, on the left of its line.
 The roles it plays in the patterns of the heading above, or `member' or
 `section' when it plays none; then [no role] when it plays none of a
-pattern above it, [assumed] when it is tagged :assumption:, and [no
+pattern above it, [no pattern] when it plays a role the heading above has
+no pattern for, [assumed] when it is tagged :assumption:, and [no
 grounds] when it must have grounds and lacks them, each in its face."
   (concat (or (org-truss--role-names cluster)
               (if (org-truss-section-p cluster) "section" "member"))
           (if (org-truss--no-role-p cluster) (propertize " [no role]" 'face 'org-truss-attention) "")
+          (if (org-truss--no-pattern-p cluster) (propertize " [no pattern]" 'face 'org-truss-attention) "")
           (if (org-truss-assumption-p cluster) (propertize " [assumed]" 'face 'org-truss-tentative) "")
           (if (org-truss-missing-grounds model cluster)
               (propertize " [no grounds]" 'face 'org-truss-attention)
@@ -947,6 +949,24 @@ plays that role."
   "Non-nil when the board being drawn finds CLUSTER playing no role it should."
   (assq cluster (plist-get org-truss--checks :no-role)))
 
+(defun org-truss--no-pattern-p (cluster)
+  "Non-nil when the board being drawn finds CLUSTER playing a role the
+heading above has no pattern for."
+  (assq cluster (plist-get org-truss--checks :no-pattern)))
+
+(defun org-truss--no-pattern-text (entry)
+  "Return what the board says of ENTRY, (CHILD KIND . PARENT) of :no-pattern.
+The role it plays, that PARENT has no pattern of KIND, and the patterns
+that have the role, which PARENT is to take."
+  (let* ((kind (cadr entry))
+         (role (org-truss-cluster-role (car entry) kind))
+         (ids (org-truss-patterns-with-role kind role)))
+    (format "plays %s, but %s has no %s%s"
+            (org-truss-role-name role) (org-truss-cluster-label (cddr entry)) kind
+            (if ids
+                (format "; %s has it" (mapconcat #'org-truss-pattern-label ids " or "))
+              ""))))
+
 (defun org-truss--section-lines (model section prefix last path parent)
   "Return board lines for SECTION and the sections below it.
 PREFIX draws the tree to the left; LAST says SECTION ends its siblings.
@@ -975,11 +995,14 @@ line says how many it hides."
                             (org-truss-pattern-name (org-truss-section-telling parent))
                             (org-truss-section-label above))))
          (stray (cadr (org-truss--no-role-p section)))
+         (unheld (org-truss--no-pattern-p section))
          (why (string-join
                (delq nil (list (and stray
                                     (format "Plays no role of %s; %s gives it one"
                                             (org-truss-pattern-label (org-truss-cluster-pattern parent stray))
                                             (substitute-command-keys "\\[org-truss-board-roles]")))
+                               (and unheld (let ((text (org-truss--no-pattern-text unheld)))
+                                             (concat (upcase (substring text 0 1)) (substring text 1))))
                                late))
                ". "))
          (public (org-truss-section-public section))
@@ -1112,7 +1135,7 @@ finds it, as `org-truss-check-descriptions' names them."
                                broken))))
            (org-truss--check-group
             model "No grounds" (funcall in (mapcar #'list (plist-get checks :no-grounds)))
-            (lambda (_) "no grounds"))
+            (lambda (_) org-truss-no-grounds-text))
            (org-truss--check-group
             model "Weak grounds" (funcall in (plist-get checks :weak-grounds))
             (lambda (e) (format "%s has no grounds" (funcall refs (list (cdr e))))))
@@ -1131,6 +1154,9 @@ finds it, as `org-truss-check-descriptions' names them."
             model "No role" (funcall in (plist-get checks :no-role))
             (lambda (e) (format "plays no role of %s"
                                 (org-truss-pattern-label (org-truss-cluster-pattern (cddr e) (cadr e))))))
+           (org-truss--check-group
+            model "No pattern" (funcall in (plist-get checks :no-pattern))
+            #'org-truss--no-pattern-text)
            (org-truss--check-group
             model "Out of order" (funcall in (plist-get checks :out-of-order))
             (lambda (e) (format "below %s" (org-truss-cluster-label (cdr e))))))))
