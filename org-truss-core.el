@@ -989,6 +989,14 @@ The first, in the order of the kinds, whose role is flagged :label."
 ;; is: a member, as a heading that must have grounds is asked to; a source
 ;; or a file, by being there.
 
+(defun org-truss-stand-in (cluster)
+  "Return the reference of the member CLUSTER's heading stands for, or nil.
+A heading whose line holds nothing but a link that tells a member,
+*** [[truss-include:m7]], is that member there."
+  (let ((label (org-truss-cluster-label cluster)))
+    (and label (string-match org-truss--include-line-re label)
+         (org-truss--ref (match-string 1 label)))))
+
 (defun org-truss-cluster-refs (cluster)
   "Return the references of every link to a member CLUSTER stands on.
 In its text, in order, and first the links telling members on its

@@ -768,7 +768,7 @@ not before closing punctuation."
                    '("Situation" "Complication" "Question" "Answer" "Sky" "Rain" "Umbrella")))
     (org-truss-test--goto-line-with "Rain \\[no role\\][ ·]+Rain")
     (should (equal (get-text-property (point) 'help-echo)
-                   "Plays no role of telling › SCQA; r gives it one"))))
+                   "Plays no role of telling › SCQA; M-x org-truss-board-roles gives it one"))))
 
 (ert-deftest org-truss-test-board-marks-sections-outside-the-pattern ()
   "A section playing no role of its parent's pattern is marked."
@@ -883,6 +883,101 @@ many it hides; one holding more than the limit starts folded."
     (org-truss-test--with-board org-truss-test--file
       (should (string-match-p "└ Umbrella ▸2[ ·]+Umbrella" (buffer-string)))
       (should (string-match-p "├ Sky[ ·]+Sky" (buffer-string))))))
+
+(defconst org-truss-test--cycle-file "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Top
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** Middle
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:TRUSS_LOGIC: reasons
+:END:
+**** Leaf                                                       :assumption:
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+")
+
+(ert-deftest org-truss-test-board-cycles ()
+  "The board starts open.  TAB cycles a line as Org's TAB does a heading:
+folded, what is right under it with each of those folded, everything
+under it, folded again; S-TAB folds everything, or opens everything."
+  (org-truss-test--with-board org-truss-test--cycle-file
+    (let ((shown (lambda (label) (string-match-p (concat "[ ·]" label "\\b") (org-truss-test--top)))))
+      (should (funcall shown "Leaf"))
+      (should-not (string-match-p "▸" (org-truss-test--top)))
+      (org-truss-test--goto-line-with "member[ ·]+Top")
+      (org-truss-board-cycle)
+      (should (string-match-p "member ▸2[ ·]+Top" (org-truss-test--top)))
+      (should-not (funcall shown "Middle"))
+      (org-truss-board-cycle)
+      (should (funcall shown "Middle"))
+      (should (string-match-p "Reason ▸1[ ·]+Middle" (org-truss-test--top)))
+      (should-not (funcall shown "Leaf"))
+      (org-truss-board-cycle)
+      (should (funcall shown "Leaf"))
+      (org-truss-board-cycle)
+      (should (string-match-p "member ▸2[ ·]+Top" (org-truss-test--top)))
+      (org-truss-board-cycle-all)
+      (should (funcall shown "Leaf"))
+      (org-truss-board-cycle-all)
+      (should (string-match-p "member ▸2[ ·]+Top" (org-truss-test--top))))))
+
+(ert-deftest org-truss-test-board-stand-in ()
+  "A reason whose heading's line tells a member is one line, in that
+member's words, called by its link; neither a ground nor a member told
+is drawn under it.  It says so when the member does not hold."
+  (org-truss-test--with-board "* S
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** The fact
+:PROPERTIES:
+:CUSTOM_ID: fact
+:END:
+[[https://e.x/minutes][minutes]]
+** The bare one
+:PROPERTIES:
+:CUSTOM_ID: bare
+:END:
+* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Claim
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** [[truss-include:fact]]
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+*** [[truss-include:bare]]
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+"
+    (let ((members (substring (buffer-string) (string-search " Members" (buffer-string)))))
+      (should (string-match-p "• Reason[ ·]+\\[\\[#fact\\]\\] The fact" members))
+      (should (string-match-p "• Reason \\[no grounds\\][ ·]+\\[\\[#bare\\]\\] The bare one" members))
+      (should-not (string-match-p "⏚ ground" members))
+      (should-not (string-match-p "• member" members))
+      (should-not (string-match-p "truss-include" members)))))
+
+(ert-deftest org-truss-test-board-foot ()
+  "The foot of the board names the commands that have a key there, and
+leaves the rest to be called by name."
+  (org-truss-test--with-board org-truss-test--cycle-file
+    (let ((text (buffer-string)))
+      (should (string-match-p "^see +RET visit  o visit-other-window  TAB cycle  <backtab> cycle-all  i wrap" text))
+      (should (string-match-p "^write +m source$" text))
+      (should-not (string-match-p "^place" text))
+      (should-not (string-match-p " new " text)))))
 
 (ert-deftest org-truss-test-board-visits-a-ground ()
   "RET on a ground goes to the member it names, not to the claim above it."

@@ -101,26 +101,43 @@ on it -- where it is written, where it is called, wherever else it shows
      "Keys taking a source for the heading at point, as org-moor takes one.
 Filled by org-truss-moor.el; empty without org-moor.")
 
-(defconst org-truss--board-help
-  "write  \\[org-truss-board-new] new  \\[org-truss-board-edit] edit  \
-\\[org-truss-board-rename] rename  \\[org-truss-board-moor-map] source  \
-\\[org-truss-board-ground] ground  \\[org-truss-board-assume] assume  \\[org-truss-board-refile] refile  \
-\\[org-truss-board-delete] delete
-place  \\[org-truss-board-place] place  \\[org-truss-board-take-out] take out  \
-\\[org-truss-board-up] \\[org-truss-board-down] order
-shape  \\[org-truss-board-new-section] section  \\[org-truss-board-say] say  \
-\\[org-truss-board-unwrap] unwrap  \
-\\[org-truss-board-pattern] pattern  \\[org-truss-board-roles] roles
-see    \\[org-truss-board-visit] visit  \\[org-truss-board-visit-other-window] other window  \
-\\[org-truss-board-show] show  \\[org-truss-board-same] written/called  \
-\\[org-truss-board-order] written/told order  \\[org-truss-board-entry-text] entry text  \
-\\[org-truss-board-wrap] wrap  \\[org-truss-board-fold] fold  \
-\\[org-truss-board-view] view  \\[org-truss-board-export] export  \
-\\[org-truss-board-redraw] redraw  \\[org-truss-board-save] save"
-  "The keys written at the foot of the board, by what they work on.
+(defconst org-truss--board-commands
+  '((write org-truss-board-new org-truss-board-edit org-truss-board-rename
+           org-truss-board-moor-map org-truss-board-ground org-truss-board-assume
+           org-truss-board-refile org-truss-board-delete)
+    (place org-truss-board-place org-truss-board-take-out
+           org-truss-board-up org-truss-board-down)
+    (shape org-truss-board-new-section org-truss-board-say org-truss-board-unwrap
+           org-truss-board-pattern org-truss-board-roles)
+    (see org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
+         org-truss-board-cycle org-truss-board-cycle-all org-truss-board-fold
+         org-truss-board-wrap org-truss-board-entry-text org-truss-board-same
+         org-truss-board-order org-truss-board-view org-truss-board-export
+         org-truss-board-redraw org-truss-board-save))
+  "The board's commands, by what they work on, as its foot lists them.
 Members are written; they are placed in the structure; the structure is
-shaped; and the board and the document are seen.  Each key is looked up
-where the board is drawn, so a key bound anew shows as it is.")
+shaped; and the board and the document are seen.")
+
+(defun org-truss--board-help ()
+  "Return the keys written at the foot of the board, by what they work on.
+Each command with a key where the board is drawn, so a key bound anew
+shows as it is, named by its name after org-truss-board-; one with none is
+left out, to be called by name."
+  (string-join
+   (delq nil (mapcar
+              (lambda (group)
+                (let ((keys (delq nil (mapcar
+                                       (lambda (command)
+                                         (let ((key (where-is-internal command nil t)))
+                                           (and key (format "%s %s" (key-description key)
+                                                            (if (eq command 'org-truss-board-moor-map)
+                                                                "source"
+                                                              (string-remove-prefix
+                                                               "org-truss-board-" (symbol-name command)))))))
+                                       (cdr group)))))
+                  (and keys (format "%-6s %s" (car group) (string-join keys "  ")))))
+              org-truss--board-commands))
+   "\n"))
 
 (defun org-truss--item ()
   "Return the item of the line at point."
@@ -168,8 +185,7 @@ command acts on the file as it is, and a key pressed once is enough."
                   (org-truss--wrapping org-truss--wraps)
                   (org-truss--images (display-images-p (and window (window-frame window)))))
               (org-truss-board-text model org-truss--entry-text org-truss--drawn-width))
-            "\n" (propertize (substitute-command-keys org-truss--board-help t)
-                             'face 'org-truss-dim)
+            "\n" (propertize (org-truss--board-help) 'face 'org-truss-dim)
             "\n")
     (setq org-truss--drawn-tick (buffer-chars-modified-tick org-truss--source))
     (when (and (buffer-live-p org-truss--view) (get-buffer-window org-truss--view t))
@@ -191,36 +207,19 @@ command acts on the file as it is, and a key pressed once is enough."
 (defvar org-truss-board-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'org-truss-board-visit)
-    (define-key map (kbd "TAB") #'org-truss-board-visit-other-window)
-    (define-key map (kbd "SPC") #'org-truss-board-show)
-    (define-key map (kbd "e") #'org-truss-board-edit)
-    (define-key map (kbd "E") #'org-truss-board-entry-text)
+    (define-key map (kbd "o") #'org-truss-board-visit-other-window)
+    (define-key map (kbd "TAB") #'org-truss-board-cycle)
+    (define-key map (kbd "<backtab>") #'org-truss-board-cycle-all)
     (define-key map (kbd "i") #'org-truss-board-wrap)
-    (define-key map (kbd "z") #'org-truss-board-fold)
-    (define-key map (kbd "c") #'org-truss-board-new)
-    (define-key map (kbd "R") #'org-truss-board-rename)
     (define-key map (kbd "m") 'org-truss-board-moor-map)
-    (define-key map (kbd "A") #'org-truss-board-assume)
-    (define-key map (kbd "b") #'org-truss-board-ground)
-    (define-key map (kbd "f") #'org-truss-board-refile)
-    (define-key map (kbd "D") #'org-truss-board-delete)
-    (define-key map (kbd "a") #'org-truss-board-place)
-    (define-key map (kbd "d") #'org-truss-board-take-out)
-    (define-key map (kbd "s") #'org-truss-board-new-section)
-    (define-key map (kbd "S") #'org-truss-board-say)
-    (define-key map (kbd "u") #'org-truss-board-unwrap)
-    (define-key map (kbd "p") #'org-truss-board-pattern)
-    (define-key map (kbd "r") #'org-truss-board-roles)
-    (define-key map (kbd "M-<up>") #'org-truss-board-up)
-    (define-key map (kbd "M-<down>") #'org-truss-board-down)
-    (define-key map (kbd "P") #'org-truss-board-view)
     (define-key map (kbd "x") #'org-truss-board-export)
     (define-key map (kbd "g") #'org-truss-board-redraw)
-    (define-key map (kbd "=") #'org-truss-board-same)
-    (define-key map (kbd "O") #'org-truss-board-order)
     (define-key map [remap save-buffer] #'org-truss-board-save)
     map)
-  "Keys of the board.")
+  "Keys of the board.
+Few, to be laid out again: what moves through the board and reads it, a
+source taken, the document written out.  Every other command of the board
+is called by name, M-x org-truss-board-..., or bound where you want it.")
 
 (defun org-truss--catch-up (window)
   "Draw the board in WINDOW again, if it is selected and its file has changed.
@@ -1078,24 +1077,123 @@ when it is finished."
                   (lambda (key item) (equal key (plist-get item :fold))))))
       (and found (prop-match-beginning found)))))
 
+(defun org-truss--fold-at ()
+  "Return the item of the line that folds what the line at point is in.
+The line's own, when it has something under it; else the nearest line
+above it in the tree that has."
+  (let ((item (org-truss--item)))
+    (if (plist-get item :fold)
+        item
+      (let ((key (butlast (plist-get item :key))) at)
+        (while (and key (not (setq at (org-truss--fold-line key))))
+          (setq key (butlast key)))
+        (if at
+            (get-text-property at 'org-truss-item)
+          (user-error "Nothing to fold here"))))))
+
+(defun org-truss--key-under-p (key above)
+  "Non-nil when the line keyed KEY is drawn under the line keyed ABOVE.
+A member's key runs on from the line it is nested under; a section's path
+from the section above; a link's names the line it is drawn under."
+  (cond ((equal key above) nil)
+        ((and (> (length key) (length above))
+              (equal (seq-take key (length above)) above)))
+        ((and (eq (car key) 'section) (eq (car above) 'section))
+         (let ((path (cadr key)) (up (cadr above)))
+           (and (> (length path) (length up)) (equal (seq-take path (length up)) up))))
+        ((eq (car key) 'link)
+         (let ((holder (if (memq (car-safe (cadr key)) '(member link section))
+                           (cadr key)
+                         (list 'section (cadr key)))))
+           (or (equal holder above) (org-truss--key-under-p holder above))))))
+
+(defun org-truss--drawn-folds ()
+  "Return the lines of the board that fold, as (KEY . FOLDED), top to bottom."
+  (save-excursion
+    (goto-char (point-min))
+    (let (found)
+      (while (not (eobp))
+        (let ((item (org-truss--item)))
+          (when (plist-get item :fold)
+            (push (cons (plist-get item :fold) (plist-get item :folded)) found)))
+        (forward-line 1))
+      (nreverse found))))
+
+(defun org-truss--set-folds (keys state)
+  "Set the lines keyed KEYS to STATE, `open' or `closed', for the next draw."
+  (dolist (key keys)
+    (setf (alist-get key org-truss--folds nil nil #'equal) state)))
+
+(defun org-truss--open-all (&optional above)
+  "Open every line of the board, or every line under the one keyed ABOVE.
+A line opened can bring lines that start folded -- a member drawn where a
+link tells it -- so the board is drawn again until none is left, or until
+it has gone ten levels down."
+  (let ((n 0) shut)
+    (while (and (< n 10)
+                (setq shut (mapcar #'car (seq-filter (lambda (fold)
+                                                       (and (cdr fold)
+                                                            (or (null above)
+                                                                (org-truss--key-under-p (car fold) above))))
+                                                     (org-truss--drawn-folds)))))
+      (org-truss--set-folds shut 'open)
+      (org-truss-board-redraw)
+      (setq n (1+ n)))))
+
+(defun org-truss-board-cycle ()
+  "Fold the line at point, show what is right under it, or show all under it.
+As TAB cycles a heading in Org: a folded line opens to what is right
+under it, each of those folded; pressed again, everything under it opens;
+again, it folds.  On a line with nothing under it, the line it is under
+cycles.  A folded line says how many it hides."
+  (interactive)
+  (let* ((line (org-truss--fold-at))
+         (key (plist-get line :fold))
+         (under (lambda () (seq-filter (lambda (fold) (org-truss--key-under-p (car fold) key))
+                                       (org-truss--drawn-folds)))))
+    (cond ((plist-get line :folded)
+           (org-truss--set-folds (list key) 'open)
+           (org-truss-board-redraw)
+           (org-truss--set-folds (mapcar #'car (funcall under)) 'closed)
+           (org-truss-board-redraw)
+           (message "Children"))
+          ((seq-some #'cdr (funcall under))
+           (org-truss--open-all key)
+           (message "Subtree"))
+          (t
+           (org-truss--set-folds (list key) 'closed)
+           (org-truss-board-redraw)
+           (message "Folded")))
+    (goto-char (or (org-truss--fold-line key) (point)))))
+
+(defun org-truss-board-cycle-all ()
+  "Fold every line of the board, or open every one.
+As S-TAB does in Org, in two steps: while anything is folded, everything
+opens; else everything folds, down to the parts and the structure."
+  (interactive)
+  (let ((key (plist-get (org-truss--item) :key)))
+    (if (seq-some #'cdr (org-truss--drawn-folds))
+        (progn (org-truss--open-all) (message "All open"))
+      (org-truss--set-folds (mapcar #'car (org-truss--drawn-folds)) 'closed)
+      (org-truss-board-redraw)
+      (message "All folded"))
+    (let ((found (and key (save-excursion
+                            (goto-char (point-min))
+                            (text-property-search-forward
+                             'org-truss-item key
+                             (lambda (k item) (equal k (plist-get item :key))))))))
+      (when found (goto-char (prop-match-beginning found))))))
+
 (defun org-truss-board-fold ()
   "Fold what is under the heading at point, or unfold it.
 Under a member, what is nested under it and what its links tell; under a
 section, the sections below it and what its links tell.  On a line with
 nothing under it, what it is under.  A folded line says how many it hides.
-A heading holding more than `org-truss-board-fold-limit' starts folded."
+\\[org-truss-board-cycle] cycles it as Org's TAB does instead."
   (interactive)
-  (let* ((item (org-truss--item))
-         (at (if (plist-get item :fold)
-                 (line-beginning-position)
-               (let ((key (butlast (plist-get item :key))) at)
-                 (while (and key (not (setq at (org-truss--fold-line key))))
-                   (setq key (butlast key)))
-                 (or at (user-error "Nothing to fold here")))))
-         (line (get-text-property at 'org-truss-item))
+  (let* ((line (org-truss--fold-at))
          (key (plist-get line :fold)))
-    (setf (alist-get key org-truss--folds nil nil #'equal)
-          (if (plist-get line :folded) 'open 'closed))
+    (org-truss--set-folds (list key) (if (plist-get line :folded) 'open 'closed))
     (org-truss-board-redraw)
     (goto-char (or (org-truss--fold-line key) (point)))))
 

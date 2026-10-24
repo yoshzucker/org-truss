@@ -63,7 +63,7 @@ subject /Premises, Issue, Constraints/, and a member right under each for
 each role, playing it by its ~TRUSS_BREAKDOWN_ROLE~, with a guide to what
 to write there.  A role none plays is missing, as anywhere.  Another
 breakdown, of your own in ~org-truss-patterns~ or one there, or any other
-pattern, can be put on instead: ~p~ on the part's line on the board puts
+pattern, can be put on instead: /pattern/ on the part's line on the board puts
 it on, and puts in a heading for each role it lacks.
 
 These members are members like any other: they can have grounds, be
@@ -192,7 +192,7 @@ much as of telling, and it tells the umbrella last.
 Patterns nest: the umbrella of one Sky, Rain, Umbrella can hold another,
 and a deduction can stand where SCQA puts its answer.
 
-~p~ on the board offers every pattern, of each kind, on any heading, and
+/pattern/ on the board offers every pattern, of each kind, on any heading, and
 takes one of a kind off.  What the pattern asks for and is not there is
 put in, a heading for each role named for it and playing it, where the
 pattern lists it, to be written over: a deduction's premises, a PREP's
@@ -229,7 +229,7 @@ A heading has grounds when its text has one of these:
 
 A link to a member stands on it: a reason in the members on the facts of
 the subject it reads (see [[*Pointing to a member]]).  It is grounds on a
-line of its own, as ~b~ on the board writes it, or in a sentence: /as
+line of its own, as /ground/ on the board writes it, or in a sentence: /as
 [[#m3]] shows/.  Outside the heading's public block it is for the file
 alone; inside it, the reader sees it too, as the citation it is -- a
 ~moor:~ link written out as a link to where its source came from (see
@@ -620,14 +620,14 @@ org-truss loaded, ~C-c C-o~ follows ~[[truss-include:m7]]~ the same way.
 A heading is what a member asserts, and it gets reworded as the argument
 and the document take shape.  Were links to name headings, each rewording
 would break what pointed to it; pointing by id, a heading can be rewritten
-anywhere -- on the board with ~R~, in the file by hand, or by a model
+anywhere -- on the board with /rename/, in the file by hand, or by a model
 editing the file -- and nothing breaks.
 
-A member is given an id only once something points to it: ~a~ placing it,
-~b~ making it a ground, ~c~ writing it in a section.  An id is ~m~ and the
+A member is given an id only once something points to it: /place/ placing it,
+/ground/ making it a ground, /new/ writing it in a section.  An id is ~m~ and the
 next number free in the file; one you write yourself is kept.  Two
 headings with one id, and a link or a ground that points to no heading,
-are reported as /Broken links/, at each in the part it is in.  ~a~ on a broken link places a member where it
+are reported as /Broken links/, at each in the part it is in.  /place/ on a broken link places a member where it
 stands.
 
 A link written by heading, ~[[*heading]]~ or ~[[truss-include:*heading]]~
@@ -657,9 +657,9 @@ at or above point with a pattern -- or, when no truss file is near, the
 heading at point -- as a truss file's members are drawn, under a line
 /Heading/.  Its patterns, the headings under it by the roles they play,
 and the roles still missing are all there, without a brief, a subject or a
-structure.  ~p~ on it puts a pattern on it, and a heading in for each
+structure.  /pattern/ on it puts a pattern on it, and a heading in for each
 role, to be written over -- and in the file itself, in a truss file or any
-other, ~M-x org-truss-apply-pattern~ does what ~p~ does, on the heading at
+other, ~M-x org-truss-apply-pattern~ does what /pattern/ does, on the heading at
 point; written over with the statement that plays it, a role still shows
 on the right what it is -- /Who:/, /When:/ -- so the heading need not say
 it.  An agent asked about it with org-dock is told what its patterns ask,
@@ -736,7 +736,7 @@ This is the board of the file above:
      • member ▸2  [[#m5]] Move to fortnightly                                  Hold the review every other week.
 #+end_example
 
-~O~ opens the members links tell where they are told instead: under
+/order/ opens the members links tell where they are told instead: under
 the heading whose link tells them, with what is nested under them, where they are used, what
 they stand on and what their patterns lack, and where they are written
 each is one line.  The structure then reads as the document, the right
@@ -773,10 +773,10 @@ down the page, beside the logic each sentence rests on:
      └ Step ··············· Carry what is still open to the next one            2. Carry what is still open to the next one
 #+end_example
 
-~O~ again opens them where they are written.  Point stays on the member it
+/order/ again opens them where they are written.  Point stays on the member it
 was on, where it is opened now; what was folded or unfolded by hand starts
 again; the mode line says /Truss told/ while they are opened where told.
-Either way ~z~ opens a member where it is one line.
+Either way ~TAB~ opens a member where it is one line.
 
 Each line has three columns.  On the left is what the board says the line
 is: the role a section or a member plays in the patterns above
@@ -853,12 +853,12 @@ member is drawn below it too, as everything under a line is, so its mark
 points up, from the member to it.  A line marked =⏚=, =↥= or
 =▤= is cut to the middle, its whole heading in the tooltip; the mouse on
 any mark says what it means, and ~RET~ on the line goes to what it names.
-~=~ goes between a member and its calls.  A member with no line marked =▤=
+/same/ goes between a member and its calls.  A member with no line marked =▤=
 or =↥= is not used.  ~org-truss-board-marks~ sets the marks.  A role a
 member's pattern asks for and it lacks -- /Minor premise —/ -- follows what
 it holds, with the pattern that asks when the member has more than one.
 So does a role the structure's or a section's pattern asks for and no
-section right below plays -- /Rain —/ -- and ~s~ on it adds a section that
+section right below plays -- /Rain —/ -- and /new-section/ on it adds a section that
 plays it.
 
 The other marks of the board are not links:
@@ -872,13 +872,13 @@ The other marks of the board are not links:
 | =[no grounds]=      | after the role          | must have grounds, and has none; after ⏚ ground, the member pointed to does not hold |
 | =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |
 | =(logic › reasons)= | the line below          | the patterns the heading names                                                       |
-| =▸5=                | after the role          | folded, five hidden; ~z~ opens it                                                    |
+| =▸5=                | after the role          | folded, five hidden; ~TAB~ opens it                                                  |
 | =⚠=                 | after the role          | out of the order of the telling pattern above                                        |
 | =Rain —=            | below what it holds     | a role a pattern asks for that nothing plays                                         |
 | =[loop]=            | after the role          | told inside what it tells: drawn as one line, since it would never end               |
 
 In the structure a member a link tells is one line, as written, the
-words it is told in on its right; opened there, as told (~O~), it brings
+words it is told in on its right; opened there, as told (/order/), it brings
 with it what the document tells -- what is nested under it -- beside its
 uses, what it stands on and its gaps, so the document can be read down
 the right.
@@ -911,10 +911,10 @@ Under the title come the brief, then the subject, each drawn as the
 members are: its line, its patterns, and the members under it, each named
 by the role it plays, so what the structure has to meet stays in view.  A
 role the breakdown asks for and none plays -- /Constraints —/ -- follows
-them, and ~c~ on it writes a member playing it.  A member that plays none
-of the breakdown's roles is marked =[no role]=, and ~r~ gives it one.
+them, and /new/ on it writes a member playing it.  A member that plays none
+of the breakdown's roles is marked =[no role]=, and /roles/ gives it one.
 
-~E~, as in the agenda, shows what is written under each heading, below its
+/entry-text/, as in the agenda, shows what is written under each heading, below its
 line: the notes that stay in the file in the middle, under the heading, and
 the rest of what the reader sees on the right, broken to fit the window.
 A heading too long for the middle is broken there too instead of cut
@@ -943,10 +943,9 @@ the tree and the notes it was built from:
 ~i~ does the same for the line at point alone, inline as ~i~ in Dired
 shows a directory, so the board can be scanned a line each and one line
 read through: a member with its notes, a ground.  ~i~ again, on
-any of its lines, puts it back on one.  While ~E~ shows every line whole,
-~i~ puts the line at point on one line instead, and ~E~ again draws every
-line the same way.  ~E~ and ~O~ are capitals, as seldom wanted and
-redrawing the whole board.
+any of its lines, puts it back on one.  While /entry-text/ shows every line whole,
+~i~ puts the line at point on one line instead, and /entry-text/ again draws every
+line the same way.
 
 A picture linked on a line of its own -- an attachment, or a file by a
 relative path -- is drawn on a line drawn whole, in its column: as wide as
@@ -959,8 +958,8 @@ The board's words are English whatever ~org-truss-language~ says, so in a
 file written in another language the two sides read apart at a glance.
 
 The board is read-only.  Its commands change the truss file and draw the
-board again.  The writing itself happens in the file: ~RET~, ~TAB~ and ~SPC~
-open it where the line points, as they do in the agenda, and ~e~ takes just
+board again.  The writing itself happens in the file: ~RET~, ~o~ and /show/
+open it where the line points, as RET, TAB and SPC do in the agenda, and /edit/ takes just
 that heading out, by org-dock, into a copy of its own beside the board, with
 what is under it and the rest of the file out of the way.  The headings
 under it are folded to their lines, and its own text is shown with its
@@ -979,68 +978,75 @@ file, which happens whenever it is shown, changes nothing the board holds.
 An edit made while a command is asking something makes the command stop
 and draw again rather than act on positions that have moved.
 
-The keys fall into four groups, by what they work on.  /Write/ works on
-the members themselves, the headings in the file.  /Place/ works on the
-links that tell them: a section tells the members it shows, and the
-members do not move.  /Shape/ works on the sections, on what the structure
-says itself, and on the patterns of any heading.  /See/ moves about the
-board and the document.  The foot of the board lists them in the same four
-lines.
+The board's commands fall into four groups, by what they work on.
+/Write/ works on the members themselves, the headings in the file.
+/Place/ works on the links that tell them: a section tells the members it
+shows, and the members do not move.  /Shape/ works on the sections, on
+what the structure says itself, and on the patterns of any heading.
+/See/ moves about the board and the document.  Each is named here by what
+follows ~org-truss-board-~ in its name -- /place/ is
+~org-truss-board-place~.  Few have a key of their own: those that move
+through the board and read it, ~m~ for a source, ~x~ for the document.
+The rest are called by name, ~M-x org-truss-board-place~, or bound where
+you want them, in ~org-truss-board-mode-map~.  The foot of the board lists
+those with a key, in the same four lines.
 
-| Group | Key         | On a section                                                                      | On a member                                        |
-|-------+-------------+-----------------------------------------------------------------------------------+----------------------------------------------------|
-| write | ~c~         | write a new member, placed in it                                                  | write a member under it, last                      |
-|       | ~e~         | edit its entry alone, beside the board                                            | same                                               |
-|       | ~R~         | rewrite its heading                                                               | rewrite its heading                                |
-|       | ~m~         | take a source for it, or link one taken before (with org-moor)                    | same                                               |
-|       | ~b~         | make a heading a ground of it, or not                                             | same                                               |
-|       | ~A~         | tag it an assumption, or take the tag off                                         | same                                               |
-|       | ~f~         | refile it, last under another section                                             | refile it, last under a part or another member     |
-|       | ~D~         |                                                                                   | delete it from the file, after asking              |
-| place | ~a~         | tell a heading in it, by a link                                                   | same                                               |
-|       | ~d~         | take it out, handing what it places up                                            | take it out of its section; it stays in the file   |
-|       | ~M-↑~ ~M-↓~ | move it among its siblings                                                        | move it among its siblings; listed, in its section |
-| shape | ~s~         | add a section under it; on a missing role, playing it, where the pattern lists it |                                                    |
-|       | ~S~         | write its lead                                                                    | write the words it is told in                      |
-|       | ~u~         | take the sections below away, keeping their links                                 |                                                    |
-|       | ~p~         | apply a pattern of any kind, or take one off                                      | same                                               |
-|       | ~r~         | set the roles it plays in the patterns of the                                     | same                                               |
-|       |             | heading above                                                                     |                                                    |
-| see   | ~RET~       | go to it                                                                          | same                                               |
-|       | ~TAB~       | go to it in the other window                                                      | same                                               |
-|       | ~SPC~       | show it in the other window, staying on the board                                 | same                                               |
-|       | ~=~         | go to where it is written, or there, to a call                                    | same                                               |
-|       | ~O~         | open the members sections list where told, or                                     | same                                               |
-|       |             | where written                                                                     |                                                    |
-|       | ~E~         | show the text under every heading, or stop                                        |                                                    |
-|       | ~i~         | show it whole, with the text under it, or stop                                    | same                                               |
-|       | ~z~         | fold what is under it, or unfold it                                               | fold what is nested under it, or unfold it         |
-|       | ~P~         | show the document in another window, kept current                                 |                                                    |
-|       | ~x~         | write the document                                                                |                                                    |
-|       | ~g~         | draw again                                                                        |                                                    |
-|       | ~C-x C-s~   | save the truss file                                                               |                                                    |
+| Group | Command            | Key         | On a section                                                                      | On a member                                        |
+|-------+--------------------+-------------+-----------------------------------------------------------------------------------+----------------------------------------------------|
+| write | new                |             | write a new member, placed in it                                                  | write a member under it, last                      |
+|       | edit               |             | edit its entry alone, beside the board                                            | same                                               |
+|       | rename             |             | rewrite its heading                                                               | rewrite its heading                                |
+|       | moor-map           | ~m~         | take a source for it, or link one taken before (with org-moor)                    | same                                               |
+|       | ground             |             | make a heading a ground of it, or not                                             | same                                               |
+|       | assume             |             | tag it an assumption, or take the tag off                                         | same                                               |
+|       | refile             |             | refile it, last under another section                                             | refile it, last under a part or another member     |
+|       | delete             |             |                                                                                   | delete it from the file, after asking              |
+| place | place              |             | tell a heading in it, by a link                                                   | same                                               |
+|       | take-out           |             | take it out, handing what it places up                                            | take it out of its section; it stays in the file   |
+|       | up, down           |             | move it among its siblings                                                        | move it among its siblings; listed, in its section |
+| shape | new-section        |             | add a section under it; on a missing role, playing it, where the pattern lists it |                                                    |
+|       | say                |             | write its lead                                                                    | write the words it is told in                      |
+|       | unwrap             |             | take the sections below away, keeping their links                                 |                                                    |
+|       | pattern            |             | apply a pattern of any kind, or take one off                                      | same                                               |
+|       | roles              |             | set the roles it plays in the patterns of the                                     | same                                               |
+|       |                    |             | heading above                                                                     |                                                    |
+| see   | visit              | ~RET~       | go to it                                                                          | same                                               |
+|       | visit-other-window | ~o~         | go to it in the other window                                                      | same                                               |
+|       | show               |             | show it in the other window, staying on the board                                 | same                                               |
+|       | cycle              | ~TAB~       | fold it, show what is right under it, or all under it                             | same                                               |
+|       | cycle-all          | ~S-TAB~     | fold every line, or open every one                                                | same                                               |
+|       | fold               |             | fold what is under it, or unfold it                                               | fold what is nested under it, or unfold it         |
+|       | same               |             | go to where it is written, or there, to a call                                    | same                                               |
+|       | order              |             | open the members sections list where told, or                                     | same                                               |
+|       |                    |             | where written                                                                     |                                                    |
+|       | entry-text         |             | show the text under every heading, or stop                                        |                                                    |
+|       | wrap               | ~i~         | show it whole, with the text under it, or stop                                    | same                                               |
+|       | view               |             | show the document in another window, kept current                                 |                                                    |
+|       | export             | ~x~         | write the document                                                                |                                                    |
+|       | redraw             | ~g~         | draw again                                                                        |                                                    |
+|       | save               | ~C-x C-s~   | save the truss file                                                               |                                                    |
 
-~a~ on any heading -- a section, a member, a part -- writes in it a link
+/place/ on any heading -- a section, a member, a part -- writes in it a link
 that tells the heading chosen, ~- [[truss-include:m7]]~: a member, those
 placed nowhere offered first, or a section.  A heading can be told in as
-many places as want it, and is told in each; ~d~ takes it out of one.
-On a broken link, ~a~ tells the heading chosen where the link stands, in
-its place: the way to mend one.  ~d~ loses nothing
+many places as want it, and is told in each; /take-out/ takes it out of one.
+On a broken link, /place/ tells the heading chosen where the link stands, in
+its place: the way to mend one.  /take-out/ loses nothing
 written: on a member a link tells, the link goes and the member stays in
 the file, whatever heading the link is in; a section taken out hands what
 it tells up, asking before its own title or notes are lost.  To be rid of
-a member, ~D~ deletes it, with what is under it and the lines that tell
+a member, /delete/ deletes it, with what is under it and the lines that tell
 it; a ground that named it is left, a broken link on the board, so what
 stood on it shows.
 
-~S~ writes what the reader is told in place of a heading: it opens the
-heading's public block beside the board as ~e~ opens an entry -- a
+/say/ writes what the reader is told in place of a heading: it opens the
+heading's public block beside the board as /edit/ opens an entry -- a
 section's lead, a member's words wherever it is told -- writing an empty
 one first if there is none; a block left empty is taken away again when
 the entry is finished.  On the /Structure/ line, it writes the document's
 opening.
 
-~=~ goes between where a heading is written and where it is called, a
+/same/ goes between where a heading is written and where it is called, a
 member or a section.  On a line calling it -- a link that tells it,
 =[[#m9]]=, or a ground -- or showing it under a member a link calls, it
 goes to where it is written, =#m9=, unfolding what hides it.  There, it goes to the next call after the one
@@ -1049,19 +1055,33 @@ is lit, and so are the other lines naming the member on it -- where it is
 written, where it is called -- in the face ~org-truss-same~; set
 ~org-truss-board-highlight~ to nil for neither.
 
-~z~ folds what is under a heading into its line, which then says how many
-it hides: under a member, what is nested under it and what its links
-tell; under a section, the sections below it and what its links tell.  On
-a line with nothing under it, ~z~ folds what it is under.  A heading
-holding more than ~org-truss-board-fold-limit~, five unless set, starts
-folded, so the conditions at the top of the board stay short as they
-fill; a member a link tells starts folded where it is not opened, as ~O~
-says.
+~TAB~ cycles a line as it cycles a heading in Org.  A folded line opens
+to what is right under it, each of those folded; again, everything under
+it opens; again, it folds into its line, which then says how many it
+hides.  Under a member, that is what is nested under it and what its
+links tell; under a section, the sections below it and what its links
+tell.  On a line with nothing under it, the line it is under cycles.
+~S-TAB~ opens every line while any is folded, and else folds them all.
+/fold/ folds one line or unfolds it, without the cycle.  The board starts
+open; with ~org-truss-board-fold-limit~ set, a heading holding more than
+that starts folded.  A member a link tells starts folded where it is not
+opened, as /order/ says, since it is drawn whole where it is.
+
+Folding and drawing a line whole are apart: ~TAB~ shapes the tree, ~i~
+reads one line through, and each leaves the other as it is.
+
+A reason whose heading's line tells a member and says nothing else,
+~*** [[truss-include:m7]]~, is that member there, and the board draws it
+so: one line, marked as a link's end, in m7's words and called by its
+link, =• Reason [[#m7]] …=, with =[no grounds]= when m7 does not hold.  No
+ground and no member told is drawn under it, as both are m7.  Under m7,
+where it is written, it is one line too, built on it, named by the claim
+it is a reason of.
 
 A heading keeps the words of its source with it, in a ~#+begin_quote~
 block in its own text, which stays in the file as notes do, and gives it
 grounds; it may keep several, each drawn as a =⏚ quote= line of its own.
-~e~ on the heading, or on a quotation's line, writes one or rewrites it.
+/edit/ on the heading, or on a quotation's line, writes one or rewrites it.
 With org-moor, reading a source beside it -- ~org-moor-noter~ -- writes
 the quotation and the link to its page or line in one go.
 
@@ -1081,16 +1101,16 @@ heading's, one its own text links to, asked for when there are several.
 The copy, at the page or line the link names, as following the link
 does; ~m O~ where it came from instead, the page on the web.  A link to
 anything but a source org-moor took is followed as it is, with either.
-A link moved into the public block is the reader's citation too.  ~b~
+A link moved into the public block is the reader's citation too.  /ground/
 makes a heading -- a member or a section -- something it stands on, a
 link to it on a line of its own after the heading's text: it offers what
 it stands on first, and choosing one takes that line away; any other is
-added, and given a ~CUSTOM_ID~ when it has none.  On a ground's own line, the one marked =⏚=, ~b~ takes that ground
-away at once; one linked in the text is edited there, with ~e~.  ~A~ tags
+added, and given a ~CUSTOM_ID~ when it has none.  On a ground's own line, the one marked =⏚=, /ground/ takes that ground
+away at once; one linked in the text is edited there, with /edit/.  /assume/ tags
 a heading ~:assumption:~, or takes the tag off.  Each works on a section
 as on a member: a section has grounds as any heading does.
 
-~p~ works the same on every line with a heading: on the /Structure/ line
+/pattern/ works the same on every line with a heading: on the /Structure/ line
 it gives the document a pattern -- a telling pattern, Sky, Rain,
 Umbrella, SCQA, PREP, with its sections -- and on a section the same for
 the sections below it; on the /Brief/ or the /Subject/ line, it changes
@@ -1098,13 +1118,14 @@ what they are broken down into, and puts in a member for each role none
 plays.  ~no logic~, ~no breakdown~ and ~no telling~ take each off, and
 nothing is asked of what is below for it.
 
-The foot of the board lists the keys as they are bound where it is drawn,
-so a key moved -- by an Evil configuration, say -- shows as it is.
+The foot of the board lists the commands with a key, as they are bound
+where it is drawn, so a key moved or added -- by an Evil configuration,
+say -- shows as it is, and a command with none is left off.
 
 ** Writing members from the board
 
-A statement can be started without deciding where it goes.  ~c~ asks for
-its heading, writes it, and opens it as ~e~ does, below the heading, to be
+A statement can be started without deciding where it goes.  /new/ asks for
+its heading, writes it, and opens it as /edit/ does, below the heading, to be
 written; ~C-c C-k~ there takes it away again.  It goes under the heading
 the line at point is:
 
@@ -1119,20 +1140,20 @@ one a pattern has alone -- a reason under reasons, a step under steps --
 without asking, and else the one asked for, those no heading plays yet
 first.  It goes where the patterns list the roles it plays: before the
 first heading there that plays one listed after its own, or else last --
-as ~p~ puts in what a pattern asks for, and ~s~ a section.
+as /pattern/ puts in what a pattern asks for, and /new-section/ a section.
 
-~f~ refiles a heading, as Org's ~C-c C-w~ does: it moves it, with what is
+/refile/ refiles a heading, as Org's ~C-c C-w~ does: it moves it, with what is
 under it, last under another -- a member under the brief, the subject, the
 members, or another member; a section under another section, or the
 structure.  Links and grounds point to a member by its ~CUSTOM_ID~, which
-goes with it, so the structure still shows it wherever it goes.  ~M-↑~ and
-~M-↓~ move a heading among its siblings in the file, and a member a link
+goes with it, so the structure still shows it wherever it goes.  /up/ and
+/down/ move a heading among its siblings in the file, and a member a link
 tells among the links there: what the file has in an order the
 telling pattern does not want, listed /Out of order/, is put right from
 the board.  The places are offered in the order of the file, and a member
 by its path -- from its part, through what it is nested under, cut short,
 to its own heading, with a step's number or the roles it plays: /Members ›
-Check before every … › As follows › step 2: Read the checker/.  ~a~ on a
+Check before every … › As follows › step 2: Read the checker/.  /place/ on a
 section offers members the same way.
 
 Applying a telling pattern to a section that already has sections puts
@@ -1140,18 +1161,18 @@ each, as it is, in the place of the new section whose role it plays; the
 pattern adds sections, named in ~org-truss-language~, only for the places
 none plays.  So switching patterns changes the order and the marks, never
 a heading.  A section in none of the places is kept after the rest, and
-the board marks it =[no role]=.  ~a~, ~r~ and ~d~ sort it out.  ~u~ and ~d~
-ask before discarding a title or notes.  ~u~ takes the section's patterns
+the board marks it =[no role]=.  /place/, /roles/ and /take-out/ sort it out.  /unwrap/ and /take-out/
+ask before discarding a title or notes.  /unwrap/ takes the section's patterns
 off too, of every kind, since what they asked for was asked of the
 sections it takes away.
 
 * The document
 
-~P~ on the board shows the document in another window without writing it,
+/view/ on the board shows the document in another window without writing it,
 and the board keeps it current while it is shown: the place to read it.
 The right of the board comes close but is not the same.  The brief and
 the subject under the title and the lists of what is left to do are not
-in the document, and without ~E~ each line shows only a title or the
+in the document, and without /entry-text/ each line shows only a title or the
 start of a paragraph.
 
 ~M-x org-truss-export~, or ~x~ on the board, walks the structure and writes
@@ -1198,13 +1219,13 @@ pandoc, when it is installed, to make ~out/truss.md~.
   be seen.
 - A link to a file by a relative path -- a picture in ~attach/~, a source --
   is written relative to ~out/~, so the document still finds it, and pandoc
-  makes a picture an image.  ~P~ shows the pictures where they are.
+  makes a picture an image.  /view/ shows the pictures where they are.
 - A ~moor:~ link, with org-moor, goes where its source came from, since
   the copy in ~sources/~ is yours and the reader has none: to the page on
   the web, at the page the link names when it is a PDF,
   ~[[https://e.x/act.pdf#page=14][Act p. 14]]~.  A source that came from
   no such page -- a file, a mail -- is named by the link's words, or its
-  title, as text.  ~P~ keeps the link to the copy, to be followed in Emacs.
+  title, as text.  /view/ keeps the link to the copy, to be followed in Emacs.
 
 pandoc is given ~org+east_asian_line_breaks~, so a filled paragraph of
 Chinese, Japanese or Korean does not gain a space at every line break.
@@ -1230,7 +1251,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-middle-width~ | ~nil~, half the window         | room for the file's words before the right    |
 | ~org-truss-board-right-width~  | ~nil~, the window's edge       | where a line drawn whole breaks its right     |
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
-| ~org-truss-board-fold-limit~   | 5                              | members one shows before it starts folded     |
+| ~org-truss-board-fold-limit~   | ~nil~, no limit                | members one shows before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =↥= =•= =▤=                | marks of the lines that are an end of a link  |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
 |                                |                                | the same member                               |
