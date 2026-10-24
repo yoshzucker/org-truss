@@ -333,10 +333,17 @@ tell, and the sections below it."
                     (expand-file-name org-truss-output-directory (file-name-directory file))))
 
 (defun org-truss--pandoc (input output)
-  "Convert INPUT to OUTPUT with pandoc.  Return nil, or the error text."
+  "Convert INPUT to OUTPUT with pandoc.  Return nil, or the error text.
+Run in INPUT's directory and given the two names alone: `call-process'
+encodes its arguments with the process coding system, and on Windows a
+UTF-8 one turns a Japanese directory name into one pandoc cannot open."
   (with-temp-buffer
-    (let ((status (apply #'call-process org-truss-pandoc-program nil t nil
-                         (append org-truss-pandoc-arguments (list input "--output" output)))))
+    (let* ((default-directory (file-name-directory input))
+           (coding-system-for-read 'utf-8)
+           (status (apply #'call-process org-truss-pandoc-program nil t nil
+                          (append org-truss-pandoc-arguments
+                                  (list (file-relative-name input)
+                                        "--output" (file-relative-name output))))))
       (unless (eq status 0)
         (string-trim (buffer-string))))))
 
