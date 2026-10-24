@@ -16,13 +16,13 @@
     (org-truss-render (org-truss-read))))
 
 (ert-deftest org-truss-test-render-what-the-reader-sees ()
-  "A public block is written in place of its heading; a member without one is
-written as its heading; notes, :noexport: and unplaced members stay behind."
+  "A member is written as its heading, and the text under it after; a
+comment, :noexport: and unplaced members stay behind."
   (let ((out (org-truss-test--render org-truss-test--file)))
     (should (string-match-p "^#\\+title: Fortnightly reviews$" out))
-    (should (string-match-p "Reviews ran past the hour" out))
-    (should-not (string-match-p "^Reviews run long" out))
-    (should (string-match-p "^  - Some items cannot wait two weeks\\.\n\n    - Urgent items go to chat\n    - Who decides what is urgent$" out))
+    (should (string-match-p "^- Reviews run long\n\n  Reviews ran past the hour" out))
+    (should (string-match-p "^  - Some items are urgent\n\n    Some items cannot wait two weeks\\.\n\n    - Urgent items go to chat\n    - Who decides what is urgent$" out))
+    (should-not (string-match-p "e\\.x" out))
     (should-not (string-match-p "Robin" out))
     (should-not (string-match-p "Agenda diff" out))
     (should-not (string-match-p "Lone remark" out))
@@ -39,7 +39,8 @@ and the field's own text is not."
   "A member of the subject is written as one of the members is, where it is
 placed: in the words of the link, then what is nested under it."
   (let ((out (org-truss-test--render org-truss-test--clusters-file)))
-    (should (string-match-p (concat "^\\* Background\n\n- The rules ask for a check before and after driving\\.\n\n"
+    (should (string-match-p (concat "^\\* Background\n\n- The manager checks every driver before and after driving\n\n"
+                                    "  The rules ask for a check before and after driving\\.\n\n"
                                     "  - The rule asks for a check before driving\n"
                                     "  - The rule asks for a check after driving\n"
                                     "  - The check may be made by video\n\n\\* What we do")
@@ -47,14 +48,14 @@ placed: in the words of the link, then what is nested under it."
     (should (string-match-p "1\\. The driver blows into the tester" out))))
 
 (ert-deftest org-truss-test-render-titles ()
-  "A section is titled by its public title, else by its heading.  A
-member's public title opens it where it is told, its body following."
+  "A section is titled by its heading.  A member's heading opens it where
+it is told, its text following."
   (dolist (org-truss-language '(en ja))
     (let ((out (org-truss-test--render org-truss-test--file)))
       (should (string-match-p "^\\* Sky$" out))
-      (should (string-match-p "^\\* Why it drags$" out))
+      (should (string-match-p "^\\* Rain$" out))
       (should (string-match-p "^\\* Umbrella$" out))
-      (should (string-match-p "^- Most items come back unchanged\n\n  Half of each agenda" out)))))
+      (should (string-match-p "^- Half the items repeat\n\n  Half of each agenda" out)))))
 
 (ert-deftest org-truss-test-render-broken-link ()
   "A link that tells no member shows in the document, where it will be seen."
@@ -67,29 +68,22 @@ member's public title opens it where it is told, its body following."
   (let ((out (org-truss-test--render
               (replace-regexp-in-string
                (regexp-quote ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n")
-               ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n#+begin_public\nRead this first.\n#+end_public\n"
+               ":TRUSS_TELLING: sky-rain-umbrella\n:END:\nRead this first.\n# Not this.\n"
                org-truss-test--file t t))))
-    (should (string-match-p "toc:nil num:nil\n\nRead this first\\.\n\n\\* Sky\n\n- Reviews ran past the hour" out))))
+    (should (string-match-p "toc:nil num:nil\n\nRead this first\\.\n\n\\* Sky\n\n- Reviews run long" out))))
 
 (ert-deftest org-truss-test-render-document-title ()
-  "The structure's public title, as any section's, is the title the
-document is written under; without one, the file's #+title."
+  "The file's #+title is the title the document is written under: the
+structure's heading names a part."
   (should (string-match-p "\\`#\\+title: Fortnightly reviews\n"
-                          (org-truss-test--render org-truss-test--file)))
-  (let ((out (org-truss-test--render
-              (replace-regexp-in-string
-               (regexp-quote ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n")
-               ":TRUSS_TELLING: sky-rain-umbrella\n:END:\n#+begin_public Every other week\nRead this first.\n#+end_public\n"
-               org-truss-test--file t t))))
-    (should (string-match-p "\\`#\\+title: Every other week\n" out))
-    (should (string-match-p "toc:nil num:nil\n\nRead this first\\." out))))
+                          (org-truss-test--render org-truss-test--file))))
 
 (ert-deftest org-truss-test-render-includes ()
   "A link that tells a member in text is the member's words where it
 stands, its description when it has one, in a sentence too; what follows
 them -- its body, then what is under it -- comes after the paragraph or
-inside the list item, as a list.  Those its links outside its public
-block tell are items of that list.  A link that points to a member reads
+inside the list item, as a list.  A link on a list item's line of its
+own is that item's words.  A link that points to a member reads
 as its description, or the member's heading, and is no link in the
 document.  Told again inside what it tells, a member would never end:
 there the document says so."
@@ -107,10 +101,8 @@ there the document says so."
 :PROPERTIES:
 :CUSTOM_ID: move
 :END:
-#+begin_public
 We move, as [[#long]] and [[#long][the calendar]] show:
 [[truss-include:long]]
-#+end_public
 - [[truss-include:loop]]
 ** Loops back
 :PROPERTIES:
@@ -124,17 +116,16 @@ We move, as [[#long]] and [[#long][the calendar]] show:
 ** Now
 - [[truss-include:move]]
 ** Then
-#+begin_public
 In short, [[truss-include:long][the long reviews]] end.
-#+end_public
 ")))
     (should (string-match-p
              (concat "^\\* Now\n\n"
-                     "- We move, as Reviews run long and the calendar show:\n"
+                     "- Move to fortnightly\n\n"
+                     "  We move, as Reviews run long and the calendar show:\n"
                      "  Reviews run long\n\n"
-                     "  - Eight of twelve ran over\n\n"
+                     "  - Eight of twelve ran over\n"
                      "  - Loops back\n\n"
-                     "    - (told without end: truss-include:move)\n\n"
+                     "    (told without end: truss-include:move)\n\n"
                      "\\* Then\n\n"
                      "In short, the long reviews end\\.\n\n"
                      "- Eight of twelve ran over\n")
@@ -144,9 +135,8 @@ In short, [[truss-include:long][the long reviews]] end.
 (ert-deftest org-truss-test-render-told-on-a-heading ()
   "A link on a heading's line tells there a heading of the document: the
 member's words, then what is under it, under headings a level down, in
-the order of the file among the sections.  A member without a title
-gives the heading its body, and what is under it is a list.  Below the
-sixth level, what is under a heading is a list."
+the order of the file among the sections, its text under its heading.
+Below the sixth level, what is under a heading is a list."
   (let ((out (org-truss-test--render "* M
 :PROPERTIES:
 :TRUSS_PART: members
@@ -161,9 +151,7 @@ sixth level, what is under a heading is a list."
 :PROPERTIES:
 :CUSTOM_ID: bare
 :END:
-#+begin_public
 Only a body.
-#+end_public
 *** Under the body
 * S
 :PROPERTIES:
@@ -185,7 +173,7 @@ Only a body.
                      "\\*\\* Meetings run long\n\n"
                      "\\*\\*\\* Eight of twelve ran over\n\n"
                      "\\*\\*\\*\\* By twenty minutes\n\n"
-                     "\\* Rain\n\n\\*\\* Only a body\\.\n\n- Under the body\n")
+                     "\\* Rain\n\n\\*\\* Untitled\n\nOnly a body\\.\n\n\\*\\*\\* Under the body\n")
              out))
     (should (string-match-p
              "^\\*\\*\\*\\*\\* Meetings run long\n\n\\*\\*\\*\\*\\*\\* Eight of twelve ran over\n\n- By twenty minutes\n"
@@ -238,12 +226,12 @@ under headings a level down."
 a telling pattern or none, it is told the same."
   (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
                        "** Claim\n:PROPERTIES:\n:CUSTOM_ID: claim\n:TRUSS_TELLING: prep\n:END:\n"
-                       "#+begin_public The claim\nClaim body.\n#+end_public\n"
+                       "Claim body.\n"
                        "*** Doubt\n"
-                       "*** Ground\n[[https://e.x/s][s]]\n"
+                       "*** Ground\n# [[https://e.x/s][s]]\n"
                        "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[truss-include:claim]]\n"))
          (out (org-truss-test--render text)))
-    (should (string-match-p "^- The claim\n\n  Claim body\\.\n\n  - Doubt\n  - Ground\n" out))
+    (should (string-match-p "^- Claim\n\n  Claim body\\.\n\n  - Doubt\n  - Ground\n" out))
     (should (equal (org-truss-test--render (replace-regexp-in-string ":TRUSS_TELLING: prep\n" "" text))
                    out))))
 
@@ -255,28 +243,22 @@ line in a section is no heading, but an item of a list."
 :PROPERTIES:
 :TRUSS_PART: members
 :END:
-** Inner claim
+** Inner title
 :PROPERTIES:
 :CUSTOM_ID: inner
 :END:
-#+begin_public Inner title
-#+end_public
 * S
 :PROPERTIES:
 :TRUSS_PART: structure
 :END:
-** Outer
+** What to do
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: conclusion
 :END:
-#+begin_public What to do
-#+end_public
-*** Inner
+*** Where we are
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: situation
 :END:
-#+begin_public Where we are
-#+end_public
 - [[truss-include:inner]]
 ")))
     (should (string-match-p "^\\* What to do\n" out))
@@ -294,13 +276,14 @@ whatever its telling pattern."
                      "- Check before every test\n\n"
                      "  1\\. Meet the driver face to face\n\n"
                      "     - A video call counts as face to face\n"
-                     "  2\\. The driver breathes into the checker\\.\n"
+                     "  2\\. Breathe into the checker\n\n"
+                     "     The driver breathes into the checker\\.\n"
                      "  3\\. Check the checker works\n")
              out))
     (should-not (string-match-p "Note the reading" out)))
   (let ((out (org-truss-test--render
-              (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps\n:END:\n\\[\\[#law"
-                                        ":TRUSS_BREAKDOWN: steps\n:TRUSS_TELLING: scqa\n:END:\n[[#law"
+              (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps\n:END:\n# \\[\\[#law"
+                                        ":TRUSS_BREAKDOWN: steps\n:TRUSS_TELLING: scqa\n:END:\n# [[#law"
                                         org-truss-test--steps-file))))
     (should (string-match-p "^- Check before every test\n\n  1\\. Meet" out))))
 
@@ -357,13 +340,11 @@ written."
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: pros
 :END:
-*** Items wait longer
+*** Slower answers
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: cons
 :END:
-#+begin_public Slower answers
 Some items wait a week more.
-#+end_public
 *** Robin likes it
 * S
 :PROPERTIES:
@@ -437,13 +418,11 @@ and the sections below it, items of a list again."
 :TRUSS_PART: structure
 :TRUSS_BREAKDOWN: steps
 :END:
-** First
+** Agree
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
 :END:
-#+begin_public Agree
 We agree first.
-#+end_public
 - [[truss-include:agree]]
 *** A detail
 - [[truss-include:cal]]
@@ -455,7 +434,7 @@ We agree first.
 ")
          (out (org-truss-test--render file)))
     (should (string-match-p
-             (concat "^1\\. Agree\n\n   We agree first\\.\n\n"
+             (concat "^1\\. Agree\n\n   We agree first\\.\n"
                      "   - Agree next week\n\n"
                      "     - Ask the leads\n     - Ask the team\n\n"
                      "   - A detail\n\n"
@@ -477,7 +456,7 @@ the file to be put right."
     (let ((out (org-truss-test--render
                 (replace-regexp-in-string "scqa" pattern org-truss-test--telling-text))))
       (should (string-match-p
-               (concat "^- Fortnightly\n\n  We move to fortnightly reviews\\.\n\n"
+               (concat "^- We move to fortnightly reviews\n\n  From next month\\.\n\n"
                        "  - Should we keep meeting weekly\n  - Half the items repeat\n  - Robin agrees\n"
                        "  - Reviews are weekly\n\\'")
                out))))
@@ -524,8 +503,8 @@ document goes; its words, a search in the file, and any other link stay."
                          "[[file:../notes/n.org::*Head]]"))))
 
 (ert-deftest org-truss-test-export-shows-pictures ()
-  "A picture attached to a member and shown in its public block is shown in
-the document, linked from where the document is written."
+  "A picture attached to a member and shown in its text is shown in the
+document, linked from where the document is written."
   (org-truss-test--in-directory
       (list (cons "attach/ab/cdef/shot.png" "png")
             (cons "truss.org" "# -*- org-attach-id-dir: \"attach/\"; -*-
@@ -539,11 +518,9 @@ the document, linked from where the document is written."
 :ID:       abcdef
 :CUSTOM_ID: m1
 :END:
-#+begin_public
 As the shot shows.
 
 [[attachment:shot.png]]
-#+end_public
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure

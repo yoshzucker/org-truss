@@ -24,13 +24,13 @@
 
 ;; Edits that rearrange sections read the subtree into a snapshot, change the
 ;; snapshot, and write the subtree back.  A snapshot keeps what it does not
-;; understand -- notes, other drawers, the public block -- as written.
+;; understand -- its text, other drawers -- as written.
 
 (defun org-truss--snapshot (pos)
   "Return a snapshot of the subtree at POS.
-A plist of :heading (the text after the stars), :props, :drawers, :notes,
-:public-raw, :links (the lines that tell members, of their own) and
-:children."
+A plist of :heading (the text after the stars), :props, :drawers, :notes
+\(its text, comments and all), :links (the lines that tell members, of
+their own) and :children."
   (let ((own (org-truss--own pos)))
     (save-excursion
       (goto-char pos)
@@ -39,7 +39,6 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
             :props (plist-get own :props)
             :drawers (plist-get own :drawers)
             :notes (plist-get own :notes)
-            :public-raw (plist-get own :public-raw)
             :links (plist-get own :items)
             :children (mapcar #'org-truss--snapshot (org-truss--children pos))))))
 
@@ -66,7 +65,6 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
           (org-truss--drawer (plist-get snapshot :props))
           (plist-get snapshot :drawers)
           (org-truss--trim-blank-lines (plist-get snapshot :notes))
-          (plist-get snapshot :public-raw)
           (mapconcat #'org-truss--link-item (plist-get snapshot :links) "")
           "\n"
           (mapconcat (lambda (c) (org-truss--serialize c (1+ level)))
@@ -102,7 +100,7 @@ A plist of :heading (the text after the stars), :props, :drawers, :notes,
   "Return a snapshot of a new, empty section for PLACE of a telling pattern."
   (list :heading (org-truss-role-label (car place))
         :props (list (cons (org-truss-role-property 'telling) (symbol-name (car place))))
-        :drawers "" :notes "" :public-raw "" :links nil :children nil))
+        :drawers "" :notes "" :links nil :children nil))
 
 (defun org-truss-apply-section-telling (pos pattern)
   "Give the section at POS the telling PATTERN, and a section for each place.
@@ -139,9 +137,8 @@ hand.  Links on the section itself stay on it."
           (plist-get snapshot :children)))
 
 (defun org-truss--snapshot-has-writing-p (snapshot)
-  "Non-nil when SNAPSHOT holds a public block or notes."
-  (or (not (string-empty-p (plist-get snapshot :public-raw)))
-      (not (string-blank-p (plist-get snapshot :notes)))))
+  "Non-nil when SNAPSHOT holds text, besides the lines that tell members."
+  (not (string-blank-p (plist-get snapshot :notes))))
 
 (defun org-truss-unwrap (pos &optional force)
   "Take the sections below the section at POS away, keeping their links.
@@ -355,16 +352,17 @@ new heading."
 
 (defun org-truss-add-ground (pos ref)
   "Make the member REF a ground of the heading at POS.
-A link to it, [[#REF]], on a line of its own after the heading's last
-line of text, outside its public block, where the reader does not see
-it.  REF is a CUSTOM_ID; see `org-truss-ensure-id'."
-  (org-truss--add-line pos (format "[[%s]]" (org-truss--target ref))))
+A link to it, # [[#REF]], on a comment line of its own after the
+heading's last line of text, where the reader does not see it.  REF is a
+CUSTOM_ID; see `org-truss-ensure-id'."
+  (org-truss--add-line pos (format "# [[%s]]" (org-truss--target ref))))
 
 (defun org-truss--pointing-line (pos ref)
   "Return (BEG . END) of the line pointing to REF in the own text at POS, or nil.
-A line holding nothing but the link, [[#REF]], as a list item or not."
+A line holding nothing but the link, [[#REF]], as a list item or not, as
+a comment or not."
   (let* ((bounds (org-truss--own-bounds pos))
-         (re (format "^[ \t]*\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[%s\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
+         (re (format "^[ \t]*\\(?:#[ \t]+\\)?\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[%s\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
                      (regexp-quote (org-truss--target ref)))))
     (save-excursion
       (goto-char (car bounds))
@@ -445,53 +443,128 @@ broken what stood on it or told it.  Return the labels deleted."
                           (min (point-max) (1+ (line-end-position))))))))
     (nreverse labels)))
 
-(defun org-truss-public-body (pos)
-  "Return where the text of the public block under the heading at POS starts.
-It is what the reader is told there: a section's lead, or a member's words
-for the reader.  When there is no block, an empty one is written first --
-before the items that list members, or else at the end of the heading's
-own text.  An empty block is given an empty line to write on."
+(defun org-truss-lead-line (pos)
+  "Return where a lead is written under the heading at POS, or nil.
+Before the first line that tells a member, on an empty line written for
+it: what is written there opens what the heading tells.  Nil when no line
+tells one."
   (save-excursion
-    (let* ((bounds (org-truss--own-bounds pos))
-           (end (copy-marker (cdr bounds)))
-           (heading-end (progn (goto-char pos) (line-end-position)))
-           (case-fold-search t))
+    (let ((bounds (org-truss--own-bounds pos)))
       (goto-char (car bounds))
-      (prog1
-          (cond
-           ((re-search-forward org-truss--public-begin-re end t)
-            (forward-line 1)
-            (when (looking-at org-truss--public-end-re)
-              (insert "\n")
-              (forward-line -1))
-            (point))
-           ((re-search-forward org-truss--include-line-re end t)
-            (goto-char (line-beginning-position))
-            (insert "#+begin_public\n\n#+end_public\n")
-            (forward-line -2)
-            (point))
-           (t
-            (goto-char end)
-            (skip-chars-backward " \t\n" heading-end)
-            (insert "\n#+begin_public\n\n#+end_public")
-            (unless (looking-at "\n") (save-excursion (insert "\n")))
-            (forward-line -1)
-            (point)))
-        (set-marker end nil)))))
+      (when (re-search-forward org-truss--include-line-re (cdr bounds) t)
+        (goto-char (line-beginning-position))
+        (insert "\n")
+        (1- (point))))))
 
-(defun org-truss-drop-empty-public (beg end)
-  "Take away the public blocks between BEG and END that hold nothing.
-One left empty -- no title, no text -- tells the reader nothing, and would
-only be in the way."
-  (save-excursion
-    (goto-char beg)
-    (let ((end (copy-marker end))
-          (case-fold-search t))
-      (while (re-search-forward
-              "^[ \t]*#\\+begin_public[ \t]*\n\\(?:[ \t]*\n\\)*[ \t]*#\\+end_public[ \t]*\\(?:\n\\|\\'\\)"
-              end t)
-        (replace-match ""))
-      (set-marker end nil))))
+(defun org-truss--public-converted (start end label)
+  "Return the own text between START and END written without a public block.
+LABEL is the heading's.  What was the file's alone -- the text outside
+the public block, the lines telling members aside -- goes into a comment
+block; the public block's text is the text the reader is told; its
+title, when it is not LABEL, is kept on a comment line above that, for
+the heading to be rewritten by hand; the lines telling members follow, as
+they did, a link in a sentence of the file's text as an item of its own.
+Nil when there is nothing to change: no public block, and no text but
+comments."
+  (let ((case-fold-search t)
+        (state 'text)
+        block title head notes public items found plain)
+    (save-excursion
+      (goto-char start)
+      (while (< (point) end)
+        (let* ((line (buffer-substring-no-properties (point) (min end (line-end-position))))
+               (raw (concat line "\n")))
+          (pcase state
+            ('properties (push raw head)
+                         (when (string-match-p org-truss--end-re line) (setq state 'text)))
+            ('drawer (push raw head)
+                     (when (string-match-p org-truss--end-re line) (setq state 'text)))
+            ('public (if (string-match-p "^[ \t]*#\\+end_public\\b" line)
+                         (setq state 'text)
+                       (push raw public)))
+            ('comment (unless (string-match-p "^[ \t]*#\\+end_comment\\b" line)
+                        (push raw notes))
+                      (when (string-match-p "^[ \t]*#\\+end_comment\\b" line)
+                        (setq state 'text)))
+            ('block (push raw notes)
+                    (when (string-match-p (format "^[ \t]*#\\+end_%s\\b" (regexp-quote block)) line)
+                      (setq state 'text)))
+            (_
+             (cond
+              ((string-match-p org-truss--properties-re line)
+               (push raw head)
+               (setq state 'properties))
+              ((and (string-match-p org-truss--drawer-re line)
+                    (not (string-match-p org-truss--end-re line)))
+               (push raw head)
+               (setq state 'drawer))
+              ((string-match "^[ \t]*#\\+begin_public\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$" line)
+               (setq title (match-string 1 line)
+                     found t
+                     state 'public))
+              ((string-match-p org-truss--comment-begin-re line)
+               (setq state 'comment))
+              ((string-match-p org-truss--include-line-re line)
+               (push raw items))
+              (t
+               (when (string-match org-truss--block-begin-re line)
+                 (setq block (match-string 1 line)
+                       state 'block))
+               (unless (or (string-blank-p line) (string-match-p org-truss--comment-line-re line))
+                 (setq plain t))
+               (push raw notes)
+               (dolist (link (org-truss--include-links-in line))
+                 (push (format "- %s\n" link) items))))))
+          (forward-line 1))))
+    (let ((notes (string-trim (apply #'concat (nreverse notes)) "\\(?:[ \t]*\n\\)+" "[ \t\n]+"))
+          (public (string-trim (apply #'concat (nreverse public)) "\\(?:[ \t]*\n\\)+" "[ \t\n]+"))
+          (title (and title (not (string-blank-p title)) (not (equal (string-trim title) label))
+                      (string-trim title))))
+      (when (or found plain)
+        (concat (apply #'concat (nreverse head))
+                (string-join
+                 (delq nil
+                       (list (and (not (string-empty-p notes))
+                                  (concat "#+begin_comment\n" notes "\n#+end_comment\n"))
+                             (and (or title (not (string-empty-p public)))
+                                  (concat (if title
+                                              (format (org-truss--pick "# Title for the reader: %s\n"
+                                                                       "# 読み手向けの見出し: %s\n")
+                                                      title)
+                                            "")
+                                          (if (string-empty-p public) "" (concat public "\n"))))
+                             (and items (apply #'concat (nreverse items)))))
+                 "\n")
+                (if (string-suffix-p "\n\n" (buffer-substring-no-properties start end)) "\n" ""))))))
+
+(defun org-truss-convert-public-in-buffer ()
+  "Write every heading's text as the reader is now told it, without public blocks.
+The text under a heading is told, a comment left out, where a public
+block's alone was before: so what each heading had outside its public
+block goes into a comment block, and what its public block said is its
+text; see `org-truss--public-converted'.  A buffer with no public block
+is taken to be written as it is now already, and is left as it is, since
+its text could not be told from notes.  Return the number of headings
+changed."
+  (let ((count 0)
+        (case-fold-search t))
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (when (re-search-forward org-truss--public-begin-re nil t)
+       ;; From the last heading up, so what is rewritten moves nothing
+       ;; still to come.
+       (goto-char (point-max))
+       (while (re-search-backward org-outline-regexp-bol nil t)
+         (let* ((bounds (org-truss--own-bounds (point)))
+                (new (org-truss--public-converted (car bounds) (cdr bounds)
+                                                  (org-truss--heading-text))))
+           (when new
+             (save-excursion
+               (delete-region (car bounds) (cdr bounds))
+               (goto-char (car bounds))
+               (insert new))
+             (setq count (1+ count)))))))
+    count))
 
 (defun org-truss-refile (pos parent)
   "Move the heading at POS, with what is under it, to the end of PARENT.
@@ -573,7 +646,7 @@ changed."
   "Move what each TRUSS_GROUNDS says into its heading's text, and drop it.
 Grounds are read from a heading's text alone.  Each link there -- to a
 member, to a source -- goes on a line of its own after the heading's last
-line of text, outside its public block; the words naming what has no
+line of text; the words naming what has no
 file go on a line after them.  Words are no grounds: a heading they alone
 grounded, with nothing else in its text to stand on, is tagged
 :assumption:, taken as given, as what no text records is.  Return the

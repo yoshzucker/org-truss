@@ -55,7 +55,7 @@ printed a link to cite it by."
 (ert-deftest org-truss-test-board-takes-a-source ()
   "m on the board takes a source for the heading of the line as org-moor
 takes one, into the truss file's sources, and writes the link under the
-heading, outside its public block: grounds.  m l links one taken before."
+heading, after its text: grounds.  m l links one taken before."
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file)
                                       (cons "read/minutes.txt" "We agreed.\n"))
     (let* ((truss (expand-file-name "truss.org" dir))
@@ -75,7 +75,7 @@ heading, outside its public block: grounds.  m l links one taken before."
           (should (equal (plist-get record :title) "Minutes"))
           (should (plist-get record :copy))
           (with-current-buffer source
-            (should (string-search (concat "Some items cannot wait two weeks.\n#+end_public\n"
+            (should (string-search (concat "Some items cannot wait two weeks.\n"
                                            (org-moor-link record) "\n")
                                    (buffer-string))))
           (should-not (string-match-p "Reason \\[no grounds\\][ ·]+Some items are urgent" (buffer-string)))

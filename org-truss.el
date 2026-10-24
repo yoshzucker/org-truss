@@ -29,9 +29,8 @@
 ;; built here the way a truss is: members first, each written once; then
 ;; arguments, members joined so that a claim stands on what supports it; then
 ;; the structure, sections that show those arguments in the order they are
-;; told.  What the reader sees is the headings, or the public
-;; blocks written under them; everything else stays in the file, and the
-;; document is generated from it.
+;; told.  What the reader sees is the headings and the text under them;
+;; a comment stays in the file, and the document is generated from it.
 ;;
 ;; `org-truss-init'            set up a directory: a truss.org, what goes beside it
 ;; `org-truss-board'           draw the structure, change it, see what is undone
@@ -40,6 +39,7 @@
 ;; `org-truss-refresh-guides'  put the current guidance back into a truss.org
 ;; `org-truss-convert-references'
 ;;                             point by CUSTOM_ID where a heading is named
+;; `org-truss-convert-public'  tell the text under headings, not public blocks
 ;;
 ;; See README.org.
 
@@ -171,7 +171,7 @@ unsaved, to be looked over."
 (defun org-truss-convert-grounds ()
   "Move the nearest truss file's TRUSS_GROUNDS into the text of their headings.
 For a file written while grounds were a property: each link it held goes
-on a line of its own after the heading's text, outside its public block,
+on a line of its own after the heading's text,
 and the words it held after them; a heading the words alone grounded is
 tagged :assumption:.  The buffer is left unsaved, to be looked over."
   (interactive)
@@ -180,6 +180,22 @@ tagged :assumption:.  The buffer is left unsaved, to be looked over."
     (with-current-buffer (find-file-noselect file)
       (message "org-truss: %d headings in %s ground in their text now; not saved yet"
                (org-truss-convert-grounds-in-buffer)
+               (abbreviate-file-name file)))))
+
+;;;###autoload
+(defun org-truss-convert-public ()
+  "Write the nearest truss file without public blocks.
+For a file written while only a public block was told: under each
+heading, the text outside its public block goes into a comment block, and
+the public block's text becomes the heading's text, a title other than
+the heading kept on a comment line above it.  The buffer is left unsaved,
+to be looked over."
+  (interactive)
+  (let ((file (or (org-truss-locate)
+                  (user-error "No %s here or above" org-truss-file-name))))
+    (with-current-buffer (find-file-noselect file)
+      (message "org-truss: %d headings in %s are told by their text now; not saved yet"
+               (org-truss-convert-public-in-buffer)
                (abbreviate-file-name file)))))
 
 (defun org-truss-batch-check ()

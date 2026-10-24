@@ -40,8 +40,8 @@
 (defface org-truss-reader '((t))
   "Face for a title the reader sees, in the board's right column.
 A section's heading in the document, or a member's title, in bold there.
-What the reader sees as body text takes `org-truss-dim', as the notes under
-a heading do in the middle column."
+What the reader sees as body text takes `org-truss-dim', as the comments
+under a heading do in the middle column."
   :group 'org-truss)
 
 (defface org-truss-untold '((t :inherit org-truss-dim :slant italic))
@@ -444,7 +444,7 @@ first line of it when it opens with a table or a block.  Links read as their
 descriptions.  A title is in the face of a heading, body text in the face of
 body text."
   (let* ((title (car seen))
-         (body (string-trim (or (cdr seen) "")))
+         (body (or (org-truss--notes-shown (cdr seen)) ""))
          (text (cond ((and title (not (string-blank-p title))) title)
                      ((string-empty-p body) nil)
                      ((string-match-p "\\`[ \t]*\\(|\\|#\\+\\)" body)
@@ -459,12 +459,14 @@ body text."
   "Return what the reader sees of SEEN, a (TITLE . BODY) pair, as lines.
 The first goes on the heading's own line, the rest under it.  Without entry
 text there is one: its title, or the start of its body.  The title is in the
-face of a heading, the body in the face of body text."
+face of a heading, the body in the face of body text, without what the
+lines below draw; see `org-truss--notes-shown'."
   (if (not org-truss--whole)
       (list (org-truss--reader-text seen))
     (let ((title (car seen))
           (body (mapcar (lambda (line) (propertize line 'face 'org-truss-dim))
-                        (org-truss--fill (or (cdr seen) "") org-truss--right-width))))
+                        (org-truss--fill (or (org-truss--notes-shown (cdr seen)) "")
+                                         org-truss--right-width))))
       (if (and title (not (string-blank-p title)))
           (append (org-truss--break (propertize title 'face 'org-truss-reader)
                                     org-truss--right-width)
@@ -473,8 +475,8 @@ face of a heading, the body in the face of body text."
 
 (defun org-truss--member-reader (member)
   "Return what the reader sees of MEMBER as lines, the first for its own line.
-What `org-truss-member-told' says it is told in: its public block, or its
-label; `noexport' when the reader sees nothing of it."
+What `org-truss-member-told' says it is told in: its heading, and the text
+under it; `noexport' when the reader sees nothing of it."
   (if (org-truss-noexport-p member)
       (list (propertize "noexport" 'face 'org-truss-dim))
     (org-truss--reader-lines (org-truss-member-told member))))
@@ -509,9 +511,10 @@ the room of the middle, since the line is then read rather than scanned."
 
 (defun org-truss--notes-shown (notes)
   "Return NOTES without its quotations and the lines holding nothing but a link.
-Each is a ground, words quoted or a member or a source the heading stands
-on, which the board draws on a line of its own, marked; it would be drawn
-twice."
+NOTES is text under a heading, the comments or what the reader is told.
+Each of those is a ground, words quoted or a member or a source the
+heading stands on, or a member it tells, which the board draws on a line
+of its own, marked; it would be drawn twice."
   (when notes
     (dolist (block (reverse (org-truss--quote-blocks notes)))
       (setq notes (concat (substring notes 0 (car block)) (substring notes (cadr block)))))
@@ -886,7 +889,7 @@ its ground instead; see `org-truss--told-links'."
                         (concat indent (org-truss--mark 'item) "told")
                         (org-truss-section-label member)
                         (car (org-truss--reader-lines (cons (org-truss-section-title member)
-                                                            (cdr (org-truss-section-public member)))))
+                                                            (org-truss-section-body member))))
                         (list :type 'section :pos (org-truss-section-pos member)
                               :label (org-truss-section-label member)
                               :link ref :holder (org-truss-cluster-pos holder) :key key))
@@ -1005,7 +1008,6 @@ line says how many it hides."
                                              (concat (upcase (substring text 0 1)) (substring text 1))))
                                late))
                ". "))
-         (public (org-truss-section-public section))
          (title (org-truss-section-title section))
          (label (org-truss--label-lines
                  (propertize (org-truss-section-label section) 'face 'org-truss-section)))
@@ -1016,7 +1018,8 @@ line says how many it hides."
          (reader (if (org-truss-noexport-p section)
                      (list (propertize "noexport" 'face 'org-truss-dim))
                    (org-truss--reader-lines
-                    (cons (if marker (concat (car marker) (cdr marker) title) title) (cdr public)))))
+                    (cons (if marker (concat (car marker) (cdr marker) title) title)
+                          (org-truss-section-body section)))))
          (item (append (list :type 'section :pos (org-truss-section-pos section)
                              :label (org-truss-section-label section)
                              :key key)
@@ -1206,7 +1209,7 @@ a new member plays it."
         ;; The root's heading names the part, as the brief's and the members'
         ;; do, and is not in the document; the board's word stands for it.
         (append
-         (let ((lead (org-truss--reader-lines (cons nil (cdr (org-truss-section-public root))))))
+         (let ((lead (org-truss--reader-lines (cons nil (org-truss-section-body root)))))
            (append
             (list (org-truss--part-line "Structure" "how it is told: sections, telling members"
                                         item (car lead)))

@@ -77,8 +77,9 @@
 #                       reason is that member there, as it is.  In a
 #                       heading that is no reason, it only tells
 #     #+begin_quote     the source's own words, quoted
-#   Outside #+begin_public a link is for the file alone; inside, it is the
-#   reader's citation too.  Words naming what has no file -- an agreement,
+#   A link in the text is written out, the reader's citation too; on a
+#   comment line, ~# [[#m3]]~ as b on the board writes it, it is for the
+#   file alone.  Words naming what has no file -- an agreement,
 #   a talk -- are no grounds: tag :assumption: what stands on them
 #   What any heading points to as grounds must hold as what it is: a member
 #   has grounds, TRUSS_LOGIC or the tag :assumption:; a source taken by
@@ -100,8 +101,8 @@
 #   under Brief, Subject or Members
 #     a member: its heading is one sentence, which reads without the
 #     sentences around it -- no \"the following\", no \"above\".  The text
-#     under the heading is notes.  A heading put in for a role is named for
-#     the role, to be written over
+#     under the heading says more of it to the reader.  A heading put in for
+#     a role is named for the role, to be written over
 #   under Structure
 #     a section of the document: it tells members by links that tell them
 #
@@ -116,20 +117,20 @@
 #                           heading back
 #
 # Written out (only what Structure reaches)
-#   #+title             the title, unless Structure's #+begin_public has one
+#   #+title             the title
 #   section heading     a heading
-#   #+begin_public      a heading's words for the reader: a section's
-#                       opening (right under Structure, the document's), a
-#                       member's words in place of its heading, its title
-#                       first
+#   member heading      its words wherever it is told; to say it otherwise
+#                       to the reader, rewrite the heading
+#   text under a heading  after the heading, a comment left out: a
+#                       section's opening (right under Structure, the
+#                       document's), what a member says more
 #   ~*** [[truss-include:m7]]~  m7 as a heading: its words, then its
 #                       text, then the members under it as headings a
 #                       level down
 #   ~- [[truss-include:m7]]~  m7 in text: its words where the link is,
-#                       then its text, what its links outside
-#                       #+begin_public tell, and the members under it, as
-#                       a list after the paragraph or inside the item
-#   ~[[#m7]]~           in #+begin_public, its words, else m7's heading
+#                       then its text and the members under it, as a list
+#                       after the paragraph or inside the item
+#   ~[[#m7]]~           its description, else m7's heading
 #   ~[[moor:ID::14]]~   the source's origin, a web page (at page 14 of a
 #                       PDF); a source from a file or a mail, its words
 #   Under a heading with TRUSS_LOGIC or TRUSS_BREAKDOWN, member or section,
@@ -137,7 +138,8 @@
 #   they are told as the heading is); where the pattern names its roles, each
 #   opens with its own, as Pros: or Who:.  A section in a list is an item,
 #   not a heading, and what it holds goes inside it
-#   Notes under a heading, outside #+begin_public, are not written out
+#   A comment under a heading is not written out: a line starting with #
+#   and a space, or a block from ~#+begin_comment~ to ~#+end_comment~
 #
 # Other properties, and tags
 #   CUSTOM_ID         a member's id
@@ -205,8 +207,9 @@
 #                       そのまま理由になる。理由でない見出しでは、展開する
 #                       だけ
 #     #+begin_quote     資料の原文の引用
-#   #+begin_public の外のリンクはファイルの中だけのもの。中に書けば、読み手
-#   への出典にもなる。ファイルのないもの（合意、口頭の話）を名指す言葉は根拠
+#   本文のリンクは書き出され、読み手への出典にもなる。コメント行
+#   ~# [[#m3]]~ に書けば（盤面の b はこう書く）、ファイルの中だけのもの。
+#   ファイルのないもの（合意、口頭の話）を名指す言葉は根拠
 #   ではない。それに立つ見出しには :assumption: を付ける
 #   どの見出しでも、根拠として指したものは、その種類として成り立って
 #   いなければならない。部材なら、根拠か TRUSS_LOGIC か :assumption: を
@@ -225,8 +228,9 @@
 # 4つの見出しの下
 #   Brief・Subject・Members の下
 #     部材：見出しに一文を書く。前後の文を頼らずに読める文にする（「次の」
-#     「上記の」と書かない）。見出しの下の本文はメモ。役のために入れた
-#     見出しは役の名前になっているので、書き換える
+#     「上記の」と書かない）。見出しの下の本文は、見出しについて読み手に
+#     言い足すこと。役のために入れた見出しは役の名前になっているので、
+#     書き換える
 #   Structure の下
 #     節：文書の章。語る部材を、展開するリンクで書く
 #
@@ -241,19 +245,18 @@
 #                           指摘する
 #
 # 書き出されるもの（Structure から辿れるものだけ）
-#   #+title                   文書のタイトル。Structure の #+begin_public に
-#                             題があれば、そちらが文書のタイトル
+#   #+title                   文書のタイトル
 #   節の見出し                文書の見出し
-#   #+begin_public            読み手に見せる言葉。節なら最初の文（Structure
-#                             直下なら文書の最初の文）、部材なら見出しの
-#                             代わりの言葉。題があれば題が先に出る
+#   部材の見出し              展開したどこでも、その言葉で出る。読み手に
+#                             別の言い方で見せたいなら、見出しを書き換える
+#   見出しの下の本文          見出しの後に出る（コメントは除く）。節なら
+#                             最初の文（Structure 直下なら文書の最初の
+#                             文）、部材なら見出しについて言い足すこと
 #   ~*** [[truss-include:m7]]~  m7 を見出しとして。その言葉、本文、下の
 #                             部材を一段下の見出しで
 #   ~- [[truss-include:m7]]~  m7 を本文の中に。その言葉をリンクの場所に、
-#                             本文、#+begin_public の外のリンクが展開する
-#                             もの、下の部材を、段落の後か箇条の中に箇条で
-#   ~[[#m7]]~                 #+begin_public の中では、説明、なければ m7 の
-#                             見出しが出る
+#                             本文と下の部材を、段落の後か箇条の中に箇条で
+#   ~[[#m7]]~                 説明、なければ m7 の見出しが出る
 #   ~[[moor:ID::14]]~         資料の取り込み元の URL（PDF なら 14 ページ目）。
 #                             ファイルやメールから取り込んだ資料は、説明だけ
 #   TRUSS_LOGIC か TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書き
@@ -261,7 +264,8 @@
 #   型が役の名前を出すものでは、それぞれ自分の役で始まる（メリット：、誰が：
 #   など）。箇条書きの中の節は見出しでなく項目になり、
 #   節の中身はその項目の中に入る
-#   見出しの下のメモ（#+begin_public の外）は書き出さない
+#   見出しの下のコメントは書き出さない。# と空白で始まる行と、
+#   ~#+begin_comment~ から ~#+end_comment~ までのブロック
 #
 # そのほかのプロパティとタグ
 #   CUSTOM_ID         部材の ID
@@ -328,8 +332,9 @@ Brief line changes it."
      "What was found.  Write each fact as a member under the role of
 TRUSS_BREAKDOWN it belongs to, with its grounds: the source's own words
 in a quote block, a #+begin_quote (e on the board), or a link to the
-source in its text (m on the board takes one): inside its #+begin_public
-it is the reader's citation too.  Make a tree for each source, to be
+source in its text (m on the board takes one), which is written out as
+the reader's citation too; on a comment line it is the file's alone.
+Make a tree for each source, to be
 checked against it alone: a member naming the source, with TRUSS_BREAKDOWN:
 parts (p on the board), and its facts under it as its parts -- a form's
 fields, a law's articles.  Sum up facts of one source that belong
@@ -342,8 +347,9 @@ out; a member a section lists is, with the members under it.  p on the
 board's Subject line changes the breakdown."
      "調べたこと。事実は一つずつ、合う TRUSS_BREAKDOWN の役の下に部材として
 書き、根拠を付ける。出典の原文を本文の引用ブロック #+begin_quote に残すか
-（盤面の e）、出典へのリンクを本文に書く（盤面の m で取り込める）。リンク
-を #+begin_public の中に書けば、読み手への出典にもなる。資料ごとに木を一つ
+（盤面の e）、出典へのリンクを本文に書く（盤面の m で取り込める）。本文の
+リンクは書き出され、読み手への出典にもなる。コメント行に書けばファイルの中
+だけのもの。資料ごとに木を一つ
 作り、その資料だけと突き合わせて確かめられるようにする。資料を名指す部材に
 TRUSS_BREAKDOWN: parts を付け（盤面の p）、その資料の事実（帳票の欄、法令の
 条など）を下に部分として置く。同じ資料の、関係する事実はまとめる。下の事実
@@ -382,10 +388,12 @@ what is under it is its parts, which need no grounds, written out as a
 list.  A member is written out before what is under it, and that in the
 order of the file; a story that keeps the conclusion for last is told by
 the sections of the structure.  Write each heading to make sense pulled
-out on its own: no \"the following\", no \"above\".  Words for the
-reader go in its #+begin_public (S on the board), and are told in place
-of its heading wherever it is told.  The rest of the text under a heading
-is never written out; tag :noexport: a member that should not be."
+out on its own: no \"the following\", no \"above\".  The heading is what
+the reader is told wherever the member is told, and the text under it
+after it (S on the board); to say it otherwise to the reader, rewrite the
+heading.  Keep what is for you alone in a comment: a comment block, or a
+line starting with # and a space.  Tag :noexport: a member that should
+not be written out at all."
      "考えたこと：Subject の事実が、ここで何を意味するか（解釈）と、何を
 するか（判断）。見出し一つが部材一つで、一文で書く。主張の理由になる部材は
 その下に入れ子にし、主張には TRUSS_LOGIC を付ける（盤面の p）：reasons、
@@ -401,9 +409,10 @@ deduction、induction。理由はそれぞれ TRUSS_LOGIC_ROLE に役を書き�
 下の部材はその内訳になり、根拠は要らず、箇条書きで出る。部材は下の部材より
 先に書き出され、下の部材はファイルの順に出る。結論を最後に置く話の運びは、
 Structure の節で組む。見出しは、抜き出して読んでも通じるように書く（「次の」
-「上記の」を使わない）。読み手に見せる言い方は #+begin_public に書く（盤面
-の S）。部材を展開したどこでも、見出しの代わりにその言い方が出る。見出しの
-下のほかの本文は書き出されない。書き出したくない部材には :noexport: を付ける。")
+「上記の」を使わない）。部材を展開したどこでも、見出しがそのまま読み手に
+出て、その下に本文が続く（盤面の S）。読み手に別の言い方で見せたいなら、
+見出しを書き換える。自分だけのメモはコメントにする：# と空白で始まる行か、
+コメントブロック。部材ごと書き出したくないときは :noexport: を付ける。")
     (structure
      "The sections of the document.  Leave it empty while there is no
 document to make, as when a question is only being worked out.  A section
@@ -417,9 +426,10 @@ Sky, Rain, Umbrella, SCQA, PREP -- gives the sections right below their
 roles, each written in a section's property of its kind, as
 TRUSS_TELLING_ROLE; a role none plays is listed under Missing roles.  A
 section's heading becomes a heading of the document -- or, under a
-breakdown, an item of its list -- and the text of its #+begin_public, the
-section's opening.  A link that tells a member can stand in the #+begin_public
-too, between words that lead from one to the next (S on the board).
+breakdown, an item of its list -- and the text under it, a comment left
+out, the section's opening (S on the board writes it before the links).
+A link that tells a member can stand in a sentence too, between words
+that lead from one to the next.
 Write here only what guides the reader; put facts and claims in members,
 which can be stood on as grounds and told in any section.  Sections nest
 as deep as the document needs."
@@ -432,9 +442,9 @@ as deep as the document needs."
 Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節が担う役が
 決まり、節はその種類のプロパティ（TRUSS_TELLING_ROLE など）に役を書く。
 どの節も担っていない役は Missing roles に出る。節の見出しは文書の見出しに
-なり、節に書いた内容（#+begin_public の中身）は節の最初の文になる。内訳の型
-の下では、節は箇条書きの項目になる。展開するリンクは #+begin_public の中にも
-書け、部材と部材をつなぐ言葉の間に置ける（盤面の S）。ここには読み手を案内
+なり、節の下の本文（コメントを除く）は節の最初の文になる（盤面の S で
+リンクの前に書ける）。内訳の型の下では、節は箇条書きの項目になる。展開する
+リンクは文の中にも書け、部材と部材をつなぐ言葉の間に置ける。ここには読み手を案内
 する言葉だけを書き、事実や主張は Members の部材にする。部材なら、根拠として
 指せ、どの節でも展開できるから。
 節はいくらでも入れ子にできる。"))

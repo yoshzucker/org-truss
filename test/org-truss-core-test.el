@@ -35,47 +35,39 @@ The team leads.
 :PROPERTIES:
 :CUSTOM_ID: long
 :END:
-[[https://e.x/calendar-export][calendar export]]
-#+begin_public
+# [[https://e.x/calendar-export][calendar export]]
 Reviews ran past the hour eight times this quarter.
-#+end_public
 
 ** Half the items repeat
 :PROPERTIES:
 :CUSTOM_ID: half
 :TRUSS_LOGIC: reasons
 :END:
-[[#long]]
-Robin keeps raising the same items; see [[#diff]].
-#+begin_public Most items come back unchanged
+# [[#long]]
+# Robin keeps raising the same items; see [[#diff]].
 Half of each agenda repeats the week before, as [[#long]] shows.
-#+end_public
 *** Agenda diff                                                  :noexport:
 :PROPERTIES:
 :CUSTOM_ID: diff
 :TRUSS_LOGIC_ROLE: reason
 :END:
-[[https://e.x/agendas-weeks-1-12][agendas, weeks 1-12]]
+# [[https://e.x/agendas-weeks-1-12][agendas, weeks 1-12]]
 *** Items need a week to move                                    :assumption:
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-#+begin_public
 We assume most items need more than a week to change.
-#+end_public
 *** Some items are urgent
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :TRUSS_BREAKDOWN: parts
 :END:
-#+begin_public
 Some items cannot wait two weeks.
-#+end_public
 **** Urgent items go to chat
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: part
 :END:
-[[https://e.x/team-agreement][team agreement]]
+# [[https://e.x/team-agreement][team agreement]]
 **** Who decides what is urgent
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: part
@@ -86,10 +78,8 @@ Some items cannot wait two weeks.
 :CUSTOM_ID: move
 :TRUSS_LOGIC: deduction
 :END:
-[[#half]]
-#+begin_public
+# [[#half]]
 Hold the review every other week.
-#+end_public
 *** A meeting that repeats itself can meet less
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: major
@@ -99,7 +89,7 @@ Hold the review every other week.
 :PROPERTIES:
 :CUSTOM_ID: aside
 :END:
-[[https://e.x/hallway][hallway]]
+# [[https://e.x/hallway][hallway]]
 
 ** Lone remark
 
@@ -118,8 +108,6 @@ Hold the review every other week.
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: rain
 :END:
-#+begin_public Why it drags
-#+end_public
 - [[truss-include:half]]
 
 ** Umbrella
@@ -172,7 +160,7 @@ Finance said so at the October meeting.
 :PROPERTIES:
 :CUSTOM_ID: budget
 :END:
-[[https://e.x/finance-3-october][finance, 3 October]]
+# [[https://e.x/finance-3-october][finance, 3 October]]
 *** The schedule is fixed
 
 * Members
@@ -216,33 +204,31 @@ Finance said so at the October meeting.
 :CUSTOM_ID: rule
 :TRUSS_LOGIC: reasons
 :END:
-#+begin_public
 The rules ask for a check before and after driving.
-#+end_public
 **** The rule asks for a check before driving
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-[[https://e.x/rule-6][rule 6]]
+# [[https://e.x/rule-6][rule 6]]
 **** The rule asks for a check after driving
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-[[https://e.x/rule-6][rule 6]]
+# [[https://e.x/rule-6][rule 6]]
 **** The check may be made by video
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-[[https://e.x/notice-2-2][notice 2(2)]]
+# [[https://e.x/notice-2-2][notice 2(2)]]
 *** A manager is named for five cars or more
 :PROPERTIES:
 :CUSTOM_ID: five
 :END:
-[[https://e.x/law-74-3][law 74-3]]
+# [[https://e.x/law-74-3][law 74-3]]
 *** The law binds us, so we must check
 :PROPERTIES:
 :END:
-[[#five]]
+# [[#five]]
 
 * Members
 :PROPERTIES:
@@ -252,14 +238,14 @@ The rules ask for a check before and after driving.
 :PROPERTIES:
 :CUSTOM_ID: may
 :END:
-[[#five]]
+# [[#five]]
 ** Drivers are checked before and after driving
 :PROPERTIES:
 :CUSTOM_ID: checked
 :TRUSS_BREAKDOWN: steps
 :END:
-[[#may]]
-[[#rule]]
+# [[#may]]
+# [[#rule]]
 *** The driver blows into the tester
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -271,7 +257,7 @@ The rules ask for a check before and after driving.
 ** The tester reads zero when sober
 :PROPERTIES:
 :END:
-[[https://e.x/tester-manual][tester manual]]
+# [[https://e.x/tester-manual][tester manual]]
 
 * Structure
 :PROPERTIES:
@@ -302,13 +288,13 @@ the reasons of, and whose members hold steps.")
 :PROPERTIES:
 :CUSTOM_ID: law
 :END:
-[[https://e.x/ordinance-article-9-10][ordinance, article 9-10]]
+# [[https://e.x/ordinance-article-9-10][ordinance, article 9-10]]
 ** Check before every test
 :PROPERTIES:
 :CUSTOM_ID: check
 :TRUSS_BREAKDOWN: steps
 :END:
-[[#law]]
+# [[#law]]
 *** Meet the driver face to face
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -316,7 +302,7 @@ the reasons of, and whose members hold steps.")
 **** A video call counts as face to face
 :PROPERTIES:
 :END:
-[[https://e.x/notice-2022][notice, 2022]]
+# [[https://e.x/notice-2022][notice, 2022]]
 *** Note the reading                                              :noexport:
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -325,9 +311,7 @@ the reasons of, and whose members hold steps.")
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
 :END:
-#+begin_public
 The driver breathes into the checker.
-#+end_public
 *** Check the checker works
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -411,12 +395,12 @@ The driver breathes into the checker.
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: example
 :END:
-[[https://e.x/incident-log][incident log]]
+# [[https://e.x/incident-log][incident log]]
 *** Alcohol slows reactions
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: reason
 :END:
-[[https://e.x/textbook][textbook]]
+# [[https://e.x/textbook][textbook]]
 
 * Structure
 :PROPERTIES:
@@ -463,15 +447,11 @@ The driver breathes into the checker.
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: sky
 :END:
-#+begin_public Where we stand
-#+end_public
 ** Umbrella
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: umbrella
 :END:
-#+begin_public
 Meet every other week.
-#+end_public
 ** Notes for later
 "
   "A file part written: a heading playing no role, sections out of order.")
@@ -485,9 +465,7 @@ Meet every other week.
 :CUSTOM_ID: move
 :TRUSS_TELLING: scqa
 :END:
-#+begin_public Fortnightly
-We move to fortnightly reviews.
-#+end_public
+From next month.
 *** Should we keep meeting weekly
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: question
@@ -1195,10 +1173,9 @@ are no sources; a logic of the members brings sources together."
 :PROPERTIES:
 :CUSTOM_ID: move
 :END:
-#+begin_public
 We move, as [[truss-include:long]] shows.
-#+end_public
 - [[truss-include:loop]]
+# Not told here: [[truss-include:gone]]
 ** Reviews run long
 :PROPERTIES:
 :CUSTOM_ID: long
@@ -1221,10 +1198,11 @@ We move, as [[truss-include:long]] shows.
   "Members telling members, one of them back, and a link that tells none.")
 
 (ert-deftest org-truss-test-includes ()
-  "Any heading tells members by its links, in its public block or outside
-it: the document tells what the sections tell and what that tells in
-turn.  A link that tells no member is broken, and one that tells a member
-which, with what is nested under it, tells the heading back is a loop."
+  "Any heading tells members by its links, in a sentence or on a line of
+their own, and a link in a comment tells nothing: the document tells what
+the sections tell and what that tells in turn.  A link that tells no
+member is broken, and one that tells a member which, with what is nested
+under it, tells the heading back is a loop."
   (org-truss-test--with org-truss-test--includes-file
     (let* ((model (org-truss-read))
            (move (org-truss-test--m model "Move to fortnightly"))
@@ -1232,7 +1210,6 @@ which, with what is nested under it, tells the heading back is a loop."
            (pairs (lambda (key) (mapcar (lambda (hit) (cons (org-truss-cluster-label (car hit)) (cdr hit)))
                                         (plist-get checks key)))))
       (should (equal (org-truss-cluster-includes move) '("long" "loop")))
-      (should (equal (org-truss-cluster-listed move) '("[[truss-include:loop]]")))
       (should-not (org-truss-cluster-text-grounds move))
       (should (equal (org-truss-test--labels (org-truss-told model))
                      '("Move to fortnightly" "Reviews run long" "Loops back" "Under it")))
@@ -1280,13 +1257,17 @@ See [[file:sources/gone.pdf][gone]], and [[attachment:shot.png]].
           (should (equal (length (plist-get (org-truss-checks (org-truss-read)) :broken-sources)) 2)))))))
 
 (ert-deftest org-truss-test-grounds-are-written ()
-  "A ground is written in the text, a link on a line of its own after the
-heading's last line, outside its public block; taking it away takes that
-line, and leaves a link among other words, for the words to be rewritten."
+  "A ground is written in the text, a link on a comment line of its own
+after the heading's last line, which the reader is not told; taking it
+away takes that line, and leaves a link among other words, for the words
+to be rewritten."
   (org-truss-test--with org-truss-test--file
     (let ((half (org-truss-test--heading-pos "Half the items repeat")))
       (org-truss-add-ground half "aside")
-      (should (string-match-p "^#\\+end_public\n\\[\\[#aside\\]\\]\n\\*\\*\\* Agenda diff" (buffer-string)))
+      (should (string-match-p "shows\\.\n# \\[\\[#aside\\]\\]\n\\*\\*\\* Agenda diff" (buffer-string)))
+      (should-not (string-match-p "aside" (or (org-truss-cluster-body
+                                               (org-truss-test--m (org-truss-read) "Half the items repeat"))
+                                              "")))
       (should (equal (org-truss-cluster-refs (org-truss-test--m (org-truss-read) "Half the items repeat"))
                      '("long" "diff" "aside")))
       (should (org-truss-remove-ground half "aside"))
@@ -1294,7 +1275,7 @@ line, and leaves a link among other words, for the words to be rewritten."
       (should-not (org-truss-remove-ground half "diff"))
       (should (equal (org-truss-cluster-refs (org-truss-test--m (org-truss-read) "Half the items repeat"))
                      '("diff" "long")))
-      (should (string-match-p "^:END:\nRobin keeps" (buffer-string))))
+      (should (string-match-p "^:END:\n# Robin keeps" (buffer-string))))
     (let ((pos (org-truss-test--heading-pos "Lone remark")))
       (should (org-truss-toggle-assumption pos))
       (should (org-truss-assumption-p (org-truss-test--m (org-truss-read) "Lone remark")))
@@ -1324,7 +1305,7 @@ them, a broken link where it is written."
       (should-not (plist-get checks :broken-grounds))
       (should-not (plist-get checks :duplicates))))
   (org-truss-test--with (replace-regexp-in-string
-                         "^\\[\\[#half\\]\\]$" "[[#half]] [[#gone]]"
+                         "^# \\[\\[#half\\]\\]$" "# [[#half]] [[#gone]]"
                          org-truss-test--file)
     (let ((checks (org-truss-checks (org-truss-read))))
       (should (equal (mapcar (lambda (b) (cons (org-truss-member-label (car b)) (cdr b)))
@@ -1411,17 +1392,26 @@ nothing points by label."
 ;;;; Reading
 
 (ert-deftest org-truss-test-own-text ()
-  "A link pointing to a member in the text, in the notes or in the public
-block, is a reference; one in a drawer is not.  Nor is a link that tells
-a member."
+  "A link pointing to a member in the text, in a comment or in what the
+reader is told, is a reference; one in a drawer is not.  Nor is a link
+that tells a member.  The reader is told the text outside the comments; a
+# in a block is no comment."
   (org-truss-test--with org-truss-test--file
     (let ((own (org-truss--own (org-truss-test--heading-pos "Half the items repeat"))))
       (should (equal (org-truss--refs-in (org-truss--text own)) '("long" "diff" "long")))
       (should-not (plist-get own :includes))
       (should (equal (plist-get (org-truss--own (org-truss-test--heading-pos "Sky")) :includes)
                      '("long")))
-      (should (equal (car (plist-get own :public)) "Most items come back unchanged"))
-      (should (string-match-p "\\`Half of each agenda" (cdr (plist-get own :public))))
+      (should (equal (plist-get own :body)
+                     "Half of each agenda repeats the week before, as [[#long]] shows.\n"))
+      (should (equal (plist-get own :comments)
+                     "[[#long]]\nRobin keeps raising the same items; see [[#diff]].\n")))
+    (org-truss-test--with "* H\nTold.\n#+begin_comment\nKept, [[#a]].\n#+end_comment\n#+begin_src sh\n# told too\n#+end_src\n#\n"
+      (let ((own (org-truss--own (point-min))))
+        (should (equal (plist-get own :body) "Told.\n#+begin_src sh\n# told too\n#+end_src\n"))
+        (should (equal (plist-get own :comments) "Kept, [[#a]].\n\n"))
+        (should (equal (org-truss--refs-in (org-truss--text own)) '("a")))))
+    (let ((own (org-truss--own (org-truss-test--heading-pos "Half the items repeat"))))
       (should (equal (plist-get own :props) '(("CUSTOM_ID" . "half")
                                               ("TRUSS_LOGIC" . "reasons")))))))
 
@@ -1457,7 +1447,7 @@ to no member, and shows as broken."
 
 (defun org-truss-test--fields (part)
   "Return the members right under PART, its fields, as (ROLES . TEXT)."
-  (mapcar (lambda (field) (cons (org-truss-member-roles field) (org-truss-member-notes field)))
+  (mapcar (lambda (field) (cons (org-truss-member-roles field) (or (org-truss-member-body field) "")))
           (org-truss-part-children part)))
 
 (ert-deftest org-truss-test-brief ()
@@ -1471,7 +1461,7 @@ role its TRUSS_BREAKDOWN_ROLE names."
 
 (ert-deftest org-truss-test-conditions ()
   "A field of the brief or the subject is a member, read and judged as any
-other, as are the members under it; its text is its notes.  The parts are
+other, as are the members under it; its text is its body.  The parts are
 broken down into their fields: what their breakdown asks for and no field
 plays is a missing role."
   (org-truss-test--with org-truss-test--conditions-file
@@ -1556,10 +1546,8 @@ changed.  Where the heading has nothing attached, the link stays."
 :PROPERTIES:
 :ID:       abcdef
 :END:
-#+begin_public Said
 [[attachment:shot.png]]
-#+end_public
-See [[attachment:shot.png][the shot]].
+# See [[attachment:shot.png][the shot]].
 ** Another
 [[attachment:shot.png]]
 "))
@@ -1567,13 +1555,13 @@ See [[attachment:shot.png][the shot]].
         (unwind-protect
             (let* ((model (org-truss-read))
                    (claim (org-truss-member-by-label model "A claim")))
-              (should (equal (cdr (org-truss-member-public claim))
+              (should (equal (org-truss-member-body claim)
                              "[[file:attach/ab/cdef/shot.png]]"))
               (should (equal (org-truss-member-notes claim)
                              "See [[file:attach/ab/cdef/shot.png][the shot]]."))
-              (should (equal (org-truss-member-notes (org-truss-member-by-label model "Another"))
+              (should (equal (org-truss-member-body (org-truss-member-by-label model "Another"))
                              "[[attachment:shot.png]]"))
-              (should (string-match-p "\\[\\[attachment:shot\\.png\\]\\]\n#\\+end_public"
+              (should (string-match-p "^\\[\\[attachment:shot\\.png\\]\\]\n# See"
                                       (buffer-string))))
           (kill-buffer))))))
 
@@ -1589,8 +1577,8 @@ has stays, broken."
                                          "- [[truss-include:*Reviews run long]"
                                        "- [[truss-include:*Half the items repeat]"))
                          (replace-regexp-in-string
-                          "^\\[\\[#half\\]\\]$"
-                          "[[*Half the items repeat]] [[*Lone remark]] [[*Nobody]] the agendas"
+                          "^# \\[\\[#half\\]\\]$"
+                          "# [[*Half the items repeat]] [[*Lone remark]] [[*Nobody]] the agendas"
                           (replace-regexp-in-string ":CUSTOM_ID: half\n" "" org-truss-test--file)))
     (should (= (org-truss-convert-references-in-buffer) 4))
     (let* ((model (org-truss-read))
@@ -1599,7 +1587,7 @@ has stays, broken."
            (move (org-truss-test--m model "Move to fortnightly")))
       (should (equal (list half lone) '("m1" "m2")))
       (should (equal (org-truss-cluster-refs move) '("m1" "m2" "*Nobody")))
-      (should (string-match-p "^\\[\\[#m1\\]\\] \\[\\[#m2\\]\\] \\[\\[\\*Nobody\\]\\] the agendas$"
+      (should (string-match-p "^# \\[\\[#m1\\]\\] \\[\\[#m2\\]\\] \\[\\[\\*Nobody\\]\\] the agendas$"
                               (buffer-string)))
       (should (equal (org-truss-cluster-refs (org-truss-test--m model "Half the items repeat"))
                      '("long" "diff")))
@@ -1611,8 +1599,8 @@ has stays, broken."
     (should (= (org-truss-convert-references-in-buffer) 0))))
 
 (ert-deftest org-truss-test-convert-grounds ()
-  "What TRUSS_GROUNDS said goes into the text, outside the public block:
-each link on a line of its own, the words after them.  A heading the
+  "What TRUSS_GROUNDS said goes into the text, after what is there: each
+link on a line of its own, the words after them.  A heading the
 words alone grounded is taken as given."
   (org-truss-test--with "* M
 :PROPERTIES:
@@ -1627,9 +1615,7 @@ words alone grounded is taken as given."
 :TRUSS_LOGIC_ROLE: reason
 :TRUSS_GROUNDS: [[#fact]] [[moor:6f1c::3][Minutes l. 3]] the agendas
 :END:
-#+begin_public
 Said so.
-#+end_public
 *** Agreed
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
@@ -1650,7 +1636,7 @@ We agreed.
 "
     (should (= (org-truss-convert-grounds-in-buffer) 3))
     (should-not (string-search "TRUSS_GROUNDS" (buffer-string)))
-    (should (string-search (concat "#+end_public\n[[#fact]]\n[[moor:6f1c::3][Minutes l. 3]]\n"
+    (should (string-search (concat "Said so.\n[[#fact]]\n[[moor:6f1c::3][Minutes l. 3]]\n"
                                    "the agendas\n*** Agreed")
                            (buffer-string)))
     (let ((model (org-truss-read)))
@@ -1684,7 +1670,6 @@ at the end."
       (should (eq (org-truss-cluster-role (funcall by-label "Question") 'telling) 'question))
       (should (string-match-p "^\\*\\* Question\n:PROPERTIES:\n:TRUSS_TELLING_ROLE: question\n:END:"
                               (buffer-string)))
-      (should (equal (car (org-truss-section-public (funcall by-label "Rain"))) "Why it drags"))
       (should (equal (org-truss-cluster-includes (funcall by-label "Rain"))
                      '("half"))))))
 
@@ -1750,7 +1735,9 @@ property of the pattern's kind."
   "Unwrapping refuses to lose writing unless forced, and keeps every link.
 The section's patterns go, of every kind, since what they asked was asked
 of the sections taken away."
-  (org-truss-test--with org-truss-test--file
+  (org-truss-test--with (replace-regexp-in-string "^- \\[\\[truss-include:half\\]\\]$"
+                                                  "Why it drags.\n- [[truss-include:half]]"
+                                                  org-truss-test--file)
     (let ((root (org-truss--part-pos "structure")))
       (should (equal (org-truss-unwrap root) '("Rain")))
       (should (= 3 (length (org-truss-section-children
@@ -1790,31 +1777,89 @@ of the sections taken away."
       (org-truss-remove-link (org-truss-test--heading-pos "Rain") "aside")
       (should (equal (funcall links-of "Rain") '("half"))))))
 
-(ert-deftest org-truss-test-public-body ()
-  "Where a public block's text starts is found, or a block is written for it:
-before the items that list members, or at the end of the heading's own
-text.  An empty block gets a line to write on, and one left empty can be
-taken away."
+(ert-deftest org-truss-test-lead-line ()
+  "A lead is written before the first line that tells a member, on an empty
+line made for it, and is told before the members; with no such line there
+is no place for one."
   (org-truss-test--with org-truss-test--file
     (let ((section (lambda (label)
                      (seq-find (lambda (s) (equal (org-truss-section-label s) label))
                                (org-truss-sections (org-truss-read))))))
-      (goto-char (org-truss-public-body (org-truss-test--heading-pos "Sky")))
+      (goto-char (org-truss-lead-line (org-truss-test--heading-pos "Sky")))
+      (should (looking-at "\n- \\[\\[truss-include:long"))
       (insert "Where we are.")
-      (should (equal (org-truss-section-public (funcall section "Sky"))
-                     '(nil . "Where we are.")))
+      (should (equal (org-truss-section-body (funcall section "Sky"))
+                     "Where we are.\n- [[truss-include:long]]"))
       (should (string-match-p
-               ":TRUSS_TELLING_ROLE: sky\n:END:\n#\\+begin_public\nWhere we are\\.\n#\\+end_public\n- \\[\\[truss-include:long"
+               ":TRUSS_TELLING_ROLE: sky\n:END:\nWhere we are\\.\n- \\[\\[truss-include:long"
                (buffer-string)))
-      (goto-char (org-truss-public-body (org-truss-test--heading-pos "Rain")))
-      (insert "Why.")
-      (should (equal (org-truss-section-public (funcall section "Rain"))
-                     '("Why it drags" . "Why.")))
-      (goto-char (org-truss-public-body (org-truss-test--heading-pos "Lone remark")))
-      (should (looking-at "\n#\\+end_public\n\n\\* Structure"))
-      (org-truss-drop-empty-public (point-min) (point-max))
-      (should (string-match-p "^\\*\\* Lone remark\n+\\* Structure" (buffer-string)))
-      (should (string-match-p "Where we are\\." (buffer-string))))))
+      (should-not (org-truss-lead-line (org-truss-test--heading-pos "Lone remark"))))))
+
+(ert-deftest org-truss-test-convert-public ()
+  "A file written with public blocks comes to be told by the text under its
+headings: what was outside a public block goes into a comment block, the
+block's text becomes the text, a title other than the heading is kept on
+a comment line, and the lines telling members follow -- a link in a
+sentence there as an item of its own.  A file with no public block is
+written as it is now, and is left alone: done again, it changes nothing."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Half the items repeat
+:PROPERTIES:
+:CUSTOM_ID: half
+:END:
+[[#long]]
+Robin said so, as [[truss-include:long]] shows.
+#+begin_public Most items come back
+Half of each agenda repeats.
+#+end_public
+- [[truss-include:diff]]
+
+** Already a comment
+# Only this.
+** Plain
+Kept for me.
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** Now
+#+begin_public Now
+The lead.
+#+end_public
+- [[truss-include:half]]
+"
+    (should (= (org-truss-convert-public-in-buffer) 3))
+    (should (string-search "** Half the items repeat
+:PROPERTIES:
+:CUSTOM_ID: half
+:END:
+#+begin_comment
+[[#long]]
+Robin said so, as [[truss-include:long]] shows.
+#+end_comment
+
+# Title for the reader: Most items come back
+Half of each agenda repeats.
+
+- [[truss-include:long]]
+- [[truss-include:diff]]
+
+** Already a comment
+# Only this.
+** Plain
+#+begin_comment
+Kept for me.
+#+end_comment
+* S" (buffer-string)))
+    (should (string-search "** Now
+The lead.
+
+- [[truss-include:half]]
+" (buffer-string)))
+    (should (= (org-truss-convert-public-in-buffer) 0))))
 
 (ert-deftest org-truss-test-add-link-to-an-empty-section ()
   "A link added to a section with nothing but a drawer goes under the drawer."
@@ -1896,7 +1941,7 @@ a line opening with #+begin_ stops org-mode starting at all."
   ;; guide's line would run to that lead's #+end_public.
   (dolist (org-truss-language '(en ja))
     (org-truss-test--with (concat (org-truss-skeleton "T")
-                                  "#+begin_public\nThe lead.\n#+end_public\n")
+                                  "#+begin_comment\nThe lead.\n#+end_comment\n")
       (org-fold-hide-block-all))))
 
 (ert-deftest org-truss-test-guidance-shows-links-as-written ()

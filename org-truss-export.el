@@ -12,8 +12,9 @@
 ;;; Commentary:
 
 ;; The structure is walked in order and what the reader sees of each part is
-;; written.  A section is a heading of the document: its title, its lead --
-;; the text of its public block -- then the sections below it, a level down.
+;; written.  A heading of the file is told by its words and the text under
+;; it, a comment left out: a section is a heading of the document, its
+;; title, its lead, then the sections below it, a level down.
 ;; A link that tells a heading, [[truss-include:m7]], is told by where it
 ;; stands.  On a heading's line it is that heading of the document: its
 ;; words, then what follows them -- its text, then what is under it, a
@@ -93,13 +94,10 @@ Blank lines stay blank."
 
 (defun org-truss--shown (cluster)
   "Return what the reader sees of CLUSTER, as (TITLE . BODY), or nil for nothing.
-A section's title and lead; a member's public block, or its heading as
-its title.  Nothing when it is tagged :noexport:."
-  (cond ((org-truss-noexport-p cluster) nil)
-        ((org-truss-section-p cluster)
-         (cons (org-truss-section-title cluster) (cdr (org-truss-section-public cluster))))
-        ((org-truss-cluster-public cluster))
-        (t (list (org-truss-cluster-label cluster)))))
+Its heading as its title, and the text under it outside the comments.
+Nothing when it is tagged :noexport:."
+  (and (not (org-truss-noexport-p cluster))
+       (cons (org-truss-cluster-label cluster) (org-truss-cluster-body cluster))))
 
 (defun org-truss--words (shown)
   "Return the words SHOWN, (TITLE . BODY), stands as where it is told:
@@ -145,14 +143,10 @@ already being told, the note that telling it would never end."
 (defun org-truss--rest (cluster shown level)
   "Return what follows CLUSTER's words where it is told, as Org text.
 SHOWN is what the reader sees of it, as `org-truss--shown' says.  Its
-body, when its title is its words; then the headings its links outside
-its public block tell, each an item of a list, since those links stand
-in its notes, which the reader is not told; then what is under it, as
+body, when its title is its words; then what is under it, as
 `org-truss--under' says at LEVEL."
   (org-truss--join
    (list (and (org-truss--present-p (car shown)) (org-truss--written (cdr shown)))
-         (org-truss--written (mapconcat (lambda (link) (concat "- " link))
-                                        (org-truss-cluster-listed cluster) "\n"))
          (org-truss--under cluster level))))
 
 (defun org-truss--under (cluster level)
@@ -312,7 +306,7 @@ a list item.  Nil is \"\"."
 (defun org-truss-render (model)
   "Return the document MODEL describes, as Org text.
 Under the title `org-truss-document-title' gives it, the structure's own
-lead, the text of its public block, opens it; then what follows it, as
+lead, the text under its heading, opens it; then what follows it, as
 `org-truss--rest' says, the sections below it under headings from the
 first level."
   (let* ((org-truss--model model)

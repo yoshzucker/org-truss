@@ -50,7 +50,7 @@
   "Call COMMAND, an org-moor command, at the heading of the board's line.
 As if typed there: it reads what it reads, takes the source into the
 truss file's sources, and writes the link on a line of its own after the
-heading's text, outside its public block."
+heading's text."
   (let ((item (org-truss--want (org-truss--item) 'member 'section)))
     (org-truss--fresh)
     (with-current-buffer org-truss--source
@@ -88,7 +88,7 @@ took, which could not fetch them as you, signed in."
 
 (defun org-truss-board-link-source ()
   "Link the heading at point to a source the truss file has: grounds.
-On a line of its own after the heading's text, outside its public block."
+On a line of its own after the heading's text."
   (interactive)
   (let ((item (org-truss--want (org-truss--item) 'member 'section)))
     (org-truss--fresh)

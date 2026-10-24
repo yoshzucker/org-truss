@@ -343,13 +343,17 @@ The pattern's property with _ROLE after it: TRUSS_LOGIC_ROLE, say."
 
 ;;;; Reading an entry's own text
 
-(defconst org-truss--public-begin-re
-  "^[ \t]*#\\+begin_public\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$")
-(defconst org-truss--public-end-re "^[ \t]*#\\+end_public[ \t]*$")
-(defconst org-truss--reader-block-re
-  "^[ \t]*#\\+begin_\\(public\\)\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$"
-  "The first line of a block of what the reader is told: its name, its title.
-A public block says what the reader sees of the heading.")
+(defconst org-truss--comment-line-re "^[ \t]*#\\(?:[ \t]\\|$\\)"
+  "A comment line, as Org writes one: it is never exported.")
+(defconst org-truss--comment-begin-re "^[ \t]*#\\+begin_comment\\b"
+  "The first line of a comment block.")
+(defconst org-truss--block-begin-re "^[ \t]*#\\+begin_\\([^ \t\n]+\\)"
+  "The first line of a block, and its name.
+What is inside is written as it is, a line starting with # in a source
+block as much as any.")
+(defconst org-truss--public-begin-re "^[ \t]*#\\+begin_public\\b"
+  "The first line of a public block, as files wrote what the reader was told
+before the text under a heading was; see `org-truss-convert-public-in-buffer'.")
 (defconst org-truss--properties-re "^[ \t]*:PROPERTIES:[ \t]*$")
 (defconst org-truss--drawer-re "^[ \t]*:[[:alnum:]_-]+:[ \t]*$")
 (defconst org-truss--end-re "^[ \t]*:END:[ \t]*$")
@@ -422,22 +426,21 @@ Own text runs from the line after the heading to the next heading of any level."
   "Parse the own text between START and END.
 Return a plist:
   :props   property drawer as an ordered alist
-  :public  (TITLE . BODY) of the first public block, or nil
-  :public-raw  that block as written
-  :includes  references of every link that tells a member, in order
-  :listed  those links outside the public block, as written
+  :includes  references of every link that tells a member outside the
+           comments, in order
   :items   those of them on a line of their own, the ones edits move
   :drawers drawers other than the property drawer, as written
-  :notes   everything else, as written"
+  :notes   everything else, as written: the body and the comments
+  :body    what the reader is told: the text outside the drawers and the
+           comments, the lines that tell members among it, as written
+  :comments  the comments, their lines without the # that makes them
+           comments, which stay in the file
+
+A comment is a line starting with # and a space, or a comment block,
+#+begin_comment, as Org exports neither."
   (let* ((case-fold-search t)
          (state 'text)
-         props blocks block title body public-raw includes listed items drawers notes
-         ;; The block read so far, as (NAME TITLE . BODY); one left open
-         ;; runs to the end of the own text.
-         (closed (lambda ()
-                   (cons (intern block)
-                         (cons title (string-trim (string-join (reverse body) "\n")
-                                                  "\n*" "[ \t\n]*"))))))
+         block props includes items drawers notes body comments)
     (save-excursion
       (goto-char start)
       (while (< (point) end)
@@ -454,52 +457,53 @@ Return a plist:
              (push raw drawers)
              (when (string-match-p org-truss--end-re line)
                (setq state 'text)))
+            ('comment
+             (push raw notes)
+             (if (string-match-p "^[ \t]*#\\+end_comment\\b" line)
+                 (setq state 'text)
+               (push raw comments)))
             ('block
-             (push raw public-raw)
+             (push raw notes)
+             (push raw body)
              (dolist (ref (org-truss--includes-in line))
                (push ref includes))
-             (if (string-match-p (format "^[ \t]*#\\+end_%s[ \t]*$" block) line)
-                 (progn (push (funcall closed) blocks)
-                        (setq state 'text body nil))
-               (push line body)))
+             (when (string-match-p (format "^[ \t]*#\\+end_%s\\b" (regexp-quote block)) line)
+               (setq state 'text)))
             (_
              (cond
               ((string-match-p org-truss--properties-re line)
                (setq state 'properties))
-              ((and (string-match org-truss--reader-block-re line)
-                    (not (assq (intern (match-string 1 line)) blocks)))
-               (setq block (match-string 1 line)
-                     title (let ((s (match-string 2 line)))
-                             (and s (not (string-blank-p s)) (string-trim s)))
-                     state 'block)
-               (push raw public-raw))
               ((and (string-match-p org-truss--drawer-re line)
                     (not (string-match-p org-truss--end-re line)))
                (push raw drawers)
                (setq state 'drawer))
+              ((string-match-p org-truss--comment-begin-re line)
+               (push raw notes)
+               (setq state 'comment))
+              ((string-match-p org-truss--comment-line-re line)
+               (push raw notes)
+               (push (replace-regexp-in-string "\\`[ \t]*#[ \t]?" "" raw) comments))
               ((string-match org-truss--include-line-re line)
                (push (org-truss--ref (match-string 1 line)) items)
-               (dolist (link (org-truss--include-links-in line))
-                 (push link listed))
+               (push raw body)
                (dolist (ref (org-truss--includes-in line))
                  (push ref includes)))
               (t
+               (when (string-match org-truss--block-begin-re line)
+                 (setq block (match-string 1 line)
+                       state 'block))
                (push raw notes)
-               (dolist (link (org-truss--include-links-in line))
-                 (push link listed))
+               (push raw body)
                (dolist (ref (org-truss--includes-in line))
                  (push ref includes))))))
           (forward-line 1)))
-      (when (eq state 'block)
-        (push (funcall closed) blocks)))
-    (list :props (nreverse props)
-          :public (cdr (assq 'public blocks))
-          :public-raw (apply #'concat (nreverse public-raw))
-          :includes (nreverse includes)
-          :listed (nreverse listed)
-          :items (nreverse items)
-          :drawers (apply #'concat (nreverse drawers))
-          :notes (apply #'concat (nreverse notes)))))
+      (list :props (nreverse props)
+            :includes (nreverse includes)
+            :items (nreverse items)
+            :drawers (apply #'concat (nreverse drawers))
+            :notes (apply #'concat (nreverse notes))
+            :body (apply #'concat (nreverse body))
+            :comments (apply #'concat (nreverse comments))))))
 
 (defconst org-truss--source-link-re
   (concat "\\[\\[\\(?:moor:\\|file:\\|https?:\\|attachment:\\|\\.\\.?/\\)"
@@ -509,9 +513,9 @@ other, or a page on the web.")
 
 (defun org-truss--text (own)
   "Return what OWN, the parse of a heading's own text, says outside its
-drawers and the lines that tell members: its notes and its blocks, as
-written."
-  (concat (plist-get own :notes) (plist-get own :public-raw)))
+drawers and the lines that tell members, as written: what the reader is
+told and the comments alike."
+  (plist-get own :notes))
 
 (defun org-truss--source-links-in (text)
   "Return every link to a source in TEXT, in order."
@@ -599,17 +603,12 @@ A link stays as it is where the heading has no attachments to find."
                      words))))
        text t t))))
 
-(defun org-truss--read-block (own key)
-  "Return the block KEY of OWN, a parse of the heading at point, as read.
-KEY is :public.  Its body with links to attachments
-as file links; see `org-truss--attachments-as-files'."
-  (let ((block (plist-get own key)))
-    (and block (cons (car block) (org-truss--attachments-as-files (cdr block))))))
-
-(defun org-truss--read-notes (own)
-  "Return the notes of OWN, a parse of the heading at point, as read.
-Trimmed, with links to attachments as file links."
-  (org-truss--attachments-as-files (string-trim (plist-get own :notes))))
+(defun org-truss--read-text (own key)
+  "Return the text KEY of OWN, a parse of the heading at point, as read.
+KEY is :body or :comments.  Without the blank lines around it, with links
+to attachments as file links; nil when it has no words."
+  (let ((text (string-trim (plist-get own key) "\\(?:[ \t]*\n\\)+" "[ \t\n]+")))
+    (and (not (string-empty-p text)) (org-truss--attachments-as-files text))))
 
 (defun org-truss--children (pos)
   "Return the positions of the direct children of the heading at POS."
@@ -680,12 +679,12 @@ TEXT-GROUNDS are the references of the links pointing to members in its
 text.  SOURCE-LINKS are its links to sources there; CITED the first, and QUOTED
 what each quotation in its text says, in order.  INCLUDES are the references of the links
 that tell members, [[truss-include:m7]], on its heading's line and in its
-text, in order; LISTED those links outside its public block, as written.  PUBLIC is what its public block says,
-\(TITLE . BODY); NOTES, what else is written under it.  CHILDREN are the
+text, in order.  BODY is the text the reader is told under its heading,
+or nil; NOTES, its comments, which stay in the file.  CHILDREN are the
 headings right under it."
   pos id label level tags roles logic breakdown telling
   text-grounds source-links cited quoted
-  includes listed public notes children)
+  includes body notes children)
 
 (cl-defstruct (org-truss-member (:include org-truss-cluster)
                                 (:constructor org-truss--make-member)
@@ -736,12 +735,11 @@ OWN is the parse of its own text."
             :text-grounds (org-truss--refs-in text)
             :includes (append (org-truss--includes-in (org-truss--heading-text))
                               (plist-get own :includes))
-            :listed (plist-get own :listed)
             :source-links (org-truss--source-links-in text)
             :cited (car (org-truss--source-links-in text))
             :quoted (org-truss--quotes-in text)
-            :public (org-truss--read-block own :public)
-            :notes (org-truss--read-notes own)))))
+            :body (org-truss--read-text own :body)
+            :notes (org-truss--read-text own :comments)))))
 
 (defun org-truss--read-member (pos home)
   "Read the member at POS, written in HOME, and what is nested under it."
@@ -875,11 +873,9 @@ A member, a section or a part."
 
 (defun org-truss-member-shown (member)
   "Return what the reader sees of MEMBER, as (TITLE . BODY), or nil for nothing.
-Its public block when it has one; else its label, as a paragraph.  Nothing
-when it is tagged :noexport:."
-  (cond ((org-truss-noexport-p member) nil)
-        ((org-truss-cluster-public member))
-        (t (cons nil (org-truss-cluster-label member)))))
+Its heading, and the text under it.  Nothing when it is tagged :noexport:."
+  (and (not (org-truss-noexport-p member))
+       (cons (org-truss-cluster-label member) (org-truss-cluster-body member))))
 
 (defun org-truss-assumption-p (cluster)
   "Non-nil when CLUSTER is tagged :assumption:, taken as given."
@@ -1142,7 +1138,7 @@ source or none."
 
 (defun org-truss-member-told (member)
   "Return what the reader is told of MEMBER, as (TITLE . BODY), or nil.
-Its public block, or its heading.  Nil when it is tagged :noexport:."
+Its heading, and the text under it.  Nil when it is tagged :noexport:."
   (and (not (org-truss-noexport-p member))
        (org-truss-member-shown member)))
 
@@ -1169,21 +1165,13 @@ The parts, every member, and the structure and its sections."
 
 (defun org-truss-document-title (model)
   "Return the title MODEL's document is written under, or nil.
-The structure's public title, as any section's is its title, or else the
-file's #+title: the structure's heading names a part, and is never
+The file's #+title: the structure's heading names a part, and is never
 written out."
-  (let* ((root (org-truss-model-structure model))
-         (title (and root (car (org-truss-section-public root)))))
-    (if (and title (not (string-blank-p title)))
-        title
-      (org-truss-model-title model))))
+  (org-truss-model-title model))
 
 (defun org-truss-section-title (section)
-  "Return the title SECTION is written under: its public title, or its heading."
-  (let ((title (car (org-truss-section-public section))))
-    (if (and title (not (string-blank-p title)))
-        title
-      (org-truss-section-label section))))
+  "Return the title SECTION is written under: its heading."
+  (org-truss-section-label section))
 
 (defun org-truss-out-of-order (cluster)
   "Return what is right under CLUSTER that comes too late in the file.

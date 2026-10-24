@@ -229,11 +229,12 @@ A heading has grounds when its text has one of these:
 
 A link to a member stands on it: a reason in the members on the facts of
 the subject it reads (see [[*Pointing to a member]]).  It is grounds on a
-line of its own, as /ground/ on the board writes it, or in a sentence: /as
-[[#m3]] shows/.  Outside the heading's public block it is for the file
-alone; inside it, the reader sees it too, as the citation it is -- a
-~moor:~ link written out as a link to where its source came from (see
-[[*The document]]).  So a source is written once, where it is cited.
+line of its own or in a sentence: /as [[#m3]] shows/.  In the text under
+a heading the reader sees it too, as the citation it is -- a link to a
+member as its words, a ~moor:~ link written out as a link to where its
+source came from (see [[*The document]]).  On a comment line, ~# [[#m3]]~,
+as /ground/ on the board writes it, it is for the file alone.  So a
+source is written once, where it is cited.
 
 Words naming what has no file -- /team agreement/, /what was said in the
 hallway/ -- are no grounds: nothing in the file can be gone back to.
@@ -398,29 +399,27 @@ nothing else you wrote.
 :CUSTOM_ID: m1
 :TRUSS_LOGIC: reasons
 :END:
-,#+begin_public
 Reviews ran past the hour eight times this quarter.
-,#+end_public
 ,**** Eight of twelve reviews ran past the hour
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-[[https://calendar.example.com/export][calendar export]]
+# [[https://calendar.example.com/export][calendar export]]
 ,**** The longest ran forty minutes over
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-[[https://calendar.example.com/export][calendar export]]
+# [[https://calendar.example.com/export][calendar export]]
 ,*** Six of twelve items each week come back from the week before
 :PROPERTIES:
 :CUSTOM_ID: m2
 :END:
-[[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]]
+# [[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]]
 ,*** Urgent items are raised in the team chat                :assumption:
 :PROPERTIES:
 :CUSTOM_ID: m3
 :END:
-Agreed in the team; nothing written.
+# Agreed in the team; nothing written.
 ,** The weekly review costs the team more time than it gives back
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: issue
@@ -435,22 +434,18 @@ Agreed in the team; nothing written.
 :CUSTOM_ID: m4
 :TRUSS_LOGIC: reasons
 :END:
-Robin keeps raising the same items.  Not something to put in writing.
-,#+begin_public Most items come back unchanged
 Half of each agenda repeats the week before.
-,#+end_public
+# Robin keeps raising the same items.  Not something to put in writing.
 ,*** Six of twelve items come back each week
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-[[#m2]]
+# [[#m2]]
 ,*** Items need a week to move                                  :assumption:
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-,#+begin_public
 We assume most items need more than a week to change.
-,#+end_public
 ,*** Nothing urgent waits for the review
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
@@ -461,11 +456,9 @@ We assume most items need more than a week to change.
 :CUSTOM_ID: m5
 :TRUSS_BREAKDOWN: steps
 :END:
-,#+begin_public
 Hold the review every other week.
-,#+end_public
-[[#m4]]
-[[#m3]]
+# [[#m4]]
+# [[#m3]]
 ,*** Cancel every second review in the calendar
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -490,16 +483,13 @@ Hold the review every other week.
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: rain
 :END:
-,#+begin_public Why it drags
-,#+end_public
 - [[truss-include:m4]]
 
 ,** Umbrella
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: umbrella
 :END:
-,#+begin_public What we propose
-,#+end_public
+What we propose:
 - [[truss-include:m5]]
 #+end_src
 
@@ -520,7 +510,7 @@ what order, and writes only what guides them -- what is true of the
 document rather than of the world, so it needs no grounds:
 
 - a section's title, its heading;
-- a section's lead, the text of its public block, read under the title
+- a section's lead, the text under its heading, read under the title
   before the members the section tells.  The structure's own lead opens
   the document;
 - the links that tell members, where they stand -- in its items, or in
@@ -528,12 +518,10 @@ document rather than of the world, so it needs no grounds:
 
 #+begin_src org
 ,** What to do
-,#+begin_public
 The check runs as follows.
 [[truss-include:m12]]
 And it is written down:
 [[truss-include:m13]]
-,#+end_public
 #+end_src
 
 The joins between members are seldom the structure's to write either: a
@@ -541,20 +529,23 @@ member's patterns say what is under it is to it -- steps numbered, a part
 labelled with its role -- and the document is written so.  Whatever could
 be wrong is a member, where the checks reach it.
 
-A member's public block says what the reader sees instead of its heading,
-wherever it is told, a title as well when it should have one -- the
-heading goes on asserting, plainly, and the block says it as the reader
-needs, as a request in a notice, say:
+A member is told by its heading, wherever it is told, and the text under
+the heading follows it: what it says more to the reader.  To say it to
+the reader otherwise, rewrite the heading -- what it asserts is what the
+reader is told.  What is for you alone -- why you believe it, who said
+it, what cannot be said -- goes in a comment, as Org writes one, which
+stays in the file:
 
 #+begin_src org
-,#+begin_public The title the reader sees
-The text the reader sees.
-,#+end_public
+,** Half the items repeat
+Half of each agenda repeats the week before.
+# Robin keeps raising the same items.
+,#+begin_comment
+Not something to put in writing.
+,#+end_comment
 #+end_src
 
-A member is told in its public block, or else in its heading.  Everything
-else under the heading -- why you believe it, who said it, what
-cannot be said -- stays in the file.  A member tagged ~:noexport:~ stays in
+A member tagged ~:noexport:~ stays in
 the file whole, with what is nested under it: evidence you keep for
 yourself, a note on what to check.  A document generated from the file can
 be regenerated as often as you change it, so the file stays the place where
@@ -594,7 +585,7 @@ whether it is a list item, nor what kind of heading it points to.
 
 A link that tells a heading can stand in any heading -- a section, or a
 member that brings another along -- on a line of its own, as a list item,
-or in a sentence, inside the public block or not; or on a section's
+or in a sentence; or on a section's
 heading line, ~*** [[truss-include:m7]]~.  Where it stands says how it is
 told.  On a heading line, it is a heading of the document: its words,
 then what is under it, under headings a level down.  In text, it is its
@@ -603,8 +594,8 @@ follows the paragraph, or goes inside the list item, as a list.  Its
 description, ~[[truss-include:m7][words]]~, is its words there.  A
 section told is told as a member is.
 Two places that tell the same section tell its chapter twice: that is
-yours to want or not.  A link that points to a heading, written in a
-public block, reads as its description, or the heading.  What a heading
+yours to want or not.  A link that points to a heading reads as its
+description, or the heading; in a comment it is not told.  What a heading
 brings with it is told inside it, and so on down; a link that would tell
 what tells it back, without end, is reported under /Broken links/, and
 the document says so where it stops.
@@ -642,9 +633,17 @@ giving the member named one, and keeps a link's words.
 A file written while grounds were a property, ~TRUSS_GROUNDS~, is read
 without them; ~M-x org-truss-convert-grounds~ moves each into the text of
 its heading -- each link on a line of its own after the heading's text,
-outside its public block, the words after them -- and tags
-~:assumption:~ a heading the words alone grounded.  Both leave the buffer
-unsaved, to be looked over.
+the words after them -- and tags ~:assumption:~ a heading the words alone
+grounded.
+
+A file written while only a public block, ~#+begin_public~, was told,
+and the rest of a heading's text stayed in the file, is told now as it
+stands: ~M-x org-truss-convert-public~ puts what each heading had outside
+its public block into a comment block, makes the block's text the
+heading's text, and keeps a title other than the heading on a comment
+line above it, ~# Title for the reader: ...~, for the heading to be
+rewritten by hand.  A file with no public block is left as it is.  All
+three leave the buffer unsaved, to be looked over.
 
 * The board
 
@@ -680,64 +679,64 @@ saves a buffer, saves it from the board, and the title line says
 This is the board of the file above:
 
 #+begin_example
- Title ·················· Fortnightly reviews                                  Fortnightly reviews
+ Title ··················· Fortnightly reviews                                Fortnightly reviews
 
  Brief  what the document must satisfy
  (breakdown › Reader, Question, Response, Constraints)
-   Reader ··············· The team leads                                       The team leads
-   Question ············· Should the review stay weekly?                       Should the review stay weekly?
-   Response wanted ······ Agree to try fortnightly reviews next quarter        Agree to try fortnightly reviews next quarter
-   Constraints ·········· One page                                             One page
+   Reader ················ The team leads                                     The team leads
+   Question ·············· Should the review stay weekly?                     Should the review stay weekly?
+   Response wanted ······· Agree to try fortnightly reviews next quarter      Agree to try fortnightly reviews next quarter
+   Constraints ··········· One page                                           One page
 
  Subject  what was found
  (breakdown › Premises, Issue, Constraints)
-   Premises ············· Premises                                             Premises
-   ├ member ········· #m1 Reviews run long                                     Reviews ran past the hour eight times this quarter.
+   Premises ·············· Premises                                           Premises
+   ├ member ·········· #m1 Reviews run long                                   Reviews run long
    │ (logic › reasons)
-   │ │ ▤ Sky ············ Sky
-   │ ├ Reason ··········· Eight of twelve reviews ran past the hour            Eight of twelve reviews ran past the hour
-   │ │   ⏚ source ······· calendar export
-   │ └ Reason ··········· The longest ran forty minutes over                   The longest ran forty minutes over
-   │     ⏚ source ······· calendar export
-   ├ member ········· #m2 Six of twelve items each week come back from the w…  Six of twelve items each week come back from the week before
-   │   ↥ Reason ········· Six of twelve items come back each week
-   │   ⏚ source ········· agendas, weeks 1-12
-   └ member [assumed] #m3 Urgent items are raised in the team chat             Urgent items are raised in the team chat
-       ↥ member ········· Move to fortnightly
-   Issue ················ The weekly review costs the team more time than it…  The weekly review costs the team more time than it gives back
+   │ │ ▤ Sky ············· Sky
+   │ ├ Reason ············ Eight of twelve reviews ran past the hour          - Eight of twelve reviews ran past the hour
+   │ │   ⏚ source ········ calendar export
+   │ └ Reason ············ The longest ran forty minutes over                 - The longest ran forty minutes over
+   │     ⏚ source ········ calendar export
+   ├ member ·········· #m2 Six of twelve items each week come back from the…  Six of twelve items each week come back from the week before
+   │   ↥ Reason ·········· Six of twelve items come back each week
+   │   ⏚ source ·········· agendas, weeks 1-12
+   └ member [assumed]  #m3 Urgent items are raised in the team chat           Urgent items are raised in the team chat
+       ↥ member ·········· Move to fortnightly
+   Issue ················· The weekly review costs the team more time than …  The weekly review costs the team more time than it gives back
    Constraints —
 
  Missing roles
-   Subject                                                                     Constraints
+   Subject                                                                    Constraints
 
  Members  what is made of it
-   member ··········· #m4 Half the items repeat                                Most items come back unchanged
+   member ············ #m4 Half the items repeat                              Half the items repeat
    (logic › reasons)
-   │ ▤ Rain ············· Rain
-   │ ↥ member ··········· Move to fortnightly
-   ├ Reason ············· Six of twelve items come back each week              Six of twelve items come back each week
-   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from the w…
-   ├ Reason [assumed] ··· Items need a week to move                            We assume most items need more than a week to change.
-   └ Reason [no grounds]  Nothing urgent waits for the review                  Nothing urgent waits for the review
-   member ··········· #m5 Move to fortnightly                                  Hold the review every other week.
+   │ ▤ Rain ·············· Rain
+   │ ↥ member ············ Move to fortnightly
+   ├ Reason ·············· Six of twelve items come back each week            - Six of twelve items come back each week
+   │   ⏚ ground ·· [[#m2]] Six of twelve items each week come back from the…
+   ├ Reason [assumed] ···· Items need a week to move                          - Items need a week to move
+   └ Reason [no grounds] · Nothing urgent waits for the review                - Nothing urgent waits for the review
+   member ············ #m5 Move to fortnightly                                Move to fortnightly
    (breakdown › steps)
-   │ ▤ Umbrella ········· Umbrella
-   │ ⏚ ground ··· [[#m4]] Half the items repeat
-   │ ⏚ ground ··· [[#m3]] Urgent items are raised in the team chat
-   ├ Step ··············· Cancel every second review in the calendar           1. Cancel every second review in the calendar
-   └ Step ··············· Carry what is still open to the next one             2. Carry what is still open to the next one
+   │ ▤ Umbrella ·········· Umbrella
+   │ ⏚ ground ···· [[#m4]] Half the items repeat
+   │ ⏚ ground ···· [[#m3]] Urgent items are raised in the team chat
+   ├ Step ················ Cancel every second review in the calendar         1. Cancel every second review in the calendar
+   └ Step ················ Carry what is still open to the next one           2. Carry what is still open to the next one
 
  No grounds
-   Reason [no grounds] ·· Nothing urgent waits for the review                  no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
+   Reason [no grounds] ··· Nothing urgent waits for the review                no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
 
  Structure  how it is told: sections, telling members
  (telling › Sky, Rain, Umbrella)
- ├ Sky ·················· Sky                                                  Sky
- │   • told ▸2    [[#m1]] Reviews run long                                     Reviews ran past the hour eight times this quarter.
- ├ Rain ················· Rain                                                 Why it drags
- │   • told ▸3    [[#m4]] Half the items repeat                                Most items come back unchanged
- └ Umbrella ············· Umbrella                                             What we propose
-     • told ▸2    [[#m5]] Move to fortnightly                                  Hold the review every other week.
+ ├ Sky ··················· Sky                                                Sky
+ │   • told ▸2 ··· [[#m1]] Reviews run long                                   Reviews run long
+ ├ Rain ·················· Rain                                               Rain
+ │   • told ▸3 ··· [[#m4]] Half the items repeat                              Half the items repeat
+ └ Umbrella ·············· Umbrella                                           Umbrella
+     • told ▸2 ··· [[#m5]] Move to fortnightly                                Move to fortnightly
 #+end_example
 
 /order/ opens the members links tell where they are told instead: under
@@ -748,33 +747,33 @@ down the page, beside the logic each sentence rests on:
 
 #+begin_example
  Members  what is made of it
-   member ▸3 ·········· #m4 Half the items repeat                               Most items come back unchanged
-   member ▸2 ·········· #m5 Move to fortnightly                                 Hold the review every other week.
+   member ▸3 ·········· #m4 Half the items repeat                              Half the items repeat
+   member ▸2 ·········· #m5 Move to fortnightly                                Move to fortnightly
  ...
  Structure  how it is told: sections, telling members
  (telling › Sky, Rain, Umbrella)
- ├ Sky ···················· Sky                                                 Sky
- │   • told ······· [[#m1]] Reviews run long                                    Reviews ran past the hour eight times this quarter.
+ ├ Sky ···················· Sky                                                Sky
+ │   • told ······· [[#m1]] Reviews run long                                   Reviews run long
  │   (logic › reasons)
- │   ├ Reason ············· Eight of twelve reviews ran past the hour           Eight of twelve reviews ran past the hour
+ │   ├ Reason ············· Eight of twelve reviews ran past the hour          - Eight of twelve reviews ran past the hour
  │   │   ⏚ source ········· calendar export
- │   └ Reason ············· The longest ran forty minutes over                  The longest ran forty minutes over
+ │   └ Reason ············· The longest ran forty minutes over                 - The longest ran forty minutes over
  │       ⏚ source ········· calendar export
- ├ Rain ··················· Rain                                                Why it drags
- │   • told ······· [[#m4]] Half the items repeat                               Most items come back unchanged
+ ├ Rain ··················· Rain                                               Rain
+ │   • told ······· [[#m4]] Half the items repeat                              Half the items repeat
  │   (logic › reasons)
  │   │ ↥ member ··········· Move to fortnightly
- │   ├ Reason ············· Six of twelve items come back each week             Six of twelve items come back each week
- │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from the …
- │   ├ Reason [assumed] ··· Items need a week to move                           We assume most items need more than a week to change.
- │   └ Reason [no grounds]  Nothing urgent waits for the review                 Nothing urgent waits for the review
- └ Umbrella ··············· Umbrella                                            What we propose
-     • told ······· [[#m5]] Move to fortnightly                                 Hold the review every other week.
+ │   ├ Reason ············· Six of twelve items come back each week            - Six of twelve items come back each week
+ │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from the…
+ │   ├ Reason [assumed] ··· Items need a week to move                          - Items need a week to move
+ │   └ Reason [no grounds]  Nothing urgent waits for the review                - Nothing urgent waits for the review
+ └ Umbrella ··············· Umbrella                                           Umbrella
+     • told ······· [[#m5]] Move to fortnightly                                Move to fortnightly
      (breakdown › steps)
      │ ⏚ ground ··· [[#m4]] Half the items repeat
      │ ⏚ ground ··· [[#m3]] Urgent items are raised in the team chat
-     ├ Step ··············· Cancel every second review in the calendar          1. Cancel every second review in the calendar
-     └ Step ··············· Carry what is still open to the next one            2. Carry what is still open to the next one
+     ├ Step ··············· Cancel every second review in the calendar         1. Cancel every second review in the calendar
+     └ Step ··············· Carry what is still open to the next one           2. Carry what is still open to the next one
 #+end_example
 
 /order/ again opens them where they are written.  Point stays on the member it
@@ -811,7 +810,7 @@ sections under a section, and the members nested under a member, branch
 off from the column of its word.  The line of the tree starts right under
 the line naming its patterns and runs down past whatever comes before the
 first branch -- what it stands on or the members its links tell, and with entry
-text its notes -- so each heading is held by it as far down as it goes.
+text its comments -- so each heading is held by it as far down as it goes.
 The members' tree is drawn in the face ~org-truss-branch~, faint by
 default, so where it meets the sections' tree in the structure the two
 read apart.
@@ -821,7 +820,7 @@ stands in the patterns; the middle, what is asserted, so whether the logic
 holds -- or, in the structure, whether the story does -- is read down it;
 the right, what the reader is told, so whether it reads as prose is read
 down that.  A member's right is the same where it is written and where a
-link tells it: its public block, or its heading; a step with its number,
+link tells it: its heading, and with entry text the text under it; a step with its number,
 a part with its role.  It is in the face ~org-truss-untold~ while the
 document does not tell it.  So a heading and what is under it can be read through as
 prose beside its logic where it is written.
@@ -860,7 +859,7 @@ hold -- then =⏚ quote= each quotation in its text, and below them
 =⏚ source= each source it links to, with =[not found]= when the link
 points to nothing: the words are read from the source, so the source is
 furthest down.  A quotation, and a line of its text holding nothing but
-such a link, is not drawn again among its notes, and a link in a sentence
+such a link, is not drawn again in its text, and a link in a sentence
 there is drawn as it is written, =[[#m3]]= or =[[moor:6f1c::12][Manual
 p. 12]]=, the words it points to left to the line below.  What stands on a
 member is drawn below it too, as everything under a line is, so its mark
@@ -915,13 +914,11 @@ order is put right there.  The mark's tooltip, or ~C-h .~ on the line,
 says which.
 
 What the reader sees is the words the section tells a member in, when it
-has some; else the title of the line's public block, or the start of the
-block's text when it has no title, or else its heading -- for a section,
-its heading in the document; /noexport/ when the reader sees nothing of
-it.  On the /Structure/ line is the structure's own lead.  A title the
-reader sees -- a section's heading in the document, a member's title --
-is drawn as one; what becomes body text, in the faint face the
-notes in the middle take.  The brief is the reader's only through the title.
+has some; else its heading -- for a section, its heading in the
+document; /noexport/ when the reader sees nothing of it.  On the
+/Structure/ line is the start of the structure's own lead.  A heading the
+reader sees is drawn as a title; the text under it, in the faint face the
+comments in the middle take.  The brief is the reader's only through the title.
 Under the title come the brief, then the subject, each drawn as the
 members are: its line, its patterns, and the members under it, each named
 by the role it plays, so what the structure has to meet stays in view.  A
@@ -930,34 +927,35 @@ them, and /new/ on it writes a member playing it.  A member that plays none
 of the breakdown's roles is marked =[no role]=, and /roles/ gives it one.
 
 /entry-text/, as in the agenda, shows what is written under each heading, below its
-line: the notes that stay in the file in the middle, under the heading, and
-the rest of what the reader sees on the right, broken to fit the window.
+line: the comments that stay in the file in the middle, under the heading,
+and the text the reader sees on the right, broken to fit the window.
 A heading too long for the middle is broken there too instead of cut
 short, since the board is now for reading, and so is every other line: a
 member's text, a ground, what a check lists.  The line naming a heading's
 patterns stays right under its line, on the left of what follows it; when
 it is too wide for the left it takes the line after the heading's words,
-and the notes start below it.  Read down the right, with the members
+and the comments start below it.  Read down the right, with the members
 opened where told, the board is then the document, near enough, beside
-the tree and the notes it was built from:
+the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ··················· Rain                                                Why it drags
- │   • told ······· [[#m4]] Half the items repeat                               Most items come back unchanged
+ ├ Rain ··················· Rain                                                Rain
+ │   • told ······· [[#m4]] Half the items repeat                               Half the items repeat
  │   (logic › reasons)      Robin keeps raising the same items.  Not something  Half of each agenda repeats the week before.
  │   │                      to put in writing.
  │   │ ↥ member ··········· Move to fortnightly
- │   ├ Reason ············· Six of twelve items come back each week             Six of twelve items come back each week
+ │   ├ Reason ············· Six of twelve items come back each week             - Six of twelve items come back each week
  │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from the
  │   │                      week before
- │   ├ Reason [assumed] ··· Items need a week to move                           We assume most items need more than a week to
- │   │                                                                          change.
- │   └ Reason [no grounds]  Nothing urgent waits for the review                 Nothing urgent waits for the review
+ │   ├ Reason [assumed] ··· Items need a week to move                           - Items need a week to move
+ │   │                                                                            We assume most items need more than a week to
+ │   │                                                                            change.
+ │   └ Reason [no grounds]  Nothing urgent waits for the review                 - Nothing urgent waits for the review
 #+end_example
 
 ~i~ does the same for the line at point alone, inline as ~i~ in Dired
 shows a directory, so the board can be scanned a line each and one line
-read through: a member with its notes, a ground.  ~i~ again, on
+read through: a member with its text, a ground.  ~i~ again, on
 any of its lines, puts it back on one.  While /entry-text/ shows every line whole,
 ~i~ puts the line at point on one line instead, and /entry-text/ again draws every
 line the same way.
@@ -978,7 +976,7 @@ open it where the line points, as RET, TAB and SPC do in the agenda, and /edit/ 
 that heading out, by org-dock, into a copy of its own beside the board, with
 what is under it and the rest of the file out of the way.  The headings
 under it are folded to their lines, and its own text is shown with its
-blocks open -- its public block, its quotation -- even where
+blocks open -- a comment block, its quotation -- even where
 ~org-hide-block-startup~ folds blocks, since they are part of what it
 says.  While it is out the heading cannot change in the file.  As in a
 capture buffer, ~C-c C-c~ there writes it back, saves the file and closes
@@ -1020,7 +1018,7 @@ those with a key, in the same four lines.
 |       | take-out           |             | take it out, handing what it places up                                            | take it out of its section; it stays in the file   |
 |       | up, down           |             | move it among its siblings                                                        | move it among its siblings; listed, in its section |
 | shape | new-section        |             | add a section under it; on a missing role, playing it, where the pattern lists it |                                                    |
-|       | say                |             | write its lead                                                                    | write the words it is told in                      |
+|       | say                |             | write its lead                                                                    | write the text it is told with                     |
 |       | unwrap             |             | take the sections below away, keeping their links                                 |                                                    |
 |       | pattern            |             | apply a pattern of any kind, or take one off                                      | same                                               |
 |       | roles              |             | set the roles it plays in the patterns of the                                     | same                                               |
@@ -1049,16 +1047,16 @@ On a broken link, /place/ tells the heading chosen where the link stands, in
 its place: the way to mend one.  /take-out/ loses nothing
 written: on a member a link tells, the link goes and the member stays in
 the file, whatever heading the link is in; a section taken out hands what
-it tells up, asking before its own title or notes are lost.  To be rid of
+it tells up, asking before its own text is lost.  To be rid of
 a member, /delete/ deletes it, with what is under it and the lines that tell
 it; a ground that named it is left, a broken link on the board, so what
 stood on it shows.
 
-/say/ writes what the reader is told in place of a heading: it opens the
-heading's public block beside the board as /edit/ opens an entry -- a
-section's lead, a member's words wherever it is told -- writing an empty
-one first if there is none; a block left empty is taken away again when
-the entry is finished.  On the /Structure/ line, it writes the document's
+/say/ writes the text the reader is told under a heading: it opens the
+heading beside the board as /edit/ opens an entry, at an empty line made
+before the first link that tells a member -- a section's lead -- or after
+the heading's text when no link tells one; the line goes again when the
+entry is let go.  On the /Structure/ line, it writes the document's
 opening.
 
 /same/ goes between where a heading is written and where it is called, a
@@ -1100,7 +1098,8 @@ reason is one line, =↥=, built on it.  In a heading that is no reason
 the link only tells, and is drawn as =• told=.
 
 A heading keeps the words of its source with it, in a ~#+begin_quote~
-block in its own text, which stays in the file as notes do, and gives it
+block in its own text, which is written out as the quotation it is -- in
+a comment block it stays in the file -- and gives it
 grounds; it may keep several, each drawn as a =⏚ quote= line of its own.
 /edit/ on the heading, or on a quotation's line, writes one or rewrites it.
 With org-moor, reading a source beside it -- ~org-moor-noter~ -- writes
@@ -1108,7 +1107,7 @@ the quotation and the link to its page or line in one go.
 
 ~m~, with org-moor, takes a source for the heading as org-moor takes one,
 into the truss file's ~sources/~, and writes the link to it on a line of
-its own after the heading's text, outside its public block: ~m w~ a page
+its own after the heading's text, the reader's citation too: ~m w~ a page
 or a file on the web, its copy fetched in the background
 (~org-moor-take-url~); ~m f~ a file (~org-moor-take-file~); ~m c~ the
 clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file
@@ -1122,9 +1121,10 @@ heading's, one its own text links to, asked for when there are several.
 The copy, at the page or line the link names, as following the link
 does; ~m O~ where it came from instead, the page on the web.  A link to
 anything but a source org-moor took is followed as it is, with either.
-A link moved into the public block is the reader's citation too.  /ground/
-makes a heading -- a member or a section -- something it stands on, a
-link to it on a line of its own after the heading's text: it offers what
+A link put on a comment line, ~# [[moor:...]]~, is the file's alone.
+/ground/ makes a heading -- a member or a section -- something it stands
+on, a link to it on a comment line of its own after the heading's text,
+~# [[#m3]]~, which the reader is not told: it offers what
 it stands on first, and choosing one takes that line away; any other is
 added, and given a ~CUSTOM_ID~ when it has none.  On a ground's own line, the one marked =⏚=, /ground/ takes that ground
 away at once; one linked in the text is edited there, with /edit/.  /assume/ tags
@@ -1183,7 +1183,7 @@ pattern adds sections, named in ~org-truss-language~, only for the places
 none plays.  So switching patterns changes the order and the marks, never
 a heading.  A section in none of the places is kept after the rest, and
 the board marks it =[no role]=.  /place/, /roles/ and /take-out/ sort it out.  /unwrap/ and /take-out/
-ask before discarding a title or notes.  /unwrap/ takes the section's patterns
+ask before discarding text.  /unwrap/ takes the section's patterns
 off too, of every kind, since what they asked for was asked of the
 sections it takes away.
 
@@ -1200,29 +1200,27 @@ start of a paragraph.
 what the reader sees to ~out/truss.org~ (~org-truss-output-directory~), then runs
 pandoc, when it is installed, to make ~out/truss.md~.
 
-- The document is titled by the structure's public block, as a section
-  is, or failing that by the file's ~#+title~; its lead, the block's text,
-  opens the document.
-- A section is titled by its public block, or failing that by its heading;
-  the block's text, its lead, follows the title.  One tagged ~:noexport:~
-  is left out, with what is under it, as a member is.
+- Under every heading, what is written out is its text, a comment left
+  out: a line starting with ~#~ and a space, or a ~#+begin_comment~ block.
+- The document is titled by the file's ~#+title~; the structure's text,
+  its lead, opens the document.
+- A section is titled by its heading; its text, its lead, follows the
+  title.  One tagged ~:noexport:~ is left out, with what is under it, as
+  a member is.
 - A link that tells a member, ~[[truss-include:m7]]~, is the member
-  written where it stands, in its words: its link's description, else
-  the title of its public block, else the block's text, else its heading.
-  What follows its words is its block's text, when its title was its
-  words; then what its links outside its public block tell, each an item
-  of a list; then what is nested under it, in the order of the file.  One
-  tagged ~:noexport:~ is left out, with what is nested under it.  A link
-  that points to one, ~[[#m7]]~, in a public block, is written as its
-  description, or the member's heading.
+  written where it stands, in its words: its link's description, else its
+  heading.  What follows its words is its text, the links in it telling
+  what they tell where they stand; then what is nested under it, in the
+  order of the file.  One tagged ~:noexport:~ is left out, with what is
+  nested under it.  A link that points to one, ~[[#m7]]~, is written as
+  its description, or the member's heading.
 - Where the link stands says the shape.  On a section's heading line,
   ~*** [[truss-include:m7]]~, the member's words are that heading, and
   what is nested under it is told under headings a level down, as the
   sections are.  In text -- a section's lead, a list item, a sentence --
   its words are written in place and the rest follows the paragraph, or
   goes inside the list item, as a list one level in.  Once a list, what
-  is nested stays a list.  A member with no title, only a block's text,
-  is no heading: what is under it is a list.  Below the sixth level,
+  is nested stays a list.  Below the sixth level,
   Markdown's last, what is under a heading is a list.
 - What a heading with a logic or a breakdown holds -- its reasons, its
   parts -- is the content of what it says, and is written as a list, the

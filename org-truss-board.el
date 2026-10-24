@@ -491,7 +491,7 @@ plays and then its heading, as on the board."
 (defun org-truss--go (display &optional center)
   "Show the truss file with DISPLAY, at the heading the line at point stands for.
 Its entry is shown, and the blocks in it open: a heading is gone to so its
-text can be read, and the public block and the quotation are part of that
+text can be read, and a comment block and the quotation are part of that
 text, though `org-hide-block-startup' folds them.  The headings under it
 are left as they were.  CENTER leaves a mark where point was in the file
 and puts the heading mid-window.  On a line where the member above is
@@ -912,7 +912,7 @@ told moves in the file: the link tells it where it stands."
 
 (defun org-truss--confirm-loss (labels)
   "Ask whether to lose the writing in the sections LABELS; non-nil means yes."
-  (y-or-n-p (format "Discard the titles and notes of %s? " (string-join labels ", "))))
+  (y-or-n-p (format "Discard the text of %s? " (string-join labels ", "))))
 
 (defun org-truss-board-take-out ()
   "Take what is at point out of the structure, losing nothing written.
@@ -960,12 +960,12 @@ stood on it can be seen."
 
 (defun org-truss-board-ground ()
   "Make a heading a ground of the heading at point, or no longer one.
-A member or a section, linked to by its CUSTOM_ID, [[#m3]], on a line of
-its own after the heading's text, outside its public block; one is given
-to it when it has none.  Its grounds now are offered first, and choosing
-one takes it away.  On a ground's own line, the one marked ⏚, take it
-away from the heading it grounds without asking.  A link among other
-words is edited there, with the words."
+A member or a section, linked to by its CUSTOM_ID, # [[#m3]], on a
+comment line of its own after the heading's text, which the reader is
+not told; one is given to it when it has none.  Its grounds now are
+offered first, and choosing one takes it away.  On a ground's own line,
+the one marked ⏚, take it away from the heading it grounds without
+asking.  A link among other words is edited there, with the words."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'member 'section))
          (model (org-truss-read org-truss--source))
@@ -1048,13 +1048,12 @@ finding it."
         (org-truss-rename (plist-get item :pos) new)))))
 
 (defun org-truss-board-say ()
-  "Write what the reader is told at point, beside what the file asserts.
-The text of the heading's public block, which the reader sees in place of
-its heading: a member's words wherever it is told, a section's lead under
-its title.  On the Structure line, the document's opening.  The heading
-goes on saying what is asserted, so the checks read it as before.  It
-opens beside the board as an entry does; a block left empty is taken away
-when it is finished."
+  "Write the text the reader is told under the heading at point.
+Before the first line that tells a member, on an empty line made for it,
+so it opens what the heading tells: a section's lead, on the Structure
+line the document's opening.  After the heading's text when no line tells
+one.  It opens beside the board as an entry does; the empty line made goes
+again when the copy is let go."
   (interactive)
   (let ((item (org-truss--want (org-truss--item) 'section 'member)))
     (org-truss--fresh)
@@ -1062,11 +1061,22 @@ when it is finished."
            (session (with-current-buffer org-truss--source
                       (list :hash (buffer-hash)
                             :modified (buffer-modified-p))))
-           (at (with-current-buffer org-truss--source
-                 (org-with-wide-buffer (copy-marker (org-truss-public-body pos))))))
+           (line (with-current-buffer org-truss--source
+                   (org-with-wide-buffer
+                    (let ((at (org-truss-lead-line pos)))
+                      (and at (copy-marker at)))))))
+      (when line
+        (setq session
+              (plist-put session :undo
+                         (lambda ()
+                           (with-current-buffer (marker-buffer line)
+                             (org-with-wide-buffer
+                              (goto-char line)
+                              (when (looking-at "\n")
+                                (delete-char 1))))
+                           (set-marker line nil)))))
       (org-truss-board-redraw)
-      (org-truss--edit pos at session)
-      (set-marker at nil))))
+      (org-truss--edit pos (or line t) (and line session)))))
 
 (defun org-truss--fold-line (key)
   "Return where the line that folds as KEY starts on the board, or nil."
@@ -1409,9 +1419,8 @@ SESSION, when the heading was written just now or a block put in for it,
 says how to take that back when the copy is let go: :new, non-nil for a
 heading written just now, which goes; :undo, a function taking back the
 rest; :hash and :modified, the truss file's buffer before, made
-unmodified again when it holds what it held.  A public block put in and
-left empty goes too.  Writing the copy back takes away a public block
-left empty, and saves the file."
+unmodified again when it holds what it held.  Writing the copy back saves
+the file."
   (let* ((source org-truss--source)
          (copy
           (with-current-buffer source
@@ -1422,9 +1431,8 @@ left empty, and saves the file."
                              (t (org-truss--text-end pos)))))
                (org-dock-heading
                 pos :at at :display nil
-                :finish (lambda (beg _end)
+                :finish (lambda (_beg _end)
                           (set-marker head nil)
-                          (org-truss-drop-empty-public beg (cdr (org-truss--own-bounds beg)))
                           (when buffer-file-name (save-buffer)))
                 :abort (lambda ()
                          (org-with-wide-buffer
@@ -1432,10 +1440,7 @@ left empty, and saves the file."
                               (progn (goto-char head)
                                      (delete-region (point) (save-excursion
                                                               (org-end-of-subtree t t)
-                                                              (point))))
-                            (when session
-                              (org-truss-drop-empty-public
-                               head (cdr (org-truss--own-bounds head)))))
+                                                              (point)))))
                           (when-let* ((undo (plist-get session :undo)))
                             (funcall undo)))
                          (set-marker head nil)
