@@ -110,13 +110,14 @@ letter where the board is drawn, keeps the tree in line."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
-(defcustom org-truss-board-fold-limit nil
+(defcustom org-truss-board-fold-limit 0
   "How many headings right under a heading the board shows before folding it.
 A heading holding more -- members, sections, members its links tell --
 starts folded, as one line that says how many it hides;
-\\<org-truss-board-mode-map>\\[org-truss-board-cycle] unfolds it.  Nil, as
-it is at first, starts the board open, each line on one line; 0 starts
-every one folded, as an Org file starts in overview."
+\\<org-truss-board-mode-map>\\[org-truss-board-cycle] unfolds it.  0, as it
+is at first, starts every one folded, as an Org file starts in overview
+and as \\[universal-argument] \\[org-truss-board-cycle] folds the board;
+nil starts it open."
   :type '(choice (const :tag "Start open" nil) integer)
   :group 'org-truss)
 

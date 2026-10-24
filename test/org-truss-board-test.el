@@ -11,9 +11,9 @@
 (require 'org-truss)
 (require 'org-truss-core-test)
 
-;; These tests read what the board draws, so they draw it open, as it
-;; starts unless set otherwise, and fold it where they mean to.
-;; `org-truss-test-board-starts-folded' draws it set to start folded.
+;; The board starts folded, as an Org file starts in overview; these tests
+;; read what it draws, so they draw it open, and fold it where they mean
+;; to.  `org-truss-test-board-starts-folded' draws it as it starts.
 (setq org-truss-board-fold-limit nil)
 
 (defmacro org-truss-test--with-board (text &rest body)
@@ -938,9 +938,9 @@ under it, folded again; S-TAB folds everything, or opens everything."
       (should-not (funcall shown "Middle")))))
 
 (ert-deftest org-truss-test-board-starts-folded ()
-  "The board starts open, each line on one line; with the fold limit 0, as
-an Org file does in overview, every line with something under it folded."
-  (should-not (eval (car (get 'org-truss-board-fold-limit 'standard-value)) t))
+  "The board starts as an Org file does in overview, and as C-u TAB folds
+it: every line with something under it folded, each line on one line."
+  (should (eql (eval (car (get 'org-truss-board-fold-limit 'standard-value)) t) 0))
   (let ((org-truss-board-fold-limit 0))
     (org-truss-test--with-board org-truss-test--cycle-file
       (should (string-match-p "member ▸2[ ·]+Top" (org-truss-test--top)))

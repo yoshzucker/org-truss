@@ -1071,10 +1071,10 @@ links tell; under a section, the sections below it and what its links
 tell.  On a line with nothing under it, the line it is under cycles.
 ~C-u TAB~, or ~S-TAB~, opens every line while any is folded, and else
 folds them all.  /fold/ folds one line or unfolds it, without the cycle.
-The board starts open, each line on one line.
-~org-truss-board-fold-limit~, nil unless set, is how many a heading may
-hold and still start open; 0 starts it as an Org file does in overview,
-every line with something under it folded.  A member a link tells
+The board starts as an Org file does in overview, and as ~C-u TAB~ folds
+it: every line with something under it folded, each line on one line.
+~org-truss-board-fold-limit~, 0 unless set, is how many a heading may hold
+and still start open; nil starts the board open.  A member a link tells
 starts folded where it is not opened, as /order/ says, since it is drawn
 whole where it is.
 
@@ -1265,7 +1265,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-middle-width~ | ~nil~, half the window         | room for the file's words before the right    |
 | ~org-truss-board-right-width~  | ~nil~, the window's edge       | where a line drawn whole breaks its right     |
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
-| ~org-truss-board-fold-limit~   | ~nil~, all open; 0, all folded | headings one holds before it starts folded    |
+| ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | headings one holds before it starts folded    |
 | ~org-truss-board-marks~        | =⏚= =↥= =•= =▤=                | marks of the lines that are an end of a link  |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
 |                                |                                | the same member                               |
