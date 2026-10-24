@@ -203,6 +203,23 @@ if any, is the line's help."
         :right (and right (not (string-empty-p right)) right)
         :item item))
 
+(defun org-truss--homes-text (model label)
+  "Return where the headings the links in LABEL point to are, or nil.
+LABEL is a heading as written; a link in it, [[#m7]] or
+[[truss-include:m7]], leaves the board's middle naming only the link, so
+the part the heading it points to is written in -- the brief, the subject,
+the members, the structure -- is said beside it, →Subject, as near to its
+sources as it is."
+  (let ((homes (seq-uniq
+                (delq nil (mapcar
+                           (lambda (ref)
+                             (let ((heading (org-truss-heading-by-ref model ref)))
+                               (cond ((org-truss-member-p heading)
+                                      (capitalize (symbol-name (org-truss-member-home heading))))
+                                     ((org-truss-section-p heading) "Structure"))))
+                           (append (org-truss--includes-in label) (org-truss--refs-in label)))))))
+    (and homes (concat "→" (string-join homes "/")))))
+
 (defun org-truss--with-id (line id)
   "Return LINE naming a member by ID, at the end of its left, or LINE as it is.
 ID is how a call to the member is written, [[#m9]], or the member itself
@@ -807,7 +824,9 @@ parent's telling pattern tells after it is marked."
        (car label)
        (car reader)
        (if late (append item (list :why late)) item))
-      (and (or link (not in-structure)) (org-truss--id-text member link)))
+      (let ((ids (delq nil (list (org-truss--homes-text model (org-truss-member-label member))
+                                 (and (or link (not in-structure)) (org-truss--id-text member link))))))
+        (and ids (string-join ids " "))))
      (append
        (org-truss--lines-under-heading
         under (cdr label) (org-truss--notes-shown (org-truss-member-notes member)) (cdr reader) item
@@ -980,13 +999,15 @@ line says how many it hides."
                              :key key)
                        (and (> nested 0) (list :fold key :folded folded)))))
     (append
-     (list (org-truss--line (concat prefix (if last "└ " "├ ")
-                                    (org-truss--role-word model section)
-                                    (if folded (org-truss--fold-mark nested) "")
-                                    (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
-                            (car label)
-                            (car reader)
-                            (append item (and (not (string-empty-p why)) (list :why why)))))
+     (list (org-truss--with-id
+            (org-truss--line (concat prefix (if last "└ " "├ ")
+                                     (org-truss--role-word model section)
+                                     (if folded (org-truss--fold-mark nested) "")
+                                     (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
+                             (car label)
+                             (car reader)
+                             (append item (and (not (string-empty-p why)) (list :why why))))
+            (org-truss--homes-text model (org-truss-section-label section))))
      (org-truss--lines-under-heading inner (cdr label) (org-truss--notes-shown (org-truss-section-notes section)) (cdr reader) item
                              (and (not folded) (org-truss--pattern-line section inner item)) stem)
      (and (not folded) (org-truss--grounds-lines model section stem (plist-get item :key)))

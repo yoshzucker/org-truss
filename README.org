@@ -847,7 +847,11 @@ id; =↥= and =▤= are the other end, where a member is written.  A line at
 the end where a link is written says what the link is to its heading --
 =⏚ ground=, =• told= -- not the role the member plays where it is
 written, which says nothing there; a line at the other end names the
-heading the link is in by the role that heading plays.  What a
+heading the link is in by the role that heading plays.  A heading whose
+words are a link, ~*** [[truss-include:m7]]~, shows only the link in the
+middle, so the part m7 is written in is said before it, where an id
+goes: =→Subject=, =→Members=, =→Brief=, =→Structure= -- how near to its
+sources what it stands on is.  What a
 member stands on is drawn below it, as the ground is below a building:
 =⏚ ground= a member it points to -- with =[no grounds]= when it does not
 hold -- then =⏚ quote= each quotation in its text, and below them

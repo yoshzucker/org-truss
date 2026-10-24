@@ -963,7 +963,8 @@ entry text does, and again every line on one."
 the member is drawn under it as a ground, in its words and called by its
 id, said to have no grounds when it does not hold, and not
 besides as a member told.  A heading whose line is the link is drawn as
-written.  The member's own line has it once, as built on it."
+written, with the part the member is in beside it.  The member's own line
+has it once, as built on it."
   (org-truss-test--with-board "* S
 :PROPERTIES:
 :TRUSS_PART: subject
@@ -1002,7 +1003,7 @@ written.  The member's own line has it once, as built on it."
     (let* ((text (buffer-string))
            (members (substring text (string-search " Members" text)))
            (subject (substring text 0 (string-search " Members" text))))
-      (should (string-match-p "Reason[ ·]+\\[\\[truss-include:fact\\]\\].*\n.*⏚ ground[ ·]+\\[\\[#fact\\]\\] The fact" members))
+      (should (string-match-p "Reason[ ·]+→Subject \\[\\[truss-include:fact\\]\\].*\n.*⏚ ground[ ·]+\\[\\[#fact\\]\\] The fact" members))
       (should (string-match-p "⏚ ground \\[no grounds\\][ ·]+\\[\\[#bare\\]\\] The bare one" members))
       (should (string-match-p "Reason[ ·]+As the minutes have it.*\n.*⏚ ground[ ·]+\\[\\[#fact\\]\\] The fact" members))
       (should-not (string-match-p "•" members))
