@@ -1013,6 +1013,143 @@ As [[#fact]] shows.
       (should (equal (org-truss-cluster-text-grounds (funcall section "Because")) '("fact")))
       (should (equal (mapcar #'org-truss-cluster-label (plist-get checks :no-grounds)) '("Why"))))))
 
+(ert-deftest org-truss-test-reason-told-on-its-line ()
+  "A reason whose heading's line tells a member is that member there, and
+stands on it: it has grounds, weak when the member does not hold.  Under
+a breakdown, or in a section's text, such a link tells and is no ground."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Claim
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** [[truss-include:fact]]
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+*** [[truss-include:bare]]
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+** Split
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+*** [[truss-include:bare]]
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: part
+:END:
+** Fact
+:PROPERTIES:
+:CUSTOM_ID: fact
+:END:
+[[https://e.x/minutes][minutes]]
+** Bare
+:PROPERTIES:
+:CUSTOM_ID: bare
+:END:
+"
+    (let* ((model (org-truss-read))
+           (checks (org-truss-checks model))
+           (claim (org-truss-test--m model "Claim"))
+           (split (org-truss-test--m model "Split")))
+      (should (equal (mapcar #'org-truss-cluster-refs (org-truss-cluster-children claim))
+                     '(("fact") ("bare"))))
+      (should-not (plist-get checks :no-grounds))
+      (should (equal (mapcar (lambda (w) (cons (org-truss-cluster-label (car w)) (cdr w)))
+                             (plist-get checks :weak-grounds))
+                     '(("[[truss-include:bare]]" . "bare"))))
+      (should-not (org-truss-cluster-refs (car (org-truss-cluster-children split)))))))
+
+(ert-deftest org-truss-test-mixed-sources ()
+  "The parts with nothing under them keep to one source, wherever they are,
+and a logic of the subject keeps to one in all it holds.  One taken by
+org-moor is one source wherever its links point and whatever they say;
+a part with parts under it is one source of its own; links to members
+are no sources; a logic of the members brings sources together."
+  (org-truss-test--with "* S
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** Form
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+*** Field A
+[[moor:form::14][the form, l. 14]]
+*** Field B
+[[moor:form::200][field B]]
+** Read together
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+*** The form
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+**** Field C
+[[moor:form::3]]
+*** The rule
+[[moor:rule]]
+** Mixed
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+*** Field D
+[[moor:form]]
+*** A page
+[[https://e.x/page][page]]
+** Summed up
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** Says one thing
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+[[moor:rule::2]]
+*** Says another
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+[[file:notes/memo.org::4]]
+* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** Shares
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+*** One share
+[[#a]]
+*** Another
+[[#b]]
+** Read across
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+*** By the rule
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+[[moor:rule]]
+*** By the form
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+[[moor:form]]
+"
+    (let ((model (org-truss-read)))
+      (should (equal (mapcar (lambda (m) (cons (org-truss-cluster-label (car m)) (cdr m)))
+                             (plist-get (org-truss-checks model) :mixed-sources))
+                     '(("Mixed" "moor:form" "https://e.x/page")
+                       ("Summed up" "moor:rule" "notes/memo.org"))))
+      (should (string-match-p "^Mixed sources -- .*\n.*:[0-9]+: Mixed -- points into moor:form, https://e.x/page$"
+                              (org-truss-check-report model))))))
+
 (defconst org-truss-test--includes-file "* M
 :PROPERTIES:
 :TRUSS_PART: members

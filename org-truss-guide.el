@@ -71,7 +71,9 @@
 #   has grounds when its text has one of these
 #     a link            to a member, ~[[#m3]]~, or to a source: moor:,
 #                       file:, URL.  A link that tells a member is no
-#                       ground
+#                       ground, but on the heading's line,
+#                       ~*** [[truss-include:m3]]~: the reason is that
+#                       member there, as it is
 #     #+begin_quote     the source's own words, quoted
 #   Outside #+begin_public a link is for the file alone; inside, it is the
 #   reader's citation too.  Words naming what has no file -- an agreement,
@@ -81,6 +83,16 @@
 #   org-moor or a file is there.  A URL and words are not checked.  The
 #   check points out a heading that must have grounds and has none, and
 #   grounds that do not hold
+#
+# Sources
+#   Subject is checked against its sources one at a time.  Under
+#   TRUSS_BREAKDOWN: parts, the parts with nothing under them point into
+#   one source; a part with parts under it may point into another.  A
+#   TRUSS_LOGIC in Subject points into one source in all it holds.  A
+#   source taken by org-moor, ~[[moor:ID]]~, is one wherever in it a link
+#   points; a file is one, a URL is one.  Facts of different sources are
+#   brought together by members in Members.  The check points out a
+#   heading that points into more than one
 #
 # Under the four
 #   under Brief, Subject or Members
@@ -96,7 +108,7 @@
 #   ~[[truss-include:m7]]~  tells it there: the heading, a member or a
 #                           section, with what is under it, is written out
 #                           where the link stands, in any heading, in a
-#                           sentence too, or on a section's heading line.
+#                           sentence too, or on a heading's line.
 #                           Its description is its words there.  The check
 #                           points out a link that tells what tells its
 #                           heading back
@@ -185,7 +197,9 @@
 #   除く。根拠を持つとは、本文に次のどれかを持つこと
 #     リンク            部材へのリンク ~[[#m3]]~ か、資料への moor:・
 #                       file:・URL のリンク。部材を展開するリンクは根拠
-#                       ではない
+#                       ではない。ただし見出しの行に書いた
+#                       ~*** [[truss-include:m3]]~ では、その部材が
+#                       そのまま理由になる
 #     #+begin_quote     資料の原文の引用
 #   #+begin_public の外のリンクはファイルの中だけのもの。中に書けば、読み手
 #   への出典にもなる。ファイルのないもの（合意、口頭の話）を名指す言葉は根拠
@@ -195,6 +209,14 @@
 #   持つこと。org-moor の資料やファイルなら、それがあること。URL と言葉は
 #   確かめない。根拠を持つべき見出しに根拠がないとき、また、根拠として
 #   指したものが成り立たないとき、検査が指摘する
+#
+# 資料
+#   Subject は資料一つずつと突き合わせて確かめる。TRUSS_BREAKDOWN: parts の
+#   下で、下に見出しを持たない部分は一つの資料を指す。下に部分を持つ部分は、
+#   別の資料を指してよい。Subject の TRUSS_LOGIC は、下全体で一つの資料を
+#   指す。org-moor の資料 ~[[moor:ID]]~ は、中のどこを指しても一つ。ファイル
+#   も URL も一つずつ。別の資料の事実を組み合わせるのは Members の部材。二つ
+#   以上の資料を指す見出しは、検査が指摘する
 #
 # 4つの見出しの下
 #   Brief・Subject・Members の下
@@ -208,7 +230,7 @@
 #   ~[[#m7]]~               見出しを指す。どこに書いても根拠になる
 #   ~[[truss-include:m7]]~  見出し（部材でも節でも）をそこで展開する。
 #                           リンクを書いた場所に、見出しとその下が書き出
-#                           される。どの見出しにでも、文の途中にでも、節の
+#                           される。どの見出しにでも、文の途中にでも、
 #                           見出しの行にも書ける。説明はそこでの言い方として
 #                           書き出される。
 #                           展開をたどって自分の見出しに戻るリンクは、検査が
@@ -303,21 +325,29 @@ Brief line changes it."
 TRUSS_BREAKDOWN it belongs to, with its grounds: the source's own words
 in a quote block, a #+begin_quote (e on the board), or a link to the
 source in its text (m on the board takes one): inside its #+begin_public
-it is the reader's citation too.  Sum up facts
-that belong together: nest them under a member that says in one sentence
-what they say together, and no more, with TRUSS_LOGIC: reasons (p on the
-board) -- each fact is then a reason, and must have its grounds.  What the
-facts mean, and what to do, go in the members.  None of this is written
+it is the reader's citation too.  Make a tree for each source, to be
+checked against it alone: a member naming the source, with TRUSS_BREAKDOWN:
+parts (p on the board), and its facts under it as its parts -- a form's
+fields, a law's articles.  Sum up facts of one source that belong
+together: nest them under a member that says in one sentence what they
+say together, and no more, with TRUSS_LOGIC: reasons (p on the board) --
+each fact is then a reason, and must have its grounds.  What facts of
+different sources say together, what the facts mean, and what to do, go
+in the members.  None of this is written
 out; a member a section lists is, with the members under it.  p on the
 board's Subject line changes the breakdown."
      "調べたこと。事実は一つずつ、合う TRUSS_BREAKDOWN の役の下に部材として
 書き、根拠を付ける。出典の原文を本文の引用ブロック #+begin_quote に残すか
 （盤面の e）、出典へのリンクを本文に書く（盤面の m で取り込める）。リンク
-を #+begin_public の中に書けば、読み手への出典にもなる。関係する事実はまと
-める。下の事実が合わせて言っていることを一文で書いた部材の下に入れ子にし、
-その一文には下の事実が言っている以上のことを書かない。上の部材
-には TRUSS_LOGIC: reasons を付ける（盤面の p）。下の事実はその理由になり、
-それぞれ根拠を持つべき見出しになる。事実の意味と、することは Members に書く。
+を #+begin_public の中に書けば、読み手への出典にもなる。資料ごとに木を一つ
+作り、その資料だけと突き合わせて確かめられるようにする。資料を名指す部材に
+TRUSS_BREAKDOWN: parts を付け（盤面の p）、その資料の事実（帳票の欄、法令の
+条など）を下に部分として置く。同じ資料の、関係する事実はまとめる。下の事実
+が合わせて言っていることを一文で書いた部材の下に入れ子にし、その一文には
+下の事実が言っている以上のことを書かない。上の部材には TRUSS_LOGIC: reasons
+を付ける（盤面の p）。下の事実はその理由になり、それぞれ根拠を持つべき見出し
+になる。別の資料の事実が合わせて言っていること、事実の意味、することは
+Members に書く。
 ここは書き出されない。節に載せた部材は、下の部材と一緒に書き出される。内訳の
 型は盤面の Subject の行の p で替えられる。")
     ((subject premises)
@@ -336,8 +366,13 @@ Nest under a claim the members that are its reasons, and give the claim
 TRUSS_LOGIC (p on the board): reasons, deduction or induction.  Each
 reason plays a role of it in TRUSS_LOGIC_ROLE, and must have grounds:
 link to the facts of the subject it stands on, ~[[#m3]] [[#m7]]~, in its
-text (b on the board), or cite a source (m, Q).  Tag
-:assumption: a reason taken as given without grounds (A).  Give what is
+text (b on the board); sources are cited in the subject, not here.  A
+fact that is the reason as it is goes under the claim as a heading that
+tells it, ~*** [[truss-include:m3]]~, with its TRUSS_LOGIC_ROLE: write no
+member that only says it again.  A reason is a member of its own when it
+reads facts: brings facts of different sources together, or says what
+one means here.  Tag :assumption: a reason taken as given without
+grounds (A).  Give what is
 to be done TRUSS_BREAKDOWN -- steps, parts, 5W1H (p on the board) -- and
 what is under it is its parts, which need no grounds, written out as a
 list.  A member is written out before what is under it, and that in the
@@ -352,8 +387,12 @@ is never written out; tag :noexport: a member that should not be."
 その下に入れ子にし、主張には TRUSS_LOGIC を付ける（盤面の p）：reasons、
 deduction、induction。理由はそれぞれ TRUSS_LOGIC_ROLE に役を書き、根拠を
 持つべき見出しになる。根拠には、支えにする Subject の事実へのリンク
-~[[#m3]] [[#m7]]~ を本文に書くか（盤面の b）、出典を引く
-（盤面の m、Q）。根拠なしで置く理由には :assumption: を付ける（盤面の A）。
+~[[#m3]] [[#m7]]~ を本文に書く（盤面の b）。資料は Subject で引き、ここでは
+引かない。言い換えずにそのまま理由になる事実は、それを展開する見出し
+~*** [[truss-include:m3]]~ として主張の下に置き、TRUSS_LOGIC_ROLE を書く。
+同じことを言い直すだけの部材は作らない。理由を部材として書くのは、事実を
+読むとき：別の資料の事実を組み合わせるとき、事実がここで何を意味するかを
+言うとき。根拠なしで置く理由には :assumption: を付ける（盤面の A）。
 することに TRUSS_BREAKDOWN を付けると（steps、parts、5w1h など。盤面の p）、
 下の部材はその内訳になり、根拠は要らず、箇条書きで出る。部材は下の部材より
 先に書き出され、下の部材はファイルの順に出る。結論を最後に置く話の運びは、

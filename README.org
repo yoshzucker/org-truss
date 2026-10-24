@@ -242,7 +242,12 @@ taken as given, as what no text records is, and the board lists it so.
 
 A link that tells a member,
 ~[[truss-include:m7]]~, is no ground: it says where the member is told (see
-[[*Two links to a heading]]).
+[[*Two links to a heading]]).  But a reason whose heading's line tells a
+member, ~*** [[truss-include:m7]]~, is that member there, as it is, and
+stands on it: a fact that needs no words of yours to be the reason is
+not said again by a member of its own.  On the line of a heading that
+plays no role of a logic -- a part of a breakdown, a section -- the link
+only tells.
 
 Whether a heading has grounds is read from what it writes, not from what
 that points to.  What it points to is asked something of its own, of
@@ -264,9 +269,28 @@ structure can tell.
 The line between a fact and an assumption is whether you can say where it
 came from.
 
+** One source at a time
+
+The subject is checked against its sources, and a source is read one at a
+time, so what brings facts together keeps to one.  Under a
+~TRUSS_BREAKDOWN~ of parts, the parts with nothing under them point into
+one source; a part with parts under it is held to this itself, and may
+point into another -- a form's fields under the form, beside the law
+under the law.  A ~TRUSS_LOGIC~ in the subject points into one source in
+all it holds.  A source taken by org-moor is one wherever in it its links
+point and whatever words they give it, ~[[moor:ID::14]]~ and
+~[[moor:ID::200][field B]]~ alike; a file is one, a URL is one.  Links to
+members are no sources.
+
+Facts of different sources are brought together by reading them, the
+members' work: a reason in the members links to the facts of each (see
+[[*Pointing to a member]]).  So the subject reads as its sources do, each
+tree checked against one, and the mesh of what stands on what is woven in
+the members alone, where each reason shows what it reads.
+
 ** What is left to do
 
-Six checks, each found where the problem is:
+Seven checks, each found where the problem is:
 
 | Check         | Found at                       | What it finds                                                                                                                                                     |
 |---------------+--------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -275,6 +299,7 @@ Six checks, each found where the problem is:
 | Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                                                     |
 | No grounds    | the heading that lacks them    | must have grounds and has none                                                                                                                                    |
 | Weak grounds  | the heading that points        | points as grounds, in its text, to a member that does not hold                                                                                                    |
+| Mixed sources | the heading that brings them   | points into more than one source where it keeps to one: parts with nothing under them, or a ~TRUSS_LOGIC~ in the subject (see [[*One source at a time]])          |
 | Broken links  | the link                       | a link to nothing: one that tells or points to no member, one to no source or file; a ~CUSTOM_ID~ two members have; a link that tells what tells its heading back |
 
 They say what is so; what to do about it is written in the file.
@@ -859,8 +884,8 @@ uses, what it stands on and its gaps, so the document can be read down
 the right.
 
 Each part is followed by what is left to do in it, check by check --
-/Broken links/, /No grounds/, /Weak grounds/, /Missing roles/, /No role/,
-/Out of order/
+/Broken links/, /No grounds/, /Weak grounds/, /Mixed sources/, /Missing
+roles/, /No role/, /Out of order/
 (see [[*What is left to do]]) -- each thing listed in the part it is found
 in, and ~RET~ on it goes there.  The mouse on the name of a check says
 what it finds.

@@ -1075,6 +1075,9 @@ finds it, as `org-truss-check-descriptions' names them."
             model "Weak grounds" (funcall in (plist-get checks :weak-grounds))
             (lambda (e) (format "%s has no grounds" (funcall refs (list (cdr e))))))
            (org-truss--check-group
+            model "Mixed sources" (funcall in (plist-get checks :mixed-sources))
+            (lambda (e) (format "points into %s" (string-join (cdr e) ", "))))
+           (org-truss--check-group
             model "Missing roles" (funcall in (plist-get checks :gaps))
             (lambda (e) (mapconcat (lambda (gap)
                                      (let ((asking (org-truss--asking (car e) gap)))

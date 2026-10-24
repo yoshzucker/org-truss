@@ -982,15 +982,20 @@ The first, in the order of the kinds, whose role is flagged :label."
 
 ;; A heading that plays a role of the logic above it is a reason, and must
 ;; have grounds: a quotation in its text, or a link in its text, to a
-;; member or a source.  One with reasons of its own leaves that
-;; to them, and an assumption is taken without.  What any heading points to
-;; as grounds must hold as what it is: a member, as a heading that must
-;; have grounds is asked to; a source or a file, by being there.
+;; member or a source.  A reason whose heading's line tells a member,
+;; *** [[truss-include:m7]], is that member there, and stands on it.  One
+;; with reasons of its own leaves that to them, and an assumption is taken
+;; without.  What any heading points to as grounds must hold as what it
+;; is: a member, as a heading that must have grounds is asked to; a source
+;; or a file, by being there.
 
 (defun org-truss-cluster-refs (cluster)
   "Return the references of every link to a member CLUSTER stands on.
-In its text, in order; each once."
-  (seq-uniq (org-truss-cluster-text-grounds cluster)))
+In its text, in order, and first the links telling members on its
+heading's line when it plays a role of a logic; each once."
+  (seq-uniq (append (and (org-truss-cluster-role cluster 'logic)
+                         (org-truss--includes-in (org-truss-cluster-label cluster)))
+                    (org-truss-cluster-text-grounds cluster))))
 
 (defun org-truss-has-grounds-p (cluster)
   "Non-nil when CLUSTER has grounds: its text quotes a source or links to
@@ -1065,6 +1070,50 @@ not there to look."
              (not (and attach (file-exists-p (expand-file-name path attach))))))
           ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
            (not (file-exists-p (expand-file-name path dir)))))))
+
+;;;; Sources
+
+;; The subject is checked against its sources one at a time, so what
+;; brings facts together keeps to one: the parts of a heading that has
+;; nothing under them, wherever it is, and all a logic of the subject
+;; holds.  Bringing sources together is reading them, the members' work.
+
+(defun org-truss--source-of (link)
+  "Return the source LINK, a link to one, points into, as a string.
+One taken by org-moor is its directory, `moor:ID', wherever in it the
+link points, as a file is its path; a page on the web is its address.
+What the link says it as is not read."
+  (let ((target (org-link-unescape (or (org-truss--link-target link) ""))))
+    (if (string-match-p "\\`https?:" target)
+        target
+      (car (split-string (replace-regexp-in-string "\\`file:" "" target) "::")))))
+
+(defun org-truss-cluster-sources (cluster)
+  "Return the sources CLUSTER's text points into, each once, in order."
+  (seq-uniq (mapcar #'org-truss--source-of (org-truss-cluster-source-links cluster))))
+
+(defun org-truss--in-subject-p (cluster)
+  "Non-nil when CLUSTER is the subject or written in it."
+  (if (org-truss-part-p cluster)
+      (eq (org-truss-part-name cluster) 'subject)
+    (and (org-truss-member-p cluster) (eq (org-truss-member-home cluster) 'subject))))
+
+(defun org-truss-mixed-sources (cluster)
+  "Return the sources CLUSTER brings together where it keeps to one, or nil.
+Under parts, those of the headings right under it with nothing under
+them; a heading with some is a part of its own, asked this itself.  Of a
+logic in the subject, those of all it holds and its own.  Nil for one
+source or none."
+  (let ((sources
+         (seq-uniq
+          (append
+           (and (eq (org-truss-cluster-breakdown cluster) 'parts)
+                (mapcan #'org-truss-cluster-sources
+                        (seq-remove #'org-truss-cluster-children
+                                    (org-truss-cluster-children cluster))))
+           (and (org-truss-cluster-logic cluster) (org-truss--in-subject-p cluster)
+                (mapcan #'org-truss-cluster-sources (org-truss--subtree cluster)))))))
+    (and (cdr sources) sources)))
 
 ;;;; How a heading is told
 
@@ -1206,6 +1255,9 @@ heading whose pattern asks, at the heading that lacks, at the link.
                  `org-truss-missing-grounds'
 :weak-grounds    (CLUSTER . REF) for links a heading stands on to members
                  that do not hold; see `org-truss-weak-grounds'
+:mixed-sources   (CLUSTER . SOURCES) for headings that bring more than one
+                 source together where they keep to one; see
+                 `org-truss-mixed-sources'
 :broken-links    (CLUSTER . REF) for links that tell no member, in any heading
 :loops           (CLUSTER . REF) for links that tell a member telling the
                  heading back; see `org-truss-include-loops'
@@ -1227,6 +1279,10 @@ heading whose pattern asks, at the heading that lacks, at the link.
           :out-of-order (mapcan #'org-truss-out-of-order clusters)
           :no-grounds (seq-filter (lambda (c) (org-truss-missing-grounds model c)) clusters)
           :weak-grounds (funcall each (lambda (c) (org-truss-weak-grounds model c)))
+          :mixed-sources (delq nil (mapcar (lambda (c)
+                                             (let ((sources (org-truss-mixed-sources c)))
+                                               (and sources (cons c sources))))
+                                           clusters))
           :broken-links (funcall each (lambda (c)
                                         (seq-remove (lambda (ref) (org-truss-heading-by-ref model ref))
                                                     (seq-uniq (org-truss-cluster-includes c)))))
@@ -1253,6 +1309,8 @@ heading whose pattern asks, at the heading that lacks, at the link.
      . "headings that play a role of the TRUSS_LOGIC above them, with no TRUSS_LOGIC of their own and no :assumption: tag, and no grounds: no #+begin_quote and no link in their text, to a member or a source")
     ("Weak grounds"
      . "links a heading stands on, in its text, to members that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
+    ("Mixed sources"
+     . "headings that bring sources together where they keep to one, so each can be checked against its source: a TRUSS_BREAKDOWN of parts whose parts with nothing under them point into more than one -- one taken by org-moor counts once, wherever in it the links point -- and a TRUSS_LOGIC in the subject whose reasons do; bring sources together in the members")
     ("Missing roles"
      . "roles the TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING of a heading asks for that no heading right under it plays, by its TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE")
     ("No role"
@@ -1349,6 +1407,10 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                  (mapcar (lambda (w) (funcall cluster-line (car w)
                                               (format "[[%s]] has no grounds" (org-truss--target (cdr w)))))
                          (plist-get checks :weak-grounds)))
+           (cons "Mixed sources"
+                 (mapcar (lambda (m) (funcall cluster-line (car m)
+                                              (format "points into %s" (string-join (cdr m) ", "))))
+                         (plist-get checks :mixed-sources)))
            (cons "Missing roles"
                  (mapcan (lambda (g)
                            (mapcar (lambda (kind)
