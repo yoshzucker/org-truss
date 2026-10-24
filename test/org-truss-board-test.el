@@ -960,8 +960,8 @@ entry text does, and again every line on one."
 
 (ert-deftest org-truss-test-board-reason-told-on-its-line ()
   "A reason stands on what it tells, on its heading's line or in its text:
-the member is drawn under it as a ground, in its words and called as the
-link is written, said to have no grounds when it does not hold, and not
+the member is drawn under it as a ground, in its words and called by its
+id, said to have no grounds when it does not hold, and not
 besides as a member told.  A heading whose line is the link is drawn as
 written.  The member's own line has it once, as built on it."
   (org-truss-test--with-board "* S
@@ -1002,9 +1002,9 @@ written.  The member's own line has it once, as built on it."
     (let* ((text (buffer-string))
            (members (substring text (string-search " Members" text)))
            (subject (substring text 0 (string-search " Members" text))))
-      (should (string-match-p "Reason[ ·]+\\[\\[truss-include:fact\\]\\].*\n.*⏚ ground[ ·]+\\[\\[truss-include:fact\\]\\] The fact" members))
-      (should (string-match-p "⏚ ground \\[no grounds\\][ ·]+\\[\\[truss-include:bare\\]\\] The bare one" members))
-      (should (string-match-p "Reason[ ·]+As the minutes have it.*\n.*⏚ ground[ ·]+\\[\\[truss-include:fact\\]\\] The fact" members))
+      (should (string-match-p "Reason[ ·]+\\[\\[truss-include:fact\\]\\].*\n.*⏚ ground[ ·]+\\[\\[#fact\\]\\] The fact" members))
+      (should (string-match-p "⏚ ground \\[no grounds\\][ ·]+\\[\\[#bare\\]\\] The bare one" members))
+      (should (string-match-p "Reason[ ·]+As the minutes have it.*\n.*⏚ ground[ ·]+\\[\\[#fact\\]\\] The fact" members))
       (should-not (string-match-p "•" members))
       (should (string-match-p "↥ Reason[ ·]+\\[\\[truss-include:fact\\]\\]" subject))
       (should-not (string-match-p "▤" subject)))))

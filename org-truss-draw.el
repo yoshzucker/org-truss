@@ -657,8 +657,8 @@ is what it stands for, under KEY, and ID how it is called, if it is."
 (defun org-truss--grounds-lines (model cluster stem key)
   "Return a line for each thing CLUSTER of MODEL stands on, below it.
 The members its text links to, each once, said to be broken when it is
-no member, and to have no grounds when it does not hold, each called as
-its link is written, [[#m7]] or [[truss-include:m7]]; then the words
+no member, and to have no grounds when it does not hold, each called by
+its id, [[#m7]], whichever link it stands on; then the words
 it quotes, each quotation, and below them the sources its text links to,
 each once, as the words are read from the source; a link among them that
 points to nothing said not to be found.  Each keeps the links to sources
@@ -682,11 +682,7 @@ STEM starts each; KEY is CLUSTER's line's."
                      :pos (if ground (org-truss-cluster-pos ground) pos)
                      :label (and ground (org-truss-cluster-label ground))
                      :claim pos :ground ref)
-               ;; Called as the link is written: one that tells it as well
-               ;; says so, wherever in the heading it stands.
-               (and ground (if (member ref (org-truss-standing-includes cluster))
-                               (org-truss--include-link ref)
-                             (org-truss--id-text ground ref))))))))
+               (and ground (org-truss--id-text ground ref)))))))
     (append
      (mapcar (lambda (ref) (funcall member-line ref "ground"))
              (org-truss-cluster-refs cluster))

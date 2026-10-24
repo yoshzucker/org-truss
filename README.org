@@ -1085,11 +1085,10 @@ and again every line on one.
 
 A link is drawn as what it is to its heading.  In a reason every link
 to a member is a ground, so each is a =⏚ ground= under it, in m7's words
-and called as the link is written: =[[#m7]]= stands on m7 alone,
-=[[truss-include:m7]]= tells it as well, wherever in the reason it is
-written.  None is drawn there besides as a member told.  A reason whose
-heading's line is the link, ~*** [[truss-include:m7]]~, is drawn as
-written, its role and the link.  Under m7, where it is written, each
+and called by its id, =[[#m7]]=, as any ground is.  None is drawn there
+besides as a member told.  A reason whose heading's line is the link,
+~*** [[truss-include:m7]]~, is drawn as written, its role and the link,
+which says already that it tells m7.  Under m7, where it is written, each
 reason is one line, =↥=, built on it.  In a heading that is no reason
 the link only tells, and is drawn as =• told=.
 
