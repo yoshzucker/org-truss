@@ -604,13 +604,14 @@ A section tells the members it shows by such links, ~- [[truss-include:m7]]~,
 from whatever part they are written in.  A section can hold sections of
 its own.
 
-** Members as items of a list
+** Headings as items of a list
 
 A member whose reasons, parts or steps say little beyond their one line
 need not have a heading each: written as the items of a list in its
 text, marked ~#+attr_truss~, they are members right under it all the
 same -- the patterns ask for them, the checks reach them, the board draws
-them, and links point to them.
+them, and links point to them.  A part's text holds members so, the
+fields of the brief among them, and a section's text sections.
 
 #+begin_src org
 ,** We move to fortnightly reviews
@@ -626,21 +627,37 @@ We would meet half as often.
 #+end_src
 
 - ~#+attr_truss~ names patterns as the properties do, ~:logic~,
-  ~:breakdown~ and ~:telling~; the member takes them for the kinds its
+  ~:breakdown~ and ~:telling~; the heading takes them for the kinds its
   properties leave out.  Its items come before the headings under it.
+  ~#+attr_truss:~ naming none marks the items alone, under a heading
+  whose properties name its patterns, or with none.
 - The term before ~::~ is the role an item plays, by its English name, as
   in ~TRUSS_BREAKDOWN_ROLE~.  A pattern of one role -- ~reasons~, ~steps~,
   ~parts~ -- is played by every item, with a term or none; a term that
   names no role is part of the item's words.
 - An item's first line is its words, as a heading's are; the lines under
   it are its text, a comment left out; a list marked so inside it holds
-  the members under it.
+  what is under it.  In a section, a list not marked stays its text, the
+  links ~- [[truss-include:m7]]~ that tell members among it.
 - A target in its first line, ~<<m21>>~, is its id: ~[[m21]]~ points to
   it, as a ground, and ~[[truss-include:m21]]~ tells it.  /place/ and
   /ground/ give an item one, as they give a heading a ~CUSTOM_ID~.
-- In the document the items are told as the headings under a member are,
-  after its text: each opened with its role where the pattern names it,
-  the list's marks and the targets left out.
+- In the document the items are told as the headings under it are, after
+  its text: each opened with its role where the pattern names it, the
+  list's marks and the targets left out.
+
+#+begin_src org
+,* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:TRUSS_TELLING: sky-rain-umbrella
+:END:
+,#+attr_truss:
+- sky :: Where we are
+  - [[truss-include:m2]]
+- rain :: Why change
+- umbrella :: [[truss-include:m1]]
+#+end_src
 
 On the board, /edit/ on an item takes out the heading whose text holds
 it, at the item; the commands that change a heading -- /rename/, /refile/,

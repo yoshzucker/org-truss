@@ -48,6 +48,21 @@ out, a link pointing to one as its words."
              out))
     (should-not (string-match-p "attr_truss\\|<<\\|\\[\\[" out))))
 
+(ert-deftest org-truss-test-render-section-items ()
+  "Sections written as items of a list in the structure's text are told as
+its headings are: a heading each, its text and what it tells under it."
+  (let ((out (org-truss-test--render org-truss-test--part-items-file)))
+    (should (string-match-p
+             (concat "^We propose a change\\.\n\n"
+                     "\\* Where we are\n\n"
+                     "- Reviews take an hour\n\n"
+                     "\\* Why change\n\n"
+                     "\\* We move to fortnightly reviews\n\n"
+                     "- Reviews run long\n\n"
+                     "\\* Next")
+             out))
+    (should-not (string-match-p "attr_truss\\|<<\\|\\[\\[\\|sky ::" out))))
+
 (ert-deftest org-truss-test-render-conditions ()
   "A member written under a field of the subject is written where it is placed,
 and the field's own text is not."

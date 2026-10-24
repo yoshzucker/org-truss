@@ -1682,6 +1682,22 @@ that would change a heading say so instead."
         (should (looking-at "- pros :: <<m21>>Less time"))
         (org-truss-test--let-go)))))
 
+(ert-deftest org-truss-test-board-draws-part-and-section-items ()
+  "Members written as items in a part's text and sections in a section's
+are drawn as the headings are, by the roles they play; the commands that
+would change a heading say so on a section written so."
+  (org-truss-test--with-board org-truss-test--part-items-file
+    (let ((org-truss-board-fold-limit nil))
+      (org-truss-board-redraw)
+      (let ((text (buffer-string)))
+        (should (string-match-p "Reader[ ·]+The team leads" text))
+        (should (string-match-p "<<m1>> We move to fortnightly reviews" text))
+        (should (string-match-p "├ Sky[ ·]+Where we are" text)))
+      (org-truss-test--goto-line-with "├ Sky")
+      (let ((this-command 'org-truss-board-delete))
+        (should-error (org-truss-board-delete) :type 'user-error))
+      (should (string-match-p "- sky :: Where we are" (with-current-buffer source (buffer-string)))))))
+
 (ert-deftest org-truss-test-board-catches-up ()
   "Selected again after its file changed, the board draws again."
   (org-truss-test--with-board org-truss-test--file

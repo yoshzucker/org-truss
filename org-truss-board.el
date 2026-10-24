@@ -394,30 +394,31 @@ while a command was asking something."
 (defconst org-truss--item-commands
   '(org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
     org-truss-board-edit org-truss-board-same)
-  "The board's commands that take a member written as an item of a list.")
+  "The board's commands that take a heading written as an item of a list.")
 
 (defun org-truss--want (item &rest types)
   "Return ITEM when its type is one of TYPES; otherwise say what the key needs.
-A member written as an item of a list is no heading, and only the
-commands of `org-truss--item-commands' take it; see
-`org-truss--item-holder'."
+A member or a section written as an item of a list is no heading, and
+only the commands of `org-truss--item-commands' take it, or a link one
+holds; see `org-truss--item-holder'."
   (unless (and item (memq (plist-get item :type) types))
     (user-error "Put point on a %s line"
                 (mapconcat #'symbol-name types " or ")))
-  (when (and (eq (plist-get item :type) 'member)
-             (not (memq this-command org-truss--item-commands))
-             (org-truss--item-holder (plist-get item :pos)))
+  (when (and (not (memq this-command org-truss--item-commands))
+             (seq-some #'org-truss--item-holder
+                       (delq nil (list (plist-get item :pos) (plist-get item :holder)))))
     (user-error "An item of a list in its heading's text: %s writes it there"
                 (substitute-command-keys "\\[org-truss-board-edit]")))
   item)
 
 (defun org-truss--item-holder (pos)
   "Return where the heading is whose text holds the item at POS, or nil.
-Nil when POS, in the truss file, is a heading's."
+Nil when POS, in the truss file, is a heading's, or the title's."
   (with-current-buffer org-truss--source
     (org-with-wide-buffer
      (goto-char pos)
-     (and (not (org-at-heading-p))
+     (and (org-at-item-p)
+          (not (org-before-first-heading-p))
           (progn (org-back-to-heading t) (point))))))
 
 (defun org-truss--read-choice (prompt alist &optional about default)

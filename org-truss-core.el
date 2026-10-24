@@ -698,20 +698,19 @@ what each quotation in its text says, in order.  INCLUDES are the references of 
 that tell members, [[truss-include:m7]], on its heading's line and in its
 text, in order.  BODY is the text the reader is told under its heading,
 or nil; NOTES, its comments, which stay in the file.  CHILDREN are the
-headings right under it."
+headings right under it.  HOLDER is nil for a heading; for an item of a
+list marked #+attr_truss, written in a heading's text, the position of
+that heading, and POS the item's.  See `org-truss--read-item'."
   pos id label level tags roles logic breakdown telling
   text-grounds source-links cited quoted
-  includes body notes children)
+  includes body notes children holder)
 
 (cl-defstruct (org-truss-member (:include org-truss-cluster)
                                 (:constructor org-truss--make-member)
                                 (:copier nil))
   "A statement, and what is nested under it.
-HOME is the part it is written in: `brief', `subject' or `members'.
-HOLDER is nil for a heading; for an item of a list marked #+attr_truss,
-written in a heading's text, the position of that heading.  See
-`org-truss--read-item'."
-  home holder)
+HOME is the part it is written in: `brief', `subject' or `members'."
+  home)
 
 (cl-defstruct (org-truss-section (:include org-truss-cluster)
                                  (:constructor org-truss--make-section)
@@ -761,23 +760,24 @@ OWN is the parse of its own text."
             :body (org-truss--read-text own :body)
             :notes (org-truss--read-text own :comments)))))
 
-;;;; Members written as items of a list
+;;;; Headings written as items of a list
 
-;; A list in a member's text marked #+attr_truss holds members of its own,
-;; one an item, right under the member as the headings under it are, and
-;; before them:
+;; A list in a heading's text marked #+attr_truss holds headings of its
+;; own, one an item, right under it as the headings under it are, and
+;; before them: members, under a member or a part, sections, under a
+;; section.
 ;;
 ;;   #+attr_truss: :logic reasons :breakdown pros-cons
 ;;   - pros :: <<m21>>Less time in meetings
 ;;     [[#m4]]
 ;;   - cons :: Items wait longer
 ;;
-;; What #+attr_truss names are the member's patterns, of the kinds its
+;; What #+attr_truss names are the heading's patterns, of the kinds its
 ;; properties leave out; an item's term, before ::, the role it plays in
 ;; them, and a pattern of one role is played without a term.  A target,
 ;; <<m21>>, is the item's id, which [[m21]] points to.  Its first line is
 ;; its words, as a heading's are; the rest of its text its text; a list
-;; marked so inside it, the members under it.
+;; marked so inside it, what is under it.
 
 (defun org-truss--attr (element)
   "Return the patterns #+attr_truss gives ELEMENT, as (KIND . PATTERN)."
@@ -838,10 +838,12 @@ pattern of one role has it played by every item."
           text
         (replace-regexp-in-string (format "^[ \t]\\{1,%d\\}" n) "" text)))))
 
-(defun org-truss--read-item (item home holder level patterns)
-  "Read ITEM, an item of a list marked #+attr_truss, as a member.
-Written in HOME, in the text of the heading at HOLDER, at LEVEL; PATTERNS
-are those of the member it is right under, (KIND . PATTERN)."
+(defun org-truss--read-item (item make holder level patterns)
+  "Read ITEM, an item of a list marked #+attr_truss, with MAKE.
+MAKE is the constructor of what it is, a member or a section, called with
+its fields.  It is written in the text of the heading at HOLDER, at
+LEVEL; PATTERNS are those of the heading it is right under, (KIND .
+PATTERN)."
   (let* ((lists (org-truss--member-lists-in item))
          (first (car (org-element-contents item)))
          (para (and first (eq (org-element-type first) 'paragraph) first))
@@ -865,8 +867,9 @@ are those of the member it is right under, (KIND . PATTERN)."
                                             lists)))
          (text (concat words "\n" (plist-get own :notes)))
          (own-patterns (org-truss--lists-patterns lists)))
-    (org-truss--make-member
-     :home home :holder holder
+    (funcall
+     make
+     :holder holder
      :pos (org-element-property :begin item)
      :id (and (string-match "<<\\([^<>\n]+\\)>>" words) (match-string 1 words))
      :label (string-trim (replace-regexp-in-string "<<[^<>\n]*>>[ \t]*" "" words))
@@ -882,19 +885,21 @@ are those of the member it is right under, (KIND . PATTERN)."
      :quoted (org-truss--quotes-in text)
      :body (org-truss--dedent (org-with-point-at holder (org-truss--read-text own :body)))
      :notes (org-truss--dedent (org-with-point-at holder (org-truss--read-text own :comments)))
-     :children (org-truss--read-items lists home holder (1+ level) own-patterns))))
+     :children (org-truss--read-items lists make holder (1+ level) own-patterns))))
 
-(defun org-truss--read-items (lists home holder level patterns)
-  "Read the items of LISTS as members; see `org-truss--read-item'."
+(defun org-truss--read-items (lists make holder level patterns)
+  "Read the items of LISTS with MAKE; see `org-truss--read-item'."
   (mapcan (lambda (list)
-            (mapcar (lambda (item) (org-truss--read-item item home holder level patterns))
+            (mapcar (lambda (item) (org-truss--read-item item make holder level patterns))
                     (org-element-contents list)))
           lists))
 
-(defun org-truss--read-member (pos home)
-  "Read the member at POS, written in HOME, and what is nested under it.
-The members of the lists marked #+attr_truss in its text first, then the
-headings under it; the lists give it the patterns its properties do not."
+(defun org-truss--read-heading (pos make make-item read-child)
+  "Read the heading at POS with MAKE, and what is under it.
+The items of the lists marked #+attr_truss in its text first, each read
+with MAKE-ITEM, then the headings under it, each read by READ-CHILD; the
+lists give it the patterns its properties do not.  MAKE and MAKE-ITEM
+are constructors, called with the fields."
   (let* ((bounds (org-truss--own-bounds pos))
          (lists (org-truss--own-lists (car bounds) (cdr bounds)))
          (fields (org-truss--heading-fields
@@ -906,32 +911,43 @@ headings under it; the lists give it the patterns its properties do not."
       (let ((key (intern (format ":%s" (car p)))))
         (unless (plist-get fields key)
           (setq fields (plist-put fields key (cdr p))))))
-    (apply #'org-truss--make-member
-           :home home
+    (apply make
            :children (append (org-truss--read-items
-                              lists home pos (1+ (plist-get fields :level))
+                              lists make-item pos (1+ (plist-get fields :level))
                               (delq nil (mapcar (lambda (kind)
                                                   (let ((id (plist-get fields (intern (format ":%s" kind)))))
                                                     (and id (cons kind id))))
                                                 org-truss-pattern-kinds)))
-                             (mapcar (lambda (child) (org-truss--read-member child home))
-                                     (org-truss--children pos)))
+                             (mapcar read-child (org-truss--children pos)))
            fields)))
 
+(defun org-truss--member-maker (home)
+  "Return the constructor of a member written in HOME."
+  (lambda (&rest fields) (apply #'org-truss--make-member :home home fields)))
+
+(defun org-truss--read-member (pos home)
+  "Read the member at POS, written in HOME, and what is nested under it.
+The members of the lists marked #+attr_truss in its text first, then the
+headings under it; see `org-truss--read-heading'."
+  (let ((make (org-truss--member-maker home)))
+    (org-truss--read-heading pos make make
+                             (lambda (child) (org-truss--read-member child home)))))
+
 (defun org-truss--read-section (pos)
-  "Read the section at POS and the sections below it."
-  (let ((own (org-truss--own pos)))
-    (apply #'org-truss--make-section
-           :children (mapcar #'org-truss--read-section (org-truss--children pos))
-           (org-truss--heading-fields pos own))))
+  "Read the section at POS and the sections below it.
+The sections of the lists marked #+attr_truss in its text first, then the
+headings under it; see `org-truss--read-heading'."
+  (org-truss--read-heading pos #'org-truss--make-section #'org-truss--make-section
+                           #'org-truss--read-section))
 
 (defun org-truss--read-part (pos name)
-  "Read the part NAME at POS, and the members right under it."
-  (apply #'org-truss--make-part
-         :name name
-         :children (mapcar (lambda (child) (org-truss--read-member child name))
-                           (org-truss--children pos))
-         (org-truss--heading-fields pos (org-truss--own pos))))
+  "Read the part NAME at POS, and the members right under it.
+The members of the lists marked #+attr_truss in its text first, then the
+headings under it; see `org-truss--read-heading'."
+  (org-truss--read-heading pos
+                           (lambda (&rest fields) (apply #'org-truss--make-part :name name fields))
+                           (org-truss--member-maker name)
+                           (lambda (child) (org-truss--read-member child name))))
 
 (defun org-truss--flatten (members)
   "Return MEMBERS and everything nested under them, in document order."

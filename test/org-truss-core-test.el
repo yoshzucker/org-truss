@@ -1498,7 +1498,7 @@ it, the members under it.  The heading's text leaves the list out."
       (should (equal (org-truss-member-notes less) "[[#m2]]"))
       (should (equal (org-truss-cluster-refs less) '("m2")))
       (should (equal (org-truss-cluster-refs likes) '("m21")))
-      (should (= (org-truss-member-holder less) (org-truss-member-pos move)))
+      (should (= (org-truss-cluster-holder less) (org-truss-member-pos move)))
       (should (= (org-truss-member-level less) 3))
       (should (eq (org-truss-member-breakdown wait) 'steps))
       (should (equal (mapcar #'org-truss-member-roles (org-truss-member-children wait))
@@ -1510,6 +1510,77 @@ it, the members under it.  The heading's text leaves the list out."
         (should (equal (mapcar (lambda (hit) (org-truss-member-label (car hit))) (plist-get checks :no-role))
                        '("A heading under it too" "人 :: Robin likes it, as [[m21]] says"
                          "A heading under it too")))))))
+
+(defconst org-truss-test--part-items-file "#+title: T
+* Brief
+:PROPERTIES:
+:TRUSS_PART: brief
+:END:
+#+attr_truss: :breakdown reader-question-response-constraints
+- reader :: The team leads
+- question :: Do we still need weekly reviews?
+- response :: They agree to fortnightly
+- constraints :: One page
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+#+attr_truss:
+- <<m1>>We move to fortnightly reviews
+  #+attr_truss: :logic reasons
+  - Reviews run long
+    # [[#m2]]
+** Reviews take an hour
+:PROPERTIES:
+:CUSTOM_ID: m2
+:END:
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:TRUSS_TELLING: sky-rain-umbrella
+:END:
+We propose a change.
+#+attr_truss:
+- sky :: Where we are
+  - [[truss-include:m2]]
+- rain :: Why change
+- umbrella :: [[truss-include:m1]]
+** Next
+"
+  "Parts and the structure whose members and sections are items of a list.")
+
+(ert-deftest org-truss-test-items-under-parts-and-sections ()
+  "A list marked #+attr_truss holds headings in the text of a part, members
+written in that part, and in the text of a section, sections: the part's
+or section's patterns, the roles the items play, before the headings
+under it.  A section's other lists stay its text."
+  (org-truss-test--with org-truss-test--part-items-file
+    (let* ((model (org-truss-read))
+           (brief (org-truss-model-brief model))
+           (root (org-truss-model-structure model))
+           (move (org-truss-heading-by-ref model "m1"))
+           (sky (car (org-truss-cluster-children root))))
+      (should (eq (org-truss-cluster-breakdown brief) 'reader-question-response-constraints))
+      (should (equal (mapcar #'org-truss-member-roles (org-truss-part-children brief))
+                     '(((breakdown . reader)) ((breakdown . question))
+                       ((breakdown . response)) ((breakdown . constraints)))))
+      (should (eq (org-truss-member-home (car (org-truss-part-children brief))) 'brief))
+      (should-not (org-truss-gaps brief))
+      (should (equal (org-truss-test--labels (org-truss-model-members model))
+                     '("We move to fortnightly reviews" "Reviews take an hour")))
+      (should (eq (org-truss-member-home move) 'members))
+      (should (= (org-truss-member-level move) 2))
+      (should (eq (org-truss-member-logic move) 'reasons))
+      (should (equal (mapcar #'org-truss-cluster-label (org-truss-cluster-children root))
+                     '("Where we are" "Why change" "[[truss-include:m1]]" "Next")))
+      (should (cl-every #'org-truss-section-p (org-truss-cluster-children root)))
+      (should (equal (org-truss-cluster-roles sky) '((telling . sky))))
+      (should (equal (org-truss-cluster-includes sky) '("m2")))
+      (should (equal (org-truss-cluster-body sky) "- [[truss-include:m2]]"))
+      (should (equal (org-truss-cluster-body root) "We propose a change."))
+      (should (= (org-truss-cluster-holder sky) (org-truss-cluster-pos root)))
+      (should-not (org-truss-gaps root))
+      (should-not (plist-get (org-truss-checks model) :no-grounds)))))
 
 (ert-deftest org-truss-test-items-take-ids-and-grounds ()
   "An item is given a target where its words start, the next id free among
