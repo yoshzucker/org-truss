@@ -1157,6 +1157,11 @@ pandoc, when it is installed, to make ~out/truss.md~.
   is nested stays a list.  A member with no title, only a block's text,
   is no heading: what is under it is a list.  Below the sixth level,
   Markdown's last, what is under a heading is a list.
+- What a heading with a logic or a breakdown holds -- its reasons, its
+  parts -- is the content of what it says, and is written as a list, the
+  heading itself a heading still: so a heading of the document is a
+  claim, and the list below it what holds it up.  A telling says only
+  the order, and what is under it is told as the heading is.
 - A heading broken down, member or section, has its parts written as a
   list, with reasons or without: steps numbered, the rest bulleted, each
   part opening with its role where the breakdown names its roles.  What

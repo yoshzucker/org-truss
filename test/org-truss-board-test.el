@@ -601,13 +601,13 @@ A note under the claim.
                          "A summary, long enough to break in a column this narrow\n"
                          "     (logic › reasons) +break in a column this\n"
                          "     │ +narrow\n"
-                         "     ├ Reason[ ·]+A fact, long enough to break +A fact, long enough to break in a column this narrow\n"
+                         "     ├ Reason[ ·]+A fact, long enough to break +- A fact, long enough to break in a column this narrow\n"
                          "     │ +in a column this narrow\n"
                          "     │ +A note under it, long enough\n"
                          "     │ +to break in a column this\n"
                          "     │ +narrow\\.\n"
                          "     │   ⏚ source[ ·]+s\n"
-                         "     └ Reason \\[no grounds\\] +Another fact +Another fact\n")
+                         "     └ Reason \\[no grounds\\] +Another fact +- Another fact\n")
                  board))
         (should (string-match-p
                  (concat "^   member[ ·]+A claim, long enough to +"
@@ -1948,7 +1948,7 @@ the member."
                                       "     ▤ Sky[ ·]+Sky\n"
                                       "     ↥ member[ ·]+Half the items repeat\n")
                               text))
-      (should (string-match-p "Major premise \\[no grounds\\][ ·]*A meeting that .*  A meeting that repeats itself can meet less$"
+      (should (string-match-p "Major premise \\[no grounds\\][ ·]*A meeting that .*  - A meeting that repeats itself can meet less$"
                               text))
       (org-truss-test--goto-line-with "^   member[ ·]+Lone remark +\\(Lone remark\\)$")
       (should (eq (get-text-property (match-beginning 1) 'face) 'org-truss-untold))

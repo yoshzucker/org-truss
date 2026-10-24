@@ -168,13 +168,13 @@ here."
 
 (defcustom org-truss-patterns
   '((reasons
-     :kind logic :name "reasons" :roles ((reason))
+     :kind logic :name "reasons" :list bulleted :roles ((reason))
      :about "reasons that each hold it up alone")
     (deduction
-     :kind logic :name "deduction" :roles ((major) (minor))
+     :kind logic :name "deduction" :list bulleted :roles ((major) (minor))
      :about "a major and a minor premise it follows from, together")
     (induction
-     :kind logic :name "induction" :roles ((case :at-least 2))
+     :kind logic :name "induction" :list bulleted :roles ((case :at-least 2))
      :about "cases, two or more, that it generalises")
     (steps
      :kind breakdown :name "steps" :list numbered :roles ((step))
@@ -259,7 +259,9 @@ plist saying what the role asks for:
                name
 
 A pattern with a :list writes what is under the heading out as a list,
-`numbered' or `bulleted'.  A role asked for and played by none is a
+`numbered' or `bulleted': every logic and breakdown, what a heading says
+being its content; a telling, its order, leaves what is under it to be
+told as the heading is.  A role asked for and played by none is a
 missing role."
   :type '(alist :key-type symbol :value-type plist)
   :group 'org-truss)

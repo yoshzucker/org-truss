@@ -191,6 +191,48 @@ Only a body.
              "^\\*\\*\\*\\*\\* Meetings run long\n\n\\*\\*\\*\\*\\*\\* Eight of twelve ran over\n\n- By twenty minutes\n"
              out))))
 
+(ert-deftest org-truss-test-render-content-as-a-list ()
+  "What a heading with a logic holds is its content, a list under the
+heading; under a telling alone, what it holds is told as the heading is,
+under headings a level down."
+  (let ((out (org-truss-test--render "* M
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** We move to fortnightly
+:PROPERTIES:
+:CUSTOM_ID: move
+:TRUSS_LOGIC: reasons
+:END:
+*** Half the items repeat
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+**** Eight of twelve agendas
+** How we got here
+:PROPERTIES:
+:CUSTOM_ID: story
+:TRUSS_TELLING: scqa
+:END:
+*** Reviews are weekly
+:PROPERTIES:
+:TRUSS_TELLING_ROLE: situation
+:END:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** [[truss-include:move]]
+** [[truss-include:story]]
+")))
+    (should (string-match-p
+             (concat "^\\* We move to fortnightly\n\n"
+                     "- Half the items repeat\n\n"
+                     "  - Eight of twelve agendas\n\n"
+                     "\\* How we got here\n\n"
+                     "\\*\\* Reviews are weekly\n")
+             out))))
+
 (ert-deftest org-truss-test-render-member-first ()
   "A member comes before what is under it, its title, then its body; with
 a telling pattern or none, it is told the same."

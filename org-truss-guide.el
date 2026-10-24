@@ -118,8 +118,9 @@
 #   ~[[#m7]]~           in #+begin_public, its words, else m7's heading
 #   ~[[moor:ID::14]]~   the source's origin, a web page (at page 14 of a
 #                       PDF); a source from a file or a mail, its words
-#   Under a heading with TRUSS_BREAKDOWN, member or section, the headings
-#   are a list, numbered for steps; where the pattern names its roles, each
+#   Under a heading with TRUSS_LOGIC or TRUSS_BREAKDOWN, member or section,
+#   the headings are a list, numbered for steps (under TRUSS_TELLING alone,
+#   they are told as the heading is); where the pattern names its roles, each
 #   opens with its own, as Pros: or Who:.  A section in a list is an item,
 #   not a heading, and what it holds goes inside it
 #   Notes under a heading, outside #+begin_public, are not written out
@@ -229,9 +230,10 @@
 #                             見出しが出る
 #   ~[[moor:ID::14]]~         資料の取り込み元の URL（PDF なら 14 ページ目）。
 #                             ファイルやメールから取り込んだ資料は、説明だけ
-#   TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書きで出る（steps
-#   は番号付き）。型が役の名前を出すものでは、それぞれ自分の役で始まる
-#   （メリット：、誰が：など）。箇条書きの中の節は見出しでなく項目になり、
+#   TRUSS_LOGIC か TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書き
+#   で出る（steps は番号付き。TRUSS_TELLING だけなら、見出しと同じ出方）。
+#   型が役の名前を出すものでは、それぞれ自分の役で始まる（メリット：、誰が：
+#   など）。箇条書きの中の節は見出しでなく項目になり、
 #   節の中身はその項目の中に入る
 #   見出しの下のメモ（#+begin_public の外）は書き出さない
 #
