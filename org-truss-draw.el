@@ -229,9 +229,13 @@ is pointed to, #m9; see `org-truss--id-text'."
 (defun org-truss--id-text (member &optional ref)
   "Return how the board names MEMBER, any heading, by its CUSTOM_ID, or nil.
 REF, when the line calls it -- a link that tells it, a ground -- as
-[[#m9]]; else as anything points to it, #m9, where it is written."
-  (cond (ref (format "[[%s]]" (org-truss--target ref)))
-        ((org-truss-cluster-id member) (concat "#" (org-truss-cluster-id member)))))
+[[#m9]]; else as anything points to it, #m9, where it is written.  An
+item of a list, by its target: [[m9]] and <<m9>>."
+  (let ((item (and (org-truss-member-p member) (org-truss-member-holder member))))
+    (cond ((and ref item) (format "[[%s]]" ref))
+          (ref (format "[[%s]]" (org-truss--target ref)))
+          ((and item (org-truss-cluster-id member)) (format "<<%s>>" (org-truss-cluster-id member)))
+          ((org-truss-cluster-id member) (concat "#" (org-truss-cluster-id member))))))
 
 (defun org-truss--leader (width)
   "Return WIDTH columns that lead the eye from the board's words to the file's.

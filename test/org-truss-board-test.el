@@ -1656,6 +1656,32 @@ copy is written back."
       (should (with-current-buffer source
                 (save-excursion (goto-char (point-min)) (search-forward "A note." nil t)))))))
 
+(ert-deftest org-truss-test-board-draws-items ()
+  "Members written as items of a list are drawn as the headings under a
+member are, by the roles they play, named by their targets; e on one
+takes out the heading whose text holds it, at the item, and the commands
+that would change a heading say so instead."
+  (org-truss-test--with-board org-truss-test--items-file
+    (let ((org-truss-board-fold-limit nil))
+      (org-truss-board-redraw)
+      (let ((text (buffer-string)))
+        (should (string-match-p "^   member[ ·]+#m1 We move to fortnightly reviews +We move to fortnightly reviews\n   (logic › reasons, breakdown › Pros and cons)" text))
+        (should (string-match-p "├ Reason · Pros[ ·]+<<m21>> Less time in meetings +- Pros: Less time in meetings$" text))
+        (should (string-match-p "├ Reason · Cons \\[no grounds\\][ ·]+Items wait longer" text))
+        (should (string-match-p "│ ├ Step[ ·]+Ask the leads +1\\. Ask the leads$" text))
+        (should (string-match-p "⏚ ground[ ·]+\\[\\[m21\\]\\] Less time in meetings" text)))
+      (org-truss-test--goto-line-with "Reason · Pros")
+      (let ((this-command 'org-truss-board-delete))
+        (should-error (org-truss-board-delete) :type 'user-error))
+      (should (string-match-p "Less time in meetings" (with-current-buffer source (buffer-string))))
+      (save-window-excursion
+        (let ((this-command 'org-truss-board-edit))
+          (org-truss-board-edit))
+        (should org-dock-mode)
+        (should (string-prefix-p "** We move to fortnightly reviews" (buffer-string)))
+        (should (looking-at "- pros :: <<m21>>Less time"))
+        (org-truss-test--let-go)))))
+
 (ert-deftest org-truss-test-board-catches-up ()
   "Selected again after its file changed, the board draws again."
   (org-truss-test--with-board org-truss-test--file

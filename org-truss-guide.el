@@ -106,6 +106,21 @@
 #   under Structure
 #     a section of the document: it tells members by links that tell them
 #
+# Members as items of a list, in place of headings under a member
+#   ~#+attr_truss: :logic reasons~  on the line before a list in a
+#                     member's text: each item is a member right under it,
+#                     before the headings under it, and the member takes the
+#                     patterns named, of the kinds its properties leave out
+#   ~- pros :: words~  the term before :: is the role it plays, as in
+#                     TRUSS_BREAKDOWN_ROLE; a pattern of one role -- reason,
+#                     step, part -- needs none.  A term naming no role is
+#                     part of the words
+#   ~<<m7>>~          in an item's first line, its id: ~[[m7]]~ points to
+#                     it, ~[[truss-include:m7]]~ tells it
+#   The item's first line is its words, as a heading's are; the lines under
+#   it, its text; a list marked so inside it, the members under it.  e on
+#   the board opens the heading at the item; the item is written there
+#
 # Two links to a heading (give it :CUSTOM_ID: m7, the next free number)
 #   ~[[#m7]]~               points to it: a ground, wherever it is written
 #   ~[[truss-include:m7]]~  tells it there: the heading, a member or a
@@ -233,6 +248,20 @@
 #     書き換える
 #   Structure の下
 #     節：文書の章。語る部材を、展開するリンクで書く
+#
+# 箇条書きの部材（部材の下の見出しの代わりに）
+#   ~#+attr_truss: :logic reasons~  部材の本文の箇条書きの前の行に書く。
+#                     項目がそれぞれ、その部材のすぐ下の部材になる（下の
+#                     見出しより先）。部材は、プロパティで指定していない
+#                     種類の型として、ここで指定した型を持つ
+#   ~- pros :: 言葉~  :: の前の語が担う役（TRUSS_BREAKDOWN_ROLE と同じ
+#                     英語の名前）。役が一つの型（reason、step、part）では
+#                     書かなくてよい。役でない語は言葉の一部になる
+#   ~<<m7>>~          項目の1行目に書くと、その ID になる。 ~[[m7]]~ で指し、
+#                     ~[[truss-include:m7]]~ で展開する
+#   項目の1行目が見出しにあたる言葉、その下の行が本文、中に同じ印の箇条書き
+#   があれば下の部材になる。盤面の e はその見出しを項目の位置で開く。項目は
+#   そこで書く
 #
 # 見出しへの2つのリンク（見出しに :CUSTOM_ID: m7 を付ける。番号は空いている次）
 #   ~[[#m7]]~               見出しを指す。どこに書いても根拠になる

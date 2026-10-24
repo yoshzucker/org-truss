@@ -44,6 +44,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'org-element)
 (require 'org-attach)
 (require 'files-x)
 (require 'cl-lib)
@@ -357,9 +358,11 @@ before the text under a heading was; see `org-truss-convert-public-in-buffer'.")
 (defconst org-truss--properties-re "^[ \t]*:PROPERTIES:[ \t]*$")
 (defconst org-truss--drawer-re "^[ \t]*:[[:alnum:]_-]+:[ \t]*$")
 (defconst org-truss--end-re "^[ \t]*:END:[ \t]*$")
-(defconst org-truss--link-re "\\[\\[\\([#*][^]]+\\)\\]\\(?:\\[[^]]*\\]\\)?\\]"
-  "A link to a member: [[#id]], or [[*heading]], which names none.
-It points to the member, and tells nothing of it.  Its target is read by
+(defconst org-truss--link-re
+  "\\[\\[\\([#*][^]]+\\|[[:alnum:]_-]+\\)\\]\\(?:\\[[^]]*\\]\\)?\\]"
+  "A link to a member: [[#id]] to a heading by its CUSTOM_ID, [[id]] to an
+item by its target <<id>>, or [[*heading]], which names none.  It points
+to the member, and tells nothing of it.  Its target is read by
 `org-truss--ref'.")
 (defconst org-truss-include-type "truss-include"
   "The type of the link that tells a member where it is written.")
@@ -380,8 +383,9 @@ not: the line edits move.")
 (defun org-truss--ref (target)
   "Return the reference a link's TARGET makes.
 [[#m7]] refers to the member whose CUSTOM_ID is m7, and its reference is
-m7.  A target of another form -- [[*heading]], say -- is kept whole, so it
-refers to no member and shows as a broken link, to be turned into one by
+m7; [[m7]], to the item whose target is <<m7>>, m7 too.  A target of
+another form -- [[*heading]], say -- is kept whole, so it refers to no
+member and shows as a broken link, to be turned into one by
 `org-truss-convert-references'."
   (if (string-prefix-p "#" target) (substring target 1) target))
 
@@ -422,7 +426,7 @@ Own text runs from the line after the heading to the next heading of any level."
     (cons (min (point-max) (line-beginning-position 2))
           (progn (outline-next-heading) (point)))))
 
-(defun org-truss--own-parse (start end)
+(defun org-truss--own-parse (start end &optional skip)
   "Parse the own text between START and END.
 Return a plist:
   :props   property drawer as an ordered alist
@@ -437,12 +441,24 @@ Return a plist:
            comments, which stay in the file
 
 A comment is a line starting with # and a space, or a comment block,
-#+begin_comment, as Org exports neither."
+#+begin_comment, as Org exports neither.
+
+SKIP, if given, is a list of (BEG . END): a line starting in one is not
+read at all, as the lists of members written in the text are not; see
+`org-truss--member-lists-in'."
   (let* ((case-fold-search t)
          (state 'text)
-         block props includes items drawers notes body comments)
+         block props includes items drawers notes body comments
+         ;; A list skipped keeps what is before it and after it apart.
+         (past (lambda ()
+                 (let ((r (seq-find (lambda (r) (and (>= (point) (car r)) (< (point) (cdr r))))
+                                    skip)))
+                   (when r
+                     (goto-char (cdr r))
+                     (push "\n" body))))))
     (save-excursion
       (goto-char start)
+      (funcall past)
       (while (< (point) end)
         (let* ((line (buffer-substring-no-properties
                       (point) (min end (line-end-position))))
@@ -496,7 +512,8 @@ A comment is a line starting with # and a space, or a comment block,
                (push raw body)
                (dolist (ref (org-truss--includes-in line))
                  (push ref includes))))))
-          (forward-line 1)))
+          (forward-line 1)
+          (funcall past)))
       (list :props (nreverse props)
             :includes (nreverse includes)
             :items (nreverse items)
@@ -690,8 +707,11 @@ headings right under it."
                                 (:constructor org-truss--make-member)
                                 (:copier nil))
   "A statement, and what is nested under it.
-HOME is the part it is written in: `brief', `subject' or `members'."
-  home)
+HOME is the part it is written in: `brief', `subject' or `members'.
+HOLDER is nil for a heading; for an item of a list marked #+attr_truss,
+written in a heading's text, the position of that heading.  See
+`org-truss--read-item'."
+  home holder)
 
 (cl-defstruct (org-truss-section (:include org-truss-cluster)
                                  (:constructor org-truss--make-section)
@@ -741,13 +761,162 @@ OWN is the parse of its own text."
             :body (org-truss--read-text own :body)
             :notes (org-truss--read-text own :comments)))))
 
+;;;; Members written as items of a list
+
+;; A list in a member's text marked #+attr_truss holds members of its own,
+;; one an item, right under the member as the headings under it are, and
+;; before them:
+;;
+;;   #+attr_truss: :logic reasons :breakdown pros-cons
+;;   - pros :: <<m21>>Less time in meetings
+;;     [[#m4]]
+;;   - cons :: Items wait longer
+;;
+;; What #+attr_truss names are the member's patterns, of the kinds its
+;; properties leave out; an item's term, before ::, the role it plays in
+;; them, and a pattern of one role is played without a term.  A target,
+;; <<m21>>, is the item's id, which [[m21]] points to.  Its first line is
+;; its words, as a heading's are; the rest of its text its text; a list
+;; marked so inside it, the members under it.
+
+(defun org-truss--attr (element)
+  "Return the patterns #+attr_truss gives ELEMENT, as (KIND . PATTERN)."
+  (let ((plist (condition-case nil
+                   (car (read-from-string
+                         (concat "(" (string-join (org-element-property :attr_truss element) " ")
+                                 ")")))
+                 (error nil))))
+    (delq nil (mapcar (lambda (kind)
+                        (let ((value (plist-get plist (intern (format ":%s" kind)))))
+                          (and value (cons kind (org-truss--intern (format "%s" value))))))
+                      org-truss-pattern-kinds))))
+
+(defun org-truss--member-lists-in (container)
+  "Return the lists right in CONTAINER, an Org element, that #+attr_truss marks."
+  (seq-filter (lambda (e) (and (eq (org-element-type e) 'plain-list)
+                               (org-element-property :attr_truss e)))
+              (org-element-contents container)))
+
+(defun org-truss--own-lists (start end)
+  "Return the lists marked #+attr_truss in the own text between START and END."
+  (save-restriction
+    (narrow-to-region start end)
+    (mapcan #'org-truss--member-lists-in
+            (seq-filter (lambda (e) (eq (org-element-type e) 'section))
+                        (org-element-contents (org-element-parse-buffer))))))
+
+(defun org-truss--lists-patterns (lists)
+  "Return the patterns LISTS give, as (KIND . PATTERN), the first of each kind."
+  (let (found)
+    (dolist (list lists)
+      (dolist (p (org-truss--attr list))
+        (unless (assq (car p) found)
+          (push p found))))
+    (nreverse found)))
+
+(defun org-truss--item-roles (term patterns)
+  "Return the roles an item with TERM plays in PATTERNS, as (KIND . ROLE).
+PATTERNS are (KIND . PATTERN).  TERM is a role of one of them, or nil; a
+pattern of one role has it played by every item."
+  (delq nil (mapcar (lambda (p)
+                      (let ((roles (mapcar #'car (org-truss-pattern-roles (cdr p)))))
+                        (cond ((and term (memq term roles)) (cons (car p) term))
+                              ((null (cdr roles)) (cons (car p) (car roles))))))
+                    patterns)))
+
+(defun org-truss--dedent (text)
+  "Return TEXT with the indentation its lines share taken off, nil for nil."
+  (when text
+    (let ((n (apply #'min most-positive-fixnum
+                    (mapcar (lambda (line)
+                              (if (string-blank-p line)
+                                  most-positive-fixnum
+                                (string-match "\\`[ \t]*" line)
+                                (match-end 0)))
+                            (split-string text "\n")))))
+      (if (memq n (list 0 most-positive-fixnum))
+          text
+        (replace-regexp-in-string (format "^[ \t]\\{1,%d\\}" n) "" text)))))
+
+(defun org-truss--read-item (item home holder level patterns)
+  "Read ITEM, an item of a list marked #+attr_truss, as a member.
+Written in HOME, in the text of the heading at HOLDER, at LEVEL; PATTERNS
+are those of the member it is right under, (KIND . PATTERN)."
+  (let* ((lists (org-truss--member-lists-in item))
+         (first (car (org-element-contents item)))
+         (para (and first (eq (org-element-type first) 'paragraph) first))
+         (begin (or (org-element-property :contents-begin item) (org-element-property :end item)))
+         (end (or (org-element-property :contents-end item) begin))
+         ;; Its words are its first line, as a heading's are; the lines
+         ;; after are its text.
+         (rest (if para (save-excursion (goto-char begin) (min end (line-beginning-position 2))) begin))
+         (words (if para (string-trim-right (buffer-substring-no-properties begin rest)) ""))
+         (term (let ((tag (org-element-property :tag item)))
+                 (and tag (string-trim (substring-no-properties (org-element-interpret-data tag))))))
+         (role (and term (org-truss--intern term)))
+         (roles (org-truss--item-roles role patterns))
+         ;; A term that names no role is the item's words as written.
+         (words (if (and term (not (rassq role roles)))
+                    (concat term " :: " words)
+                  words))
+         (own (org-truss--own-parse rest end
+                                    (mapcar (lambda (l) (cons (org-element-property :begin l)
+                                                              (org-element-property :end l)))
+                                            lists)))
+         (text (concat words "\n" (plist-get own :notes)))
+         (own-patterns (org-truss--lists-patterns lists)))
+    (org-truss--make-member
+     :home home :holder holder
+     :pos (org-element-property :begin item)
+     :id (and (string-match "<<\\([^<>\n]+\\)>>" words) (match-string 1 words))
+     :label (string-trim (replace-regexp-in-string "<<[^<>\n]*>>[ \t]*" "" words))
+     :level level
+     :roles roles
+     :logic (alist-get 'logic own-patterns)
+     :breakdown (alist-get 'breakdown own-patterns)
+     :telling (alist-get 'telling own-patterns)
+     :text-grounds (org-truss--refs-in text)
+     :includes (append (org-truss--includes-in words) (plist-get own :includes))
+     :source-links (org-truss--source-links-in text)
+     :cited (car (org-truss--source-links-in text))
+     :quoted (org-truss--quotes-in text)
+     :body (org-truss--dedent (org-with-point-at holder (org-truss--read-text own :body)))
+     :notes (org-truss--dedent (org-with-point-at holder (org-truss--read-text own :comments)))
+     :children (org-truss--read-items lists home holder (1+ level) own-patterns))))
+
+(defun org-truss--read-items (lists home holder level patterns)
+  "Read the items of LISTS as members; see `org-truss--read-item'."
+  (mapcan (lambda (list)
+            (mapcar (lambda (item) (org-truss--read-item item home holder level patterns))
+                    (org-element-contents list)))
+          lists))
+
 (defun org-truss--read-member (pos home)
-  "Read the member at POS, written in HOME, and what is nested under it."
-  (apply #'org-truss--make-member
-         :home home
-         :children (mapcar (lambda (child) (org-truss--read-member child home))
-                           (org-truss--children pos))
-         (org-truss--heading-fields pos (org-truss--own pos))))
+  "Read the member at POS, written in HOME, and what is nested under it.
+The members of the lists marked #+attr_truss in its text first, then the
+headings under it; the lists give it the patterns its properties do not."
+  (let* ((bounds (org-truss--own-bounds pos))
+         (lists (org-truss--own-lists (car bounds) (cdr bounds)))
+         (fields (org-truss--heading-fields
+                  pos (org-truss--own-parse (car bounds) (cdr bounds)
+                                            (mapcar (lambda (l) (cons (org-element-property :begin l)
+                                                                      (org-element-property :end l)))
+                                                    lists)))))
+    (dolist (p (org-truss--lists-patterns lists))
+      (let ((key (intern (format ":%s" (car p)))))
+        (unless (plist-get fields key)
+          (setq fields (plist-put fields key (cdr p))))))
+    (apply #'org-truss--make-member
+           :home home
+           :children (append (org-truss--read-items
+                              lists home pos (1+ (plist-get fields :level))
+                              (delq nil (mapcar (lambda (kind)
+                                                  (let ((id (plist-get fields (intern (format ":%s" kind)))))
+                                                    (and id (cons kind id))))
+                                                org-truss-pattern-kinds)))
+                             (mapcar (lambda (child) (org-truss--read-member child home))
+                                     (org-truss--children pos)))
+           fields)))
 
 (defun org-truss--read-section (pos)
   "Read the section at POS and the sections below it."

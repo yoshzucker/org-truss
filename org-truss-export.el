@@ -218,12 +218,17 @@ TARGET names.  The document has no member to go to, so it is no link."
       (let ((heading (org-truss-heading-by-ref org-truss--model (org-truss--ref target))))
         (if heading (org-truss-cluster-label heading) target))))
 
+(defconst org-truss--pointing-re
+  "\\[\\[\\([#*][^]\n]+\\|[[:alnum:]_-]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]"
+  "A link pointing to a member, as `org-truss--link-re' reads one: its
+target, and its description.")
+
 (defun org-truss--pointing-written (text)
   "Return TEXT with each link pointing to a member as its words."
   (replace-regexp-in-string
-   "\\[\\[\\([#*][^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]"
+   org-truss--pointing-re
    (lambda (link)
-     (string-match "\\[\\[\\([#*][^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]" link)
+     (string-match org-truss--pointing-re link)
      (org-truss--pointed-text (match-string 1 link) (match-string 2 link)))
    text t t))
 

@@ -354,16 +354,27 @@ new heading."
   "Make the member REF a ground of the heading at POS.
 A link to it, # [[#REF]], on a comment line of its own after the
 heading's last line of text, where the reader does not see it.  REF is a
-CUSTOM_ID; see `org-truss-ensure-id'."
-  (org-truss--add-line pos (format "# [[%s]]" (org-truss--target ref))))
+CUSTOM_ID, or an item's target, pointed to as [[REF]]; see
+`org-truss-ensure-id'."
+  (org-truss--add-line pos (format "# [[%s]]" (if (org-truss--item-target-p ref)
+                                                  ref
+                                                (org-truss--target ref)))))
+
+(defun org-truss--item-target-p (ref)
+  "Non-nil when REF is the target of an item of a list, <<REF>>, in the buffer.
+On an item's first line, after its bullet."
+  (org-with-wide-buffer
+   (goto-char (point-min))
+   (re-search-forward (format "^[ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t].*<<%s>>" (regexp-quote ref))
+                      nil t)))
 
 (defun org-truss--pointing-line (pos ref)
   "Return (BEG . END) of the line pointing to REF in the own text at POS, or nil.
-A line holding nothing but the link, [[#REF]], as a list item or not, as
-a comment or not."
+A line holding nothing but the link, [[#REF]] or [[REF]], as a list item
+or not, as a comment or not."
   (let* ((bounds (org-truss--own-bounds pos))
-         (re (format "^[ \t]*\\(?:#[ \t]+\\)?\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[%s\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
-                     (regexp-quote (org-truss--target ref)))))
+         (re (format "^[ \t]*\\(?:#[ \t]+\\)?\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[\\(?:%s\\|%s\\)\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
+                     (regexp-quote (org-truss--target ref)) (regexp-quote ref))))
     (save-excursion
       (goto-char (car bounds))
       (when (re-search-forward re (cdr bounds) t)
@@ -386,24 +397,49 @@ words is left, for the words to be rewritten; nil is returned then."
       (org-toggle-tag org-truss-assumption-tag (if on 'on 'off))
       on)))
 
-(defconst org-truss--id-re "^[ \t]*:CUSTOM_ID:[ \t]+m\\([0-9]+\\)[ \t]*$"
-  "A CUSTOM_ID of the form org-truss gives: m and a number.")
+(defconst org-truss--id-re
+  "^[ \t]*:CUSTOM_ID:[ \t]+m\\([0-9]+\\)[ \t]*$\\|<<m\\([0-9]+\\)>>"
+  "An id of the form org-truss gives, m and a number: a heading's CUSTOM_ID,
+or an item's target.")
 
 (defun org-truss--next-id ()
-  "Return a CUSTOM_ID no heading in the buffer has: m and the next number."
+  "Return an id no heading or item in the buffer has: m and the next number."
   (org-with-wide-buffer
    (goto-char (point-min))
    (let ((case-fold-search t)
          (top 0))
      (while (re-search-forward org-truss--id-re nil t)
-       (setq top (max top (string-to-number (match-string 1)))))
+       (setq top (max top (string-to-number (or (match-string 1) (match-string 2))))))
      (format "m%d" (1+ top)))))
 
 (defun org-truss-ensure-id (pos)
   "Return the CUSTOM_ID of the member at POS, giving it one when it has none.
 A new one is m and the next number free in the file, written first in its
 property drawer, where the eye finds it.  Links and grounds point to a
-member by it, so its heading can be rewritten freely."
+member by it, so its heading can be rewritten freely.  A member written
+as an item of a list is given a target, <<m7>>, where its words start."
+  (if (save-excursion (goto-char pos) (not (org-at-heading-p)))
+      (org-truss--ensure-item-id pos)
+    (org-truss--ensure-heading-id pos)))
+
+(defun org-truss--ensure-item-id (pos)
+  "Return the target of the item at POS, giving it one when it has none."
+  (save-excursion
+    (goto-char pos)
+    (let ((line-end (line-end-position)))
+      (if (re-search-forward "<<\\([^<>\n]+\\)>>" line-end t)
+          (match-string-no-properties 1)
+        (let ((id (org-truss--next-id)))
+          (goto-char pos)
+          (looking-at org-list-full-item-re)
+          ;; After the bullet, the box and the term, where the words start.
+          (goto-char (match-end 0))
+          (skip-chars-forward " \t" line-end)
+          (insert "<<" id ">>")
+          id)))))
+
+(defun org-truss--ensure-heading-id (pos)
+  "Return the CUSTOM_ID of the heading at POS, giving it one when it has none."
   (let ((id (org-entry-get pos "CUSTOM_ID")))
     (if (and id (not (string-blank-p id)))
         (string-trim id)

@@ -391,12 +391,34 @@ while a command was asking something."
        (org-with-wide-buffer ,@body))
      (org-truss-board-redraw)))
 
+(defconst org-truss--item-commands
+  '(org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
+    org-truss-board-edit org-truss-board-same)
+  "The board's commands that take a member written as an item of a list.")
+
 (defun org-truss--want (item &rest types)
-  "Return ITEM when its type is one of TYPES; otherwise say what the key needs."
-  (if (and item (memq (plist-get item :type) types))
-      item
+  "Return ITEM when its type is one of TYPES; otherwise say what the key needs.
+A member written as an item of a list is no heading, and only the
+commands of `org-truss--item-commands' take it; see
+`org-truss--item-holder'."
+  (unless (and item (memq (plist-get item :type) types))
     (user-error "Put point on a %s line"
-                (mapconcat #'symbol-name types " or "))))
+                (mapconcat #'symbol-name types " or ")))
+  (when (and (eq (plist-get item :type) 'member)
+             (not (memq this-command org-truss--item-commands))
+             (org-truss--item-holder (plist-get item :pos)))
+    (user-error "An item of a list in its heading's text: %s writes it there"
+                (substitute-command-keys "\\[org-truss-board-edit]")))
+  item)
+
+(defun org-truss--item-holder (pos)
+  "Return where the heading is whose text holds the item at POS, or nil.
+Nil when POS, in the truss file, is a heading's."
+  (with-current-buffer org-truss--source
+    (org-with-wide-buffer
+     (goto-char pos)
+     (and (not (org-at-heading-p))
+          (progn (org-back-to-heading t) (point))))))
 
 (defun org-truss--read-choice (prompt alist &optional about default)
   "Read one of ALIST's names with PROMPT and return its value.
@@ -1262,10 +1284,15 @@ org-dock, the headings under it folded so that its own text is in view,
 and the heading cannot change in the file meanwhile.  As in a capture
 buffer, \\<org-dock-mode-map>\\[org-dock-finish] writes it back and saves
 the file, and \\[org-dock-abort] lets it go, leaving the heading as it was.
-Back on the board, it draws again."
+Back on the board, it draws again.  On a member written as an item of a
+list, the heading whose text holds it, at the item."
   (interactive)
-  (org-truss--edit (plist-get (org-truss--want (org-truss--item) 'section 'member 'broken 'brief 'use)
-                              :pos)))
+  (let* ((pos (plist-get (org-truss--want (org-truss--item) 'section 'member 'broken 'brief 'use)
+                         :pos))
+         (holder (org-truss--item-holder pos)))
+    (if holder
+        (org-truss--edit holder pos)
+      (org-truss--edit pos))))
 
 (defun org-truss--text-end (pos)
   "Return where text is written in the heading at POS: after its own text.

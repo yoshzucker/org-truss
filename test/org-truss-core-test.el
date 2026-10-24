@@ -1431,6 +1431,105 @@ to no member, and shows as broken."
       (should (equal (org-truss-member-id (org-truss-test--m model "Lone remark")) nil))
       (should-not (org-truss-heading-by-ref model "Half the items repeat")))))
 
+(defconst org-truss-test--items-file "#+title: T
+* Subject
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** Six of twelve items come back
+:PROPERTIES:
+:CUSTOM_ID: m2
+:END:
+# [[https://e.x/agendas][agendas]]
+* Members
+:PROPERTIES:
+:TRUSS_PART: members
+:END:
+** We move to fortnightly reviews
+:PROPERTIES:
+:CUSTOM_ID: m1
+:END:
+We would meet half as often.
+#+attr_truss: :logic reasons :breakdown pros-cons
+- pros :: <<m21>>Less time in meetings
+  # [[#m2]]
+  An hour a fortnight back.
+- cons :: Items wait longer
+  #+attr_truss: :breakdown steps
+  1. Ask the leads
+  2. Ask the team
+- 人 :: Robin likes it, as [[m21]] says
+
+After the list.
+*** A heading under it too
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** Now
+- [[truss-include:m1]]
+"
+  "A member whose reasons are items of a list in its text.")
+
+(ert-deftest org-truss-test-items-are-members ()
+  "The items of a list marked #+attr_truss are members right under the
+heading whose text holds them, before the headings under it: the list
+gives the heading its patterns, an item's term the role it plays, a
+pattern of one role is played without one, and a term naming no role is
+the item's words.  Its first line is its words, a target in it its id;
+the rest of its text its text, a comment left out; a list marked so in
+it, the members under it.  The heading's text leaves the list out."
+  (org-truss-test--with org-truss-test--items-file
+    (let* ((model (org-truss-read))
+           (move (org-truss-test--m model "We move to fortnightly reviews"))
+           (less (org-truss-heading-by-ref model "m21"))
+           (wait (org-truss-test--m model "Items wait longer"))
+           (likes (org-truss-test--m model "人 :: Robin likes it, as [[m21]] says")))
+      (should (eq (org-truss-member-logic move) 'reasons))
+      (should (eq (org-truss-member-breakdown move) 'pros-cons))
+      (should (equal (org-truss-member-body move) "We would meet half as often.\n\nAfter the list."))
+      (should (equal (org-truss-test--labels (org-truss-member-children move))
+                     '("Less time in meetings" "Items wait longer"
+                       "人 :: Robin likes it, as [[m21]] says" "A heading under it too")))
+      (should (equal (org-truss-member-label less) "Less time in meetings"))
+      (should (equal (org-truss-member-roles less) '((logic . reason) (breakdown . pros))))
+      (should (equal (org-truss-member-roles likes) '((logic . reason))))
+      (should (equal (org-truss-member-body less) "An hour a fortnight back."))
+      (should (equal (org-truss-member-notes less) "[[#m2]]"))
+      (should (equal (org-truss-cluster-refs less) '("m2")))
+      (should (equal (org-truss-cluster-refs likes) '("m21")))
+      (should (= (org-truss-member-holder less) (org-truss-member-pos move)))
+      (should (= (org-truss-member-level less) 3))
+      (should (eq (org-truss-member-breakdown wait) 'steps))
+      (should (equal (mapcar #'org-truss-member-roles (org-truss-member-children wait))
+                     '(((breakdown . step)) ((breakdown . step)))))
+      (should (eq (org-truss-parent model less) move))
+      (let ((checks (org-truss-checks model)))
+        (should (equal (org-truss-test--labels (plist-get checks :no-grounds))
+                       '("Items wait longer")))
+        (should (equal (mapcar (lambda (hit) (org-truss-member-label (car hit))) (plist-get checks :no-role))
+                       '("A heading under it too" "人 :: Robin likes it, as [[m21]] says"
+                         "A heading under it too")))))))
+
+(ert-deftest org-truss-test-items-take-ids-and-grounds ()
+  "An item is given a target where its words start, the next id free among
+headings and items; a ground on it is written [[id]], and taken away so."
+  (org-truss-test--with org-truss-test--items-file
+    (let ((wait (save-excursion (goto-char (point-min)) (search-forward "- cons ::")
+                                (line-beginning-position)))
+          (move (org-truss-test--heading-pos "We move to fortnightly reviews"))
+          (subject (org-truss-test--heading-pos "Six of twelve items come back")))
+      (should (equal (org-truss-ensure-id wait) "m22"))
+      (should (string-match-p "^- cons :: <<m22>>Items wait longer$" (buffer-string)))
+      (should (equal (org-truss-ensure-id wait) "m22"))
+      (should (equal (org-truss-ensure-id move) "m1"))
+      (org-truss-add-ground subject "m22")
+      (should (string-match-p "^# \\[\\[m22\\]\\]$" (buffer-string)))
+      (should (equal (org-truss-cluster-refs (org-truss-test--m (org-truss-read) "Six of twelve items come back"))
+                     '("m22")))
+      (should (org-truss-remove-ground subject "m22"))
+      (should-not (string-match-p "\\[\\[m22\\]\\]" (buffer-string))))))
+
 (ert-deftest org-truss-test-ensure-id ()
   "A member is given m and the next free number, once; one it has stays."
   (org-truss-test--with (concat org-truss-test--file "* X\n:PROPERTIES:\n:CUSTOM_ID: m4\n:END:\n")

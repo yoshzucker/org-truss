@@ -28,6 +28,26 @@ comment, :noexport: and unplaced members stay behind."
     (should-not (string-match-p "Lone remark" out))
     (should-not (string-match-p "^\\*+ Half the items repeat" out))))
 
+(ert-deftest org-truss-test-render-items ()
+  "Members written as items of a list are told as the headings under a
+member are, after its text: in its list, each opened with its role where
+the pattern names it, its text inside, its id and the list's marks left
+out, a link pointing to one as its words."
+  (let ((out (org-truss-test--render org-truss-test--items-file)))
+    (should (string-match-p
+             (concat "^- We move to fortnightly reviews\n\n"
+                     "  We would meet half as often\\.\n\n"
+                     "  After the list\\.\n\n"
+                     "  - Pros: Less time in meetings\n\n"
+                     "    An hour a fortnight back\\.\n"
+                     "  - Cons: Items wait longer\n\n"
+                     "    1\\. Ask the leads\n"
+                     "    2\\. Ask the team\n"
+                     "  - 人 :: Robin likes it, as Less time in meetings says\n"
+                     "  - A heading under it too\n")
+             out))
+    (should-not (string-match-p "attr_truss\\|<<\\|\\[\\[" out))))
+
 (ert-deftest org-truss-test-render-conditions ()
   "A member written under a field of the subject is written where it is placed,
 and the field's own text is not."
