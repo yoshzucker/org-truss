@@ -14,7 +14,7 @@
 ;; What org-truss tells whoever edits a truss file, a person or a model.
 ;; The guide, the rules of the file, is in a :GUIDE: drawer at its head,
 ;; before the first heading, folded as drawers are and opened to be read.
-;; What each part and each role of Brief's and Subject's breakdowns is for
+;; What each part and each role of Brief's and Message's breakdowns is for
 ;; is said by the board, `?' on its line, and printed by
 ;; `org-truss-batch-guide' with the guide.  Here too are the first line
 ;; that keeps attachments beside the file, and the skeleton of a new file.
@@ -44,7 +44,7 @@ Words
     TRUSS_BREAKDOWN  a breakdown.  steps parts what-why-how pros-cons
                      short-long past-present-future 5w1h 6w1h
                      reader-question-response-constraints
-                     premises-issue-constraints
+                     premises-issue-constraints interpretation-action
     TRUSS_TELLING    the order of telling.  prep sds scqa sky-rain-umbrella
   role            what one right under plays in the pattern above: reason,
                   who, sky
@@ -73,9 +73,19 @@ The four parts (told apart by TRUSS_PART; filled from the top)
   Structure  the output document's outline, built of trusses.  Each member
              is a heading of the output document, and its text holds the
              include links to the trusses and members it carries
-  A new file gives Brief reader-question-response-constraints, Subject
-  premises-issue-constraints and Message parts.  What each part and each
-  role of Brief and Subject is for, ? on its line of the board says
+  A new file is written in the basic form: facts, what they mean, what to
+  do, told in that order.  Its words are to be written over
+  - Subject: parts, a truss for each source.  Facts only
+  - Message: interpretation-action.  Interpretation is parts, a claim
+    each, its reasons under it (TRUSS_LOGIC: reasons) pointing to the
+    facts.  Action is steps; a step points to the claim it follows from,
+    and has a TRUSS_LOGIC of its own only for reasons besides
+  - Structure: sky-rain-umbrella, its headings ~[[truss-include:m1]]~
+    (Subject), m2 (Interpretation) and m3 (Action), each that member
+    there: its words are the output document's heading
+  For a document of another form, change the patterns of Message and
+  Structure; the facts stay in Subject.  What each part, and each role of
+  Brief and Message, is for, ? on its line of the board says
 
 Writing
   1  One heading is one simple truss: its apex member is the heading, its
@@ -166,7 +176,7 @@ M-x org-truss-export で、OUT/ に書き出す。
     TRUSS_BREAKDOWN  内訳。steps parts what-why-how pros-cons short-long
                      past-present-future 5w1h 6w1h
                      reader-question-response-constraints
-                     premises-issue-constraints
+                     premises-issue-constraints interpretation-action
     TRUSS_TELLING    語る順。prep sds scqa sky-rain-umbrella
   役          すぐ下のものが、上の型の中で担うもの。reason、who、sky など
   部材        見出し一つか、#+attr_truss を付けた箇条書きの項目一つ
@@ -185,13 +195,22 @@ M-x org-truss-export で、OUT/ に書き出す。
   Brief      読み手と、出力文書が満たす条件
   Subject    調べた事実。資料ごとにトラスを一つ作る（資料を名指す部材を
              頂点部材に、その資料の事実を支持部材に置く）
-  Message    出力文書が言うこと：事実の意味（解釈）と、すること（判断）
+  Message    出力文書が言うこと：事実の意味（解釈）と、すること（行動）
   Structure  出力文書の構成を、トラスで組む。部材一つが出力文書の見出し
              一つになり、その本文に、載せるトラスや部材を展開リンクで書く
-  新しいファイルでは、Brief に reader-question-response-constraints、
-  Subject に premises-issue-constraints、Message に parts の型が付いている。
-  それぞれの部と、Brief・Subject の役が何を書く所かは、盤面のその行の ?
-  が言う
+  新しいファイルは基本形で書かれている。事実、その意味、することを、この
+  順に語る。言葉は書き換える
+  - Subject：parts。資料ごとにトラスを一つ作る。事実だけを書く
+  - Message：interpretation-action。Interpretation は parts で、主張を
+    一つずつ書き、その下に理由（TRUSS_LOGIC: reasons）を置いて事実を指す。
+    Action は steps で、手順はそれが従う主張を指す。それ以外の理由がある
+    手順にだけ、TRUSS_LOGIC を付ける
+  - Structure：sky-rain-umbrella。見出しは ~[[truss-include:m1]]~
+    （Subject）、m2（Interpretation）、m3（Action）で、それぞれその部材
+    そのものになる。その言葉が出力文書の見出しになる
+  別の形の文書にするときは、Message と Structure の型を替える。事実は
+  Subject に置いたまま。それぞれの部と、Brief・Message の役が何を書く所か
+  は、盤面のその行の ? が言う
 
 書き方
   1  見出し一つを単純トラス一つにする。頂点部材を見出しに書き、末端部材
@@ -303,29 +322,30 @@ written (names, what is confidential)."
      "The facts found.  For each source, a member naming it, the source's
 facts under it."
      "調べた事実。資料ごとに、その資料を名指す部材を一つ作り、その資料の事実を
-下に置く。")
-    ((subject premises)
-     "What is taken as given: what of the situation will not be argued."
-     "何を前提とするか。現状のうち、議論せずに受け入れるもの。")
-    ((subject issue)
-     "What you take the problem to be, and what would count as solving it."
-     "何を課題と捉えるか。何が変われば解けたといえるか。")
-    ((subject constraints)
-     "What cannot move: deadline, budget, policy, law."
-     "動かせないもの：期限、予算、方針、法令。")
+下に置く。事実だけを書き、その意味は Message に書く。")
     (message
      "What the facts mean here, and what to do.  One statement each, the
 reasons under the claim."
-     "事実がここで何を意味するか（解釈）と、何をするか（判断）。一文ずつ書き、
+     "事実がここで何を意味するか（解釈）と、何をするか（行動）。一文ずつ書き、
 主張の下に理由を置く。")
+    ((message interpretation)
+     "What the facts mean here.  A claim each, its reasons under it, pointing
+to the facts in Subject.  Its words are the output document's heading."
+     "事実がここで何を意味するか。主張を一つずつ書き、その下に理由を置いて、
+Subject の事実を指す。この言葉が出力文書の見出しになる。")
+    ((message action)
+     "What to do, step by step.  A step points to the claim it follows from;
+one with reasons besides has a TRUSS_LOGIC of its own."
+     "何をするか。手順を一つずつ書き、それが従う主張を指す。それ以外の理由が
+ある手順にだけ、TRUSS_LOGIC を付ける。")
     (structure
      "The output document's outline: the members it carries, by include
 links."
      "出力文書の構成。載せる部材を展開リンクで書く。"))
-  "What each part, and each role of Brief's and Subject's breakdowns, is for.
+  "What each part, and each role of Brief's and Message's breakdowns, is for.
 In English and Japanese.  Keyed by a part, or by (PART ROLE) for a member
-right under Brief or Subject that plays ROLE in its breakdown.  The board
-says it, `?' on the line, and `org-truss-batch-guide' prints it.")
+right under the part that plays ROLE in its breakdown.  The board says
+it, `?' on the line, and `org-truss-batch-guide' prints it.")
 
 (defun org-truss-guide ()
   "Return the guide of a truss file, in `org-truss-language', as plain text.
@@ -372,14 +392,14 @@ of a pattern of your own."
 
 (defun org-truss-guide-of (model member)
   "Return what the board says MEMBER of MODEL is for, on one line, or nil.
-A part's guide; for a member of Brief or Subject playing a role of its
-breakdown, that role's; for any other member, the patterns it has and
-the roles it plays, with what each pattern asks for."
+A part's guide; for a member right under a part playing a role of its
+breakdown, that role's, when one is said; for any other member, the
+patterns it has and the roles it plays, with what each pattern asks for."
   (let* ((up (org-truss-parent model member))
          (part (org-truss-member-part member))
          (role (org-truss-member-role member 'breakdown))
          (text (cond ((org-truss-member-is-part member) (org-truss-part-guide part))
-                     ((and up (org-truss-member-is-part up) role (memq part '(brief subject)))
+                     ((and up (org-truss-member-is-part up) role)
                       (org-truss-part-guide part role))))
          (text (or text
                    (string-join
@@ -417,41 +437,109 @@ takes the value at once, as visiting the file would give it."
        (modify-file-local-variable-prop-line 'org-attach-id-dir dir 'add-or-replace)
        (setq-local org-attach-id-dir dir)))))
 
-(defun org-truss--role-entry (role level)
-  "Return a new member playing ROLE of its part's breakdown, a heading at LEVEL.
-As text: its words the role's in English, whatever `org-truss-language'
-says, followed by a blank line."
-  (format "%s %s\n:PROPERTIES:\n:%s: %s\n:END:\n\n"
-          (make-string level ?*) (org-truss-role-name role)
-          (org-truss-role-property 'breakdown) role))
+(defun org-truss--new-ids (parts)
+  "Return the IDs a new file gives what the :include of PARTS name.
+PARTS are as `org-truss-new-parts' has them.  As (NAME . ID), m1, m2 and
+on in the order the includes come."
+  (let (names)
+    (cl-labels ((walk (spec)
+                  (let ((name (plist-get spec :include)))
+                    (when (and name (not (memq name names)))
+                      (push name names)))
+                  (dolist (member (plist-get spec :members))
+                    (walk (cdr member)))))
+      (dolist (part parts)
+        (walk (cdr part))))
+    (seq-map-indexed (lambda (name i) (cons name (format "m%d" (1+ i))))
+                     (nreverse names))))
+
+(defun org-truss--new-member (level name words props spec ids)
+  "Return a member of a new file, a heading at LEVEL, as text.
+NAME is the part or the role it is written for, WORDS its words, PROPS
+the properties it opens with, as (PROPERTY . VALUE).  SPEC, as
+`org-truss-new-parts' gives one, says its patterns and what is written
+under it: a supporting member for each role, as items when all are end
+members, else as headings.  IDS holds, in its car, the IDs of
+`org-truss--new-ids' not yet given: the first member written for a name
+takes its ID, and is taken off."
+  (let* ((id (assq name (car ids)))
+         (include (plist-get spec :include))
+         (patterns (plist-get spec :patterns))
+         (supports
+          (mapcan (lambda (pattern)
+                    (let ((roles (org-truss-pattern-roles (cdr pattern))))
+                      (mapcar (lambda (role)
+                                (list (car pattern) (car role)
+                                      (alist-get (car role) (plist-get spec :members))
+                                      (cdr roles)))
+                              roles)))
+                  patterns))
+         (props (append (and id (list (cons "CUSTOM_ID" (cdr id))))
+                        props
+                        (mapcar (lambda (pattern)
+                                  (cons (alist-get (car pattern) org-truss-pattern-properties)
+                                        (symbol-name (cdr pattern))))
+                                patterns))))
+    (when id
+      (setcar ids (delq id (car ids))))
+    (concat
+     (format "%s %s\n" (make-string level ?*)
+             (if include
+                 (org-truss--include-link (or (alist-get include (cdr ids)) include))
+               words))
+     (if props
+         (format ":PROPERTIES:\n%s:END:\n"
+                 (mapconcat (lambda (p) (format ":%s: %s\n" (car p) (cdr p))) props ""))
+       "")
+     "\n"
+     (cond ((null supports) "")
+           ((seq-every-p (lambda (s) (null (nth 2 s))) supports)
+            (let ((n 0))
+              (concat
+               "#+attr_truss:\n"
+               (mapconcat (lambda (s)
+                            (let ((numbered (eq (plist-get (org-truss-pattern
+                                                            (alist-get (car s) patterns))
+                                                           :list)
+                                                'numbered)))
+                              (format "%s%s%s\n"
+                                      (if numbered (format "%d. " (setq n (1+ n))) "- ")
+                                      (if (nth 3 s) (format "%s :: " (nth 1 s)) "")
+                                      (org-truss-role-name (nth 1 s)))))
+                          supports "")
+               "\n")))
+           (t
+            (mapconcat (lambda (s)
+                         (org-truss--new-member
+                          (1+ level) (nth 1 s) (org-truss-role-name (nth 1 s))
+                          (and (nth 3 s)
+                               (list (cons (org-truss-role-property (nth 0 s))
+                                           (symbol-name (nth 1 s)))))
+                          (nth 2 s) ids))
+                       supports ""))))))
 
 (defun org-truss-skeleton (title)
   "Return the text of a new truss file titled TITLE.
 Its first line keeps what is attached to its headings beside it; see
-`org-truss--file-variables'.  Then the guide, in its drawer.  Brief,
-Subject and Message are given the breakdowns `org-truss-part-breakdowns'
-names, and a supporting member for each role.  Its words are English
-whatever `org-truss-language' says: they name the parts and the roles,
-and never reach the reader.  The guide is in `org-truss-language'."
-  (let ((part (lambda (part words)
-                (let ((breakdown (alist-get part org-truss-part-breakdowns)))
-                  (concat
-                   (format "* %s\n:PROPERTIES:\n:TRUSS_PART: %s\n%s:END:\n\n"
-                           words part
-                           (if breakdown
-                               (format ":%s: %s\n" (alist-get 'breakdown org-truss-pattern-properties)
-                                       breakdown)
-                             ""))
-                   (mapconcat (lambda (role) (org-truss--role-entry role 2))
-                              (mapcar #'car (org-truss-pattern-roles breakdown)) ""))))))
+`org-truss--file-variables'.  Then the guide, in its drawer, in
+`org-truss-language'.  Then the parts, with the patterns and the members
+`org-truss-new-parts' gives them.  Their words are English whatever
+`org-truss-language' says: they name the parts and the roles, and are
+written over -- those Structure includes reach the reader."
+  (let ((ids (let ((all (org-truss--new-ids org-truss-new-parts)))
+               (cons (copy-sequence all) all))))
     (concat
      (org-truss--file-variables)
      (format "#+title: %s\n\n" title)
      (org-truss--guide-drawer) "\n"
-     (funcall part 'brief "Brief")
-     (funcall part 'subject "Subject")
-     (funcall part 'message "Message")
-     (string-remove-suffix "\n" (funcall part 'structure "Structure")))))
+     (string-remove-suffix
+      "\n"
+      (mapconcat (lambda (part)
+                   (org-truss--new-member
+                    1 (car part) (capitalize (symbol-name (car part)))
+                    (list (cons "TRUSS_PART" (symbol-name (car part))))
+                    (cdr part) ids))
+                 org-truss-new-parts "")))))
 
 (defconst org-truss--guide-drawer-re
   "^[ \t]*:GUIDE:[ \t]*\n\\(?:.*\n\\)*?[ \t]*:END:[ \t]*\\(?:\n\\|\\'\\)"

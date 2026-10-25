@@ -278,7 +278,7 @@ copy brings it about, by the file's lines."
 
 In `org-truss-language': the guide, as the drawer at a truss file's head
 holds it, then what the board's ? says of each part and of each role of
-Brief's and Subject's breakdowns."
+Brief's and Message's breakdowns."
   (princ (org-truss-guide))
   (princ (concat "\n" (org-truss--pick "What each part and role is for"
                                        "部と役が何を書く所か")

@@ -239,7 +239,7 @@ member playing none of them is marked, and r gives it a role."
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
-                       prep sds scqa sky-rain-umbrella (none . breakdown))))
+                       interpretation-action prep sds scqa sky-rain-umbrella (none . breakdown))))
       (org-truss-test--answering '("breakdown › Pros and cons")
         (org-truss-board-pattern))
       (should (equal (funcall property "Subject" "TRUSS_BREAKDOWN") "pros-cons"))
@@ -1446,13 +1446,13 @@ in, a heading for each role."
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
-                       prep sds scqa sky-rain-umbrella)))
+                       interpretation-action prep sds scqa sky-rain-umbrella)))
       (should (equal (last (funcall choices (org-truss-test--m model "Move to fortnightly")))
                      '((none . logic))))
       (should (equal (funcall choices (org-truss-model-structure model))
                      '(reasons deduction induction steps parts what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints premises-issue-constraints
-                       prep sds scqa sky-rain-umbrella (none . telling))))
+                       interpretation-action prep sds scqa sky-rain-umbrella (none . telling))))
       (should (equal (car (rassq 'prep (org-truss--pattern-choices
                                         (org-truss-test--m model "Lone remark"))))
                      "telling › PREP"))))

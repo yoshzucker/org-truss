@@ -2046,16 +2046,17 @@ copied, not read."
         (should (<= (string-width line) 80))))))
 
 (ert-deftest org-truss-test-skeleton ()
-  "A new file has its parts and empty members for their roles, their words
-in English whatever the language; the guide is in the language, in a
-drawer at its head, and only there.  Its first line keeps what is
-attached to its headings beside it, and the guide names the directories
-there."
+  "A new file has its parts and members for their roles, their words in
+English whatever the language: facts in Subject, what they mean and what
+to do in Message, and Structure telling them in that order, each heading
+that member there.  End members are items.  The guide is in the
+language, in a drawer at its head, and only there.  Its first line keeps
+what is attached to its headings beside it, and the guide names the
+directories there."
   (dolist (org-truss-language '(en ja))
     (org-truss-test--with (org-truss-skeleton "T")
       (let ((model (org-truss-read)))
         (should (equal (org-truss-model-title model) "T"))
-        (should-not (org-truss-member-patterns (org-truss-model-structure model)))
         (should (string-prefix-p (concat "# -*- org-attach-id-dir: \"attach/\"; -*-\n"
                                          "#+title: T\n\n:GUIDE:\n" (org-truss-guide) ":END:\n\n* Brief\n")
                                  (buffer-string)))
@@ -2063,8 +2064,9 @@ there."
         (dolist (dir '("^  sources/ " "^  notes/ " "^  attach/ " "^  out/ "))
           (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries (lambda () (org-get-heading t t t t)))
-                       '("Brief" "Reader" "Question" "Response wanted" "Constraints"
-                         "Subject" "Premises" "Issue" "Constraints" "Message" "Part" "Structure")))
+                       '("Brief" "Subject" "Part" "Message" "Interpretation" "Part" "Action"
+                         "Structure" "[[truss-include:m1]]" "[[truss-include:m2]]"
+                         "[[truss-include:m3]]")))
         (should (string-match-p (if (eq org-truss-language 'ja)
                                     "^:GUIDE:\nこの truss\\.org から出力文書を一つ作る。"
                                   "^:GUIDE:\nThis truss\\.org makes one output document\\.")
@@ -2074,22 +2076,39 @@ there."
                                 (buffer-string)))
         (should (eq (org-truss-member-breakdown (org-truss-model-brief model))
                     'reader-question-response-constraints))
-        (should (eq (org-truss-member-breakdown (org-truss-model-subject model))
-                    'premises-issue-constraints))
-        (should (eq (org-truss-member-breakdown (org-truss-model-message model)) 'parts))
+        (should (eq (org-truss-member-breakdown (org-truss-model-subject model)) 'parts))
+        (should (eq (org-truss-member-breakdown (org-truss-model-message model))
+                    'interpretation-action))
         (should-not (plist-get (org-truss-checks model) :no-relation))
         (should (equal (mapcar #'car (org-truss-test--fields (org-truss-model-brief model)))
                        '(((breakdown . reader)) ((breakdown . question))
                          ((breakdown . response)) ((breakdown . constraints)))))
-        (should (equal (mapcar #'car (org-truss-test--fields (org-truss-model-subject model)))
-                       '(((breakdown . premises)) ((breakdown . issue)) ((breakdown . constraints)))))
+        (should (seq-every-p #'org-truss-item-p
+                             (org-truss-member-supports (org-truss-model-brief model))))
         (should (seq-every-p (lambda (f) (string-empty-p (cdr f)))
-                             (append (org-truss-test--fields (org-truss-model-brief model))
-                                     (org-truss-test--fields (org-truss-model-subject model)))))
-        (should-not (plist-get (org-truss-checks model) :gaps))
-        (should (org-truss-model-structure model))
-        (should (equal (mapcar #'org-truss-member-roles (org-truss-message-supports model))
-                       '(((breakdown . part)))))))))
+                             (org-truss-test--fields (org-truss-model-brief model))))
+        (let ((source (car (org-truss-member-supports (org-truss-model-subject model)))))
+          (should (eq (org-truss-member-breakdown source) 'parts))
+          (should (seq-every-p #'org-truss-item-p (org-truss-member-supports source))))
+        (pcase-let ((`(,interpretation ,action) (org-truss-message-supports model)))
+          (should (equal (org-truss-member-roles interpretation) '((breakdown . interpretation))))
+          (should (eq (org-truss-member-breakdown interpretation) 'parts))
+          (should (eq (org-truss-member-logic (car (org-truss-member-supports interpretation)))
+                      'reasons))
+          (should (equal (org-truss-member-roles action) '((breakdown . action))))
+          (should (eq (org-truss-member-breakdown action) 'steps))
+          (should (seq-every-p #'org-truss-item-p (org-truss-member-supports action)))
+          (let ((structure (org-truss-model-structure model)))
+            (should (eq (org-truss-member-pattern structure 'telling) 'sky-rain-umbrella))
+            (should (equal (mapcar #'org-truss-member-includes (org-truss-member-supports structure))
+                           '(("m1") ("m2") ("m3"))))
+            (should (equal (mapcar (lambda (id) (org-truss-member-by-id model id)) '("m1" "m2" "m3"))
+                           (list (org-truss-model-subject model) interpretation action)))))
+        (let ((checks (org-truss-checks model)))
+          (should-not (plist-get checks :gaps))
+          (should-not (plist-get checks :no-role))
+          (should-not (plist-get checks :out-of-order))
+          (should-not (plist-get checks :broken-links)))))))
 
 (ert-deftest org-truss-test-add-place ()
   "A member put in for a role goes where the pattern lists it among the
@@ -2197,8 +2216,8 @@ and the roles it plays."
 (ert-deftest org-truss-test-new-ids-pass-the-guide ()
   "The next ID free is counted from the first heading: the guide's
 examples, <<m21>> among them, are no member's."
-  (org-truss-test--with (concat (org-truss-skeleton "T") "\n** A\n:PROPERTIES:\n:CUSTOM_ID: m2\n:END:\n")
-    (should (equal (org-truss--next-id) "m3"))))
+  (org-truss-test--with (concat (org-truss-skeleton "T") "\n** A\n:PROPERTIES:\n:CUSTOM_ID: m8\n:END:\n")
+    (should (equal (org-truss--next-id) "m9"))))
 
 (ert-deftest org-truss-test-file-variables ()
   "A first line setting variables of its own gets the attachments' among

@@ -622,6 +622,16 @@ As the shot shows.
           (should (string-match-p "!\\[[^]]*\\](\\.\\./attach/ab/cdef/shot\\.png)"
                                   (buffer-string))))))))
 
+(ert-deftest org-truss-test-render-new-file ()
+  "A new file is an output document as it stands: the facts, what they
+mean and what to do, each a heading in that order, its words those of the
+member Structure includes there."
+  (should (string-match-p
+           (concat "^\\* Subject\n\n- Part\n\n  - Part\n\n"
+                   "\\* Interpretation\n\n- Part\n\n  - Reason\n\n"
+                   "\\* Action\n\n1\\. Step\n")
+           (org-truss-test--render (org-truss-skeleton "T")))))
+
 (provide 'org-truss-export-test)
 
 ;;; org-truss-export-test.el ends here

@@ -148,9 +148,11 @@ the directory attachments go in elsewhere."
     (sky      "Sky"           "空")
     (rain     "Rain"          "雨")
     (umbrella "Umbrella"      "傘")
-    ;; The breakdowns of the brief and of the subject.
+    ;; The breakdowns of the brief and of the message.
     (reader   "Reader"        "読み手")
     (response "Response wanted" "求める反応")
+    (interpretation "Interpretation" "解釈")
+    (action   "Action"        "行動")
     (premises "Premises"      "前提")
     (issue    "Issue"         "課題")
     (constraints "Constraints" "制約"))
@@ -215,6 +217,10 @@ here."
      :kind breakdown :name "Premises, Issue, Constraints" :list bulleted
      :roles ((premises :label t) (issue :label t) (constraints :label t))
      :about "what is taken as given, what the problem is, what cannot move")
+    (interpretation-action
+     :kind breakdown :name "Interpretation, Action" :list bulleted
+     :roles ((interpretation) (action))
+     :about "what the facts mean, and what to do")
     (prep
      :kind telling :name "PREP"
      :roles ((point) (reason) (example) (recap))
@@ -263,17 +269,33 @@ to be headings.  A role asked for and played by none is a missing role."
   :type '(alist :key-type symbol :value-type plist)
   :group 'org-truss)
 
-(defcustom org-truss-part-breakdowns
-  '((brief . reader-question-response-constraints)
-    (subject . premises-issue-constraints)
-    (message . parts))
-  "The breakdown a new file gives its parts, as (PART . PATTERN).
-Message's supporting members are parts of what the output document
-says, in no order: how they are told is Structure's to say.
-`org-truss-init' writes a supporting member under the part for each role
-the pattern names, playing it.  PATTERN is a breakdown of
-`org-truss-patterns'."
-  :type '(alist :key-type symbol :value-type symbol)
+(defcustom org-truss-new-parts
+  '((brief :patterns ((breakdown . reader-question-response-constraints)))
+    (subject :patterns ((breakdown . parts))
+             :members ((part :patterns ((breakdown . parts)))))
+    (message :patterns ((breakdown . interpretation-action))
+             :members ((interpretation :patterns ((breakdown . parts))
+                                       :members ((part :patterns ((logic . reasons)))))
+                       (action :patterns ((breakdown . steps)))))
+    (structure :patterns ((telling . sky-rain-umbrella))
+               :members ((sky :include subject)
+                         (rain :include interpretation)
+                         (umbrella :include action))))
+  "What a new file gives its parts, as (PART . SPEC).
+The basic form: Subject holds the facts, a truss for each source, its
+facts under it; Message what they mean, a claim each with its reasons,
+and what to do, in steps; Structure tells the facts, what they mean and
+what to do, in that order.
+
+SPEC is a plist.  :patterns are the member's, each (KIND . PATTERN), a
+pattern of `org-truss-patterns'.  `org-truss-init' writes a supporting
+member for each role they name, playing it; :members gives one, as
+\(ROLE . SPEC), a SPEC of its own.  :include NAME makes the member's
+words an include link to the part NAME, or to the first member written
+for the role NAME, so that it is that member there.  Supporting members
+all of which are end members are written as items, the rest as
+headings."
+  :type '(alist :key-type symbol :value-type plist)
   :group 'org-truss)
 
 (defconst org-truss-assumption-tag "assumption"
