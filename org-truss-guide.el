@@ -146,7 +146,8 @@ Sources
   Name the source once, in the apex member of the truss that points into
   it: a link with its title in the apex member's text, before the list
   of its supporting members, ~[[moor:ID][TITLE]]~ ; under it, a link named
-  by its place alone, ~[[moor:ID::223][l. 223]]~ , ~[[moor:ID::12][p. 12]]~
+  by its place alone, ~[[moor:ID::223][l. 223]]~ , ~[[moor:ID::12][p. 12]]~ ,
+  at the end of an item's first line, not on a line of its own
 
 In the output document
   Only Structure, and the trusses and members its include links reach
@@ -272,7 +273,7 @@ M-x org-truss-export で、OUT/ に書き出す。
   資料の名前は、その資料を指すトラスの頂点部材に一度だけ書く。頂点部材の
   本文の、支持部材の箇条書きの前に題で ~[[moor:ID][題]]~ と書き、その下
   の部材では場所だけで ~[[moor:ID::223][l. 223]]~ 、 ~[[moor:ID::12][p. 12]]~
-  と書く
+  と書く。項目では、改行せずに1行目の終わりに書く
 
 出力文書に出るもの
   Structure と、そこから展開リンクでたどれるトラスや部材だけが出る

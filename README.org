@@ -404,7 +404,19 @@ A truss pointing into one source names it once, in its apex member: a
 link with the source's title in the apex member's text, before the list
 of its supporting members, ~[[moor:ID][Manual]]~; under it, each link is
 named by its place alone, ~[[moor:ID::223][l. 223]]~, ~[[moor:ID::12][p.
-12]]~.  The link goes to the same source either way; only its words
+12]]~ -- in an item, at the end of its first line, not on a line of its
+own, so the output document gives the place at the end of the fact, not
+as a paragraph after it:
+
+#+begin_example
+,** Approval manual 2026
+[[moor:6f1c...][Approval manual 2026]]
+,#+attr_truss:
+- <<m21>>Approval goes to the department head first [[moor:6f1c...::12][p. 12]]
+- <<m22>>Finance approves last [[moor:6f1c...::14][p. 14]]
+#+end_example
+
+The link goes to the same source either way; only its words
 change, so the file and the output document say which source once,
 where the facts of it begin, and where in it beside each fact.  With
 org-moor, what it writes in ~truss.org~ -- a place noted beside the
