@@ -118,9 +118,10 @@ line that keeps them there, left unsaved to be looked over."
 ;;;###autoload
 (defun org-truss-refresh-guides ()
   "Put the current guide back into the nearest truss file.
-The comment block at its head and the :GUIDE: drawers are written anew, or
-added where they were deleted; nothing you wrote is touched.  The buffer is
-left unsaved, to be looked over."
+The guide is written anew in its drawer at the head, in place of a guide
+before it, and the :GUIDE: drawers once written under the parts and their
+roles go; see `org-truss-refresh-guides-in-buffer'.  The buffer is left
+unsaved, to be looked over."
   (interactive)
   (let ((file (or (org-truss-locate)
                   (user-error "No %s here or above" org-truss-file-name))))
