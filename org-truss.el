@@ -270,6 +270,27 @@ copy brings it about, by the file's lines."
                          (cdr group))))))
         (org-truss--check-as file after))))))
 
+(defun org-truss-batch-guide ()
+  "Print the guide of a truss file, and what each part and role is for.
+
+  emacs --batch -L DIR -l org-truss -f org-truss-batch-guide
+
+In `org-truss-language': the guide, as the drawer at a truss file's head
+holds it, then what the board's ? says of each part and of each role of
+Brief's and Subject's breakdowns."
+  (princ (org-truss-guide))
+  (princ (concat "\n" (org-truss--pick "What each part and role is for"
+                                       "部と役が何を書く所か")
+                 "\n"))
+  (pcase-dolist (`(,key . ,_) org-truss--part-guides)
+    (let* ((part (if (consp key) (car key) key))
+           (role (and (consp key) (cadr key))))
+      (princ (format "  %s%s: %s\n"
+                     (capitalize (symbol-name part))
+                     (if role (concat " › " (org-truss-role-name role)) "")
+                     (replace-regexp-in-string "[ \t]*\n[ \t]*" (org-truss--pick " " "")
+                                               (org-truss-part-guide part role)))))))
+
 (defun org-truss-batch-board ()
   "Print the board of the truss file named on the command line.
 

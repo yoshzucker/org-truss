@@ -1991,15 +1991,26 @@ by its id, and still find it.  A label another member has is refused."
 ;;;; A new file
 
 (ert-deftest org-truss-test-guides-read-as-text ()
-  "No line of a guide starts the way Org syntax does -- a block or a keyword,
-a heading, a drawer line -- since a guide sits in a drawer in the file, and
-Org reads such a line for what it looks like: with `org-hide-block-startup',
-a line opening with #+begin_ stops org-mode starting at all."
-  (dolist (entry org-truss--guides)
+  "No line of the guide starts the way Org syntax does -- a heading, a
+drawer line, a block or a keyword but the example block it shows -- since
+the guide sits in a drawer at the head of the file, and Org reads such a
+line for what it looks like: with `org-hide-block-startup', a line opening
+with #+begin_ and no block stops org-mode starting at all.  Nor does a
+line of what a part or a role is for."
+  (dolist (entry org-truss--part-guides)
     (dolist (text (cdr entry))
       (dolist (line (split-string text "\n"))
         (should-not (string-match-p "\\`[ \t]*\\(?:#\\+\\|\\*+ \\|:[[:alnum:]_-]+:[ \t]*\\'\\)"
                                     line)))))
+  (dolist (org-truss-language '(en ja))
+    (let ((example nil))
+      (dolist (line (split-string (org-truss-guide) "\n"))
+        (cond ((string-match-p "\\`[ \t]*#\\+begin_example\\'" line) (setq example t))
+              ((string-match-p "\\`[ \t]*#\\+end_example\\'" line) (setq example nil))
+              ((not example)
+               (should-not (string-match-p "\\`[ \t]*\\(?:#\\+\\|\\*+ \\|:[[:alnum:]_-]+:[ \t]*\\'\\)"
+                                           line)))))
+      (should-not example)))
   ;; With a lead written under the structure, a #+begin_public opening a
   ;; guide's line would run to that lead's #+end_public.
   (dolist (org-truss-language '(en ja))
@@ -2021,41 +2032,39 @@ unless it is code, ~[[#m7]]~, with a space either side."
           (should-not (get-text-property (match-beginning 0) 'invisible)))
         (should (>= n 3))))))
 
-(ert-deftest org-truss-test-preamble-fits ()
-  "No line of the head comment runs past 80 columns but the commands, which
-are copied, not read."
+(ert-deftest org-truss-test-guide-fits ()
+  "No line of the guide runs past 80 columns but the commands, which are
+copied, not read."
   (dolist (org-truss-language '(en ja))
-    (dolist (line (split-string (apply #'org-truss--pick org-truss--preamble-text) "\n"))
+    (dolist (line (split-string (apply #'org-truss--pick org-truss--guide-text) "\n"))
       (unless (string-match-p "emacs --batch" line)
         (should (<= (string-width line) 80))))))
 
 (ert-deftest org-truss-test-skeleton ()
-  "A new file has its parts and empty fields, headed in English whatever the
-language; the guidance is in the language.  Its first line keeps what is
-attached to its headings beside it, and its head comment names the
-directories there."
+  "A new file has its parts and empty members for their roles, their words
+in English whatever the language; the guide is in the language, in a
+drawer at its head, and only there.  Its first line keeps what is
+attached to its headings beside it, and the guide names the directories
+there."
   (dolist (org-truss-language '(en ja))
     (org-truss-test--with (org-truss-skeleton "T")
       (let ((model (org-truss-read)))
         (should (equal (org-truss-model-title model) "T"))
         (should-not (org-truss-member-patterns (org-truss-model-structure model)))
         (should (string-prefix-p (concat "# -*- org-attach-id-dir: \"attach/\"; -*-\n"
-                                         "#+title: T\n\n" (org-truss--preamble) "\n* Brief\n")
+                                         "#+title: T\n\n:GUIDE:\n" (org-truss-guide) ":END:\n\n* Brief\n")
                                  (buffer-string)))
         (should (equal (hack-local-variables-prop-line) '((org-attach-id-dir . "attach/"))))
-        (dolist (dir '("^#   sources/ " "^#   notes/ " "^#   attach/ " "^#   out/ "))
+        (dolist (dir '("^  sources/ " "^  notes/ " "^  attach/ " "^  out/ "))
           (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries (lambda () (org-get-heading t t t t)))
                        '("Brief" "Reader" "Question" "Response wanted" "Constraints"
                          "Subject" "Premises" "Issue" "Constraints" "Message" "Part" "Structure")))
         (should (string-match-p (if (eq org-truss-language 'ja)
-                                    "^# この truss\\.org から出力文書を一つ作る。"
-                                  "^# This truss\\.org makes one output document\\.")
+                                    "^:GUIDE:\nこの truss\\.org から出力文書を一つ作る。"
+                                  "^:GUIDE:\nThis truss\\.org makes one output document\\.")
                                 (buffer-string)))
-        (should (string-match-p (if (eq org-truss-language 'ja)
-                                    "^出力文書が満たす条件。"
-                                  "^What the output document must satisfy\\.")
-                                (buffer-string)))
+        (should (= (how-many "^:GUIDE:$" (point-min) (point-max)) 1))
         (should (string-match-p ":TRUSS_BREAKDOWN: reader-question-response-constraints\n"
                                 (buffer-string)))
         (should (eq (org-truss-member-breakdown (org-truss-model-brief model))
@@ -2078,8 +2087,9 @@ directories there."
                        '(((breakdown . part)))))))))
 
 (ert-deftest org-truss-test-add-place ()
-  "A heading put in for a role goes where the pattern lists it among the
-headings there, under any heading; a field is given its guide."
+  "A member put in for a role goes where the pattern lists it among the
+headings there, under any heading, with no guide of its own: the board
+says what it is for."
   (org-truss-test--with org-truss-test--conditions-file
     (set-marker (org-truss-add-role-member (org-truss--part-pos "brief") 'breakdown 'constraints) nil)
     (set-marker (org-truss-add-role-member (org-truss--part-pos "subject") 'breakdown 'premises) nil)
@@ -2088,19 +2098,26 @@ headings there, under any heading; a field is given its guide."
                      '("Reader" "Their question" "Response wanted" "Constraints")))
       (should (equal (mapcar #'org-truss-member-words (org-truss-member-supports (org-truss-model-subject model)))
                      '("Premises" "Issue" "Constraints")))
-      (should (string-match-p ":TRUSS_BREAKDOWN_ROLE: premises\n:END:\n:GUIDE:\nWhat is taken as given"
-                              (buffer-string)))
+      (should-not (string-match-p ":GUIDE:" (buffer-string)))
       (should-not (plist-get (org-truss-checks model) :gaps)))))
 
 (ert-deftest org-truss-test-refresh-guides ()
-  "Refreshing puts the current guidance back, adds it where it was deleted,
-and leaves everything else as it was, a guide of your own included.  A
-file without the first line that keeps its attachments beside it is given
-it, and the buffer takes it at once."
+  "Refreshing puts the current guide in its drawer at the head, in place of
+a guide before it -- a drawer, or the comments it was once written in --
+and takes away the guides once written under the parts and the members
+playing their roles.  A guide of your own, of a role nothing is said of
+or of any other member, stays, and so does what is written before the
+first heading that is no comment.  A file without the first line that
+keeps its attachments beside it is given it, and the buffer takes it at
+once."
   (let ((org-truss-language 'ja))
     (org-truss-test--with "#+title: T
 
 # An old preamble.
+:GUIDE:
+An old guide.
+:END:
+Notes before the parts.
 
 * 与件
 :PROPERTIES:
@@ -2115,6 +2132,9 @@ Notes on the brief.
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: reader
 :END:
+:GUIDE:
+Old reader.
+:END:
 The board.
 ** Mine
 :PROPERTIES:
@@ -2128,6 +2148,9 @@ My own.
 :PROPERTIES:
 :TRUSS_PART: message
 :END:
+:GUIDE:
+Old message.
+:END:
 ** A member
 :GUIDE:
 Not a part's.
@@ -2136,23 +2159,41 @@ Not a part's.
       (org-truss-refresh-guides-in-buffer)
       (let ((text (buffer-string)))
         (should (string-prefix-p (concat "# -*- org-attach-id-dir: \"attach/\"; -*-\n"
-                                         "#+title: T\n\n" (org-truss--preamble) "\n* 与件\n")
+                                         "#+title: T\n\n:GUIDE:\n" (org-truss-guide) ":END:\n\n"
+                                         "Notes before the parts.\n\n* 与件\n")
                                  text))
         (should (equal org-attach-id-dir "attach/"))
-        (should-not (string-match-p "Old wording\\|An old preamble" text))
-        (should (string-match-p (concat ":TRUSS_PART: brief\n"
-                                        ":TRUSS_BREAKDOWN: reader-question-response-constraints\n"
-                                        ":END:\n:GUIDE:\n出力文書が満たす条件。\\(?:.*\n\\)*?:END:\n"
-                                        "Notes on the brief\\.")
+        (should-not (string-match-p "Old wording\\|Old reader\\|Old message\\|An old preamble\\|An old guide" text))
+        (should (string-match-p (concat ":TRUSS_BREAKDOWN: reader-question-response-constraints\n"
+                                        ":END:\nNotes on the brief\\.")
                                 text))
-        (should (string-match-p (concat ":TRUSS_BREAKDOWN_ROLE: reader\n:END:\n:GUIDE:\n"
-                                        "誰が読むか。.*\n:END:\nThe board\\.")
-                                text))
+        (should (string-match-p ":TRUSS_BREAKDOWN_ROLE: reader\n:END:\nThe board\\." text))
         (should (string-match-p ":TRUSS_BREAKDOWN_ROLE: mine\n:END:\n:GUIDE:\nMy own\\." text))
-        (should (string-match-p ":TRUSS_PART: message\n:END:\n:GUIDE:\n事実がここで何を意味するか" text))
         (should (string-match-p ":GUIDE:\nNot a part's\\.\n:END:" text))
         (org-truss-refresh-guides-in-buffer)
         (should (equal (buffer-string) text))))))
+
+(ert-deftest org-truss-test-guide-of ()
+  "What a line is for: a part's guide, a role's of Brief's or Subject's
+breakdown on the member playing it, and for any other member its patterns
+and the roles it plays."
+  (let ((org-truss-language 'en))
+    (org-truss-test--with org-truss-test--conditions-file
+      (let ((model (org-truss-read)))
+        (should (string-prefix-p "What the output document must satisfy."
+                                 (org-truss-guide-of model (org-truss-model-brief model))))
+        (should (equal (org-truss-guide-of model (car (org-truss-member-supports (org-truss-model-brief model))))
+                       "Who reads it, and what do they already know?"))))
+    (org-truss-test--with org-truss-test--file
+      (let ((model (org-truss-read)))
+        (should (equal (org-truss-guide-of model (org-truss-test--m model "Half the items repeat"))
+                       "logic › reasons: reasons that each hold it up alone"))))))
+
+(ert-deftest org-truss-test-new-ids-pass-the-guide ()
+  "The next ID free is counted from the first heading: the guide's
+examples, <<m21>> among them, are no member's."
+  (org-truss-test--with (concat (org-truss-skeleton "T") "\n** A\n:PROPERTIES:\n:CUSTOM_ID: m2\n:END:\n")
+    (should (equal (org-truss--next-id) "m3"))))
 
 (ert-deftest org-truss-test-file-variables ()
   "A first line setting variables of its own gets the attachments' among

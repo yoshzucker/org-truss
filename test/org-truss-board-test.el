@@ -151,6 +151,25 @@ are named in `org-truss-language'."
     (should (equal (caar (org-truss--structure-choices (org-truss-read source)))
                    "Structure"))))
 
+(ert-deftest org-truss-test-board-says-what-a-line-is-for ()
+  "? says in the echo area what the member at point is for: a role of
+Brief's breakdown, on its member and on its line missing, and a part."
+  (let ((org-truss-language 'en)
+        said)
+    (cl-letf (((symbol-function 'message) (lambda (_ &rest args) (setq said (car args)))))
+      (org-truss-test--with-board org-truss-test--conditions-file
+        (let ((org-truss-board-fold-limit nil))
+          (org-truss-board-redraw)
+          (org-truss-test--goto-line-with "^   Reader[ ·]")
+          (org-truss-board-guide)
+          (should (equal said "Who reads it, and what do they already know?"))
+          (org-truss-test--goto-line-with "^   Constraints —")
+          (org-truss-board-guide)
+          (should (string-prefix-p "What the output document must keep to" said))
+          (org-truss-test--goto-line-with "^ Brief ")
+          (org-truss-board-guide)
+          (should (string-prefix-p "What the output document must satisfy." said)))))))
+
 (ert-deftest org-truss-test-board-shows-the-fields ()
   "Under the title come the brief and the subject, each with its breakdown
 and the members right under it, its fields, drawn as any member is, by the

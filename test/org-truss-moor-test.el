@@ -128,10 +128,10 @@ where a source taken by org-moor came from, and follows any other link."
         (should (equal origins '("6f1c")))))))
 
 (ert-deftest org-truss-test-preamble-says-how-to-take ()
-  "The head comment gives the check as it runs here, org-dock and all, and
-how an agent takes a source when org-moor is there."
+  "The guide gives the check as it runs here, org-dock and all, and how an
+agent takes a source when org-moor is there."
   (let ((org-truss-language 'en))
-    (let ((text (org-truss--preamble)))
+    (let ((text (org-truss-guide)))
       (should (string-match-p "-L [^ ]+ -L [^ ]+ -l org-truss -L [^ ]+ -l org-moor -f org-truss-batch-check truss\\.org" text))
       (should-not (string-match-p "ORG-DOCK-DIR\\|ORG-MOOR-DIR\\|#TAKE" text))
       (should (string-match-p "-f org-truss-batch-take truss\\.org PATH-OR-URL" text)))
@@ -139,7 +139,7 @@ how an agent takes a source when org-moor is there."
                (let ((locate (symbol-function 'locate-library)))
                  (lambda (name &rest args)
                    (unless (equal name "org-moor") (apply locate name args))))))
-      (let ((text (org-truss--preamble)))
+      (let ((text (org-truss-guide)))
         (should-not (string-match-p "batch-take\\|#TAKE\\|#MOOR\\|-l org-moor" text))
         (should (string-match-p "-l org-truss -f org-truss-batch-check truss\\.org" text))))))
 

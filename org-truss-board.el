@@ -113,8 +113,8 @@ Filled by org-truss-moor.el; empty without org-moor.")
     (see org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
          org-truss-board-cycle org-truss-board-cycle-all org-truss-board-fold
          org-truss-board-wrap org-truss-board-entry-text org-truss-board-same
-         org-truss-board-order org-truss-board-view org-truss-board-export
-         org-truss-board-redraw org-truss-board-save))
+         org-truss-board-order org-truss-board-guide org-truss-board-view
+         org-truss-board-export org-truss-board-redraw org-truss-board-save))
   "The board's commands, by what they work on, as its foot lists them.
 Members are written; Structure includes them; its outline is shaped; and
 the board and the output document are seen.")
@@ -214,14 +214,15 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "i") #'org-truss-board-wrap)
     (define-key map (kbd "m") 'org-truss-board-moor-map)
     (define-key map (kbd "x") #'org-truss-board-export)
+    (define-key map (kbd "?") #'org-truss-board-guide)
     (define-key map (kbd "g") #'org-truss-board-redraw)
     (define-key map [remap save-buffer] #'org-truss-board-save)
     map)
   "Keys of the board.
 Few, to be laid out again: what moves through the board and reads it, a
-source taken, the output document written out.  Every other command of
-the board is called by name, M-x org-truss-board-..., or bound where you
-want it.")
+source taken, the output document written out, what a line is for.
+Every other command of the board is called by name, M-x
+org-truss-board-..., or bound where you want it.")
 
 (defun org-truss--catch-up (window)
   "Draw the board in WINDOW again, if it is selected and its file has changed.
@@ -1675,6 +1676,22 @@ As \\[org-truss-board-export] would write it.  Nothing is written.  While it is 
         (setq default-directory directory))))
   (org-truss--fill-view org-truss--view (org-truss-read org-truss--source))
   (display-buffer org-truss--view '((display-buffer-reuse-window display-buffer-pop-up-window))))
+
+(defun org-truss-board-guide ()
+  "Say in the echo area what the member of the line at point is for.
+A part's guide, or that of a role of Brief's or Subject's breakdown --
+on the member playing it, or on the line of the role missing -- and for
+any other member its patterns and the roles it plays.  The rules of the
+file are its guide, in the drawer at its head."
+  (interactive)
+  (let* ((item (org-truss--item))
+         (model (org-truss-read org-truss--source))
+         (member (and (plist-get item :pos) (org-truss-member-at model (plist-get item :pos))))
+         (gap (plist-get item :gap))
+         (text (cond ((and member gap (org-truss-member-is-part member))
+                      (org-truss-part-guide (org-truss-member-part member) (cdr gap)))
+                     (member (org-truss-guide-of model member)))))
+    (message "%s" (or text "Nothing is said of this line; the file's rules are in the guide at its head"))))
 
 (defun org-truss-board-export ()
   "Write the output document."

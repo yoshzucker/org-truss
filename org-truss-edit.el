@@ -274,11 +274,6 @@ order asked of its supporting members."
         (org-entry-put pos property (symbol-name pattern))
       (org-entry-delete pos property))))
 
-(defvar org-truss-role-member-text-function nil
-  "Function returning what a member added for a role says under its drawer.
-Called with the position of the heading it goes under and the role; nil,
-or the text.  The guide sets it to give a role of a part its guide.")
-
 (defun org-truss--rank (pos kind role)
   "Return where ROLE comes among the roles of the pattern of KIND at POS."
   (or (seq-position (mapcar #'car (org-truss-pattern-roles
@@ -328,9 +323,7 @@ Its words the role's in `org-truss-language' and playing it, it goes
 where the pattern lists the role, as `org-truss-add-heading' puts it.
 Return a marker at it."
   (org-truss-add-heading pos (org-truss-role-label role)
-                         (org-truss--role-props (list (cons kind role)))
-                         (and org-truss-role-member-text-function
-                              (funcall org-truss-role-member-text-function pos role))))
+                         (org-truss--role-props (list (cons kind role)))))
 
 (defun org-truss-add-role-members (pos gaps)
   "Put under the heading at POS a member for each role GAPS names.
@@ -354,10 +347,17 @@ does not see it; see `org-truss-ensure-id'."
                                                   id
                                                 (org-truss--pointing-target id)))))
 
+(defun org-truss--goto-first-heading ()
+  "Go to the first heading of the buffer, past the guide before it.
+The guide's examples, <<m21>> among them, are no member's."
+  (goto-char (point-min))
+  (unless (org-at-heading-p)
+    (outline-next-heading)))
+
 (defun org-truss--item-id-p (id)
   "Non-nil when ID is an item's, <<ID>> on an item's first line, in the buffer."
   (org-with-wide-buffer
-   (goto-char (point-min))
+   (org-truss--goto-first-heading)
    (re-search-forward (format "^[ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t].*<<%s>>" (regexp-quote id))
                       nil t)))
 
@@ -399,7 +399,7 @@ or an item's <<m7>>.")
 (defun org-truss--next-id ()
   "Return an ID no member in the buffer has: m and the next number."
   (org-with-wide-buffer
-   (goto-char (point-min))
+   (org-truss--goto-first-heading)
    (let ((case-fold-search t)
          (top 0))
      (while (re-search-forward org-truss--id-re nil t)
