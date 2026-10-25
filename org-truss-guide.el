@@ -12,10 +12,10 @@
 ;;; Commentary:
 
 ;; What org-truss writes into a truss file for whoever edits it, a person
-;; or a model: the comment block at its head, the :GUIDE: drawer of each
-;; part and of each role of a part's breakdown, and the first line that
-;; keeps attachments beside the file; and the skeleton of a new file, which
-;; holds them all.
+;; or a model: the guide in the comment block at its head, the :GUIDE:
+;; drawer of each part and of each role of a part's breakdown, and the
+;; first line that keeps attachments beside the file; and the skeleton of
+;; a new file, which holds them all.
 
 ;;; Code:
 
@@ -24,373 +24,259 @@
 
 (defconst org-truss--preamble-text
   '("\
-# This truss.org makes one document: x on the board, or M-x org-truss-export,
-# writes it to OUT/.  M-x org-truss-board opens the board, keys at its foot.
-# How to write under each of the four top headings, and under each role of
-# Brief and Subject, is in its :GUIDE: drawer.
+# This truss.org makes one output document.  x on the board (M-x
+# org-truss-board), or M-x org-truss-export, writes it to OUT/.
 #
 # Beside this file
-#   SOURCES/   files referred to.  Taken in with org-moor, each file gets a
-#              directory here, holding the file and moor.org, which records
-#              its title, where it came from and when
-#   NOTES/     what is ours and not a source.  Memos, slides of our own,
-#              minutes
-#   ATTACH/    what C-c C-a attaches to a heading, a picture or a file.
-#              ~[[attachment:NAME]]~ is NAME in the directory under ATTACH/
-#              named by the heading's ID
-#   OUT/       the document, written from this file.  Not edited by hand
+#   SOURCES/  sources referred to.  Taken in with org-moor, each gets a
+#             directory here
+#   NOTES/    what is ours and no source: memos, slides of our own, minutes
+#   ATTACH/   what C-c C-a attaches to a heading; ~[[attachment:NAME]]~
+#             points to it
+#   OUT/      the output document.  Not edited by hand
 #
-# The four top headings (filled from the top; told apart by TRUSS_PART, so
-# they may sit at any level)
-#   Brief      the reader: who, and what they expect
-#   Subject    what was found: the facts
-#   Message    what the document says: what the facts mean, and what to do
-#   Structure  the document's outline: sections, each telling members
+# Words
+#   pattern         what a heading or an item says the ones right under it
+#                   are to it.  Three kinds
+#     TRUSS_LOGIC      reasons.  reasons deduction induction
+#     TRUSS_BREAKDOWN  a breakdown.  steps parts what-why-how pros-cons
+#                      short-long past-present-future 5w1h 6w1h
+#                      reader-question-response-constraints
+#                      premises-issue-constraints
+#     TRUSS_TELLING    the order of telling.  prep sds scqa sky-rain-umbrella
+#   role            what one right under plays in the pattern above: reason,
+#                   who, sky
+#   member          one heading, or one item of a list marked #+attr_truss
+#   truss           a member with a pattern (its apex member) and the members
+#                   right under it (its supporting members)
+#   end member      a member with no pattern.  It has nothing under it
+#   simple truss    a truss whose supporting members are all end members.
+#                   △ on the board
+#   compound truss  a truss with an apex member among its supporting members.
+#                   ⟁ on the board
+#   ID              the name a member is pointed to by: a heading's
+#                   CUSTOM_ID (m7), or ~<<m7>>~ in an item's first line
+#   pointing link   ~[[#m7]]~ (~[[m7]]~ for an item).  Points to m7 as grounds
+#   include link    ~[[truss-include:m7]]~.  Includes m7 there in the output
+#                   document, the whole truss when m7 is an apex member.  A
+#                   member whose words are an include link alone is m7 itself
 #
-# How a heading relates to the headings right under it (its patterns)
-#   Any heading -- one of the four, a member, a section -- says what the
-#   headings right under it are to it, in any of these three properties
-#   TRUSS_LOGIC      they are its reasons.  reasons deduction induction
-#   TRUSS_BREAKDOWN  they are its breakdown.  steps parts what-why-how
-#                    pros-cons short-long past-present-future 5w1h 6w1h
-#                    reader-question-response-constraints (Brief's at first)
-#                    premises-issue-constraints (Subject's at first)
-#                    parts (Message's at first)
-#   TRUSS_TELLING    the order they are told in.  prep sds scqa
-#                    sky-rain-umbrella.  The heading itself is told before
-#                    them, and they in the order they are written; the check
-#                    points out what is out of the pattern's order
-#   Each heading right under one says the role it plays in each of its
-#   patterns, in the pattern's property with _ROLE after it: reason or
-#   major in TRUSS_LOGIC_ROLE, who or issue in TRUSS_BREAKDOWN_ROLE, sky in
-#   TRUSS_TELLING_ROLE.  When no heading plays a role a pattern asks for,
-#   the check points the role out
+# The four parts (told apart by TRUSS_PART; filled from the top)
+#   Brief      the reader, and what the output document must satisfy
+#   Subject    the facts found.  One truss for each source: a member naming
+#              the source as its apex member, the source's facts as its
+#              supporting members
+#   Message    what the output document says: what the facts mean, and what
+#              to do
+#   Structure  the output document's outline, built of trusses.  Each member
+#              is a heading of the output document, and its text holds the
+#              include links to the trusses and members it carries
+#   A new file gives Brief reader-question-response-constraints, Subject
+#   premises-issue-constraints and Message parts
+#
+# Writing
+#   1  One heading is one simple truss: its apex member is the heading, its
+#      end members the items of a list in its text.
+#      - Except: an end member tagged :assumption: or :noexport: is a heading
+#        under it (only a heading takes tags), after the end members written
+#        as items
+#   2  A compound truss is built of headings: each supporting member that is
+#      an apex member is a heading under it.
+#      - Except: when its text goes on after or between the trusses in it,
+#        nest lists in the items instead -- Org has no text of a heading
+#        after the headings under it
+#   Where 1 and 2 leave it open, keep in one heading a truss checked at once
+#   -- the facts of one source, a claim and its reasons -- and make a heading
+#   of a member pointed to from several places, to be found easily
+#
+#   For a heading, the pattern goes in a property, TRUSS_LOGIC and the rest,
+#   and the role in the property of the same name with _ROLE after it
+#   (TRUSS_LOGIC_ROLE: reason)
+#   For an item, the pattern goes in #+attr_truss before the list, and the
+#   role before ::
+#     #+attr_truss: :logic reasons :breakdown pros-cons
+#     - pros :: <<m21>>Less time in meetings
+#       ~# [[#m2]]~
+#       Text
+#   A pattern of one role -- reasons, steps, parts -- needs no role written.
+#   An item's first line is its words, the lines under it its text; a list
+#   marked #+attr_truss inside it holds its supporting members
 #
 # Grounds
-#   A heading that plays a role right under a TRUSS_LOGIC heading must have
-#   grounds, unless it has TRUSS_LOGIC itself or the tag :assumption:.  It
-#   has grounds when its text has one of these
-#     a link            to a member, ~[[#m3]]~, or to a source: moor:,
-#                       file:, URL.  A link that tells a member,
-#                       ~[[truss-include:m3]]~, is a ground too: what a
-#                       reason tells the reader it stands on.  On the
-#                       heading's line, ~*** [[truss-include:m3]]~, the
-#                       reason is that member there, as it is.  In a
-#                       heading that is no reason, it only tells
-#     #+begin_quote     the source's own words, quoted
-#   A link in the text is written out, the reader's citation too; on a
-#   comment line, ~# [[#m3]]~ as b on the board writes it, it is for the
-#   file alone.  Words naming what has no file -- an agreement,
-#   a talk -- are no grounds: tag :assumption: what stands on them
-#   What any heading points to as grounds must hold as what it is: a member
-#   has grounds, TRUSS_LOGIC or the tag :assumption:; a source taken by
-#   org-moor or a file is there.  A URL and words are not checked.  The
-#   check points out a heading that must have grounds and has none, and
-#   grounds that do not hold
+#   In a TRUSS_LOGIC truss, each supporting member has grounds.  Grounds are,
+#   in its text
+#   - a pointing link or an include link to a member
+#   - a link to a source: moor:, file:, URL
+#   - a quote, #+begin_quote
+#   These supporting members need none
+#   - the apex member of a TRUSS_LOGIC truss: its supporting members are its
+#     grounds
+#   - a member tagged :assumption:.  Tag so a member that stands on what has
+#     no file: an agreement, a talk
+#   A member pointed to as grounds has grounds too, or needs none
+#   Grounds on a comment line, ~# [[#m3]]~, are the file's alone; in the
+#   text, they are the output document's citation too
 #
 # Sources
-#   Subject is checked against its sources one at a time.  Under
-#   TRUSS_BREAKDOWN: parts, the parts with nothing under them point into
-#   one source; a part with parts under it may point into another.  A
-#   TRUSS_LOGIC in Subject points into one source in all it holds.  A
-#   source taken by org-moor, ~[[moor:ID]]~, is one wherever in it a link
-#   points; a file is one, a URL is one.  Facts of different sources are
-#   brought together by members in Message.  The check points out a
-#   heading that points into more than one
+#   Write a truss to be checked against one source; the check sees to it
+#   - a parts truss: the links to sources in its end members' text point
+#     into one source
+#   - a TRUSS_LOGIC truss: the links to sources in the text of its apex
+#     member and of every member under it point into one source
+#   A moor: source is one wherever in it a link points.  To bring facts of
+#   different sources together, point to the members that hold them, not
+#   to the sources
 #
-# Under the four
-#   under Brief, Subject or Message
-#     a member: its heading is one sentence, which reads without the
-#     sentences around it -- no \"the following\", no \"above\".  The text
-#     under the heading says more of it to the reader.  A heading put in for
-#     a role is named for the role, to be written over
-#   under Structure
-#     a section of the document: it tells members by links that tell them
-#   A heading with something under it says what it is to it by a pattern;
-#   the check points out one that does not
-#
-# Simple and compound trusses
-#   simple truss    has a pattern, and only members (one statement each)
-#                   under it
-#   compound truss  has a pattern, and a simple or compound truss under it;
-#                   truss.org as a whole is the outermost one, its four parts
-#   1  One heading is one simple truss: the statement with the pattern is
-#      the heading, its members the items of a ~#+attr_truss~ list in its
-#      text.
-#      - Except: a member tagged :assumption: or :noexport: is a heading
-#        under it (only a heading takes tags), after the members written
-#        as items
-#   2  A compound truss is built of headings, each simple truss in it one.
-#      - Except: when its text goes on after or between the trusses in it,
-#        nest ~#+attr_truss~ lists in the items instead -- Org has no text
-#        of a heading after the headings under it
-#   Where 1 and 2 leave it open, keep in one heading what is checked at
-#   once -- the facts of one source, a claim and its reasons -- and make a
-#   heading of a member pointed to from several places, to be found easily
-#   The board marks a simple truss △ and a compound truss ⟁
-#
-# Headings as items of a list, in place of headings under a heading
-#   ~#+attr_truss: :logic reasons~  on the line before a list in the text
-#                     of a member, a part or a section: each item is a
-#                     member right under it (a section, under a section),
-#                     before the headings under it, and the heading takes the
-#                     patterns named, of the kinds its properties leave out.
-#                     ~#+attr_truss:~ alone names none
-#   ~- pros :: words~  the term before :: is the role it plays, as in
-#                     TRUSS_BREAKDOWN_ROLE; a pattern of one role -- reason,
-#                     step, part -- needs none.  A term naming no role is
-#                     part of the words
-#   ~<<m7>>~          in an item's first line, its id: ~[[m7]]~ points to
-#                     it, ~[[truss-include:m7]]~ tells it
-#   The item's first line is its words, as a heading's are; the lines under
-#   it, its text; a list marked so inside it, what is under it.  e on the
-#   board opens the heading at the item; the item is written there
-#
-# Two links to a heading (give it :CUSTOM_ID: m7, the next free number)
-#   ~[[#m7]]~               points to it: a ground, wherever it is written
-#   ~[[truss-include:m7]]~  tells it there: the heading, a member or a
-#                           section, with what is under it, is written out
-#                           where the link stands, in any heading, in a
-#                           sentence too, or on a heading's line.
-#                           Its description is its words there.  The check
-#                           points out a link that tells what tells its
-#                           heading back
-#
-# Written out (only what Structure reaches)
-#   #+title             the title
-#   section heading     a heading
-#   member heading      its words wherever it is told; to say it otherwise
-#                       to the reader, rewrite the heading
-#   text under a heading  after the heading, a comment left out: a
-#                       section's opening (right under Structure, the
-#                       document's), what a member says more
-#   ~*** [[truss-include:m7]]~  m7 as a heading: its words, then its
-#                       text, then the members under it as headings a
-#                       level down
-#   ~- [[truss-include:m7]]~  m7 in text: its words where the link is,
-#                       then its text and the members under it, as a list
-#                       after the paragraph or inside the item
-#   ~[[#m7]]~           its description, else m7's heading
-#   ~[[moor:ID::14]]~   the source's origin, a web page (at page 14 of a
-#                       PDF); a source from a file or a mail, its words
-#   Under a heading with TRUSS_LOGIC or TRUSS_BREAKDOWN, member or section,
-#   the headings are a list, numbered for steps (under TRUSS_TELLING alone,
-#   they are told as the heading is); where the pattern names its roles, each
-#   opens with its own, as Pros: or Who:.  A section in a list is an item,
-#   not a heading, and what it holds goes inside it
-#   A comment under a heading is not written out: a line starting with #
-#   and a space, or a block from ~#+begin_comment~ to ~#+end_comment~
-#
-# Other properties, and tags
-#   CUSTOM_ID         a member's id
-#   TRUSS_PART        marks one of the four top headings; leave it be
-#   :assumption:      taken as given: a heading that must have grounds needs
-#                     none
-#   :noexport:        not written out
+# In the output document
+#   Only Structure, and the trusses and members its include links reach
+#   - a member is its words (a heading, an item's first line), then its text
+#   - supporting members are a list in a TRUSS_LOGIC or TRUSS_BREAKDOWN
+#     truss (numbered for steps), headings in a TRUSS_TELLING truss.  Where
+#     the pattern names its roles, each opens with its role (\"Pros: \")
+#   - a member written as an item stands where its list stands
+#   - a pointing link is m7's words (its description, if it has one); a
+#     moor: link, where the source came from
+#   - comments (a line starting with # and a space, a #+begin_comment
+#     block) and members tagged :noexport: are left out
 #
 # After editing, check (what is left to do, by line).  When you edited a
-# copy of this file you were handed, check the copy in place of FILE
+# copy you were handed, check the copy in place of FILE
 #   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
-#TAKE
-#
-# M-x org-truss-refresh-guides brings this text and the :GUIDE:s up to date.
-"
+#TAKE"
     "\
-# この truss.org から文書を一つ作ります。盤面の x か M-x org-truss-export で
-# OUT/ に書き出します。盤面は M-x org-truss-board で開き、キーは盤面の下に
-# 出ます。4つの見出しと、Brief・Subject の役それぞれの書き方は、その
-# :GUIDE: にあります。
+# この truss.org から出力文書を一つ作る。盤面（M-x org-truss-board）の x か
+# M-x org-truss-export で、OUT/ に書き出す。
 #
 # このファイルの隣
-#   SOURCES/   参照されるファイル。org-moor で取り込むと、ここにファイル
-#              ごとにディレクトリができ、ファイルと、題・出所・取り込んだ
-#              日時を書いた moor.org が入る
-#   NOTES/     出典ではない手元の資料。メモ、自分たちのスライド、議事録
-#   ATTACH/    C-c C-a で見出しに付けたもの（画像、ファイル）。
-#              ~[[attachment:名前]]~ は ATTACH/ の下の、見出しの ID の
-#              名前のディレクトリにある
-#   OUT/       このファイルから書き出した文書。手で直さない
+#   SOURCES/  参照する資料。org-moor で取り込むと、資料ごとにディレクトリが
+#             できる
+#   NOTES/    資料ではない手元のもの。メモ、自分たちのスライド、議事録
+#   ATTACH/   C-c C-a で見出しに付けたもの。~[[attachment:名前]]~ で指す
+#   OUT/      出力文書。手で直さない
 #
-# 第一階層の4つの見出し（上から順に埋める。TRUSS_PART で見分けるので、
-# 別の階層に置いてもよい）
-#   Brief      読み手のこと：誰か、何を期待するか
-#   Subject    調べたこと：事実
-#   Message    文書が言うこと：事実の意味（解釈）と、すること（判断）
-#   Structure  生成文書の構成：節ごとに、語る部材をリンクで展開する
+# 言葉
+#   型          見出しや項目が、すぐ下のものが自分にとって何かを言うもの。
+#               3種類
+#     TRUSS_LOGIC      理由。reasons deduction induction
+#     TRUSS_BREAKDOWN  内訳。steps parts what-why-how pros-cons short-long
+#                      past-present-future 5w1h 6w1h
+#                      reader-question-response-constraints
+#                      premises-issue-constraints
+#     TRUSS_TELLING    語る順。prep sds scqa sky-rain-umbrella
+#   役          すぐ下のものが、上の型の中で担うもの。reason、who、sky など
+#   部材        見出し一つか、#+attr_truss を付けた箇条書きの項目一つ
+#   トラス      型を持つ部材（頂点部材）と、そのすぐ下の部材（支持部材）
+#   末端部材    型を持たない部材。下に何も持たない
+#   単純トラス  支持部材がすべて末端部材のトラス。盤面の △
+#   複合トラス  支持部材に頂点部材を含むトラス。盤面の ⟁
+#   ID          部材を指すための名前。見出しなら CUSTOM_ID（m7）、項目なら
+#               1行目の ~<<m7>>~
+#   指すリンク  ~[[#m7]]~ （項目なら ~[[m7]]~ ）。m7 を根拠として指す
+#   展開リンク  ~[[truss-include:m7]]~。出力文書のその場所に m7 を展開する。
+#               m7 が頂点部材なら、トラスごと展開する。部材の言葉を展開
+#               リンクだけにすると、その部材は m7 そのものになる
 #
-# 見出しとそのすぐ下の見出しの関係（型）
-#   どの見出しも（4つの見出し、部材、節）、すぐ下の見出しが自分にとって何かを、
-#   次の3つのプロパティのどれででも指定できる
-#   TRUSS_LOGIC      下は自分の理由。reasons deduction induction
-#   TRUSS_BREAKDOWN  下は自分の内訳。steps parts what-why-how pros-cons
-#                    short-long past-present-future 5w1h 6w1h
-#                    reader-question-response-constraints（Brief の初期値）
-#                    premises-issue-constraints（Subject の初期値）
-#                    parts（Message の初期値）
-#   TRUSS_TELLING    下をどの順で語るか。prep sds scqa sky-rain-umbrella。
-#                    見出し自身は下より先に語られ、下は書いた順に語られる。
-#                    型の順と違えば検査が指摘する
-#   すぐ下の見出しはそれぞれ、上の見出しの型の中で担う役を、その型の
-#   プロパティ名に _ROLE を付けたプロパティに書く。TRUSS_LOGIC_ROLE に
-#   reason や major、TRUSS_BREAKDOWN_ROLE に who や issue、
-#   TRUSS_TELLING_ROLE に sky など。型が求める役を担う見出しがなければ、
-#   検査がその役を指摘する
+# 4つの部（TRUSS_PART で見分ける。上から順に埋める）
+#   Brief      読み手と、出力文書が満たす条件
+#   Subject    調べた事実。資料ごとにトラスを一つ作る（資料を名指す部材を
+#              頂点部材に、その資料の事実を支持部材に置く）
+#   Message    出力文書が言うこと：事実の意味（解釈）と、すること（判断）
+#   Structure  出力文書の構成を、トラスで組む。部材一つが出力文書の見出し
+#              一つになり、その本文に、載せるトラスや部材を展開リンクで書く
+#   新しいファイルでは、Brief に reader-question-response-constraints、
+#   Subject に premises-issue-constraints、Message に parts の型が付いている
 #
-# 根拠
-#   TRUSS_LOGIC の見出しのすぐ下で役を担う見出しは、根拠を持つべき見出し。
-#   ただし、自分も TRUSS_LOGIC を持つ見出しと、:assumption: を付けた見出しは
-#   除く。根拠を持つとは、本文に次のどれかを持つこと
-#     リンク            部材へのリンク ~[[#m3]]~ か、資料への moor:・
-#                       file:・URL のリンク。部材を展開するリンク
-#                       ~[[truss-include:m3]]~ も根拠になる。理由が読み手に
-#                       語るものに、理由は立つ。見出しの行に書いた
-#                       ~*** [[truss-include:m3]]~ では、その部材が
-#                       そのまま理由になる。理由でない見出しでは、展開する
-#                       だけ
-#     #+begin_quote     資料の原文の引用
-#   本文のリンクは書き出され、読み手への出典にもなる。コメント行
-#   ~# [[#m3]]~ に書けば（盤面の b はこう書く）、ファイルの中だけのもの。
-#   ファイルのないもの（合意、口頭の話）を名指す言葉は根拠
-#   ではない。それに立つ見出しには :assumption: を付ける
-#   どの見出しでも、根拠として指したものは、その種類として成り立って
-#   いなければならない。部材なら、根拠か TRUSS_LOGIC か :assumption: を
-#   持つこと。org-moor の資料やファイルなら、それがあること。URL と言葉は
-#   確かめない。根拠を持つべき見出しに根拠がないとき、また、根拠として
-#   指したものが成り立たないとき、検査が指摘する
-#
-# 資料
-#   Subject は資料一つずつと突き合わせて確かめる。TRUSS_BREAKDOWN: parts の
-#   下で、下に見出しを持たない部分は一つの資料を指す。下に部分を持つ部分は、
-#   別の資料を指してよい。Subject の TRUSS_LOGIC は、下全体で一つの資料を
-#   指す。org-moor の資料 ~[[moor:ID]]~ は、中のどこを指しても一つ。ファイル
-#   も URL も一つずつ。別の資料の事実を組み合わせるのは Message の部材。二つ
-#   以上の資料を指す見出しは、検査が指摘する
-#
-# 4つの見出しの下
-#   Brief・Subject・Message の下
-#     部材：見出しに一文を書く。前後の文を頼らずに読める文にする（「次の」
-#     「上記の」と書かない）。見出しの下の本文は、見出しについて読み手に
-#     言い足すこと。役のために入れた見出しは役の名前になっているので、
-#     書き換える
-#   Structure の下
-#     節：文書の章。語る部材を、展開するリンクで書く
-#   下にものを持つ見出しは、下が自分にとって何かを型で言う。言っていない
-#   見出しは検査が指摘する
-#
-# 単純トラスと複合トラス
-#   単純トラス  型を持ち、下が部材（一文）だけのもの
-#   複合トラス  型を持ち、下に単純トラスか複合トラスを含むもの。truss.org
-#               全体は、4つの部を組んだ一番外の複合トラス
-#   1  見出し一つを単純トラス一つにする。型を持つ一文を見出しに書き、下の
-#      部材は本文に ~#+attr_truss~ の箇条書きで書く。
-#      - 例外として、:assumption: か :noexport: を付ける部材は子の見出しに
-#        する（タグは見出しにしか付かない）。項目の部材より後に並ぶ
-#   2  複合トラスは見出しで組む。中の単純トラスは、それぞれ子の見出しにする。
+# 書き方
+#   1  見出し一つを単純トラス一つにする。頂点部材を見出しに書き、末端部材
+#      は本文の箇条書きに書く。
+#      - 例外として、:assumption: か :noexport: を付ける末端部材は子の見出し
+#        にする（タグは見出しにしか付かない）。項目の末端部材より後に並ぶ
+#   2  複合トラスは見出しで組む。支持部材のうち頂点部材であるものは、
+#      それぞれ子の見出しにする。
 #      - 例外として、中のトラスの後ろや間に本文を続けるときは、項目の中に
-#        ~#+attr_truss~ の箇条書きを入れ子にする（子の見出しの後ろには、
-#        親の本文を書けない）
-#   1 と 2 で決まらないときは、一度に確かめるもの（一つの資料の事実、一つ
+#        箇条書きを入れ子にする（子の見出しの後ろには、親の本文を書けない）
+#   1 と 2 で決まらないときは、一度に確かめるトラス（一つの資料の事実、一つ
 #   の主張とその理由）を同じ見出しに置く。いくつかの場所から指される部材は、
 #   見出しにすると探しやすい
-#   盤面は単純トラスに △、複合トラスに ⟁ を付ける
 #
-# 箇条書きの見出し（見出しの下の見出しの代わりに）
-#   ~#+attr_truss: :logic reasons~  部材・4つの見出し・節の本文の箇条書きの
-#                     前の行に書く。項目がそれぞれ、そのすぐ下の部材（節の
-#                     下では節）になる（下の見出しより先）。見出しは、
-#                     プロパティで指定していない種類の型として、ここで指定
-#                     した型を持つ。 ~#+attr_truss:~ だけなら型は指定しない
-#   ~- pros :: 言葉~  :: の前の語が担う役（TRUSS_BREAKDOWN_ROLE と同じ
-#                     英語の名前）。役が一つの型（reason、step、part）では
-#                     書かなくてよい。役でない語は言葉の一部になる
-#   ~<<m7>>~          項目の1行目に書くと、その ID になる。 ~[[m7]]~ で指し、
-#                     ~[[truss-include:m7]]~ で展開する
-#   項目の1行目が見出しにあたる言葉、その下の行が本文、中に同じ印の箇条書き
-#   があればその下になる。盤面の e はその見出しを項目の位置で開く。項目は
-#   そこで書く
+#   見出しでは、型を TRUSS_LOGIC などのプロパティに、役をその名前に _ROLE
+#   を付けたプロパティ（TRUSS_LOGIC_ROLE: reason など）に書く
+#   項目では、型を箇条書きの前の #+attr_truss に、役を :: の前に書く
+#     #+attr_truss: :logic reasons :breakdown pros-cons
+#     - pros :: <<m21>>会議の時間が減る
+#       ~# [[#m2]]~
+#       本文
+#   役が一つの型（reasons、steps、parts）では、役を書かなくてよい。項目の
+#   1行目が言葉、その下が本文。中に #+attr_truss の箇条書きがあれば、それ
+#   がその項目の支持部材になる
 #
-# 見出しへの2つのリンク（見出しに :CUSTOM_ID: m7 を付ける。番号は空いている次）
-#   ~[[#m7]]~               見出しを指す。どこに書いても根拠になる
-#   ~[[truss-include:m7]]~  見出し（部材でも節でも）をそこで展開する。
-#                           リンクを書いた場所に、見出しとその下が書き出
-#                           される。どの見出しにでも、文の途中にでも、
-#                           見出しの行にも書ける。説明はそこでの言い方として
-#                           書き出される。
-#                           展開をたどって自分の見出しに戻るリンクは、検査が
-#                           指摘する
+# 根拠
+#   TRUSS_LOGIC のトラスでは、支持部材がそれぞれ根拠を持つ。根拠になるのは、
+#   本文の
+#   - 部材への指すリンクか展開リンク
+#   - 資料（moor:・file:・URL）へのリンク
+#   - #+begin_quote の引用
+#   次の支持部材は、根拠がなくてよい
+#   - TRUSS_LOGIC のトラスの頂点部材。その支持部材が根拠になる
+#   - :assumption: を付けた部材。ファイルのないもの（合意、口頭の話）に立つ
+#     部材には、これを付ける
+#   根拠として指した部材も、根拠を持つか、根拠がなくてよい部材であること
+#   根拠をコメント行 ~# [[#m3]]~ に書けばファイルの中だけのもの、本文に
+#   書けば出力文書での出典にもなる
 #
-# 書き出されるもの（Structure から辿れるものだけ）
-#   #+title                   文書のタイトル
-#   節の見出し                文書の見出し
-#   部材の見出し              展開したどこでも、その言葉で出る。読み手に
-#                             別の言い方で見せたいなら、見出しを書き換える
-#   見出しの下の本文          見出しの後に出る（コメントは除く）。節なら
-#                             最初の文（Structure 直下なら文書の最初の
-#                             文）、部材なら見出しについて言い足すこと
-#   ~*** [[truss-include:m7]]~  m7 を見出しとして。その言葉、本文、下の
-#                             部材を一段下の見出しで
-#   ~- [[truss-include:m7]]~  m7 を本文の中に。その言葉をリンクの場所に、
-#                             本文と下の部材を、段落の後か箇条の中に箇条で
-#   ~[[#m7]]~                 説明、なければ m7 の見出しが出る
-#   ~[[moor:ID::14]]~         資料の取り込み元の URL（PDF なら 14 ページ目）。
-#                             ファイルやメールから取り込んだ資料は、説明だけ
-#   TRUSS_LOGIC か TRUSS_BREAKDOWN を持つ見出しの下は、部材でも節でも箇条書き
-#   で出る（steps は番号付き。TRUSS_TELLING だけなら、見出しと同じ出方）。
-#   型が役の名前を出すものでは、それぞれ自分の役で始まる（メリット：、誰が：
-#   など）。箇条書きの中の節は見出しでなく項目になり、
-#   節の中身はその項目の中に入る
-#   見出しの下のコメントは書き出さない。# と空白で始まる行と、
-#   ~#+begin_comment~ から ~#+end_comment~ までのブロック
+# 資料
+#   トラスは、一つの資料と突き合わせて確かめられるように書く。検査が確かめる
+#   - parts のトラス：末端部材の本文にある資料へのリンクが、一つの資料を
+#     指す
+#   - TRUSS_LOGIC のトラス：頂点部材とその下のすべての部材の本文にある資料
+#     へのリンクが、一つの資料を指す
+#   moor: の資料は、中のどこを指しても一つ。別の資料の事実を組み合わせる
+#   ときは、資料へのリンクを書かず、その事実の部材を指すリンクで指す
 #
-# そのほかのプロパティとタグ
-#   CUSTOM_ID         部材の ID
-#   TRUSS_PART        4つの見出しの印。変えない
-#   :assumption:      根拠を持つべき見出しを、根拠なしでそうであるとする
-#   :noexport:        書き出さない
+# 出力文書に出るもの
+#   Structure と、そこから展開リンクでたどれるトラスや部材だけが出る
+#   - 部材は、言葉（見出し、項目なら1行目）のあとに本文が続く
+#   - 支持部材は、TRUSS_LOGIC と TRUSS_BREAKDOWN のトラスなら箇条書き
+#     （steps は番号付き）、TRUSS_TELLING のトラスなら見出しで出る。役の
+#     名前を出す型では、役の名前から始まる（pros なら「メリット：」）
+#   - 項目の部材は、箇条書きのあった場所に出る
+#   - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料の
+#     取り込み元になる
+#   - コメント（# と空白で始まる行、#+begin_comment のブロック）と、
+#     :noexport: を付けた部材は出ない
 #
-# 編集したら確かめる（残りの作業を行番号付きで出す）。渡された写しを編集
-# したときは、FILE の代わりにその写しを確かめる
+# 編集したら確かめる（残りの作業を行番号付きで出す。渡された写しを編集した
+# ときは、FILE の代わりにその写しを確かめる）
 #   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
-#TAKE
-#
-# この文面と :GUIDE: は M-x org-truss-refresh-guides で最新に戻せます。
-")
-  "The comment block at the head of a truss file, in English and Japanese.
-It holds the rules of the file, the same for whoever edits it -- a person,
-or a model working in the file: what each part holds, what the patterns
-and the roles are, which headings must have grounds and what grounds are,
-how one member points to another, what is written out, what each other
-property means, and what goes in the directories beside it.  How to work
-in each part is in its guide; the board's keys are at the board's foot;
-what each check means is printed with it.  ORG-TRUSS-DIR and ORG-DOCK-DIR
-stand for where org-truss and org-dock are loaded from, FILE for
-`org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the
-directories beside the file; a line #TAKE, for how an agent takes a
-source, when org-moor is there.  See `org-truss--preamble'.")
+#TAKE")
+  "The guide, the comment block at the head of a truss file.
+In English and Japanese.  It holds the rules of the file, the same for whoever edits it -- a person,
+or a model working in the file: the words, the four parts, how members
+and trusses are written, grounds, sources, what is in the output
+document, and what goes in the directories beside it.  ORG-TRUSS-DIR and
+ORG-DOCK-DIR stand for where org-truss and org-dock are loaded from, FILE
+for `org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the
+directories beside the file; #MOOR and a line #TAKE, for what org-moor
+adds when it is there.  See `org-truss--preamble'.")
 
 (defconst org-truss--take-text
   '("\
 #
 # A file or a page read, taken into SOURCES/ with a link printed to cite it
-#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE PATH-OR-URL [TITLE]
-"
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE PATH-OR-URL [TITLE]"
     "\
 #
 # 読んだファイルやページを SOURCES/ に取り込み、引くためのリンクを出す
-#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE パスかURL [題]
-")
-  "How an agent takes a source, in the comment at the head of a truss file.
+#   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE パスかURL [題]")
+  "How an agent takes a source, at the end of the guide.
 Written there when org-moor is there to take it with.")
 
 (defconst org-truss--guides
   '((brief
-     "What the document must satisfy.  None of it is written out; a member
-here is, when a section lists it.  The members right under it play the
-roles of its TRUSS_BREAKDOWN, each with its own guide; p on the board's
-Brief line changes it."
-     "この文書が満たすべき条件。ここは書き出されない。ここの部材も、節に載せれ
-ば書き出される。すぐ下の部材は TRUSS_BREAKDOWN の役を担い、役ごとに書き方の
-:GUIDE: がある。型は盤面の Brief の行の p で替えられる。")
+     "What the output document must satisfy.  A member here is in the output
+document only when Structure includes it."
+     "出力文書が満たす条件。ここの部材は、Structure が展開したときだけ出力文書
+に出る。")
     ((brief reader)
      "Who reads it, and what do they already know?"
      "誰が読むか。何をすでに知っているか。")
@@ -401,40 +287,14 @@ Brief line changes it."
      "What should they understand, decide or do once they have read it?"
      "読んだあと、何を理解し、何を決め、何をしてほしいか。")
     ((brief constraints)
-     "What the document must keep to: length, form, what cannot be said."
-     "文書が守るもの：分量、形式、言えないこと。")
+     "What the output document must keep to: length, form, what must not be
+written (names, what is confidential)."
+     "文書が守るもの：分量、形式、書いてはいけないこと（個人名、社外秘など）。")
     (subject
-     "What was found.  Write each fact as a member under the role of
-TRUSS_BREAKDOWN it belongs to, with its grounds: the source's own words
-in a quote block, a #+begin_quote (e on the board), or a link to the
-source in its text (m on the board takes one), which is written out as
-the reader's citation too; on a comment line it is the file's alone.
-Make a tree for each source, to be
-checked against it alone: a member naming the source, with TRUSS_BREAKDOWN:
-parts (p on the board), and its facts under it as its parts -- a form's
-fields, a law's articles.  Sum up facts of one source that belong
-together: nest them under a member that says in one sentence what they
-say together, and no more, with TRUSS_LOGIC: reasons (p on the board) --
-each fact is then a reason, and must have its grounds.  What facts of
-different sources say together, what the facts mean, and what to do, go
-in the message.  None of this is written
-out; a member a section lists is, with the members under it.  p on the
-board's Subject line changes the breakdown."
-     "調べたこと。事実は一つずつ、合う TRUSS_BREAKDOWN の役の下に部材として
-書き、根拠を付ける。出典の原文を本文の引用ブロック #+begin_quote に残すか
-（盤面の e）、出典へのリンクを本文に書く（盤面の m で取り込める）。本文の
-リンクは書き出され、読み手への出典にもなる。コメント行に書けばファイルの中
-だけのもの。資料ごとに木を一つ
-作り、その資料だけと突き合わせて確かめられるようにする。資料を名指す部材に
-TRUSS_BREAKDOWN: parts を付け（盤面の p）、その資料の事実（帳票の欄、法令の
-条など）を下に部分として置く。同じ資料の、関係する事実はまとめる。下の事実
-が合わせて言っていることを一文で書いた部材の下に入れ子にし、その一文には
-下の事実が言っている以上のことを書かない。上の部材には TRUSS_LOGIC: reasons
-を付ける（盤面の p）。下の事実はその理由になり、それぞれ根拠を持つべき見出し
-になる。別の資料の事実が合わせて言っていること、事実の意味、することは
-Message に書く。
-ここは書き出されない。節に載せた部材は、下の部材と一緒に書き出される。内訳の
-型は盤面の Subject の行の p で替えられる。")
+     "The facts found.  For each source, a member naming it, the source's
+facts under it."
+     "調べた事実。資料ごとに、その資料を名指す部材を一つ作り、その資料の事実を
+下に置く。")
     ((subject premises)
      "What is taken as given: what of the situation will not be argued."
      "何を前提とするか。現状のうち、議論せずに受け入れるもの。")
@@ -445,90 +305,20 @@ Message に書く。
      "What cannot move: deadline, budget, policy, law."
      "動かせないもの：期限、予算、方針、法令。")
     (message
-     "What is made of what was found: what the facts mean here, and what is
-to be done.  Each heading is a member, one statement in one sentence.
-Nest under a claim the members that are its reasons, and give the claim
-TRUSS_LOGIC (p on the board): reasons, deduction or induction.  Each
-reason plays a role of it in TRUSS_LOGIC_ROLE, and must have grounds:
-link to the facts of the subject it stands on, ~[[#m3]] [[#m7]]~, in its
-text (b on the board); sources are cited in the subject, not here.  A
-fact that is the reason as it is goes under the claim as a heading that
-tells it, ~*** [[truss-include:m3]]~, with its TRUSS_LOGIC_ROLE: write no
-member that only says it again.  A reason is a member of its own when it
-reads facts: brings facts of different sources together, or says what
-one means here.  Tag :assumption: a reason taken as given without
-grounds (A).  Give what is
-to be done TRUSS_BREAKDOWN -- steps, parts, 5W1H (p on the board) -- and
-what is under it is its parts, which need no grounds, written out as a
-list.  A member is written out before what is under it, and that in the
-order of the file; a story that keeps the conclusion for last is told by
-the sections of the structure.  Write each heading to make sense pulled
-out on its own: no \"the following\", no \"above\".  The heading is what
-the reader is told wherever the member is told, and the text under it
-after it (S on the board); to say it otherwise to the reader, rewrite the
-heading.  Keep what is for you alone in a comment: a comment block, or a
-line starting with # and a space.  Tag :noexport: a member that should
-not be written out at all."
-     "考えたこと：Subject の事実が、ここで何を意味するか（解釈）と、何を
-するか（判断）。見出し一つが部材一つで、一文で書く。主張の理由になる部材は
-その下に入れ子にし、主張には TRUSS_LOGIC を付ける（盤面の p）：reasons、
-deduction、induction。理由はそれぞれ TRUSS_LOGIC_ROLE に役を書き、根拠を
-持つべき見出しになる。根拠には、支えにする Subject の事実へのリンク
-~[[#m3]] [[#m7]]~ を本文に書く（盤面の b）。資料は Subject で引き、ここでは
-引かない。言い換えずにそのまま理由になる事実は、それを展開する見出し
-~*** [[truss-include:m3]]~ として主張の下に置き、TRUSS_LOGIC_ROLE を書く。
-同じことを言い直すだけの部材は作らない。理由を部材として書くのは、事実を
-読むとき：別の資料の事実を組み合わせるとき、事実がここで何を意味するかを
-言うとき。根拠なしで置く理由には :assumption: を付ける（盤面の A）。
-することに TRUSS_BREAKDOWN を付けると（steps、parts、5w1h など。盤面の p）、
-下の部材はその内訳になり、根拠は要らず、箇条書きで出る。部材は下の部材より
-先に書き出され、下の部材はファイルの順に出る。結論を最後に置く話の運びは、
-Structure の節で組む。見出しは、抜き出して読んでも通じるように書く（「次の」
-「上記の」を使わない）。部材を展開したどこでも、見出しがそのまま読み手に
-出て、その下に本文が続く（盤面の S）。読み手に別の言い方で見せたいなら、
-見出しを書き換える。自分だけのメモはコメントにする：# と空白で始まる行か、
-コメントブロック。部材ごと書き出したくないときは :noexport: を付ける。")
+     "What the facts mean here, and what to do.  One statement each, the
+reasons under the claim."
+     "事実がここで何を意味するか（解釈）と、何をするか（判断）。一文ずつ書き、
+主張の下に理由を置く。")
     (structure
-     "The sections of the document.  Leave it empty while there is no
-document to make, as when a question is only being worked out.  A section
-tells the members it shows by links that tell them, as
-~- [[truss-include:m7]]~ with m7 the member's CUSTOM_ID (a on the board):
-each is written out where its link stands, with what is under it, as a
-list.  A link that is a section's heading, ~*** [[truss-include:m7]]~,
-makes the member a heading of the document instead, what is under it
-headings a level down, in its place among the sections.  A pattern here, or on a section (p on the board) -- a telling pattern as
-Sky, Rain, Umbrella, SCQA, PREP -- gives the sections right below their
-roles, each written in a section's property of its kind, as
-TRUSS_TELLING_ROLE; a role none plays is listed under Missing roles.  A
-section's heading becomes a heading of the document -- or, under a
-breakdown, an item of its list -- and the text under it, a comment left
-out, the section's opening (S on the board writes it before the links).
-A link that tells a member can stand in a sentence too, between words
-that lead from one to the next.
-Write here only what guides the reader; put facts and claims in members,
-which can be stood on as grounds and told in any section.  Sections nest
-as deep as the document needs."
-     "書き出す文書の節。相談して考えをまとめるだけなど、文書を作らないうちは
-空のままにしておく。節は、語る部材を、展開するリンクの箇条
-~- [[truss-include:m7]]~ で書く（m7 は部材の CUSTOM_ID。盤面の a）。部材は
-リンクの場所に、下の部材ごと箇条で書き出される。リンクを節の見出しにすると
-（~*** [[truss-include:m7]]~）、部材は文書の見出しになり、下の部材は一段下の
-見出しになる。ほかの節との順はファイルの順。ここや節に型（語り口なら Sky, Rain,
-Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節が担う役が
-決まり、節はその種類のプロパティ（TRUSS_TELLING_ROLE など）に役を書く。
-どの節も担っていない役は Missing roles に出る。節の見出しは文書の見出しに
-なり、節の下の本文（コメントを除く）は節の最初の文になる（盤面の S で
-リンクの前に書ける）。内訳の型の下では、節は箇条書きの項目になる。展開する
-リンクは文の中にも書け、部材と部材をつなぐ言葉の間に置ける。ここには読み手を案内
-する言葉だけを書き、事実や主張は Message の部材にする。部材なら、根拠として
-指せ、どの節でも展開できるから。
-節はいくらでも入れ子にできる。"))
-  "Guidance written into a truss file, in English and Japanese.
-Keyed by a part, or by (PART ROLE) for a member right under the brief or
-the subject that plays ROLE in its breakdown.")
+     "The output document's outline: the members it carries, by include
+links."
+     "出力文書の構成。載せる部材を展開リンクで書く。"))
+  "The guide of each part, and of each role of Brief's and Subject's breakdowns.
+In English and Japanese.  Keyed by a part, or by (PART ROLE) for a member
+right under Brief or Subject that plays ROLE in its breakdown.")
 
 (defun org-truss--preamble ()
-  "Return the comment block at the head of a truss file, in `org-truss-language'.
+  "Return the guide at the head of a truss file, in `org-truss-language'.
 The command that checks the file is written as it runs here: with the
 directory org-truss is loaded from, and the name of a truss file.  The
 directories beside it are named as they are set here."
@@ -541,11 +331,12 @@ directories beside it are named as they are set here."
          (text (string-replace "#MOOR"
                                (if (locate-library "org-moor") " -L ORG-MOOR-DIR -l org-moor" "")
                                (apply #'org-truss--pick org-truss--preamble-text)))
-         (text (string-replace "#TAKE\n"
+         (text (string-replace "#TAKE"
                                (if (locate-library "org-moor")
-                                   (apply #'org-truss--pick org-truss--take-text)
+                                   (string-remove-prefix "\n" (apply #'org-truss--pick org-truss--take-text))
                                  "")
-                               text)))
+                               text))
+         (text (concat (string-trim-right text) "\n")))
     (pcase-dolist (`(,placeholder . ,value)
                    `(("ORG-TRUSS-DIR" . ,(funcall dir-of "org-truss"))
                      ("ORG-DOCK-DIR" . ,(funcall dir-of "org-dock"))
@@ -587,34 +378,33 @@ takes the value at once, as visiting the file would give it."
 
 (defun org-truss--role-entry (part role level)
   "Return a new member of PART playing ROLE, a heading at LEVEL, as text.
-Named for its role in English, whatever `org-truss-language' says, and
+Its words the role's in English, whatever `org-truss-language' says, and
 with its guide, followed by a blank line."
   (format "%s %s\n:PROPERTIES:\n:%s: %s\n:END:\n%s\n"
           (make-string level ?*) (org-truss-role-name role)
           (org-truss-role-property 'breakdown) role
           (or (org-truss--guide (list part role)) "")))
 
-(defun org-truss--place-guide (pos role)
-  "Return the guide of a heading put in for ROLE under the part at POS, or nil."
+(defun org-truss--role-member-guide (pos role)
+  "Return the guide of a member put in for ROLE under the part at POS, or nil."
   (let ((part (org-entry-get pos "TRUSS_PART")))
     (and part (org-truss--guide (list (intern part) role)))))
 
-(setq org-truss-place-text-function #'org-truss--place-guide)
+(setq org-truss-role-member-text-function #'org-truss--role-member-guide)
 
 (defun org-truss-skeleton (title)
   "Return the text of a new truss file titled TITLE.
 Its first line keeps what is attached to its headings beside it; see
-`org-truss--file-variables'.  The brief, the subject and the members are
-given the breakdowns `org-truss-part-breakdowns' names, and a member for
-each role.
-Its headings are English whatever `org-truss-language' says: they name
-the parts and the roles, and never reach the reader.  The
-guidance is in `org-truss-language'."
-  (let ((part (lambda (part heading)
+`org-truss--file-variables'.  Brief, Subject and Message are given the
+breakdowns `org-truss-part-breakdowns' names, and a supporting member
+for each role.  Its words are English whatever `org-truss-language'
+says: they name the parts and the roles, and never reach the reader.
+The guide is in `org-truss-language'."
+  (let ((part (lambda (part words)
                 (let ((breakdown (alist-get part org-truss-part-breakdowns)))
                   (concat
                    (format "* %s\n:PROPERTIES:\n:TRUSS_PART: %s\n%s:END:\n%s\n"
-                           heading part
+                           words part
                            (if breakdown
                                (format ":%s: %s\n" (alist-get 'breakdown org-truss-pattern-properties)
                                        breakdown)
@@ -642,7 +432,7 @@ no guide, such as a role of a pattern of your own."
   (let ((guide (org-truss--guide key)))
     (when guide
       (save-excursion
-        (let ((end (copy-marker (cdr (org-truss--own-bounds pos)))))
+        (let ((end (copy-marker (cdr (org-truss--text-bounds pos)))))
           (goto-char pos)
           (forward-line 1)
           (when (re-search-forward org-truss--guide-drawer-re end t)
@@ -656,13 +446,12 @@ no guide, such as a role of a pattern of your own."
           (set-marker end nil))))))
 
 (defun org-truss-refresh-guides-in-buffer ()
-  "Put the current guidance back into the truss file in this buffer.
+  "Put the current guide back into the truss file in this buffer.
 The comment block at its head, and the :GUIDE: drawer of each part and of
-each member right under one playing a role of its breakdown that has a
-guide, are written anew, or added where they were deleted.  A file without
-the first line that keeps its attachments beside it is given one; see
-`org-truss-put-file-variables'.
-Nothing else is read or moved."
+each heading right under one playing a role of its breakdown that has a
+guide, are written anew, or added where they were deleted.  A file
+without the first line that keeps its attachments beside it is given
+one; see `org-truss-put-file-variables'.  Nothing else is read or moved."
   (org-truss-put-file-variables)
   (org-with-wide-buffer
    (goto-char (point-min))
@@ -678,7 +467,7 @@ Nothing else is read or moved."
    (dolist (part '(brief subject message structure))
      (let ((pos (org-truss--part-pos (symbol-name part))))
        (when pos
-         (dolist (child (reverse (org-truss--children pos)))
+         (dolist (child (reverse (org-truss--child-headings pos)))
            (let ((role (org-truss--intern
                         (org-entry-get child (org-truss-role-property 'breakdown)))))
              (when role

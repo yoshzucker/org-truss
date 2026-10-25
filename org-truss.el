@@ -1,4 +1,4 @@
-;;; org-truss.el --- Build arguments from members and arrange them into a document  -*- lexical-binding: t; -*-
+;;; org-truss.el --- Build trusses of members and arrange them into a document  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 yoshzucker
 
@@ -26,20 +26,18 @@
 ;;; Commentary:
 
 ;; A document that argues for something -- a proposal, an explanation -- is
-;; built here the way a truss is: members first, each written once; then
-;; arguments, members joined so that a claim stands on what supports it; then
-;; the structure, sections that show those arguments in the order they are
-;; told.  What the reader sees is the headings and the text under them;
-;; a comment stays in the file, and the document is generated from it.
+;; built here the way a truss is: members, each one heading or one item of
+;; a list; trusses, a member with a pattern and the members right under it,
+;; so that a claim stands on what supports it; and Structure, the outline
+;; of the output document, which includes those trusses where they are
+;; told.  What the reader sees is the members' words and text; a comment
+;; stays in the file, and the output document is written from it.
 ;;
 ;; `org-truss-init'            set up a directory: a truss.org, what goes beside it
-;; `org-truss-board'           draw the structure, change it, see what is undone
+;; `org-truss-board'           draw the trusses, change them, see what is undone
 ;; `org-truss-check'           list what is undone, line by line
-;; `org-truss-export'          write the document
-;; `org-truss-refresh-guides'  put the current guidance back into a truss.org
-;; `org-truss-convert-references'
-;;                             point by CUSTOM_ID where a heading is named
-;; `org-truss-convert-public'  tell the text under headings, not public blocks
+;; `org-truss-export'          write the output document
+;; `org-truss-refresh-guides'  put the current guide back into a truss.org
 ;;
 ;; See README.org.
 
@@ -52,15 +50,15 @@
 (require 'org-truss-board)
 
 ;; Sources taken by org-moor, when it is there: a truss file's go beside
-;; it, and a heading can take one, or cite one, from the board.
+;; it, and a member can take one, or cite one, from the board.
 (with-eval-after-load 'org-moor
   (require 'org-truss-moor))
 
 ;; Every command loads this file first, whichever library defines it, so that
 ;; a configuration waiting on `org-truss' is in place before the first one runs.
 ;;;###autoload (autoload 'org-truss-board "org-truss" "Draw the board for the nearest truss file." t)
-;;;###autoload (autoload 'org-truss-export "org-truss" "Write the document of the nearest truss file." t)
-;;;###autoload (autoload 'org-truss-apply-pattern "org-truss" "Apply a pattern to the heading at point, in any Org file." t)
+;;;###autoload (autoload 'org-truss-export "org-truss" "Write the output document of the nearest truss file." t)
+;;;###autoload (autoload 'org-truss-apply-pattern "org-truss" "Give the heading at point a pattern, in any Org file." t)
 
 (defcustom org-truss-project-file nil
   "Empty file `org-truss-init' writes beside the truss file, or nil.
@@ -95,11 +93,10 @@ there is left as it is.  Return the names of what was made."
 (defun org-truss-init (directory)
   "Set up DIRECTORY to make a document in, and open its truss file.
 A new truss file, written to disk, when there is none.  Beside it, what
-is missing of the directories its head comment names and of
-`org-truss-project-file'; see
-`org-truss-set-up-directory'.  A truss file written before its
-attachments were kept beside it is given the line that keeps them there,
-left unsaved to be looked over."
+is missing of the directories its guide names and of
+`org-truss-project-file'; see `org-truss-set-up-directory'.  A truss
+file written before its attachments were kept beside it is given the
+line that keeps them there, left unsaved to be looked over."
   (interactive (list (read-directory-name "Directory: " (org-truss--default-directory))))
   (let* ((file (expand-file-name org-truss-file-name directory))
          (new (not (file-exists-p file)))
@@ -120,7 +117,7 @@ left unsaved to be looked over."
 
 ;;;###autoload
 (defun org-truss-refresh-guides ()
-  "Put the current guidance back into the nearest truss file.
+  "Put the current guide back into the nearest truss file.
 The comment block at its head and the :GUIDE: drawers are written anew, or
 added where they were deleted; nothing you wrote is touched.  The buffer is
 left unsaved, to be looked over."
@@ -129,7 +126,7 @@ left unsaved, to be looked over."
                   (user-error "No %s here or above" org-truss-file-name))))
     (with-current-buffer (find-file-noselect file)
       (org-truss-refresh-guides-in-buffer)
-      (message "org-truss: guidance in %s is current; not saved yet"
+      (message "org-truss: the guide in %s is current; not saved yet"
                (abbreviate-file-name file)))))
 
 ;;;###autoload
@@ -150,53 +147,6 @@ finds and where, by line.  RET on a line visits it."
       (compilation-mode)
       (goto-char (point-min))
       (display-buffer (current-buffer)))))
-
-;;;###autoload
-(defun org-truss-convert-references ()
-  "Make the nearest truss file point to its members by CUSTOM_ID.
-A link [[*heading]], wherever it is, becomes
-[[#id]], and the member named is given an id when it has none; a link
-keeps its words.  For a link written by heading, with Org's completion,
-say.  The buffer is left
-unsaved, to be looked over."
-  (interactive)
-  (let ((file (or (org-truss-locate)
-                  (user-error "No %s here or above" org-truss-file-name))))
-    (with-current-buffer (find-file-noselect file)
-      (message "org-truss: %d references in %s point by id now; not saved yet"
-               (org-truss-convert-references-in-buffer)
-               (abbreviate-file-name file)))))
-
-;;;###autoload
-(defun org-truss-convert-grounds ()
-  "Move the nearest truss file's TRUSS_GROUNDS into the text of their headings.
-For a file written while grounds were a property: each link it held goes
-on a line of its own after the heading's text,
-and the words it held after them; a heading the words alone grounded is
-tagged :assumption:.  The buffer is left unsaved, to be looked over."
-  (interactive)
-  (let ((file (or (org-truss-locate)
-                  (user-error "No %s here or above" org-truss-file-name))))
-    (with-current-buffer (find-file-noselect file)
-      (message "org-truss: %d headings in %s ground in their text now; not saved yet"
-               (org-truss-convert-grounds-in-buffer)
-               (abbreviate-file-name file)))))
-
-;;;###autoload
-(defun org-truss-convert-public ()
-  "Write the nearest truss file without public blocks.
-For a file written while only a public block was told: under each
-heading, the text outside its public block goes into a comment block, and
-the public block's text becomes the heading's text, a title other than
-the heading kept on a comment line above it.  The buffer is left unsaved,
-to be looked over."
-  (interactive)
-  (let ((file (or (org-truss-locate)
-                  (user-error "No %s here or above" org-truss-file-name))))
-    (with-current-buffer (find-file-noselect file)
-      (message "org-truss: %d headings in %s are told by their text now; not saved yet"
-               (org-truss-convert-public-in-buffer)
-               (abbreviate-file-name file)))))
 
 (defun org-truss-batch-check ()
   "Print what the Org file named on the command line leaves undone.
@@ -244,14 +194,14 @@ with one; what they find is put together."
       (org-truss-check-groups (org-truss-read))
     (let (groups)
       (dolist (top (org-truss--pattern-tops))
-        (setq org-truss--root top)
+        (setq org-truss--alone top)
         (dolist (group (org-truss-check-groups (org-truss-read)))
           (let ((cell (assoc (car group) groups)))
             (if cell
                 (setcdr cell (seq-uniq (append (cdr cell) (cdr group))))
               (push (cons (car group) (cdr group)) groups))))
         (set-marker top nil))
-      (setq org-truss--root nil)
+      (setq org-truss--alone nil)
       (nreverse groups))))
 
 (defun org-truss--check-as (file text)
@@ -329,7 +279,7 @@ copy brings it about, by the file's lines."
       (princ (substring-no-properties (org-truss-board-text (org-truss-read)))))))
 
 (defun org-truss-batch-export ()
-  "Write the document of the truss file named on the command line.
+  "Write the output document of the truss file named on the command line.
 
   emacs --batch -L DIR -l org-truss -f org-truss-batch-export truss.org"
   (let ((file (pop command-line-args-left)))

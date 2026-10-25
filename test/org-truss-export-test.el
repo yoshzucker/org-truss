@@ -13,7 +13,7 @@
 
 (defun org-truss-test--render (text)
   (org-truss-test--with text
-    (org-truss-render (org-truss-read))))
+    (org-truss-render-document (org-truss-read))))
 
 (ert-deftest org-truss-test-render-what-the-reader-sees ()
   "A member is written as its heading, and the text under it after; a
@@ -182,7 +182,7 @@ In short, [[truss-include:long][the long reviews]] end.
                      "  Reviews run long\n\n"
                      "  - Eight of twelve ran over\n"
                      "  - Loops back\n\n"
-                     "    (told without end: truss-include:move)\n\n"
+                     "    (included without end: truss-include:move)\n\n"
                      "\\* Then\n\n"
                      "In short, the long reviews end\\.\n\n"
                      "- Eight of twelve ran over\n")
@@ -519,7 +519,7 @@ the file to be put right."
                out))))
   (org-truss-test--with org-truss-test--telling-text
     (let ((model (org-truss-read)))
-      (should (equal (mapcar (lambda (o) (org-truss-member-label (car o)))
+      (should (equal (mapcar (lambda (o) (org-truss-member-words (car o)))
                              (plist-get (org-truss-checks model) :out-of-order))
                      '("Half the items repeat" "Reviews are weekly")))
       (should (equal (org-truss-gaps (org-truss-test--m model "We move to fortnightly reviews"))

@@ -645,7 +645,7 @@ We would meet half as often.
   what is under it.  In a section, a list not marked stays its text, the
   links ~- [[truss-include:m7]]~ that tell members among it.
 - A target in its first line, ~<<m21>>~, is its id: ~[[m21]]~ points to
-  it, as a ground, and ~[[truss-include:m21]]~ tells it.  /place/ and
+  it, as a ground, and ~[[truss-include:m21]]~ tells it.  /include/ and
   /ground/ give an item one, as they give a heading a ~CUSTOM_ID~.
 - In the document the items are told as the headings under it are, where
   the list stands in its text: each opened with its role where the
@@ -687,32 +687,15 @@ would break what pointed to it; pointing by id, a heading can be rewritten
 anywhere -- on the board with /rename/, in the file by hand, or by a model
 editing the file -- and nothing breaks.
 
-A member is given an id only once something points to it: /place/ placing it,
+A member is given an id only once something points to it: /include/ placing it,
 /ground/ making it a ground, /new/ writing it in a section.  An id is ~m~ and the
 next number free in the file; one you write yourself is kept.  Two
 headings with one id, and a link or a ground that points to no heading,
-are reported as /Broken links/, at each in the part it is in.  /place/ on a broken link places a member where it
+are reported as /Broken links/, at each in the part it is in.  /include/ on a broken link places a member where it
 stands.
 
-A link written by heading, ~[[*heading]]~ or ~[[truss-include:*heading]]~
--- with Org's completion, say -- points to no member and shows as broken.
-~M-x org-truss-convert-references~ points each by id, wherever it is,
-giving the member named one, and keeps a link's words.
-
-A file written while grounds were a property, ~TRUSS_GROUNDS~, is read
-without them; ~M-x org-truss-convert-grounds~ moves each into the text of
-its heading -- each link on a line of its own after the heading's text,
-the words after them -- and tags ~:assumption:~ a heading the words alone
-grounded.
-
-A file written while only a public block, ~#+begin_public~, was told,
-and the rest of a heading's text stayed in the file, is told now as it
-stands: ~M-x org-truss-convert-public~ puts what each heading had outside
-its public block into a comment block, makes the block's text the
-heading's text, and keeps a title other than the heading on a comment
-line above it, ~# Title for the reader: ...~, for the heading to be
-rewritten by hand.  A file with no public block is left as it is.  All
-three leave the buffer unsaved, to be looked over.
+A link written by words, ~[[*words]]~ or ~[[truss-include:*words]]~ --
+with Org's completion, say -- names no ID and shows as broken.
 
 * The board
 
@@ -894,7 +877,7 @@ holds -- or, in the structure, whether the story does -- is read down it;
 the right, what the reader is told, so whether it reads as prose is read
 down that.  A member's right is the same where it is written and where a
 link tells it: its heading, and with entry text the text under it; a step with its number,
-a part with its role.  It is in the face ~org-truss-untold~ while the
+a part with its role.  It is in the face ~org-truss-outside~ while the
 document does not tell it.  So a heading and what is under it can be read through as
 prose beside its logic where it is written.
 
@@ -944,7 +927,7 @@ or =↥= is not used.  ~org-truss-board-marks~ sets the marks.  A role a
 member's pattern asks for and it lacks -- /Minor premise —/ -- follows what
 it holds, with the pattern that asks when the member has more than one.
 So does a role the structure's or a section's pattern asks for and no
-section right below plays -- /Rain —/ -- and /new-section/ on it adds a section that
+section right below plays -- /Rain —/ -- and /new-in-structure/ on it adds a member that
 plays it.
 
 The other marks of the board are not links:
@@ -1072,10 +1055,10 @@ The board's commands fall into four groups, by what they work on.
 shows, and the members do not move.  /Shape/ works on the sections, on
 what the structure says itself, and on the patterns of any heading.
 /See/ moves about the board and the document.  Each is named here by what
-follows ~org-truss-board-~ in its name -- /place/ is
-~org-truss-board-place~.  Few have a key of their own: those that move
+follows ~org-truss-board-~ in its name -- /include/ is
+~org-truss-board-include~.  Few have a key of their own: those that move
 through the board and read it, ~m~ for a source, ~x~ for the document.
-The rest are called by name, ~M-x org-truss-board-place~, or bound where
+The rest are called by name, ~M-x org-truss-board-include~, or bound where
 you want them, in ~org-truss-board-mode-map~.  The foot of the board lists
 those with a key, in the same four lines.
 
@@ -1089,10 +1072,10 @@ those with a key, in the same four lines.
 |       | assume             |             | tag it an assumption, or take the tag off                                         | same                                               |
 |       | refile             |             | refile it, last under another section                                             | refile it, last under a part or another member     |
 |       | delete             |             |                                                                                   | delete it from the file, after asking              |
-| place | place              |             | tell a heading in it, by a link                                                   | same                                               |
+| include | include          |             | include a member in it, by an include link                                        | same                                               |
 |       | take-out           |             | take it out, handing what it places up                                            | take it out of its section; it stays in the file   |
 |       | up, down           |             | move it among its siblings                                                        | move it among its siblings; listed, in its section |
-| shape | new-section        |             | add a section under it; on a missing role, playing it, where the pattern lists it |                                                    |
+| shape | new-in-structure   |             | add a member under it; on a missing role, playing it, where the pattern lists it  |                                                    |
 |       | say                |             | write its lead                                                                    | write the text it is told with                     |
 |       | unwrap             |             | take the sections below away, keeping their links                                 |                                                    |
 |       | pattern            |             | apply a pattern of any kind, or take one off                                      | same                                               |
@@ -1114,11 +1097,11 @@ those with a key, in the same four lines.
 |       | redraw             | ~g~         | draw again                                                                        |                                                    |
 |       | save               | ~C-x C-s~   | save the truss file                                                               |                                                    |
 
-/place/ on any heading -- a section, a member, a part -- writes in it a link
+/include/ on any heading -- a section, a member, a part -- writes in it a link
 that tells the heading chosen, ~- [[truss-include:m7]]~: a member, those
 placed nowhere offered first, or a section.  A heading can be told in as
 many places as want it, and is told in each; /take-out/ takes it out of one.
-On a broken link, /place/ tells the heading chosen where the link stands, in
+On a broken link, /include/ tells the heading chosen where the link stands, in
 its place: the way to mend one.  /take-out/ loses nothing
 written: on a member a link tells, the link goes and the member stays in
 the file, whatever heading the link is in; a section taken out hands what
@@ -1236,7 +1219,7 @@ one a pattern has alone -- a reason under reasons, a step under steps --
 without asking, and else the one asked for, those no heading plays yet
 first.  It goes where the patterns list the roles it plays: before the
 first heading there that plays one listed after its own, or else last --
-as /pattern/ puts in what a pattern asks for, and /new-section/ a section.
+as /pattern/ puts in what a pattern asks for, and /new-in-structure/ a member of Structure.
 
 /refile/ refiles a heading, as Org's ~C-c C-w~ does: it moves it, with what is
 under it, last under another -- a member under the brief, the subject, the
@@ -1249,7 +1232,7 @@ telling pattern does not want, listed /Out of order/, is put right from
 the board.  The places are offered in the order of the file, and a member
 by its path -- from its part, through what it is nested under, cut short,
 to its own heading, with a step's number or the roles it plays: /Message ›
-Check before every … › As follows › step 2: Read the checker/.  /place/ on a
+Check before every … › As follows › step 2: Read the checker/.  /include/ on a
 section offers members the same way.
 
 Applying a telling pattern to a section that already has sections puts
@@ -1257,7 +1240,7 @@ each, as it is, in the place of the new section whose role it plays; the
 pattern adds sections, named in ~org-truss-language~, only for the places
 none plays.  So switching patterns changes the order and the marks, never
 a heading.  A section in none of the places is kept after the rest, and
-the board marks it =[no role]=.  /place/, /roles/ and /take-out/ sort it out.  /unwrap/ and /take-out/
+the board marks it =[no role]=.  /include/, /roles/ and /take-out/ sort it out.  /unwrap/ and /take-out/
 ask before discarding text.  /unwrap/ takes the section's patterns
 off too, of every kind, since what they asked for was asked of the
 sections it takes away.

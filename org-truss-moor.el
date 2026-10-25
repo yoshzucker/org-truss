@@ -20,12 +20,12 @@
 ;; gives it grounds.
 ;;
 ;; Here: the sources of a truss file are put beside it; `m' on the board
-;; takes one for a heading as org-moor takes one -- a page, a file, the
+;; takes one for a member as org-moor takes one -- a page, a file, the
 ;; clipboard -- or links one taken before, for it to stand on; `m o' and
 ;; `m O' open a source the board's line names, its copy or where it came
-;; from, so what a heading stands on is read beside it; the check finds a
-;; `moor:' link to a source that is not there; the document links to
-;; where a source came from, not to the copy; and
+;; from, so what a member stands on is read beside it; the check finds a
+;; `moor:' link to a source that is not there; the output document links
+;; to where a source came from, not to the copy; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
 ;; cannot ask Emacs, and prints the link to cite it with.
 
@@ -47,11 +47,11 @@
 (add-hook 'org-moor-sources-directory-functions #'org-truss-moor-sources)
 
 (defun org-truss-moor--at-heading (command)
-  "Call COMMAND, an org-moor command, at the heading of the board's line.
+  "Call COMMAND, an org-moor command, at the member of the board's line.
 As if typed there: it reads what it reads, takes the source into the
 truss file's sources, and writes the link on a line of its own after the
-heading's text."
-  (let ((item (org-truss--want (org-truss--item) 'member 'section)))
+member's text."
+  (let ((item (org-truss--want (org-truss--item) 'member)))
     (org-truss--fresh)
     (with-current-buffer org-truss--source
       (save-excursion
@@ -61,36 +61,36 @@ heading's text."
     (org-truss-board-redraw)))
 
 (defun org-truss-board-take-url ()
-  "Take a web page or a file on the web for the heading at point.
+  "Take a web page or a file on the web for the member at point.
 Its copy is fetched in the background, as `org-moor-take-url' fetches it,
-and the link to it written under the heading: grounds."
+and the link to it written in the member's text: grounds."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-take-url))
 
 (defun org-truss-board-take-file ()
-  "Take a file for the heading at point, as `org-moor-take-file' does.
-The link to it is written under the heading: grounds."
+  "Take a file for the member at point, as `org-moor-take-file' does.
+The link to it is written in the member's text: grounds."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-take-file))
 
 (defun org-truss-board-take-clipboard ()
-  "Take the clipboard for the heading at point, as `org-moor-take-clipboard' does.
-The link to it is written under the heading: grounds."
+  "Take the clipboard for the member at point, as `org-moor-take-clipboard' does.
+The link to it is written in the member's text: grounds."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-take-clipboard))
 
 (defun org-truss-board-keep-copy ()
-  "Keep a copy of the sources the heading at point links to that have none.
+  "Keep a copy of the sources the member at point links to that have none.
 From their origins, as `org-moor-keep-copy' does: for sources an agent
 took, which could not fetch them as you, signed in."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-keep-copy))
 
 (defun org-truss-board-link-source ()
-  "Link the heading at point to a source the truss file has: grounds.
-On a line of its own after the heading's text."
+  "Link the member at point to a source the truss file has: grounds.
+On a line of its own after the member's text."
   (interactive)
-  (let ((item (org-truss--want (org-truss--item) 'member 'section)))
+  (let ((item (org-truss--want (org-truss--item) 'member)))
     (org-truss--fresh)
     (with-current-buffer org-truss--source
       (let ((records (org-moor-sources-in (org-moor-sources))))
@@ -108,31 +108,31 @@ On a line of its own after the heading's text."
 (defun org-truss-moor--open (origin how)
   "Open a source of the board's line, as following its link does.
 A source's line opens its own; a quotation's, a link in it or else the
-first the text cites; a heading's, one its own text links to, asked for
-when several -- not those of the headings under it, which the board shows
+first the text cites; a member's, one its own text links to, asked for
+when several -- not those of the members under it, which the board shows
 under them.  ORIGIN opens where a source taken by org-moor came from
 rather than its copy; any other link is followed either way.  HOW is the
 prefix, as for following a link."
-  (let* ((item (org-truss--want (org-truss--item) 'member 'section))
+  (let* ((item (org-truss--want (org-truss--item) 'member))
          (pos (plist-get item :pos)))
     (org-truss--fresh)
     (with-current-buffer org-truss--source
       (let* ((links (or (plist-get item :links)
                         (seq-uniq (org-truss--source-links-in
-                                   (org-truss--text (org-truss--own pos))))
+                                   (plist-get (org-truss--text-at pos) :all)))
                         (user-error "No source here")))
              (link (if (cdr links)
                        (org-truss--read-choice
                         "Source: " (mapcar (lambda (l) (cons (concat (org-truss--link-text l) "  " l) l))
                                            links))
                      (car links)))
-             (end (cdr (org-truss--own-bounds pos))))
+             (end (cdr (org-truss--text-bounds pos))))
         (save-excursion
           ;; Point on the link, so it is followed from where it is written:
-          ;; a file beside the truss file, the heading a copy is read for.
+          ;; a file beside the truss file, the member a copy is read for.
           (goto-char pos)
           (unless (search-forward link end t)
-            (user-error "The link is no longer under the heading: %s" link))
+            (user-error "The link is no longer in the member's text: %s" link))
           (goto-char (match-beginning 0))
           (if (and origin (string-prefix-p "[[moor:" link))
               (org-moor-open-origin how)
