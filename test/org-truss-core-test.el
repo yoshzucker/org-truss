@@ -144,16 +144,16 @@ The safety board.
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
-:TRUSS_BREAKDOWN: premises-issue-constraints
+:TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Issue
 :PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: issue
+:TRUSS_BREAKDOWN_ROLE: present
 :END:
 *** Nobody checks before a test
 ** Constraints
 :PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: constraints
+:TRUSS_BREAKDOWN_ROLE: future
 :END:
 Finance said so at the October meeting.
 *** No budget this year
@@ -188,16 +188,16 @@ Finance said so at the October meeting.
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
-:TRUSS_BREAKDOWN: premises-issue-constraints
+:TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Premises
 :PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: premises
+:TRUSS_BREAKDOWN_ROLE: past
 :END:
 *** How many cars we run
 ** Constraints
 :PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: constraints
+:TRUSS_BREAKDOWN_ROLE: future
 :END:
 *** The manager checks every driver before and after driving
 :PROPERTIES:
@@ -1752,8 +1752,8 @@ plays is a missing role."
     (let* ((model (org-truss-read))
            (subject (org-truss-model-subject model)))
       (should (equal (org-truss-test--fields subject)
-                     '((((breakdown . issue)) . "")
-                       (((breakdown . constraints)) . "Finance said so at the October meeting."))))
+                     '((((breakdown . present)) . "")
+                       (((breakdown . future)) . "Finance said so at the October meeting."))))
       (should (equal (org-truss-test--labels
                       (org-truss-member-supports (cadr (org-truss-member-supports subject))))
                      '("No budget this year" "The schedule is fixed")))
@@ -1762,7 +1762,7 @@ plays is a missing role."
       (should (eq (org-truss-parent model (cadr (org-truss-member-supports subject))) subject))
       (should (equal (plist-get (org-truss-checks model) :gaps)
                      (list (cons (org-truss-model-brief model) '((breakdown constraints . 1)))
-                           (cons subject '((breakdown premises . 1))))))
+                           (cons subject '((breakdown past . 1))))))
       (should (eq (org-truss-member-at model (org-truss-member-pos subject)) subject))
       (should (eq (org-truss-member-part (org-truss-test--m model "No budget this year")) 'subject))
       (should (equal (org-truss-test--labels (org-truss-in-document model)) '("No budget this year")))
@@ -2188,12 +2188,12 @@ headings there, under any heading, with no guide of its own: the board
 says what it is for."
   (org-truss-test--with org-truss-test--conditions-file
     (set-marker (org-truss-add-role-member (org-truss--part-pos "brief") 'breakdown 'constraints) nil)
-    (set-marker (org-truss-add-role-member (org-truss--part-pos "subject") 'breakdown 'premises) nil)
+    (set-marker (org-truss-add-role-member (org-truss--part-pos "subject") 'breakdown 'past) nil)
     (let ((model (org-truss-read)))
       (should (equal (mapcar #'org-truss-member-words (org-truss-member-supports (org-truss-model-brief model)))
                      '("Reader" "Their question" "Response wanted" "Constraints")))
       (should (equal (mapcar #'org-truss-member-words (org-truss-member-supports (org-truss-model-subject model)))
-                     '("Premises" "Issue" "Constraints")))
+                     '("Past" "Issue" "Constraints")))
       (should-not (string-match-p ":GUIDE:" (buffer-string)))
       (should-not (plist-get (org-truss-checks model) :gaps)))))
 

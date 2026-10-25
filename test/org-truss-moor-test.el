@@ -18,7 +18,7 @@
 under a member nested in it gives the member none."
   (org-truss-test--with
       (concat "* Subject\n:PROPERTIES:\n:TRUSS_PART: subject\n:END:\n"
-              "** Premises\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: premises\n:END:\n"
+              "** Premises\n"
               "*** Approval goes to the head first\n"
               "#+begin_quote\nThe head approves before finance.\n#+end_quote\n"
               "[[moor:6f1c::12][Approval manual p. 12]]\n"

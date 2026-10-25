@@ -153,8 +153,6 @@ the directory attachments go in elsewhere."
     (response "Response wanted" "求める反応")
     (interpretation "Interpretation" "解釈")
     (action   "Action"        "行動")
-    (premises "Premises"      "前提")
-    (issue    "Issue"         "課題")
     (constraints "Constraints" "制約"))
   "Roles a member can play in the patterns of the member above it.
 Each is the value of a TRUSS_LOGIC_ROLE, a TRUSS_BREAKDOWN_ROLE or a
@@ -213,10 +211,6 @@ here."
      :kind breakdown :name "Reader, Question, Response, Constraints" :list bulleted
      :roles ((reader :label t) (question :label t) (response :label t) (constraints :label t))
      :about "who reads it, what they ask, what they are to do, what it keeps to")
-    (premises-issue-constraints
-     :kind breakdown :name "Premises, Issue, Constraints" :list bulleted
-     :roles ((premises :label t) (issue :label t) (constraints :label t))
-     :about "what is taken as given, what the problem is, what cannot move")
     (interpretation-action
      :kind breakdown :name "Interpretation, Action" :list bulleted
      :roles ((interpretation) (action))

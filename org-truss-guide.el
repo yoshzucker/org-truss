@@ -44,7 +44,7 @@ Words
     TRUSS_BREAKDOWN  a breakdown.  steps parts what-why-how pros-cons
                      short-long past-present-future 5w1h 6w1h
                      reader-question-response-constraints
-                     premises-issue-constraints interpretation-action
+                     interpretation-action
     TRUSS_TELLING    the order of telling.  prep sds scqa sky-rain-umbrella
   role            what one right under plays in the pattern above: reason,
                   who, sky
@@ -178,7 +178,7 @@ M-x org-truss-export で、OUT/ に書き出す。
     TRUSS_BREAKDOWN  内訳。steps parts what-why-how pros-cons short-long
                      past-present-future 5w1h 6w1h
                      reader-question-response-constraints
-                     premises-issue-constraints interpretation-action
+                     interpretation-action
     TRUSS_TELLING    語る順。prep sds scqa sky-rain-umbrella
   役          すぐ下のものが、上の型の中で担うもの。reason、who、sky など
   部材        見出し一つか、#+attr_truss を付けた箇条書きの項目一つ

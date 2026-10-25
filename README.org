@@ -1446,7 +1446,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-language~           | ~en~                           | ~ja~ for a Japanese guide and member names    |
 | ~org-truss-file-name~          | ~"truss.org"~                  |                                               |
 | ~org-truss-patterns~           | those above                    | add your own                                  |
-| ~org-truss-roles~              | reason, who, sky, premises ... | roles a pattern of your own can name          |
+| ~org-truss-roles~              | reason, who, sky, reader ...   | roles a pattern of your own can name          |
 | ~org-truss-new-parts~          | the basic form above           | the patterns a new file's parts are given,    |
 |                                |                                | the members under them, and what Structure    |
 |                                |                                | includes                                      |

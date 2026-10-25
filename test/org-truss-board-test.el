@@ -186,19 +186,19 @@ them, and is listed under the part."
                      " Missing roles\n"
                      "   Brief +Constraints\n\n"
                      " Subject  .*\n"
-                     " △ (breakdown › Premises, Issue, Constraints)\n"
-                     "   Issue[ ·]+Issue +Issue\n"
+                     " △ (breakdown › Past, present, future)\n"
+                     "   Present[ ·]+Issue +Issue\n"
                      "   └ member[ ·]+Nobody checks before a test +Nobody checks before a test\n"
-                     "   Constraints[ ·]+Constraints +Constraints\n"
+                     "   Future[ ·]+Constraints +Constraints\n"
                      "   ├ member[ ·]+#budget No budget this year +No budget this year\n"
                      "   │   ▤ member[ ·]+Constraints\n"
                      "   │   ⏚ source[ ·]+finance, 3 October\n"
                      "   └ member[ ·]+The schedule is fixed +The schedule is fixed\n"
-                     "   Premises —\n\n"
+                     "   Past —\n\n"
                      " Missing roles\n"
-                     "   Subject +Premises\n")
+                     "   Subject +Past\n")
              (buffer-string)))
-    (org-truss-test--goto-line-with "^   Issue")
+    (org-truss-test--goto-line-with "^   Present")
     (save-window-excursion
       (org-truss-board-visit)
       (should (equal (org-get-heading t t t t) "Issue")))
@@ -227,18 +227,18 @@ member playing none of them is marked, and r gives it a role."
           (property (lambda (heading name)
                       (with-current-buffer source
                         (org-entry-get (org-truss-test--heading-pos heading) name)))))
-      (org-truss-test--goto-line-with "^   Premises —")
+      (org-truss-test--goto-line-with "^   Past —")
       (org-truss-test--creating '("Tests are random")
         (should (equal (seq-take (seq-drop (funcall headings) 3) 3)
                        '("Tests are random" "Issue" "Constraints")))
-        (should (equal (funcall property "Tests are random" "TRUSS_BREAKDOWN_ROLE") "premises")))
-      (should (string-match-p "^   Premises[ ·]+Tests are random" (buffer-string)))
+        (should (equal (funcall property "Tests are random" "TRUSS_BREAKDOWN_ROLE") "past")))
+      (should (string-match-p "^   Past[ ·]+Tests are random" (buffer-string)))
       (org-truss-test--goto-line-with "^ Subject ")
       (should (equal (mapcar #'cdr (org-truss--pattern-choices
                                     (org-truss-model-subject (org-truss-read source))))
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
-                       reader-question-response-constraints premises-issue-constraints
+                       reader-question-response-constraints
                        interpretation-action prep sds scqa sky-rain-umbrella (none . breakdown))))
       (org-truss-test--answering '("breakdown › Pros and cons")
         (org-truss-board-pattern))
@@ -246,9 +246,9 @@ member playing none of them is marked, and r gives it a role."
       (should (equal (seq-drop (funcall headings) 3)
                      '("Pros" "Cons" "Tests are random" "Issue" "Constraints"
                        "Check with a breathalyser" "Constraints")))
-      (org-truss-test--goto-line-with "^   Issue \\[no role\\]")
-      (should (eq (get-text-property (+ (point) 9) 'face) 'org-truss-attention))
-      (should (string-match-p "^ No role\n\\(?:   .*\n\\)*   Issue \\[no role\\][ ·]+Issue +plays no role of breakdown › Pros and cons$"
+      (org-truss-test--goto-line-with "^   Present \\[no role\\]")
+      (should (eq (get-text-property (+ (point) 11) 'face) 'org-truss-attention))
+      (should (string-match-p "^ No role\n\\(?:   .*\n\\)*   Present \\[no role\\][ ·]+Issue +plays no role of breakdown › Pros and cons$"
                               (buffer-string)))
       (org-truss-test--answering '("Cons")
         (org-truss-board-roles))
@@ -605,11 +605,11 @@ past what is under a member."
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
-:TRUSS_BREAKDOWN: premises-issue-constraints
+:TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: constraints
+:TRUSS_BREAKDOWN_ROLE: future
 :END:
 *** A summary, LONG
 :PROPERTIES:
@@ -677,11 +677,11 @@ and every line any of them is broken onto."
 * Subject
 :PROPERTIES:
 :TRUSS_PART: subject
-:TRUSS_BREAKDOWN: premises-issue-constraints
+:TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Constraints
 :PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: constraints
+:TRUSS_BREAKDOWN_ROLE: future
 :END:
 *** A fact, LONG
 :PROPERTIES:
@@ -889,15 +889,15 @@ holds; z unfolds it.  z among what it holds folds it again, and z on a
 member folds what is nested under it.  c into a folded member unfolds it."
   (let ((org-truss-board-fold-limit 1))
     (org-truss-test--with-board org-truss-test--conditions-file
-      (should (string-match-p "^   Constraints ▸2[ ·]+Constraints" (buffer-string)))
+      (should (string-match-p "^   Future ▸2[ ·]+Constraints" (buffer-string)))
       (should-not (string-match-p "member[ ·]+#budget No budget this year" (org-truss-test--top)))
-      (org-truss-test--goto-line-with "^   Constraints ▸2")
+      (org-truss-test--goto-line-with "^   Future ▸2")
       (org-truss-board-fold)
       (should (string-match-p "^   ├ member[ ·]+#budget No budget this year" (org-truss-test--top)))
       (org-truss-test--goto-line-with "member[ ·]+The schedule is fixed")
       (org-truss-board-fold)
       (should-not (string-match-p "member[ ·]+The schedule is fixed" (org-truss-test--top)))
-      (should (looking-at-p "   Constraints ▸2"))
+      (should (looking-at-p "   Future ▸2"))
       (org-truss-test--creating '("Tests start at seven")
         (should (string-match-p "member[ ·]+Tests start at seven" (buffer-string)))
         (should (equal (plist-get (org-truss--item) :words) "Tests start at seven")))))
@@ -1252,7 +1252,7 @@ missing role one playing it; on a section a member listed there."
                         (org-truss-member-includes
                          (car (org-truss-member-supports (org-truss-model-structure model)))))))))
   (org-truss-test--with-board org-truss-test--conditions-file
-    (org-truss-test--goto-line-with "^   Constraints[ ·]+Constraints")
+    (org-truss-test--goto-line-with "^   Future[ ·]+Constraints")
     (org-truss-test--creating '("Tests start at seven")
       (should (equal (org-truss-test--parent-label source "Tests start at seven")
                      '("Constraints" . 3))))
@@ -1336,7 +1336,7 @@ another member.  Links still find it."
     (should (equal (plist-get (org-truss--item) :words) "No budget this year"))
     (should-not (string-match-p "broken link" (buffer-string)))
     (org-truss-test--goto-line-with "member[ ·]+\\(?:\\[*#[^] ]+]* \\)?Check with a breathalyser")
-    (org-truss-test--answering '("Subject › Constraints: Constraints")
+    (org-truss-test--answering '("Subject › Future: Constraints")
       (org-truss-board-refile))
     (should (equal (org-truss-test--parent-label source "Check with a breathalyser")
                    '("Constraints" . 3))))
@@ -1443,8 +1443,8 @@ written under it."
     (let* ((model (org-truss-read))
            (names (mapcar #'car (org-truss--file-choices
                                  model (org-truss-member-by-words model "Check with a breathalyser")))))
-      (should (equal (seq-drop names (seq-position names "Subject › Constraints: Constraints"))
-                     '("Subject › Constraints: Constraints"
+      (should (equal (seq-drop names (seq-position names "Subject › Future: Constraints"))
+                     '("Subject › Future: Constraints"
                        "Subject › Constraints › No budget this year"
                        "Subject › Constraints › The schedule is fixed"
                        "Message"))))))
@@ -1459,13 +1459,13 @@ in, a heading for each role."
       (should (equal (funcall choices (org-truss-test--m model "Lone remark"))
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
-                       reader-question-response-constraints premises-issue-constraints
+                       reader-question-response-constraints
                        interpretation-action prep sds scqa sky-rain-umbrella)))
       (should (equal (last (funcall choices (org-truss-test--m model "Move to fortnightly")))
                      '((none . logic))))
       (should (equal (funcall choices (org-truss-model-structure model))
                      '(reasons deduction induction steps parts what-why-how pros-cons short-long past-present-future 5w1h 6w1h
-                       reader-question-response-constraints premises-issue-constraints
+                       reader-question-response-constraints
                        interpretation-action prep sds scqa sky-rain-umbrella (none . telling))))
       (should (equal (car (rassq 'prep (org-truss--pattern-choices
                                         (org-truss-test--m model "Lone remark"))))
@@ -2038,10 +2038,10 @@ is what the document tells of it, and outside the structure, lines marked
     (let ((text (buffer-string)))
       (should (string-match-p
                (concat "^ Subject .*\n"
-                       " △ (breakdown › Premises, Issue, Constraints)\n"
-                       "   Premises[ ·]+Premises +Premises\n"
+                       " △ (breakdown › Past, present, future)\n"
+                       "   Past[ ·]+Premises +Premises\n"
                        "   └ member[ ·]+How many cars we run +How many cars we run\n"
-                       "   Constraints[ ·]+Constraints +Constraints\n"
+                       "   Future[ ·]+Constraints +Constraints\n"
                        "   ├ member[ ·]+#rule The manager checks every driver.* +"
                        "The manager checks every driver before and after driving\n"
                        "   │ △ (logic › reasons)\n"
