@@ -625,12 +625,59 @@ As the shot shows.
 (ert-deftest org-truss-test-render-new-file ()
   "A new file is an output document as it stands: the facts, what they
 mean and what to do, each a heading in that order, its words those of the
-member Structure includes there."
+member Structure includes there.  A compound truss's headings are
+headings, a simple truss's items a list."
   (should (string-match-p
-           (concat "^\\* Subject\n\n- Part\n\n  - Part\n\n"
-                   "\\* Interpretation\n\n- Part\n\n  - Reason\n\n"
+           (concat "^\\* Subject\n\n\\*\\* Part\n\n- Part\n\n"
+                   "\\* Interpretation\n\n\\*\\* Part\n\n- Reason\n\n"
                    "\\* Action\n\n1\\. Step\n")
            (org-truss-test--render (org-truss-skeleton "T")))))
+
+(ert-deftest org-truss-test-render-compound-as-written ()
+  "A compound truss of a listing pattern is written as the file is: its
+supporting members written as items a list, those written as headings
+headings after it, numbered on where it is numbered.  Under a heading of
+a simple truss, a heading is an item."
+  (let ((text (org-truss-test--render "#+title: T
+* Message
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Do it
+:PROPERTIES:
+:CUSTOM_ID: m1
+:TRUSS_BREAKDOWN: steps
+:END:
+#+attr_truss:
+1. Book a room
+*** Ask them
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: step
+:TRUSS_BREAKDOWN: steps
+:END:
+#+attr_truss:
+1. Write
+2. Send
+** Why
+:PROPERTIES:
+:CUSTOM_ID: m2
+:TRUSS_LOGIC: reasons
+:END:
+*** It is cheap                                                :assumption:
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** [[truss-include:m1]]
+** [[truss-include:m2]]
+")))
+    (should (string-match-p
+             (concat "^\\* Do it\n\n1\\. Book a room\n\n\\*\\* 2\\. Ask them\n\n"
+                     "1\\. Write\n2\\. Send\n\n\\* Why\n\n- It is cheap\n")
+             text))))
 
 (provide 'org-truss-export-test)
 

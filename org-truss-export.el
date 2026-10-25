@@ -22,7 +22,9 @@
 ;; item, as a list one level in.
 ;; Once a list, what is under it stays a list; so too the supporting
 ;; members of a logic or breakdown truss, and below the deepest level of
-;; headings.  A member tagged :noexport: is left out, with what is under
+;; headings -- but for a compound truss's written as headings, which are
+;; headings, so the output document is in the shape the file is written
+;; in: a simple truss a list, a compound truss headings.  A member tagged :noexport: is left out, with what is under
 ;; it.  The result is an Org file; pandoc, when there is one, turns it into
 ;; Markdown.
 
@@ -171,17 +173,39 @@ each is written where the list is, between the pieces of the body; see
 (defun org-truss--supports-text (member level &optional supports)
   "Return MEMBER's supporting members as Org text, one tagged :noexport: left out.
 Each a heading one level below LEVEL; as a list instead when LEVEL is
-nil, MEMBER being written in a list, when it is the deepest level, or
-when a pattern of MEMBER says so -- see `org-truss-list-form'.  SUPPORTS,
-if given, are those of them to write."
+nil, MEMBER being written in a list, or when it is the deepest level.
+Where a pattern of MEMBER lists them -- see `org-truss-list-form' -- a
+list, but for a compound truss's: there those written as items are a
+list, and those written as headings, after them, headings, as the file
+is written.  SUPPORTS, if given, are those of them to write."
   (let ((supports (seq-remove #'org-truss-noexport-p
                               (or supports (org-truss-member-supports member)))))
-    (if (or (null level) (>= level org-truss--deepest-level) (org-truss-list-form member))
-        (org-truss--supports-list member supports)
-      (org-truss--join (mapcar (lambda (support)
-                                 (org-truss--as-heading support (1+ level)
-                                                        (org-truss--role-opening member support)))
-                               supports)))))
+    (cond ((or (null level) (>= level org-truss--deepest-level))
+           (org-truss--supports-list member supports))
+          ((not (org-truss-list-form member))
+           (org-truss--supports-headings member supports level))
+          ((eq (org-truss-truss-shape member) 'compound)
+           (let ((items (seq-filter #'org-truss-item-p supports)))
+             (org-truss--join
+              (list (org-truss--supports-list member items)
+                    (org-truss--supports-headings member (seq-remove #'org-truss-item-p supports)
+                                                  level (length items))))))
+          (t (org-truss--supports-list member supports)))))
+
+(defun org-truss--supports-headings (apex supports level &optional before)
+  "Return SUPPORTS, supporting members of APEX, as headings one level below LEVEL.
+Each opened with the role it plays, as `org-truss--role-opening' gives
+it, after its number where APEX lists them numbered, BEFORE of them
+numbered already."
+  (let ((n (or before 0)))
+    (org-truss--join
+     (mapcar (lambda (support)
+               (setq n (1+ n))
+               (org-truss--as-heading
+                support (1+ level)
+                (concat (if (eq (org-truss-list-form apex) 'numbered) (format "%d. " n) "")
+                        (org-truss--role-opening apex support))))
+             supports))))
 
 (defun org-truss--supports-list (apex supports)
   "Return SUPPORTS, supporting members of APEX, as an Org list.

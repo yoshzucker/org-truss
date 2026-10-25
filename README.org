@@ -1402,6 +1402,12 @@ Structure is in it, and the trusses and members its include links reach.
   opens with its own, /Who:/, /Pros:/.  What is under a supporting member
   goes inside its item, as a list again.  The supporting members of a
   ~TRUSS_TELLING~ truss are headings: a telling says only the order.
+- A compound truss is written as the file writes it (see [[*Writing
+  members]]): its supporting members written as items are a list, and
+  those written as headings, after it, are headings a level down, numbered
+  on in a numbered list, /2. Ask them/, and opened with their role as an
+  item is.  So a simple truss is a list under its heading, and a compound
+  truss headings over theirs; no level is worked out from below.
 - A member written as an item stands where its list stands in its apex
   member's text: text after the list follows it, and the members written
   as headings come last, on the last list when no text follows it.  Where

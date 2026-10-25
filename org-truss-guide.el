@@ -155,6 +155,9 @@ In the output document
   - supporting members are a list in a TRUSS_LOGIC or TRUSS_BREAKDOWN
     truss (numbered for steps), headings in a TRUSS_TELLING truss.  Where
     the pattern names its roles, each opens with its role (\"Pros: \")
+  - in a compound truss, the supporting members written as headings are
+    headings, after the list of those written as items: the output
+    document is in the shape of the file, written by 1 and 2
   - a member written as an item stands where its list stands
   - a pointing link is m7's words (its description, if it has one); a
     moor: link, where the source came from.  The first link to a source,
@@ -281,6 +284,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   - 支持部材は、TRUSS_LOGIC と TRUSS_BREAKDOWN のトラスなら箇条書き
     （steps は番号付き）、TRUSS_TELLING のトラスなら見出しで出る。役の
     名前を出す型では、役の名前から始まる（pros なら「メリット：」）
+  - 複合トラスでは、見出しに書いた支持部材は、項目に書いた支持部材の
+    箇条書きの後に、見出しで出る。書き方の 1 と 2 で書いた形のまま出る
   - 項目の部材は、箇条書きのあった場所に出る
   - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料の
     取り込み元になる。場所だけで名指した、その資料への最初のリンクには、
