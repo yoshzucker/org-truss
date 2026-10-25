@@ -778,7 +778,7 @@ Structure.  /pattern/ on it puts a pattern on it, and a member in for each
 role, to be written over -- and in the file itself, in a truss file or any
 other, ~M-x org-truss-apply-pattern~ does what /pattern/ does, on the
 heading at point; written over with the statement that plays it, a role
-still shows on the right what it is -- /Who:/, /When:/ -- so the words
+still shows before its words what it is -- /Who:/, /When:/ -- so the words
 need not say it.  An agent asked about it with org-dock is told what its
 patterns ask, and how to check its copy; see [[*Batch][Batch]].
 
@@ -794,143 +794,122 @@ saves a buffer, saves it from the board, and the title line says
 This is the board of the file above, every line open:
 
 #+begin_example
- Title ······················ Fortnightly reviews                     Fortnightly reviews
+ Title ···················· Fortnightly reviews
 
  Brief  what the output document must satisfy
  △ (breakdown › Reader, Question, Response, Constraints)
-   Reader ··················· The team leads                          The team leads
-   Question ················· Should the review stay weekly?          Should the review stay weekly?
-   Response wanted ·········· Agree to try fortnightly reviews next…  Agree to try fortnightly reviews next quarter
-   Constraints ·············· One page                                One page
+   Reader ················· The team leads
+   Question ··············· Should the review stay weekly?
+   Response wanted ········ Agree to try fortnightly reviews next quarter
+   Constraints ············ One page
 
  Subject  the facts found
  ⟁ (breakdown › parts)
-   Part ····················· The calendar this quarter               The calendar this quarter
+   Part ··················· The calendar this quarter
    △ (breakdown › parts)
-   ├ Part ············ <<m2>> Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
-   │   ↥ Reason ············· Most weeks it runs past the hour
-   │   ⏚ source ············· calendar export
-   └ Part ············ <<m3>> The longest ran forty minutes over      - The longest ran forty minutes over
-       ↥ Reason ············· It can run forty minutes over
-       ⏚ source ············· calendar export
-   Part ····················· The agendas, weeks 1-12                 The agendas, weeks 1-12
+   ├ Part ·········· <<m2>> - Eight of twelve reviews ran past the hour
+   │   ↥ Reason ··········· Most weeks it runs past the hour
+   │   ⏚ source ··········· calendar export
+   └ Part ·········· <<m3>> - The longest ran forty minutes over
+       ↥ Reason ··········· It can run forty minutes over
+       ⏚ source ··········· calendar export
+   Part ··················· The agendas, weeks 1-12
    △ (breakdown › parts)
-   └ Part ············ <<m4>> Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
-       ↥ Reason ············· Half of each agenda is what was open …
-       ⏚ source ············· agendas, weeks 1-12
+   └ Part ·········· <<m4>> - Six of twelve items each week come back from the…
+       ↥ Reason ··········· Half of each agenda is what was open the week befo…
+       ⏚ source ··········· agendas, weeks 1-12
 
  Message  what the output document says
  ⟁ (breakdown › Interpretation, Action)
-   Interpretation ······· #m5 The weekly review costs the team more…  The weekly review costs the team more time than it gives back
+   Interpretation ····· #m5 The weekly review costs the team more time than it…
    ⟁ (breakdown › parts)
    │ ▤ Rain
-   ├ Part ··················· The review takes longer than it is gi…  - The review takes longer than it is given
+   ├ Part ················· - The review takes longer than it is given
    │ △ (logic › reasons)
-   │ ├ Reason ··············· Most weeks it runs past the hour        - Most weeks it runs past the hour
-   │ │   ⏚ ground ···· [[m2]] Eight of twelve reviews ran past the …
-   │ └ Reason ··············· It can run forty minutes over           - It can run forty minutes over
-   │     ⏚ ground ···· [[m3]] The longest ran forty minutes over
-   └ Part ··············· #m6 Half the items repeat                   - Half the items repeat
+   │ ├ Reason ············· - Most weeks it runs past the hour
+   │ │   ⏚ ground ·· [[m2]] Eight of twelve reviews ran past the hour
+   │ └ Reason ············· - It can run forty minutes over
+   │     ⏚ ground ·· [[m3]] The longest ran forty minutes over
+   └ Part ············· #m6 - Half the items repeat
      △ (logic › reasons)
-     │ ↥ Action ············· Hold the review every other week
-     ├ Reason ··············· Half of each agenda is what was open …  - Half of each agenda is what was open the week before
-     │   ⏚ ground ···· [[m4]] Six of twelve items each week come ba…
-     ├ Reason [no grounds] ·· Nothing urgent waits for the review     - Nothing urgent waits for the review
-     └ Reason [assumed] ····· Items need a week to move               - Items need a week to move
-   Action ··············· #m7 Hold the review every other week        Hold the review every other week
+     │ ↥ Action ··········· Hold the review every other week
+     ├ Reason ············· - Half of each agenda is what was open the week be…
+     │   ⏚ ground ·· [[m4]] Six of twelve items each week come back from the w…
+     ├ Reason [no grounds]  - Nothing urgent waits for the review
+     └ Reason [assumed] ··· - Items need a week to move
+   Action ············· #m7 Hold the review every other week
    △ (breakdown › steps)
    │ ▤ Umbrella
-   │ ⏚ ground ······· [[#m6]] Half the items repeat
-   ├ Step ··················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-   └ Step ··················· Carry what is still open to the next …  2. Carry what is still open to the next one
+   │ ⏚ ground ····· [[#m6]] Half the items repeat
+   ├ Step ················· 1. Cancel every second review in the calendar
+   └ Step ················· 2. Carry what is still open to the next one
 
  No grounds
-   Reason [no grounds] ······ Nothing urgent waits for the review     no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
+   Reason [no grounds] ···· Nothing urgent waits for…  no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
 
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ············· →Subject [[truss-include:m1]]                    Reviews run long, and the same items come back
- │   • included ····· [[#m1]] Reviews run long, and the same items …  Reviews run long, and the same items come back
- │   ⟁ (breakdown › parts)
- │   ├ Part ················· The calendar this quarter               - The calendar this quarter
- │   │ △ (breakdown › parts)
- │   │ ├ Part ··············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
- │   │ └ Part ··············· The longest ran forty minutes over      - The longest ran forty minutes over
- │   └ Part ················· The agendas, weeks 1-12                 - The agendas, weeks 1-12
- │     △ (breakdown › parts)
- │     └ Part ··············· Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
- ├ Rain ············ →Message [[truss-include:m5]]                    The weekly review costs the team more time than it gives back
- │   • included ····· [[#m5]] The weekly review costs the team more…  The weekly review costs the team more time than it gives back
- │   ⟁ (breakdown › parts)
- │   ├ Part ················· The review takes longer than it is gi…  - The review takes longer than it is given
- │   │ △ (logic › reasons)
- │   │ ├ Reason ············· Most weeks it runs past the hour        - Most weeks it runs past the hour
- │   │ └ Reason ············· It can run forty minutes over           - It can run forty minutes over
- │   └ Part ················· Half the items repeat                   - Half the items repeat
- │     △ (logic › reasons)
- │     ├ Reason ············· Half of each agenda is what was open …  - Half of each agenda is what was open the week before
- │     ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
- │     └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
- └ Umbrella ········ →Message [[truss-include:m7]]                    Hold the review every other week
-     • included ····· [[#m7]] Hold the review every other week        Hold the review every other week
-     △ (breakdown › steps)
-     ├ Step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-     └ Step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
+ ├ Sky ··········· →Subject Reviews run long, and the same items come back
+ │   • included ▸5  [[#m1]] Reviews run long, and the same items come back
+ ├ Rain ·········· →Message The weekly review costs the team more time than it…
+ │   • included ▸7  [[#m5]] The weekly review costs the team more time than it…
+ └ Umbrella ······ →Message Hold the review every other week
+     • included ▸2  [[#m7]] Hold the review every other week
 #+end_example
 
 /order/ opens the members include links include where they are included
 instead: under the member of Structure whose link includes them, with
 what is under them, where they are used, what they stand on and what
 their patterns lack, and where they are written each is one line.
-Structure then reads as the output document, the right down the page,
-beside the logic each sentence rests on:
+Structure then reads as the output document, down the page, beside the
+logic each sentence rests on:
 
 #+begin_example
  Message  what the output document says
  ⟁ (breakdown › Interpretation, Action)
-   Interpretation ▸7 ···· #m5 The weekly review costs the team more…  The weekly review costs the team more time than it gives back
-   Action ▸2 ············ #m7 Hold the review every other week        Hold the review every other week
+   Interpretation ▸7 ···· #m5 The weekly review costs the team more time than …
+   Action ▸2 ············ #m7 Hold the review every other week
  ...
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ············· →Subject [[truss-include:m1]]                    Reviews run long, and the same items come back
- │   • included ····· [[#m1]] Reviews run long, and the same items …  Reviews run long, and the same items come back
+ ├ Sky ············· →Subject Reviews run long, and the same items come back
+ │   • included ····· [[#m1]] Reviews run long, and the same items come back
  │   ⟁ (breakdown › parts)
- │   ├ Part ················· The calendar this quarter               - The calendar this quarter
+ │   ├ Part ················· - The calendar this quarter
  │   │ △ (breakdown › parts)
- │   │ ├ Part ··············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
+ │   │ ├ Part ··············· - Eight of twelve reviews ran past the hour
  │   │ │   ↥ Reason ········· Most weeks it runs past the hour
  │   │ │   ⏚ source ········· calendar export
- │   │ └ Part ··············· The longest ran forty minutes over      - The longest ran forty minutes over
+ │   │ └ Part ··············· - The longest ran forty minutes over
  │   │     ↥ Reason ········· It can run forty minutes over
  │   │     ⏚ source ········· calendar export
- │   └ Part ················· The agendas, weeks 1-12                 - The agendas, weeks 1-12
+ │   └ Part ················· - The agendas, weeks 1-12
  │     △ (breakdown › parts)
- │     └ Part ··············· Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
- │         ↥ Reason ········· Half of each agenda is what was open …
+ │     └ Part ··············· - Six of twelve items each week come back from t…
+ │         ↥ Reason ········· Half of each agenda is what was open the week be…
  │         ⏚ source ········· agendas, weeks 1-12
- ├ Rain ············ →Message [[truss-include:m5]]                    The weekly review costs the team more time than it gives back
- │   • included ····· [[#m5]] The weekly review costs the team more…  The weekly review costs the team more time than it gives back
+ ├ Rain ············ →Message The weekly review costs the team more time than …
+ │   • included ····· [[#m5]] The weekly review costs the team more time than …
  │   ⟁ (breakdown › parts)
- │   ├ Part ················· The review takes longer than it is gi…  - The review takes longer than it is given
+ │   ├ Part ················· - The review takes longer than it is given
  │   │ △ (logic › reasons)
- │   │ ├ Reason ············· Most weeks it runs past the hour        - Most weeks it runs past the hour
- │   │ │   ⏚ ground ·· [[m2]] Eight of twelve reviews ran past the …
- │   │ └ Reason ············· It can run forty minutes over           - It can run forty minutes over
+ │   │ ├ Reason ············· - Most weeks it runs past the hour
+ │   │ │   ⏚ ground ·· [[m2]] Eight of twelve reviews ran past the hour
+ │   │ └ Reason ············· - It can run forty minutes over
  │   │     ⏚ ground ·· [[m3]] The longest ran forty minutes over
- │   └ Part ················· Half the items repeat                   - Half the items repeat
+ │   └ Part ················· - Half the items repeat
  │     △ (logic › reasons)
  │     │ ↥ Action ··········· Hold the review every other week
- │     ├ Reason ············· Half of each agenda is what was open …  - Half of each agenda is what was open the week before
- │     │   ⏚ ground ·· [[m4]] Six of twelve items each week come ba…
- │     ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
- │     └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
- └ Umbrella ········ →Message [[truss-include:m7]]                    Hold the review every other week
-     • included ····· [[#m7]] Hold the review every other week        Hold the review every other week
+ │     ├ Reason ············· - Half of each agenda is what was open the week …
+ │     │   ⏚ ground ·· [[m4]] Six of twelve items each week come back from the…
+ │     ├ Reason [no grounds]  - Nothing urgent waits for the review
+ │     └ Reason [assumed] ··· - Items need a week to move
+ └ Umbrella ········ →Message Hold the review every other week
+     • included ····· [[#m7]] Hold the review every other week
      △ (breakdown › steps)
      │ ⏚ ground ····· [[#m6]] Half the items repeat
-     ├ Step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-     └ Step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
+     ├ Step ················· 1. Cancel every second review in the calendar
+     └ Step ················· 2. Carry what is still open to the next one
 #+end_example
 
 /order/ again opens them where they are written.  Point stays on the
@@ -939,49 +918,54 @@ hand starts again; the mode line says /Truss included/ while they are
 opened where included.  Either way ~TAB~ opens a member where it is one
 line.
 
-** Three columns
+** Two columns
 
-Each line has three columns.  On the left is what the board says the line
+Each line has two columns.  On the left is what the board says the line
 is: the role a member plays in the patterns above it -- /member/ for one
 that plays none -- and the tree that joins them.  After the role come, in
 brackets, what wants seeing to: =[no role]= for a supporting member that
 plays no role of its apex member's patterns, =[no pattern]= for one that
 plays a role the member above has no pattern for, =[assumed]= for an
-assumption, =[no grounds]= for a reason that must have grounds and has
-none.  At the end of the left, just before its words, a member is named
+assumption, =[noexport]= for one tagged ~:noexport:~, =[no grounds]= for
+a reason that must have grounds and has none.  At the end of the left,
+just before its words, a member is named
 by its ID as the file names it: =#m9= where it is written, and =[[#m9]]=
 where an include link or a pointing link calls it.  So what Structure
 includes can be found where it is written, and a member under one a link
-calls, which is not called itself, has none.  In the middle, from one
+calls, which is not called itself, has none.  After the left, from one
 column the same on every line, are the file's own words -- members'
-words, the title -- as written, with dots leading to them.  A heading's
-words are in the face Org gives a heading of its level, so they look as
-they do in the file; the board colours them itself, so it does not matter
-whether the file has been shown yet.  The words of the parts' headings
-are not among them: a part's heading never reaches the reader, so its
-line says only /Brief/, /Structure/.  Words too long for the middle are
-cut short, the whole of them in the tooltip, so the right keeps its
-column.  The left is as wide as it needs; the middle and the right share
-the rest of the window evenly, and are drawn again when it is resized.
+words, the title -- with dots leading to them, and links read as the
+reader reads them: a member whose words are an include link alone reads
+as the words of the member it includes.  A heading is the reader's
+words, and its text is what the reader is told but its comments, so the
+words are what the output document says: a step opens with its number, a
+member of a list with its bullet or the role it plays.  A heading's words
+are in the face Org gives a heading of its level, so they look as they
+do in the file; the board colours them itself, so it does not matter
+whether the file has been shown yet.  Over it they are in the face
+~org-truss-outside~, slanted by default, while the output document does
+not include the member.  The words of the parts' headings are not among
+them: a part's heading never reaches the reader, so its line says only
+/Brief/, /Structure/.  The left is as wide as it needs; the words take
+the rest of the window, and are drawn again when it is resized.  Words
+too long for it are cut short at the window's edge, the whole of them in
+the tooltip, unless the line is drawn whole; see [[*Reading lines whole]].
 What a member holds starts two columns right of its word: what it stands
 on, the members its links include.  Its supporting members branch off
 from the column of its word.  The line of the tree starts right under the
 line naming its patterns and runs down past whatever comes before the
 first branch -- what it stands on or the members its links include, and
-with entry text its comments -- so each member is held by it as far down
-as it goes.  The tree of the members outside Structure is drawn in the
-face ~org-truss-branch~, faint by default, so where it meets Structure's
-tree the two read apart.
+drawn whole its text -- so each member is held by it as far down as it
+goes.  The tree of the members outside Structure is drawn in the face
+~org-truss-branch~, faint by default, so where it meets Structure's tree
+the two read apart.
 
-The three columns say the same in every part.  The left is where a line
-stands in the patterns; the middle, what is asserted, so whether the logic
-holds -- or, in Structure, whether the story does -- is read down it; the
-right, what the reader is told, so whether it reads as prose is read down
-that.  A member's right is the same where it is written and where a link
-includes it: its words, and with entry text its text; a step with its
-number, a part with its role.  It is in the face ~org-truss-outside~
-while the output document does not include it.  So a truss can be read
-through as prose beside its logic where it is written.
+The two columns say the same in every part.  The left is where a line
+stands in the patterns; the words, what is asserted and how the reader
+is told it, so whether the logic holds -- or, in Structure, whether the
+story does -- is read down it, and, drawn whole, whether it reads as
+prose.  A member's line is the same where it is written and where a link
+includes it.
 
 ** Marks
 
@@ -1009,10 +993,10 @@ the end where a link is written says what the link is to its member --
 =⏚ ground=, =• included= -- not the role the member plays where it is
 written, which says nothing there; a line at the other end names the
 member the link is in by the role that member plays.  A member whose
-words are an include link, ~*** [[truss-include:m7]]~, shows only the
-link in the middle, so the part m7 is written in is said before it, where
-an ID goes: =→Subject=, =→Message=, =→Brief=, =→Structure= -- how near to
-its sources what it stands on is.  What a member stands on is drawn below
+words hold a link, ~*** [[truss-include:m7]]~, reads as m7's words, so
+the part m7 is written in is said before them, where an ID goes:
+=→Subject=, =→Message=, =→Brief=, =→Structure= -- how near to its
+sources what it stands on is.  What a member stands on is drawn below
 it, as the ground is below a building: =⏚ ground= a member it points to
 -- with =[no grounds]= when it does not hold -- then =⏚ quote= each
 quotation in its text, and below them =⏚ source= each source it links to,
@@ -1023,8 +1007,7 @@ text, and a link in a sentence there is drawn as it is written,
 =[[#m3]]= or =[[moor:6f1c::12][Manual p. 12]]=, the words it points to
 left to the line below.  What stands on a member is drawn below it too,
 as everything under a line is, so its mark points up, from the member to
-it.  A line marked =⏚=, =↥= or =▤= is cut to the middle, its whole words
-in the tooltip; the mouse on any mark says what it means, and ~RET~ on the
+it.  The mouse on any mark says what it means, and ~RET~ on the
 line goes to what it names.  /same/ goes between a member and its calls.
 A member with no line marked =▤= or =↥= is not used.
 ~org-truss-board-marks~ sets the marks.  A role a member's pattern asks
@@ -1041,6 +1024,7 @@ The other marks of the board are not links:
 | =[no role]=         | after the role          | plays no role of its apex member's patterns                                          |
 | =[no pattern]=      | after the role          | plays a role, but the member above has no pattern of its kind                        |
 | =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
+| =[noexport]=        | after the role          | tagged ~:noexport:~: the output document leaves it out                               |
 | =[no grounds]=      | after the role          | must have grounds, and has none; after ⏚ ground, the member pointed to does not hold |
 | =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |
 | =(logic › reasons)= | the line below          | the patterns the member names                                                        |
@@ -1051,11 +1035,10 @@ The other marks of the board are not links:
 | =Rain —=            | below what it holds     | a role a pattern asks for that nothing plays                                         |
 | =[loop]=            | after the role          | included inside what it includes: drawn as one line, since it would never end        |
 
-In Structure a member an include link includes is one line, as written,
-the words it is written out in on its right; opened there, as included
-(/order/), it brings with it what the output document includes -- what is
-under it -- beside its uses, what it stands on and its gaps, so the output
-document can be read down the right.
+In Structure a member an include link includes is one line, as written;
+opened there, as included (/order/), it brings with it what the output
+document includes -- what is under it -- beside its uses, what it stands
+on and its gaps, so the output document can be read down Structure.
 
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Mixed
@@ -1066,19 +1049,14 @@ and ~RET~ on it goes there.  The mouse on the name of a check says what it
 finds.
 
 The patterns a member names go on the line just below it, in parentheses,
-where its supporting members branch off.  A step or a part shows on the
-right the number, the bullet or the label the reader will see it with,
-and a reason the label of the role it plays in a breakdown.  A member
+where its supporting members branch off.  A step or a part opens with
+the number, the bullet or the label the reader will see it with, and a
+reason with the label of the role it plays in a breakdown.  A member
 marked =⚠= comes below one the pattern tells after it; the output
 document follows the order of the file, so the order is put right there.
 The mark's tooltip, or ~C-h .~ on the line, says which.
 
-What the reader sees is the words an include link writes a member out in,
-its description when it has one; else its words; /noexport/ when the
-reader sees nothing of it.  On the /Structure/ line is the start of
-Structure's own text.  A heading the reader sees is drawn as a title; the
-text under it, in the faint face the comments in the middle take.  Brief
-is the reader's only through the title.  Under the title come Brief, then
+Brief is the reader's only through the title.  Under the title come Brief, then
 Subject, each drawn as the members are: its line, its patterns, and its
 supporting members, each named by the role it plays, so what Structure has
 to meet stays in view.  A role the breakdown asks for and none plays --
@@ -1088,56 +1066,51 @@ it.  A member that plays none of the breakdown's roles is marked
 
 ** Reading lines whole
 
-/entry-text/, as in the agenda, shows the text of each member below its
-line: the comments that stay in the file in the middle, under its words,
-and the text the reader sees on the right, broken to fit the window.
-Words too long for the middle are broken there too instead of cut short,
-since the board is now for reading, and so is every other line: a
-member's text, a ground, what a check lists.  The line naming a member's
-patterns stays right under its line, on the left of what follows it; when
-it is too wide for the left it takes the line after the member's words,
-and the comments start below it.  Read down the right, with the members
-opened where included, the board is then the output document, near
+A line is drawn on one line, cut short at the window's edge, or whole.
+Drawn whole, a member's words are broken to fit the window instead of cut
+short, since the line is now read rather than scanned, and its text
+follows them: what the reader is told, then its comments, which stay in
+the file, after the =#= they are written with and dimmed.  The lines it
+brings below it are broken to fit too: a ground, a source, where it is
+used.  The line naming its patterns stays right under its line, on the
+left of what follows it; when it is too wide for the left it takes the
+line after the member's words, and the text starts below it.  ~TAB~
+draws a member whole as it unfolds it, as Org shows a heading's text as
+it shows what is under it; see [[*Commands]].  With the members opened
+where included, the board drawn whole is the output document, near
 enough, beside the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ············ →Message [[truss-include:m5]]                    The weekly review costs the team more time than it gives
- │                                                                    back
- │   • included ····· [[#m5]] The weekly review costs the team more   The weekly review costs the team more time than it gives
- │   ⟁ (breakdown › parts)    time than it gives back                 back
- │   ├ Part ················· The review takes longer than it is      - The review takes longer than it is given
- │   │ △ (logic › reasons)    given
- │   │ ├ Reason ············· Most weeks it runs past the hour        - Most weeks it runs past the hour
- │   │ │   ⏚ ground ·· [[m2]] Eight of twelve reviews ran past the
- │   │ │                      hour
- │   │ └ Reason ············· It can run forty minutes over           - It can run forty minutes over
+ ├ Rain ············ →Message The weekly review costs the team more time than
+ │                            it gives back
+ │   • included ····· [[#m5]] The weekly review costs the team more time than
+ │   ⟁ (breakdown › parts)    it gives back
+ │   ├ Part ················· - The review takes longer than it is given
+ │   │ △ (logic › reasons)
+ │   │ ├ Reason ············· - Most weeks it runs past the hour
+ │   │ │   ⏚ ground ·· [[m2]] Eight of twelve reviews ran past the hour
+ │   │ └ Reason ············· - It can run forty minutes over
  │   │     ⏚ ground ·· [[m3]] The longest ran forty minutes over
- │   └ Part ················· Half the items repeat                   - Half the items repeat
- │     △ (logic › reasons)    Robin keeps raising the same items.       Half of each agenda repeats the week before.
- │     │                      Not something to put in writing.
+ │   └ Part ················· - Half the items repeat
+ │     △ (logic › reasons)    Half of each agenda repeats the week before.
+ │     │                      # Robin keeps raising the same items.  Not
+ │     │                      # something to put in writing.
  │     │ ↥ Action ··········· Hold the review every other week
- │     ├ Reason ············· Half of each agenda is what was open    - Half of each agenda is what was open the week before
- │     │                      the week before
- │     │   ⏚ ground ·· [[m4]] Six of twelve items each week come
- │     │                      back from the week before
- │     ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
- │     └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
- │                                                                      We assume most items need more than a week to change.
+ │     ├ Reason ············· - Half of each agenda is what was open the week
+ │     │                        before
+ │     │   ⏚ ground ·· [[m4]] Six of twelve items each week come back from the
+ │     │                      week before
+ │     ├ Reason [no grounds]  - Nothing urgent waits for the review
+ │     └ Reason [assumed] ··· - Items need a week to move
+ │                            We assume most items need more than a week to
+ │                            change.
 #+end_example
-
-~i~ does the same for the line at point alone, inline as ~i~ in Dired
-shows a directory, so the board can be scanned a line each and one line
-read through: a member with its text, a ground.  ~i~ again, on any of its
-lines, puts it back on one.  While /entry-text/ shows every line whole,
-~i~ puts the line at point on one line instead, and /entry-text/ again
-draws every line the same way.
 
 A picture linked on a line of its own -- an attachment, or a file by a
 relative path -- is drawn on a line drawn whole, in its column: as wide as
 the column and no taller than ~org-truss-board-image-height~ lines, on the
-lines it takes, so the tree beside it runs on down and the reader's column
-stays where it is.  On one line, and where Emacs shows no pictures, a link
-to a file reads as the file's name.
+lines it takes, so the tree beside it runs on down.  On one line, and
+where Emacs shows no pictures, a link to a file reads as the file's name.
 
 The board's words are English whatever ~org-truss-language~ says, so in a
 file written in another language the two sides read apart at a glance.
@@ -1202,14 +1175,12 @@ in the same four lines.
 | see     | visit              | ~RET~     | go to it                                                                     | same                                               |
 |         | visit-other-window | ~o~       | go to it in the other window                                                 | same                                               |
 |         | show               |           | show it in the other window, staying on the board                            | same                                               |
-|         | cycle              | ~TAB~     | fold it, show what is right under it, or all under it                        | same                                               |
-|         | cycle-all          | ~C-u TAB~ | fold every line, or open every one; ~S-TAB~ too                              | same                                               |
+|         | cycle              | ~TAB~     | fold it, show it whole with what is right under it, or all under it          | same                                               |
+|         | cycle-all          | ~C-u TAB~ | fold every line, open every one, or show every one whole; ~S-TAB~ too        | same                                               |
 |         | fold               |           | fold what is under it, or unfold it                                          | same                                               |
 |         | same               |           | go to where it is written, or there, to a call                               | same                                               |
 |         | order              |           | open the members included where included, or where written                   | same                                               |
 |         | guide              | ~?~       | say what it is for, in the echo area                                         | same                                               |
-|         | entry-text         | ~C-u i~   | show the text of every member, or stop                                       |                                                    |
-|         | wrap               | ~i~       | show it whole, with its text, or stop                                        | same                                               |
 |         | view               |           | show the output document in another window, kept current                     |                                                    |
 |         | export             | ~x~       | write the output document                                                    |                                                    |
 |         | redraw             | ~g~       | draw again                                                                   |                                                    |
@@ -1243,24 +1214,25 @@ point is lit, and so are the other lines naming the member on it -- where
 it is written, where it is called -- in the face ~org-truss-same~; set
 ~org-truss-board-highlight~ to nil for neither.
 
-~TAB~ cycles a line as it cycles a heading in Org.  A folded line opens
-to what is right under it, each of those folded; again, everything under
-it opens; again, it folds into its line, which then says how many it
-hides.  Under a member, that is its supporting members and what its
-include links include.  On a line with nothing under it, the line it is
-under cycles.  ~C-u TAB~, or ~S-TAB~, opens every line while any is
-folded, and else folds them all.  /fold/ folds one line or unfolds it,
-without the cycle.  The board starts as an Org file does in overview, and
-as ~C-u TAB~ folds it: every line with something under it folded, each
-line on one line.  ~org-truss-board-fold-limit~, 0 unless set, is how many
-a member may hold and still start open; nil starts the board open.  A
-member an include link includes starts folded where it is not opened, as
-/order/ says, since it is drawn whole where it is.
-
-Folding and drawing a line whole are apart: ~TAB~ shapes the tree, ~i~
-reads one line through, and each leaves the other as it is.  Each line
-starts on one line; ~C-u i~ draws every line whole, as /entry-text/ does,
-and again every line on one.
+~TAB~ cycles a line as it cycles a heading in Org, which shows a
+heading's text as it shows what is under it.  A folded line opens to its
+words whole and its text, with what is right under it, each of those
+folded; again, everything under it is shown so too; again, it folds into
+its line, which then says how many it hides.  Under a member, that is
+its supporting members and what its include links include.  On a line
+open on one line, as the board starts, ~TAB~ shows everything under it
+whole first.  On a member with nothing under it, ~TAB~ draws it whole,
+or on one line again; on a line a member brings below it -- its text, a
+ground, where it is used -- the member cycles.  ~C-u TAB~, or ~S-TAB~,
+cycles the whole board in three steps, as in Org: overview, every line
+folded; contents, every line open on one line; and everything, every
+line whole.  /fold/ folds one line or unfolds it, without the cycle.  The
+board starts as an Org file does in overview: every line with something
+under it folded, each line on one line.  ~org-truss-board-fold-limit~, 0
+unless set, is how many a member may hold and still start open; nil
+starts the board open.  A member an include link includes starts folded
+where it is not opened, as /order/ says, since it is drawn in full where
+it is.
 
 A link is drawn as what it is to its member.  In a reason every link to a
 member is grounds, so each is a =⏚ ground= under it, in m7's words and
@@ -1368,10 +1340,10 @@ the members it takes away.
 
 /view/ on the board shows the output document in another window without
 writing it, and the board keeps it current while it is shown: the place
-to read it.  The right of the board comes close but is not the same.
-Brief, what Structure does not include and the lists of what is left to
-do are not in the output document, and without /entry-text/ each line
-shows only a title or the start of a paragraph.
+to read it.  Structure on the board, drawn whole, comes close but is not
+the same.  Brief, what Structure does not include and the lists of what
+is left to do are not in the output document, and on one line each line
+shows only a title.
 
 ~M-x org-truss-export~, or ~x~ on the board, walks Structure and writes
 what the reader sees to ~out/truss.org~ (~org-truss-output-directory~),
@@ -1491,8 +1463,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-attach-directory~   | ~"attach"~                     | what ~org-attach~ attaches to its headings    |
 | ~org-truss-project-file~       | ~nil~                          | an empty file marking the directory a project |
 | ~org-truss-pandoc-program~     | ~"pandoc"~                     |                                               |
-| ~org-truss-board-middle-width~ | ~nil~, half the window         | room for the file's words before the right    |
-| ~org-truss-board-right-width~  | ~nil~, the window's edge       | where a line drawn whole breaks its right     |
+| ~org-truss-board-middle-width~ | ~nil~, the window's edge       | room for the file's words, cut short there    |
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =↥= =•= =▤=                | marks of the lines that are an end of a link  |

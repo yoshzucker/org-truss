@@ -31,8 +31,12 @@
 (require 'org-dock)
 
 (defvar-local org-truss--folds nil
-  "Lines of this board folded or unfolded by hand, as (KEY . open|closed).
-A line not here is folded or not as `org-truss-board-fold-limit' says.")
+  "How the lines of this board set by hand are shown, as (KEY . STATE).
+STATE is `folded', one line hiding what is under it; `open', one line
+cut short with what is under it shown; or `whole', its words broken to
+fit and its text under it, with what is under it shown.  A line with
+nothing under it is folded or open alike.  A line not here is open,
+or folded as `org-truss-board-fold-limit' says.")
 
 (defvar-local org-truss--drawn-width nil
   "Width of the window the board was drawn for.")
@@ -61,14 +65,6 @@ it, so that boards of two headings of one file each read their own.")
 change to text properties alone -- fontification, which runs whenever the
 file is shown -- moves no position the board holds, and must not make the
 board think the file was edited.")
-
-(defvar-local org-truss--entry-text nil
-  "Non-nil when this board shows each member's text.")
-
-(defvar-local org-truss--wraps nil
-  "Keys of the lines of this board drawn the other way from the rest.
-Whole, with the member's text, while entry text is hidden; on one line
-while it is shown.")
 
 (defvar-local org-truss--view nil
   "The buffer showing this board's output document, if one has been opened.")
@@ -112,7 +108,7 @@ Filled by org-truss-moor.el; empty without org-moor.")
            org-truss-board-pattern org-truss-board-roles)
     (see org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
          org-truss-board-cycle org-truss-board-cycle-all org-truss-board-fold
-         org-truss-board-wrap org-truss-board-entry-text org-truss-board-same
+         org-truss-board-same
          org-truss-board-order org-truss-board-guide org-truss-board-view
          org-truss-board-export org-truss-board-redraw org-truss-board-save))
   "The board's commands, by what they work on, as its foot lists them.
@@ -183,9 +179,8 @@ command acts on the file as it is, and a key pressed once is enough."
     (erase-buffer)
     (insert (let ((org-truss--folding org-truss--folds)
                   (org-truss--order org-truss--board-order)
-                  (org-truss--wrapping org-truss--wraps)
                   (org-truss--images (display-images-p (and window (window-frame window)))))
-              (org-truss-board-text model org-truss--entry-text org-truss--drawn-width))
+              (org-truss-board-text model nil org-truss--drawn-width))
             "\n" (propertize (org-truss--board-help) 'face 'org-truss-dim)
             "\n")
     (setq org-truss--drawn-tick (buffer-chars-modified-tick org-truss--source))
@@ -211,7 +206,6 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "o") #'org-truss-board-visit-other-window)
     (define-key map (kbd "TAB") #'org-truss-board-cycle)
     (define-key map (kbd "<backtab>") #'org-truss-board-cycle-all)
-    (define-key map (kbd "i") #'org-truss-board-wrap)
     (define-key map (kbd "m") 'org-truss-board-moor-map)
     (define-key map (kbd "x") #'org-truss-board-export)
     (define-key map (kbd "?") #'org-truss-board-guide)
@@ -237,12 +231,10 @@ board when you come back to it."
 
 (defun org-truss--refit (window)
   "Draw the board in WINDOW again when its columns no longer fit it.
-The file's words take half the window, and entry text is broken to its
+The file's words take the window to its edge, cut short or broken to its
 width, so a new width wants a new drawing."
   (with-current-buffer (window-buffer window)
-    (when (and (or (null org-truss-board-middle-width)
-                   (and (or org-truss--entry-text org-truss--wraps)
-                        (null org-truss-board-right-width)))
+    (when (and (null org-truss-board-middle-width)
                (buffer-live-p org-truss--source)
                (not (eql org-truss--drawn-width (window-body-width window))))
       (org-truss-board-redraw))))
@@ -700,7 +692,7 @@ written -- with every member under it, where it is used and what it
 stands on -- and Structure has it on one line, so the outline reads down
 the middle.  As included, it is opened under the member of Structure that
 includes it instead, with all of that, so the output document reads down
-the right beside the logic it rests on, and where it is written it is one
+Structure beside the logic it rests on, and where it is written it is one
 line.  What was folded or unfolded by hand starts again; point stays on
 the member it was on, where it is opened now.  The mode line says which
 way the board is drawn."
@@ -1106,19 +1098,29 @@ an entry does; the empty line made goes again when the copy is let go."
                   (lambda (key item) (equal key (plist-get item :fold))))))
       (and found (prop-match-beginning found)))))
 
-(defun org-truss--fold-at ()
-  "Return the item of the line that folds what the line at point is in.
-The line's own, when it has something under it; else the nearest line
-above it in the tree that has."
-  (let ((item (org-truss--item)))
-    (if (plist-get item :fold)
+(defun org-truss--fold-at (&optional nested)
+  "Return the item of the line that is shown as the line at point is.
+The line's own, when it is a member's, or the nearest such line above it
+in the tree: its text, its grounds and its patterns are shown as its
+member is.  With NESTED, the nearest that has something under it."
+  (let* ((item (org-truss--item))
+         (fits (lambda (item) (and (plist-get item :fold)
+                                   (or (not nested) (> (or (plist-get item :nested) 0) 0))))))
+    (if (funcall fits item)
         item
-      (let ((key (butlast (plist-get item :key))) at)
-        (while (and key (not (setq at (org-truss--fold-line key))))
+      (let ((key (butlast (plist-get item :key))) found)
+        (while (and key (not found))
+          (let ((at (org-truss--fold-line key)))
+            (when (and at (funcall fits (get-text-property at 'org-truss-item)))
+              (setq found (get-text-property at 'org-truss-item))))
           (setq key (butlast key)))
-        (if at
-            (get-text-property at 'org-truss-item)
-          (user-error "Nothing to fold here"))))))
+        (or found (user-error "Nothing to fold here"))))))
+
+(defun org-truss--state (item)
+  "Return how the line with ITEM is shown: `folded', `open' or `whole'.
+See `org-truss--folds'."
+  (or (alist-get (plist-get item :fold) org-truss--folds nil nil #'equal)
+      (if (plist-get item :folded) 'folded 'open)))
 
 (defun org-truss--key-under-p (key above)
   "Non-nil when the line keyed KEY is drawn under the line keyed ABOVE.
@@ -1138,43 +1140,52 @@ drawn under."
            (or (equal holder above) (org-truss--key-under-p holder above))))))
 
 (defun org-truss--drawn-folds ()
-  "Return the lines of the board that fold, as (KEY . FOLDED), top to bottom."
+  "Return the items of the lines of the board that are shown as set, top to bottom.
+Each member's own line, and each line a check lists; see
+`org-truss--folds'."
   (save-excursion
     (goto-char (point-min))
     (let (found)
       (while (not (eobp))
         (let ((item (org-truss--item)))
-          (when (plist-get item :fold)
-            (push (cons (plist-get item :fold) (plist-get item :folded)) found)))
+          (when (and (plist-get item :fold) (equal (plist-get item :fold) (plist-get item :key)))
+            (push item found)))
         (forward-line 1))
       (nreverse found))))
 
 (defun org-truss--set-folds (keys state)
-  "Set the lines keyed KEYS to STATE, `open' or `closed', for the next draw."
+  "Set the lines keyed KEYS to STATE for the next draw; see `org-truss--folds'."
   (dolist (key keys)
     (setf (alist-get key org-truss--folds nil nil #'equal) state)))
 
-(defun org-truss--open-all (&optional above)
-  "Open every line of the board, or every line under the one keyed ABOVE.
-A line opened can bring lines that start folded -- a member drawn where an
-include link includes it -- so the board is drawn again until none is
-left, or until it has gone ten levels down."
-  (let ((n 0) shut)
+(defun org-truss--show-all (state &optional above)
+  "Show every line of the board as STATE, `open' or `whole'.
+Or the line keyed ABOVE and every line under it.  A line opened can
+bring lines that start folded -- a member drawn where an include link
+includes it -- so the board is drawn again until none is left, or until
+it has gone ten levels down."
+  (let ((n 0) left)
     (while (and (< n 10)
-                (setq shut (mapcar #'car (seq-filter (lambda (fold)
-                                                       (and (cdr fold)
-                                                            (or (null above)
-                                                                (org-truss--key-under-p (car fold) above))))
-                                                     (org-truss--drawn-folds)))))
-      (org-truss--set-folds shut 'open)
+                (setq left (mapcar (lambda (item) (plist-get item :fold))
+                                   (seq-filter (lambda (item)
+                                                 (and (not (eq (org-truss--state item) state))
+                                                      (or (null above)
+                                                          (equal (plist-get item :fold) above)
+                                                          (org-truss--key-under-p (plist-get item :fold)
+                                                                                  above))))
+                                               (org-truss--drawn-folds)))))
+      (org-truss--set-folds left state)
       (org-truss-board-redraw)
       (setq n (1+ n)))))
 
 (defun org-truss-board-cycle (&optional all)
-  "Fold the line at point, show what is right under it, or show all under it.
-As TAB cycles a heading in Org: a folded line opens to what is right
-under it, each of those folded; pressed again, everything under it opens;
-again, it folds.  On a line with nothing under it, the line it is under
+  "Cycle the line at point: folded, its text and what is right under it, all.
+As TAB cycles a heading in Org.  A folded line, one line cut short, opens
+to show its words whole and its text, with what is right under it, each
+of those folded; pressed again, everything under it is shown so too;
+again, it folds.  On a line with nothing under it, its words and text are
+shown whole, or it is one line again.  On a line a member brings below
+it -- its text, its grounds, where it is used -- the member's line
 cycles.  A folded line says how many it hides.  With a prefix argument
 ALL, as \\[universal-argument] TAB in Org, the whole board cycles instead;
 see `org-truss-board-cycle-all'."
@@ -1187,34 +1198,47 @@ see `org-truss-board-cycle-all'."
   "Cycle the line at point, as `org-truss-board-cycle' says."
   (let* ((line (org-truss--fold-at))
          (key (plist-get line :fold))
-         (under (lambda () (seq-filter (lambda (fold) (org-truss--key-under-p (car fold) key))
+         (state (org-truss--state line))
+         (under (lambda () (seq-filter (lambda (item) (org-truss--key-under-p (plist-get item :fold) key))
                                        (org-truss--drawn-folds)))))
-    (cond ((plist-get line :folded)
-           (org-truss--set-folds (list key) 'open)
+    (cond ((zerop (or (plist-get line :nested) 0))
+           (org-truss--set-folds (list key) (if (eq state 'whole) 'open 'whole))
            (org-truss-board-redraw)
-           (org-truss--set-folds (mapcar #'car (funcall under)) 'closed)
+           (message (if (eq state 'whole) "One line" "Whole")))
+          ((eq state 'folded)
+           (org-truss--set-folds (list key) 'whole)
+           (org-truss-board-redraw)
+           (org-truss--set-folds (mapcar (lambda (item) (plist-get item :fold)) (funcall under)) 'folded)
            (org-truss-board-redraw)
            (message "Children"))
-          ((seq-some #'cdr (funcall under))
-           (org-truss--open-all key)
+          ((or (not (eq state 'whole))
+               (seq-some (lambda (item) (not (eq (org-truss--state item) 'whole))) (funcall under)))
+           (org-truss--show-all 'whole key)
            (message "Subtree"))
           (t
-           (org-truss--set-folds (list key) 'closed)
+           (org-truss--set-folds (list key) 'folded)
            (org-truss-board-redraw)
            (message "Folded")))
     (goto-char (or (org-truss--fold-line key) (point)))))
 
 (defun org-truss-board-cycle-all ()
-  "Fold every line of the board, or open every one.
-As S-TAB does in Org, in two steps: while anything is folded, everything
-opens; else everything folds, down to the parts."
+  "Cycle the whole board: folded, every line open, every line whole.
+As S-TAB does in Org, in three steps: overview, every member folded down
+to the parts; contents, every member open on one line; and everything,
+every line whole with its text."
   (interactive)
-  (let ((key (plist-get (org-truss--item) :key)))
-    (if (seq-some #'cdr (org-truss--drawn-folds))
-        (progn (org-truss--open-all) (message "All open"))
-      (org-truss--set-folds (mapcar #'car (org-truss--drawn-folds)) 'closed)
-      (org-truss-board-redraw)
-      (message "All folded"))
+  (let ((key (plist-get (org-truss--item) :key))
+        (drawn (org-truss--drawn-folds)))
+    (cond ((seq-every-p (lambda (item) (eq (org-truss--state item) 'whole)) drawn)
+           (org-truss--set-folds (mapcar (lambda (item) (plist-get item :fold)) drawn) 'folded)
+           (org-truss-board-redraw)
+           (message "Overview"))
+          ((seq-some (lambda (item) (eq (org-truss--state item) 'folded)) drawn)
+           (org-truss--show-all 'open)
+           (message "Contents"))
+          (t
+           (org-truss--show-all 'whole)
+           (message "Show all")))
     (let ((found (and key (save-excursion
                             (goto-char (point-min))
                             (text-property-search-forward
@@ -1229,52 +1253,11 @@ line with nothing under it, what it is under.  A folded line says how
 many it hides.  \\[org-truss-board-cycle] cycles it as Org's TAB does
 instead."
   (interactive)
-  (let* ((line (org-truss--fold-at))
+  (let* ((line (org-truss--fold-at t))
          (key (plist-get line :fold)))
-    (org-truss--set-folds (list key) (if (plist-get line :folded) 'open 'closed))
+    (org-truss--set-folds (list key) (if (plist-get line :folded) 'open 'folded))
     (org-truss-board-redraw)
     (goto-char (or (org-truss--fold-line key) (point)))))
-
-(defun org-truss-board-entry-text ()
-  "Show each member's text on the board, or stop showing it.
-As E does in the agenda.  What stays in the file goes under the member,
-in the file's column; the rest of what the reader sees goes on the right,
-so the output document can be read down the right of the board.  Every
-line is drawn the same way again, whatever \\[org-truss-board-wrap] did
-to it."
-  (interactive)
-  (setq org-truss--entry-text (not org-truss--entry-text)
-        org-truss--wraps nil)
-  (org-truss-board-redraw)
-  (message "Entry text %s" (if org-truss--entry-text "shown" "hidden")))
-
-(defun org-truss-board-wrap (&optional all)
-  "Draw the line at point whole, or on one line again; the rest stay as they are.
-Whole is as \\[org-truss-board-entry-text] draws every line: its words
-broken to fit, and under a member its text.  So the board can be scanned
-a line each and a line read through.  While entry text is shown, this
-puts the line back on one line instead.  With a prefix argument ALL,
-every line is drawn whole, or every one on one line again, as
-`org-truss-board-entry-text' does."
-  (interactive "P")
-  (if all
-      (org-truss-board-entry-text)
-    (org-truss--wrap-line)))
-
-(defun org-truss--wrap-line ()
-  "Draw the line at point the other way, as `org-truss-board-wrap' says."
-  (let ((key (org-truss--owner (plist-get (org-truss--item) :key)))
-        (start (point)))
-    (unless key (user-error "Nothing to wrap here"))
-    ;; To the line's own first, where the board puts point back.
-    (while (and (not (equal (plist-get (org-truss--item) :key) key))
-                (zerop (forward-line -1))))
-    (unless (equal (plist-get (org-truss--item) :key) key)
-      (goto-char start))
-    (setq org-truss--wraps (if (member key org-truss--wraps)
-                               (delete key org-truss--wraps)
-                             (cons key org-truss--wraps)))
-    (org-truss-board-redraw)))
 
 (defun org-truss-board-edit ()
   "Take the member of the line at point out, to be written in beside the board.
