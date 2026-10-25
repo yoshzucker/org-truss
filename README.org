@@ -74,27 +74,47 @@ order the parts sit.  They are filled from the top.
 Brief is the architect's brief: the conditions the design has to meet.
 Every check is measured against it.
 
-Subject is the brief's other half.  The brief is about the reader; the
-subject is about what the output document takes up -- what is taken as
-given, what the problem is taken to be, what cannot move.  A proposal is
-held to both: the output document has to move its reader, and what it
-proposes has to solve the problem within its constraints.
+Brief is written by whoever asks for the output document -- you, handing
+the file to an agent -- and is about the document: who reads it and what
+it must keep to.  Subject, Message and Structure are about what the
+document takes up, and they are kept apart by what each is checked
+against.  A fact in Subject is checked against its source, a claim in
+Message against the facts it stands on, and Structure against the
+reader.  What the problem is taken to be is a claim, so it belongs in
+Message, not Subject.
 
 A part is an apex member like any other, and is broken down as any member
-can be.  A new file gives Brief the breakdown
-/reader-question-response-constraints/, Subject
-/premises-issue-constraints/ and Message /parts/, with a supporting member
-for each role.  A role none plays is missing, as anywhere.  Another
-pattern can be put on instead: /pattern/ on the part's line on the board
-puts it on, and puts in a member for each role it lacks.  What each part,
-and each role of Brief's and Subject's breakdowns, is for, ~?~ on its line
-of the board says.
+can be.  A new file is written in the basic form: the facts, what they
+mean, what to do, told in that order.
+
+| Member         | Pattern                                          | Written                                                             |
+|----------------+--------------------------------------------------+---------------------------------------------------------------------|
+| Brief          | breakdown › reader-question-response-constraints | an item for each role                                               |
+| Subject        | breakdown › parts                                | a source, its facts as items under it                               |
+| Message        | breakdown › interpretation-action                | Interpretation and Action                                           |
+| Interpretation | breakdown › parts                                | a claim, with ~TRUSS_LOGIC: reasons~ and a reason as an item        |
+| Action         | breakdown › steps                                | a step, as an item                                                  |
+| Structure      | telling › Sky, Rain, Umbrella                    | ~[[truss-include:m1]]~, ~m2~, ~m3~: Subject, Interpretation, Action |
+
+Structure's headings are include links alone, so each is the member it
+includes there, and that member's words are the output document's
+heading.  A new file is an output document as it stands, each word of it
+to be written over, which /Words to write/ lists until it is.  A step
+points to the claim it follows from; it takes a ~TRUSS_LOGIC~ of its own
+only for reasons besides.  For a document of another form, give Message
+and Structure other patterns: /pattern/ on the part's line on the board
+puts one on, and puts in a member for each role it lacks.  The facts stay
+in Subject.  What each part, and each role of Brief's and Message's
+breakdowns, is for, ~?~ on its line of the board says.
 
 The members of the parts are members like any other: they can have
 grounds, be assumptions, be apex members of trusses of their own and be
 included by Structure.  A book states its intended reader; a proposal
 states the constraints it works within.  Such a statement is written once,
-under the role it belongs to, and Structure includes it from there.
+under the role it belongs to, and Structure includes it from there.  A
+fact that cannot be shown -- a figure that is confidential -- is tagged
+~:noexport:~ in Subject; a claim the output document tells that stands on
+it is listed under /Hidden grounds/.
 
 The work on an output document goes in three steps, one part each.
 
@@ -104,7 +124,8 @@ The work on an output document goes in three steps, one part each.
 - /Make sense/, in Message.  Say what the facts mean here, and what is to
   be done, one statement each.  A claim's reasons are its supporting
   members, and stand on the facts they point to in their text; what is to
-  be done is broken down into steps or parts.
+  be done is broken down into steps, which point to the claims they
+  follow from.
 - /Tell/, in Structure.  Its members are the headings of the output
   document; their text includes the trusses and members the reader is
   shown, from any part.
@@ -186,23 +207,24 @@ story that keeps the conclusion for the end -- SCQA, Sky, Rain, Umbrella
 -- is told by the members of Structure, the claim included in the last of
 them; its reasons come after it there, as they are its supporting members.
 
-| On the board                      | Gives                                                        |
-|-----------------------------------+--------------------------------------------------------------|
-| logic › reasons                   | reasons that each hold it up alone                           |
-| logic › deduction                 | a major and a minor premise, together                        |
-| logic › induction                 | two cases or more, that it generalises                       |
-| breakdown › steps                 | what to do, in order: a numbered list                        |
-| breakdown › parts                 | what it is made of, in no order: a bulleted list             |
-| breakdown › What, Why, How        | what it is, why, and how                                     |
-| breakdown › Pros and cons         | what is for it, what is against it                           |
-| breakdown › Short and long term   | what holds soon, what holds later                            |
-| breakdown › Past, present, future | what was, what is, what will be                              |
-| breakdown › 5W1H                  | who, when, where, what, why, how                             |
-| breakdown › 6W1H                  | who, whom, when, where, what, why, how                       |
-| telling › PREP                    | point, reason, example, the point again                      |
-| telling › SDS                     | summary, details, the summary again                          |
-| telling › SCQA                    | situation, complication, question, answer                    |
-| telling › Sky, Rain, Umbrella     | sky, rain, umbrella: what is seen, what it means, what to do |
+| On the board                       | Gives                                                        |
+|------------------------------------+--------------------------------------------------------------|
+| logic › reasons                    | reasons that each hold it up alone                           |
+| logic › deduction                  | a major and a minor premise, together                        |
+| logic › induction                  | two cases or more, that it generalises                       |
+| breakdown › steps                  | what to do, in order: a numbered list                        |
+| breakdown › parts                  | what it is made of, in no order: a bulleted list             |
+| breakdown › What, Why, How         | what it is, why, and how                                     |
+| breakdown › Pros and cons          | what is for it, what is against it                           |
+| breakdown › Short and long term    | what holds soon, what holds later                            |
+| breakdown › Past, present, future  | what was, what is, what will be                              |
+| breakdown › 5W1H                   | who, when, where, what, why, how                             |
+| breakdown › 6W1H                   | who, whom, when, where, what, why, how                       |
+| breakdown › Interpretation, Action | what the facts mean, and what to do                          |
+| telling › PREP                     | point, reason, example, the point again                      |
+| telling › SDS                      | summary, details, the summary again                          |
+| telling › SCQA                     | situation, complication, question, answer                    |
+| telling › Sky, Rain, Umbrella      | sky, rain, umbrella: what is seen, what it means, what to do |
 
 Sky, Rain, Umbrella is fact, interpretation, action: the sky is clouding
 over; it will rain, then; take an umbrella.  It is a way of thinking as
@@ -386,19 +408,21 @@ shows what it reads.
 
 ** What is left to do
 
-Nine checks, each found where the problem is:
+Eleven checks, each found where the problem is:
 
-| Check         | Found at                        | What it finds                                                                                                                         |
-|---------------+---------------------------------+---------------------------------------------------------------------------------------------------------------------------------------|
-| Missing roles | the apex member                 | a role its pattern asks for that none of its supporting members plays                                                                 |
-| No role       | the supporting member           | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                               |
-| No pattern    | the supporting member           | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                       |
-| No relation   | the member with no pattern      | has members right under it, and no pattern saying what they are to it -- the parts and Structure as any member                       |
-| Out of order  | the supporting member           | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                    |
-| No grounds    | the member that lacks them      | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                          |
-| Weak grounds  | the member that points          | points as grounds, in its text, to a member that does not hold                                                                        |
-| Mixed sources | the apex member                 | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                      |
-| Broken links  | the link                        | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
+| Check          | Found at                   | What it finds                                                                                                                           |
+|----------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
+| Missing roles  | the apex member            | a role its pattern asks for that none of its supporting members plays                                                                   |
+| No role        | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                 |
+| No pattern     | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                        |
+| No relation    | the member with no pattern | has members right under it, and no pattern saying what they are to it -- the parts and Structure as any member                          |
+| Out of order   | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
+| No grounds     | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
+| Weak grounds   | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
+| Hidden grounds | the member that points     | is in the output document, and points as grounds to a member ~:noexport:~ leaves out                                                    |
+| Mixed sources  | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
+| Broken links   | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
+| Words to write | the member                 | is in the output document with the words it was given: its part's name, or the name of a role it plays                                  |
 
 They say what is so; what to do about it is written in the file.
 
@@ -446,15 +470,16 @@ drawer, out of the way of the parts, and ~TAB~ on it opens it to be read.
 Its example is in an example block, and its IDs, ~<<m21>>~ among them, are
 no member's: IDs are counted from the first heading.
 
-What each part, and each role of Brief's and Subject's breakdowns, is for
+What each part, and each role of Brief's and Message's breakdowns, is for
 is not written in the file: ~?~ on the board says it in the echo area, on
 the line of the part, of the member playing the role, or of the role
 missing; on any other member, ~?~ says its patterns and the roles it
 plays.  ~org-truss-batch-guide~ prints the guide and all of these, for an
 agent (see [[*Batch]]).  The board's keys are at its foot, and what each
-check finds is said where it is reported.  The headings of a new file are
+check finds is said where it is reported.  The words of a new file are
 English whatever ~org-truss-language~ says: they name the parts and the
-roles, and the reader never sees them.
+roles, to be written over; those Structure includes reach the reader
+until they are, and /Words to write/ lists them.
 
 The guide learns, and a file keeps the wording it was written with.
 ~M-x org-truss-refresh-guides~ puts the current guide back in its drawer,
@@ -483,69 +508,70 @@ The guide's drawer left out:
 - response :: Agree to try fortnightly reviews next quarter
 - constraints :: One page
 
-,* Subject
+,* Reviews run long, and the same items come back
 :PROPERTIES:
 :TRUSS_PART: subject
-:TRUSS_BREAKDOWN: premises-issue-constraints
+:CUSTOM_ID: m1
+:TRUSS_BREAKDOWN: parts
 :END:
-,** Premises
+,** The calendar this quarter
 :PROPERTIES:
 :TRUSS_BREAKDOWN: parts
-:TRUSS_BREAKDOWN_ROLE: premises
 :END:
-,*** Reviews run long
-:PROPERTIES:
-:CUSTOM_ID: m1
-:TRUSS_LOGIC: reasons
-:END:
-Reviews ran past the hour eight times this quarter.
 ,#+attr_truss:
-- Eight of twelve reviews ran past the hour
+- <<m2>>Eight of twelve reviews ran past the hour
   # [[https://calendar.example.com/export][calendar export]]
-- The longest ran forty minutes over
+- <<m3>>The longest ran forty minutes over
   # [[https://calendar.example.com/export][calendar export]]
-,*** Six of twelve items each week come back from the week before
+,** The agendas, weeks 1-12
 :PROPERTIES:
-:CUSTOM_ID: m2
+:TRUSS_BREAKDOWN: parts
 :END:
-# [[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]]
-,*** Urgent items are raised in the team chat                :assumption:
-:PROPERTIES:
-:CUSTOM_ID: m3
-:END:
-# Agreed in the team; nothing written.
-,** The weekly review costs the team more time than it gives back
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: issue
-:END:
+,#+attr_truss:
+- <<m4>>Six of twelve items each week come back from the week before
+  # [[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]]
 
 ,* Message
 :PROPERTIES:
 :TRUSS_PART: message
+:TRUSS_BREAKDOWN: interpretation-action
+:END:
+,** The weekly review costs the team more time than it gives back
+:PROPERTIES:
+:CUSTOM_ID: m5
+:TRUSS_BREAKDOWN_ROLE: interpretation
 :TRUSS_BREAKDOWN: parts
 :END:
-,** Half the items repeat
+,*** The review takes longer than it is given
 :PROPERTIES:
-:CUSTOM_ID: m4
+:TRUSS_LOGIC: reasons
+:END:
+,#+attr_truss:
+- Most weeks it runs past the hour
+  # [[m2]]
+- It can run forty minutes over
+  # [[m3]]
+,*** Half the items repeat
+:PROPERTIES:
+:CUSTOM_ID: m6
 :TRUSS_LOGIC: reasons
 :END:
 Half of each agenda repeats the week before.
 # Robin keeps raising the same items.  Not something to put in writing.
 ,#+attr_truss:
-- Six of twelve items come back each week
-  # [[#m2]]
+- Half of each agenda is what was open the week before
+  # [[m4]]
 - Nothing urgent waits for the review
-,*** Items need a week to move                                  :assumption:
+,**** Items need a week to move                                 :assumption:
 We assume most items need more than a week to change.
 
-,** Move to fortnightly
+,** Hold the review every other week
 :PROPERTIES:
-:CUSTOM_ID: m5
+:CUSTOM_ID: m7
+:TRUSS_BREAKDOWN_ROLE: action
 :TRUSS_BREAKDOWN: steps
 :END:
-Hold the review every other week.
-# [[#m4]]
-# [[#m3]]
+# [[#m6]]
 ,#+attr_truss:
 1. Cancel every second review in the calendar
 2. Carry what is still open to the next one
@@ -555,18 +581,27 @@ Hold the review every other week.
 :TRUSS_PART: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
-,#+attr_truss:
-- sky :: Where we are
-  [[truss-include:m1]]
-- rain :: Why change
-  [[truss-include:m4]]
-- umbrella :: What we propose
-  [[truss-include:m5]]
+,** [[truss-include:m1]]
+:PROPERTIES:
+:TRUSS_TELLING_ROLE: sky
+:END:
+,** [[truss-include:m5]]
+:PROPERTIES:
+:TRUSS_TELLING_ROLE: rain
+:END:
+,** [[truss-include:m7]]
+:PROPERTIES:
+:TRUSS_TELLING_ROLE: umbrella
+:END:
 #+end_src
 
-/Reviews run long/ is one simple truss in one heading: the claim, its two
+Subject holds the facts, a truss for each source, and nothing else: what
+they mean is said in Message, a claim each, standing on them by pointing
+links.  Its words, like Interpretation's and Action's, are the output
+document's headings, since Structure includes each as a heading.  /Half
+the items repeat/ is one simple truss in one heading: the claim, its
 reasons as items.  /Items need a week to move/ is a heading only because
-it is tagged.  /Premises/ and /Message/ are compound trusses, built of
+it is tagged.  Subject and Message are compound trusses, built of
 headings.
 
 ** Members assert; Structure tells
@@ -733,66 +768,88 @@ saves a buffer, saves it from the board, and the title line says
 This is the board of the file above, every line open:
 
 #+begin_example
- Title ···················· Fortnightly reviews                     Fortnightly reviews
+ Title ······················ Fortnightly reviews                     Fortnightly reviews
 
  Brief  what the output document must satisfy
  △ (breakdown › Reader, Question, Response, Constraints)
-   Reader ················· The team leads                          The team leads
-   Question ··············· Should the review stay weekly?          Should the review stay weekly?
-   Response wanted ········ Agree to try fortnightly reviews next…  Agree to try fortnightly reviews next quarter
-   Constraints ············ One page                                One page
+   Reader ··················· The team leads                          The team leads
+   Question ················· Should the review stay weekly?          Should the review stay weekly?
+   Response wanted ·········· Agree to try fortnightly reviews next…  Agree to try fortnightly reviews next quarter
+   Constraints ·············· One page                                One page
 
  Subject  the facts found
- ⟁ (breakdown › Premises, Issue, Constraints)
-   Premises ··············· Premises                                Premises
-   ⟁ (breakdown › parts)
-   ├ Part ············· #m1 Reviews run long                        - Reviews run long
-   │ △ (logic › reasons)
-   │ │ ▤ Sky ·············· Where we are
-   │ ├ Reason ············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
-   │ │   ⏚ source ········· calendar export
-   │ └ Reason ············· The longest ran forty minutes over      - The longest ran forty minutes over
-   │     ⏚ source ········· calendar export
-   ├ Part ············· #m2 Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
-   │   ↥ Reason ··········· Six of twelve items come back each we…
-   │   ⏚ source ··········· agendas, weeks 1-12
-   └ Part [assumed] ··· #m3 Urgent items are raised in the team c…  - Urgent items are raised in the team chat
-       ↥ Part ············· Move to fortnightly
-   Issue ·················· The weekly review costs the team more…  The weekly review costs the team more time than it gives back
-   Constraints —
-
- Missing roles
-   Subject                                                          Constraints
+ ⟁ (breakdown › parts)
+   Part ····················· The calendar this quarter               The calendar this quarter
+   △ (breakdown › parts)
+   ├ Part ············ <<m2>> Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
+   │   ↥ Reason ············· Most weeks it runs past the hour
+   │   ⏚ source ············· calendar export
+   └ Part ············ <<m3>> The longest ran forty minutes over      - The longest ran forty minutes over
+       ↥ Reason ············· It can run forty minutes over
+       ⏚ source ············· calendar export
+   Part ····················· The agendas, weeks 1-12                 The agendas, weeks 1-12
+   △ (breakdown › parts)
+   └ Part ············ <<m4>> Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
+       ↥ Reason ············· Half of each agenda is what was open …
+       ⏚ source ············· agendas, weeks 1-12
 
  Message  what the output document says
- ⟁ (breakdown › parts)
-   Part ··············· #m4 Half the items repeat                   Half the items repeat
-   △ (logic › reasons)
-   │ ▤ Rain ··············· Why change
-   │ ↥ Part ··············· Move to fortnightly
-   ├ Reason ··············· Six of twelve items come back each we…  - Six of twelve items come back each week
-   │   ⏚ ground ··· [[#m2]] Six of twelve items each week come ba…
-   ├ Reason [no grounds] ·· Nothing urgent waits for the review     - Nothing urgent waits for the review
-   └ Reason [assumed] ····· Items need a week to move               - Items need a week to move
-   Part ··············· #m5 Move to fortnightly                     Move to fortnightly
+ ⟁ (breakdown › Interpretation, Action)
+   Interpretation ······· #m5 The weekly review costs the team more…  The weekly review costs the team more time than it gives back
+   ⟁ (breakdown › parts)
+   │ ▤ Rain
+   ├ Part ··················· The review takes longer than it is gi…  - The review takes longer than it is given
+   │ △ (logic › reasons)
+   │ ├ Reason ··············· Most weeks it runs past the hour        - Most weeks it runs past the hour
+   │ │   ⏚ ground ···· [[m2]] Eight of twelve reviews ran past the …
+   │ └ Reason ··············· It can run forty minutes over           - It can run forty minutes over
+   │     ⏚ ground ···· [[m3]] The longest ran forty minutes over
+   └ Part ··············· #m6 Half the items repeat                   - Half the items repeat
+     △ (logic › reasons)
+     │ ↥ Action ············· Hold the review every other week
+     ├ Reason ··············· Half of each agenda is what was open …  - Half of each agenda is what was open the week before
+     │   ⏚ ground ···· [[m4]] Six of twelve items each week come ba…
+     ├ Reason [no grounds] ·· Nothing urgent waits for the review     - Nothing urgent waits for the review
+     └ Reason [assumed] ····· Items need a week to move               - Items need a week to move
+   Action ··············· #m7 Hold the review every other week        Hold the review every other week
    △ (breakdown › steps)
-   │ ▤ Umbrella ··········· What we propose
-   │ ⏚ ground ····· [[#m4]] Half the items repeat
-   │ ⏚ ground ····· [[#m3]] Urgent items are raised in the team c…
-   ├ Step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-   └ Step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
+   │ ▤ Umbrella
+   │ ⏚ ground ······· [[#m6]] Half the items repeat
+   ├ Step ··················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+   └ Step ··················· Carry what is still open to the next …  2. Carry what is still open to the next one
 
  No grounds
-   Reason [no grounds] ···· Nothing urgent waits for the review     no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
+   Reason [no grounds] ······ Nothing urgent waits for the review     no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
 
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ···················· Where we are                            Where we are
- │   • included ▸2  [[#m1]] Reviews run long                        Reviews run long
- ├ Rain ··················· Why change                              Why change
- │   • included ▸3  [[#m4]] Half the items repeat                   Half the items repeat
- └ Umbrella ··············· What we propose                         What we propose
-     • included ▸2  [[#m5]] Move to fortnightly                     Move to fortnightly
+ ├ Sky ············· →Subject [[truss-include:m1]]                    Reviews run long, and the same items come back
+ │   • included ····· [[#m1]] Reviews run long, and the same items …  Reviews run long, and the same items come back
+ │   ⟁ (breakdown › parts)
+ │   ├ Part ················· The calendar this quarter               - The calendar this quarter
+ │   │ △ (breakdown › parts)
+ │   │ ├ Part ··············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
+ │   │ └ Part ··············· The longest ran forty minutes over      - The longest ran forty minutes over
+ │   └ Part ················· The agendas, weeks 1-12                 - The agendas, weeks 1-12
+ │     △ (breakdown › parts)
+ │     └ Part ··············· Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
+ ├ Rain ············ →Message [[truss-include:m5]]                    The weekly review costs the team more time than it gives back
+ │   • included ····· [[#m5]] The weekly review costs the team more…  The weekly review costs the team more time than it gives back
+ │   ⟁ (breakdown › parts)
+ │   ├ Part ················· The review takes longer than it is gi…  - The review takes longer than it is given
+ │   │ △ (logic › reasons)
+ │   │ ├ Reason ············· Most weeks it runs past the hour        - Most weeks it runs past the hour
+ │   │ └ Reason ············· It can run forty minutes over           - It can run forty minutes over
+ │   └ Part ················· Half the items repeat                   - Half the items repeat
+ │     △ (logic › reasons)
+ │     ├ Reason ············· Half of each agenda is what was open …  - Half of each agenda is what was open the week before
+ │     ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
+ │     └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
+ └ Umbrella ········ →Message [[truss-include:m7]]                    Hold the review every other week
+     • included ····· [[#m7]] Hold the review every other week        Hold the review every other week
+     △ (breakdown › steps)
+     ├ Step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+     └ Step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
 #+end_example
 
 /order/ opens the members include links include where they are included
@@ -804,34 +861,50 @@ beside the logic each sentence rests on:
 
 #+begin_example
  Message  what the output document says
- ⟁ (breakdown › parts)
-   Part ▸3 ············ #m4 Half the items repeat                   Half the items repeat
-   Part ▸2 ············ #m5 Move to fortnightly                     Move to fortnightly
+ ⟁ (breakdown › Interpretation, Action)
+   Interpretation ▸7 ···· #m5 The weekly review costs the team more…  The weekly review costs the team more time than it gives back
+   Action ▸2 ············ #m7 Hold the review every other week        Hold the review every other week
  ...
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ···················· Where we are                            Where we are
- │   • included ··· [[#m1]] Reviews run long                        Reviews run long
- │   △ (logic › reasons)
- │   ├ Reason ············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
- │   │   ⏚ source ········· calendar export
- │   └ Reason ············· The longest ran forty minutes over      - The longest ran forty minutes over
- │       ⏚ source ········· calendar export
- ├ Rain ··················· Why change                              Why change
- │   • included ··· [[#m4]] Half the items repeat                   Half the items repeat
- │   △ (logic › reasons)
- │   │ ↥ Part ············· Move to fortnightly
- │   ├ Reason ············· Six of twelve items come back each we…  - Six of twelve items come back each week
- │   │   ⏚ ground · [[#m2]] Six of twelve items each week come ba…
- │   ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
- │   └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
- └ Umbrella ··············· What we propose                         What we propose
-     • included ··· [[#m5]] Move to fortnightly                     Move to fortnightly
+ ├ Sky ············· →Subject [[truss-include:m1]]                    Reviews run long, and the same items come back
+ │   • included ····· [[#m1]] Reviews run long, and the same items …  Reviews run long, and the same items come back
+ │   ⟁ (breakdown › parts)
+ │   ├ Part ················· The calendar this quarter               - The calendar this quarter
+ │   │ △ (breakdown › parts)
+ │   │ ├ Part ··············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
+ │   │ │   ↥ Reason ········· Most weeks it runs past the hour
+ │   │ │   ⏚ source ········· calendar export
+ │   │ └ Part ··············· The longest ran forty minutes over      - The longest ran forty minutes over
+ │   │     ↥ Reason ········· It can run forty minutes over
+ │   │     ⏚ source ········· calendar export
+ │   └ Part ················· The agendas, weeks 1-12                 - The agendas, weeks 1-12
+ │     △ (breakdown › parts)
+ │     └ Part ··············· Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
+ │         ↥ Reason ········· Half of each agenda is what was open …
+ │         ⏚ source ········· agendas, weeks 1-12
+ ├ Rain ············ →Message [[truss-include:m5]]                    The weekly review costs the team more time than it gives back
+ │   • included ····· [[#m5]] The weekly review costs the team more…  The weekly review costs the team more time than it gives back
+ │   ⟁ (breakdown › parts)
+ │   ├ Part ················· The review takes longer than it is gi…  - The review takes longer than it is given
+ │   │ △ (logic › reasons)
+ │   │ ├ Reason ············· Most weeks it runs past the hour        - Most weeks it runs past the hour
+ │   │ │   ⏚ ground ·· [[m2]] Eight of twelve reviews ran past the …
+ │   │ └ Reason ············· It can run forty minutes over           - It can run forty minutes over
+ │   │     ⏚ ground ·· [[m3]] The longest ran forty minutes over
+ │   └ Part ················· Half the items repeat                   - Half the items repeat
+ │     △ (logic › reasons)
+ │     │ ↥ Action ··········· Hold the review every other week
+ │     ├ Reason ············· Half of each agenda is what was open …  - Half of each agenda is what was open the week before
+ │     │   ⏚ ground ·· [[m4]] Six of twelve items each week come ba…
+ │     ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
+ │     └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
+ └ Umbrella ········ →Message [[truss-include:m7]]                    Hold the review every other week
+     • included ····· [[#m7]] Hold the review every other week        Hold the review every other week
      △ (breakdown › steps)
-     │ ⏚ ground ··· [[#m4]] Half the items repeat
-     │ ⏚ ground ··· [[#m3]] Urgent items are raised in the team c…
-     ├ Step ··············· Cancel every second review in the cal…  1. Cancel every second review in the calendar
-     └ Step ··············· Carry what is still open to the next …  2. Carry what is still open to the next one
+     │ ⏚ ground ····· [[#m6]] Half the items repeat
+     ├ Step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+     └ Step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
 #+end_example
 
 /order/ again opens them where they are written.  Point stays on the
@@ -959,8 +1032,9 @@ under it -- beside its uses, what it stands on and its gaps, so the output
 document can be read down the right.
 
 Each part is followed by what is left to do in it, check by check --
-/Broken links/, /No grounds/, /Weak grounds/, /Mixed sources/, /Missing
-roles/, /No role/, /No pattern/, /No relation/, /Out of order/ (see
+/Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Mixed
+sources/, /Missing roles/, /No role/, /No pattern/, /No relation/, /Out
+of order/, /Words to write/ (see
 [[*What is left to do]]) -- each thing listed in the part it is found in,
 and ~RET~ on it goes there.  The mouse on the name of a check says what it
 finds.
@@ -1001,18 +1075,28 @@ opened where included, the board is then the output document, near
 enough, beside the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ··················· Why change                                    Why change
- │   • included ··· [[#m4]] Half the items repeat                         Half the items repeat
- │   △ (logic › reasons)    Robin keeps raising the same items.  Not      Half of each agenda repeats the week before.
- │   │                      something to put in writing.
- │   │ ↥ Part ············· Move to fortnightly
- │   ├ Reason ············· Six of twelve items come back each week       - Six of twelve items come back each week
- │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from
- │   │                      the week before
- │   ├ Reason [no grounds]  Nothing urgent waits for the review           - Nothing urgent waits for the review
- │   └ Reason [assumed] ··· Items need a week to move                     - Items need a week to move
- │                                                                          We assume most items need more than a week
- │                                                                          to change.
+ ├ Rain ············ →Message [[truss-include:m5]]                    The weekly review costs the team more time than it gives
+ │                                                                    back
+ │   • included ····· [[#m5]] The weekly review costs the team more   The weekly review costs the team more time than it gives
+ │   ⟁ (breakdown › parts)    time than it gives back                 back
+ │   ├ Part ················· The review takes longer than it is      - The review takes longer than it is given
+ │   │ △ (logic › reasons)    given
+ │   │ ├ Reason ············· Most weeks it runs past the hour        - Most weeks it runs past the hour
+ │   │ │   ⏚ ground ·· [[m2]] Eight of twelve reviews ran past the
+ │   │ │                      hour
+ │   │ └ Reason ············· It can run forty minutes over           - It can run forty minutes over
+ │   │     ⏚ ground ·· [[m3]] The longest ran forty minutes over
+ │   └ Part ················· Half the items repeat                   - Half the items repeat
+ │     △ (logic › reasons)    Robin keeps raising the same items.       Half of each agenda repeats the week before.
+ │     │                      Not something to put in writing.
+ │     │ ↥ Action ··········· Hold the review every other week
+ │     ├ Reason ············· Half of each agenda is what was open    - Half of each agenda is what was open the week before
+ │     │                      the week before
+ │     │   ⏚ ground ·· [[m4]] Six of twelve items each week come
+ │     │                      back from the week before
+ │     ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
+ │     └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
+ │                                                                      We assume most items need more than a week to change.
 #+end_example
 
 ~i~ does the same for the line at point alone, inline as ~i~ in Dired
@@ -1259,9 +1343,9 @@ the members it takes away.
 /view/ on the board shows the output document in another window without
 writing it, and the board keeps it current while it is shown: the place
 to read it.  The right of the board comes close but is not the same.
-Brief and Subject under the title and the lists of what is left to do are
-not in the output document, and without /entry-text/ each line shows only
-a title or the start of a paragraph.
+Brief, what Structure does not include and the lists of what is left to
+do are not in the output document, and without /entry-text/ each line
+shows only a title or the start of a paragraph.
 
 ~M-x org-truss-export~, or ~x~ on the board, walks Structure and writes
 what the reader sees to ~out/truss.org~ (~org-truss-output-directory~),
@@ -1318,32 +1402,33 @@ The file above is written out as:
 #+begin_src org
 ,#+title: Fortnightly reviews
 
-,* Where we are
+,* Reviews run long, and the same items come back
 
-Reviews run long
+- The calendar this quarter
 
-Reviews ran past the hour eight times this quarter.
+  - Eight of twelve reviews ran past the hour
+  - The longest ran forty minutes over
+- The agendas, weeks 1-12
 
-- Eight of twelve reviews ran past the hour
-- The longest ran forty minutes over
+  - Six of twelve items each week come back from the week before
 
-,* Why change
+,* The weekly review costs the team more time than it gives back
 
-Half the items repeat
+- The review takes longer than it is given
 
-Half of each agenda repeats the week before.
+  - Most weeks it runs past the hour
+  - It can run forty minutes over
+- Half the items repeat
 
-- Six of twelve items come back each week
-- Nothing urgent waits for the review
-- Items need a week to move
+  Half of each agenda repeats the week before.
 
-  We assume most items need more than a week to change.
+  - Half of each agenda is what was open the week before
+  - Nothing urgent waits for the review
+  - Items need a week to move
 
-,* What we propose
+    We assume most items need more than a week to change.
 
-Move to fortnightly
-
-Hold the review every other week.
+,* Hold the review every other week
 
 1. Cancel every second review in the calendar
 2. Carry what is still open to the next one
@@ -1362,9 +1447,9 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-file-name~          | ~"truss.org"~                  |                                               |
 | ~org-truss-patterns~           | those above                    | add your own                                  |
 | ~org-truss-roles~              | reason, who, sky, premises ... | roles a pattern of your own can name          |
-| ~org-truss-part-breakdowns~    | Brief's and Subject's above;   | the breakdowns a new file's Brief, Subject    |
-|                                | parts for Message              | and Message are given, and a member for each  |
-|                                |                                | role                                          |
+| ~org-truss-new-parts~          | the basic form above           | the patterns a new file's parts are given,    |
+|                                |                                | the members under them, and what Structure    |
+|                                |                                | includes                                      |
 | ~org-truss-output-directory~   | ~"out"~                        |                                               |
 | ~org-truss-sources-directory~  | ~"sources"~                    | sources referred to, beside the truss file    |
 | ~org-truss-notes-directory~    | ~"notes"~                      | what is ours and no source                    |
@@ -1419,7 +1504,7 @@ heading, or the whole file, was taken out.
 The second prints the board as text, for anything that reads the
 structure without Emacs open.  The fourth prints the guide, as the drawer
 at a truss file's head holds it, and then what ~?~ says of each part and
-of each role of Brief's and Subject's breakdowns, in
+of each role of Brief's and Message's breakdowns, in
 ~org-truss-language~.
 
 The last, with org-moor, takes a file -- copied, never moved -- or a web
