@@ -1148,6 +1148,9 @@ finds it, as `org-truss-check-descriptions' names them."
             model "Weak grounds" (funcall in (plist-get checks :weak-grounds))
             (lambda (e) (format "%s has no grounds" (funcall ids (list (cdr e))))))
            (org-truss--check-group
+            model "Hidden grounds" (funcall in (plist-get checks :hidden-grounds))
+            (lambda (e) (format "%s %s" (funcall ids (list (cdr e))) org-truss-hidden-grounds-text)))
+           (org-truss--check-group
             model "Mixed sources" (funcall in (plist-get checks :mixed-sources))
             (lambda (e) (format "points into %s" (string-join (cdr e) ", "))))
            (org-truss--check-group
@@ -1170,7 +1173,10 @@ finds it, as `org-truss-check-descriptions' names them."
             (lambda (_) org-truss-no-relation-text))
            (org-truss--check-group
             model "Out of order" (funcall in (plist-get checks :out-of-order))
-            (lambda (e) (format "below %s" (org-truss-member-words (cdr e))))))))
+            (lambda (e) (format "below %s" (org-truss-member-words (cdr e)))))
+           (org-truss--check-group
+            model "Words to write" (funcall in (mapcar #'list (plist-get checks :placeholders)))
+            (lambda (_) org-truss-placeholder-text)))))
     (and lines (cons (org-truss--line "") lines))))
 
 (defun org-truss--part-line (name gloss item &optional reader)

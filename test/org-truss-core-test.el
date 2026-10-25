@@ -959,6 +959,78 @@ pointing to each other holds, each having grounds written."
                              (plist-get (org-truss-checks model) :weak-grounds))
                      '(("Through a bare one" . "bare") ("Points at a bare one" . "bare")))))))
 
+(ert-deftest org-truss-test-hidden-grounds ()
+  "A member the output document tells that stands on one it leaves out --
+tagged :noexport:, or under one -- has hidden grounds.  One it does not
+tell is not asked."
+  (let ((text "* S
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** The manual
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+*** Tests run on public roads
+:PROPERTIES:
+:CUSTOM_ID: roads
+:END:
+*** Internal figures                                                :noexport:
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+**** Three crashes last year
+:PROPERTIES:
+:CUSTOM_ID: crashes
+:END:
+* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Check before every test
+:PROPERTIES:
+:CUSTOM_ID: check
+:TRUSS_LOGIC: reasons
+:END:
+#+attr_truss:
+- The roads are public, [[#roads]]
+- It has gone wrong, [[#crashes]]
+* T
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** [[truss-include:check]]
+"))
+    (org-truss-test--with text
+      (let ((model (org-truss-read)))
+        (should (org-truss-left-out-p model (org-truss-test--m model "Three crashes last year")))
+        (should-not (org-truss-left-out-p model (org-truss-test--m model "Tests run on public roads")))
+        (should (equal (mapcar (lambda (h) (cons (org-truss-member-words (car h)) (cdr h)))
+                               (plist-get (org-truss-checks model) :hidden-grounds))
+                       '(("It has gone wrong, [[#crashes]]" . "crashes"))))
+        (should (string-match-p "^Hidden grounds -- .*\n.*: It has gone wrong, \\[\\[#crashes\\]\\] -- \\[\\[#crashes\\]\\] is left out"
+                                (org-truss-check-report model)))))
+    (org-truss-test--with (replace-regexp-in-string "^\\*\\* \\[\\[truss-include:check\\]\\]\n" "" text)
+      (should-not (plist-get (org-truss-checks (org-truss-read)) :hidden-grounds)))))
+
+(ert-deftest org-truss-test-placeholders ()
+  "The words a new file gives its members reach the reader, through
+Structure, until they are written over: a part's name, or a role's in
+either language.  Those the output document does not tell are not asked."
+  (org-truss-test--with (org-truss-skeleton "T")
+    (let ((model (org-truss-read)))
+      (should (equal (mapcar #'org-truss-member-words (plist-get (org-truss-checks model) :placeholders))
+                     '("Subject" "Part" "Part" "Interpretation" "Part" "Reason" "Action" "Step")))
+      (should (org-truss-placeholder-p (org-truss-model-structure model)))))
+  (org-truss-test--with (replace-regexp-in-string
+                         "^\\*\\* Interpretation$" "** 解釈"
+                         (replace-regexp-in-string "^\\*\\* Action$" "** Test drivers are checked"
+                                                   (org-truss-skeleton "T")))
+    (should (equal (mapcar #'org-truss-member-words
+                           (seq-filter #'org-truss-member-roles
+                                       (plist-get (org-truss-checks (org-truss-read)) :placeholders)))
+                   '("Part" "Part" "解釈" "Part" "Reason" "Step")))))
+
 (ert-deftest org-truss-test-grounds-in-the-text ()
   "A link in a heading's text to a member is grounds: it gives the heading
 grounds, and what it points to must hold and be there.  A section reads

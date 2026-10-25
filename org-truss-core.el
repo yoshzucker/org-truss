@@ -1422,6 +1422,45 @@ those these include in turn; in the order of the file."
               (setq todo (append todo (org-truss--included-by model m))))))))
     (org-truss--by-position seen)))
 
+(defun org-truss-left-out-p (model member)
+  "Non-nil when the output document leaves MEMBER of MODEL out.
+It, or a member it is under, is tagged :noexport:."
+  (let ((m member) out)
+    (while (and m (not out))
+      (setq out (org-truss-noexport-p m)
+            m (org-truss-parent model m)))
+    (and out t)))
+
+(defun org-truss-told (model)
+  "Return the members of MODEL the output document tells, in file order.
+Structure's, and those its include links bring in, but those left out;
+see `org-truss-in-document' and `org-truss-left-out-p'."
+  (seq-remove (lambda (m) (org-truss-left-out-p model m))
+              (org-truss--by-position
+               (seq-uniq (append (org-truss-members-in model 'structure)
+                                 (org-truss-in-document model))))))
+
+(defun org-truss-hidden-grounds (model member)
+  "Return the IDs MEMBER of MODEL stands on of members left out.
+Asked of a member the output document tells: the reader is given what
+it says, and not what it stands on when that is tagged :noexport:, or
+is under a member that is.  See `org-truss-left-out-p'."
+  (seq-filter (lambda (id)
+                (let ((ground (org-truss-member-by-id model id)))
+                  (and ground (org-truss-left-out-p model ground))))
+              (org-truss-member-grounds member)))
+
+(defun org-truss-placeholder-p (member)
+  "Non-nil when MEMBER's words are those it was given, to be written over.
+A part's name, for a part; for any member, the name of a role it plays,
+in English or Japanese, as a new file and a pattern put in write it."
+  (let ((words (org-truss-member-words member)))
+    (or (and (org-truss-member-is-part member)
+             (equal words (capitalize (symbol-name (org-truss-member-part member)))))
+        (seq-some (lambda (role)
+                    (member words (cdr (assq (cdr role) org-truss-roles))))
+                  (org-truss-member-roles member)))))
+
 (defun org-truss-include-loops (model member)
   "Return the IDs of MEMBER's include links that include MEMBER back.
 A member included brings every member under it and what those include,
@@ -1465,6 +1504,11 @@ member whose pattern asks, at the member that lacks, at the link.
                  `org-truss-missing-grounds'
 :weak-grounds    (MEMBER . ID) for each member MEMBER stands on that does
                  not hold; see `org-truss-weak-grounds'
+:hidden-grounds  (MEMBER . ID) for each member MEMBER, one the output
+                 document tells, stands on that it leaves out; see
+                 `org-truss-hidden-grounds'
+:placeholders    members the output document tells whose words are still
+                 those they were given; see `org-truss-placeholder-p'
 :mixed-sources   (MEMBER . SOURCES) for apex members whose truss brings
                  more than one source together; see `org-truss-mixed-sources'
 :broken-links    (MEMBER . ID) for include links to no member
@@ -1475,8 +1519,10 @@ member whose pattern asks, at the member that lacks, at the link.
                  point to nothing there
 :duplicates      IDs more than one member has"
   (let* ((members (org-truss-model-members model))
-         (each (lambda (f) (mapcan (lambda (m) (mapcar (lambda (x) (cons m x)) (funcall f m)))
-                                   members))))
+         (told (org-truss-told model))
+         (each (lambda (f &optional of)
+                 (mapcan (lambda (m) (mapcar (lambda (x) (cons m x)) (funcall f m)))
+                         (or of members)))))
     (list :gaps (delq nil (mapcar (lambda (m)
                                     (let ((gaps (org-truss-gaps m)))
                                       (and gaps (cons m gaps))))
@@ -1493,6 +1539,9 @@ member whose pattern asks, at the member that lacks, at the link.
           :out-of-order (mapcan #'org-truss-out-of-order members)
           :no-grounds (seq-filter (lambda (m) (org-truss-missing-grounds model m)) members)
           :weak-grounds (funcall each (lambda (m) (org-truss-weak-grounds model m)))
+          :hidden-grounds (and told
+                               (funcall each (lambda (m) (org-truss-hidden-grounds model m)) told))
+          :placeholders (seq-filter #'org-truss-placeholder-p told)
           :mixed-sources (delq nil (mapcar (lambda (m)
                                              (let ((sources (org-truss-mixed-sources m)))
                                                (and sources (cons m sources))))
@@ -1523,6 +1572,8 @@ member whose pattern asks, at the member that lacks, at the link.
      . "supporting members of a TRUSS_LOGIC truss with no grounds: no #+begin_quote and no link in their text, to a member or a source; give them one, make them the apex member of a TRUSS_LOGIC truss of their own, or tag them :assumption:")
     ("Weak grounds"
      . "members a member stands on, by a link in its text, that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
+    ("Hidden grounds"
+     . "members the output document tells that stand on a member it leaves out, tagged :noexport: or under one: the reader is given what it says and not what it stands on; take the tag off, or stand on another")
     ("Mixed sources"
      . "trusses that bring sources together where they keep to one, so each can be checked against its source: a parts truss whose end members link to more than one, or a TRUSS_LOGIC truss whose members do -- one taken by org-moor counts once, wherever in it the links point; bring facts of different sources together by pointing to the members that hold them")
     ("Missing roles"
@@ -1534,7 +1585,9 @@ member whose pattern asks, at the member that lacks, at the link.
     ("No relation"
      . "members with members right under them and no pattern: nothing says what those are to them, so whether they hold together cannot be checked; give them a TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING, in a property or in the list's #+attr_truss")
     ("Out of order"
-     . "supporting members the file has below one that the TRUSS_TELLING of their apex member tells after them; the output document follows the file, so move them there"))
+     . "supporting members the file has below one that the TRUSS_TELLING of their apex member tells after them; the output document follows the file, so move them there")
+    ("Words to write"
+     . "members the output document tells whose words are still those they were given: the part's name, or the name of the role they play; write the reader's words over them"))
   "What each check finds, by the name the board and the report give it.
 In the order the report prints them.")
 
@@ -1542,6 +1595,14 @@ In the order the report prints them.")
   "no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:"
   "What the board and the report say of a member with no grounds, and how
 it comes to hold.")
+
+(defconst org-truss-hidden-grounds-text
+  "is left out of the output document"
+  "What the board and the report say of a member's grounds left out.")
+
+(defconst org-truss-placeholder-text
+  "the words it was given, which reach the reader"
+  "What the board and the report say of a member whose words are to be written.")
 
 (defconst org-truss-no-relation-text
   "members under it, and no pattern saying what they are to it"
@@ -1634,6 +1695,11 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                  (mapcar (lambda (w) (funcall member-line (car w)
                                               (format "[[%s]] has no grounds" (org-truss--pointing-target (cdr w)))))
                          (plist-get checks :weak-grounds)))
+           (cons "Hidden grounds"
+                 (mapcar (lambda (h) (funcall member-line (car h)
+                                              (format "[[%s]] %s" (org-truss--pointing-target (cdr h))
+                                                      org-truss-hidden-grounds-text)))
+                         (plist-get checks :hidden-grounds)))
            (cons "Mixed sources"
                  (mapcar (lambda (m) (funcall member-line (car m)
                                               (format "points into %s" (string-join (cdr m) ", "))))
@@ -1680,7 +1746,10 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                            (funcall member-line (car o)
                                     (format "below %s, which TRUSS_TELLING tells after it"
                                             (org-truss-member-words (cdr o)))))
-                         (plist-get checks :out-of-order))))))
+                         (plist-get checks :out-of-order)))
+           (cons "Words to write"
+                 (mapcar (lambda (m) (funcall member-line m org-truss-placeholder-text))
+                         (plist-get checks :placeholders))))))
     groups))
 
 ;;;; Finding the file

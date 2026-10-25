@@ -129,6 +129,8 @@ Grounds
   - a member tagged :assumption:.  Tag so a member that stands on what has
     no file: an agreement, a talk
   A member pointed to as grounds has grounds too, or needs none
+  A member in the output document stands on what is in it too: not on a
+  member tagged :noexport:, or under one
   Grounds on a comment line, ~# [[#m3]]~, are the file's alone; in the
   text, they are the output document's citation too
 
@@ -249,6 +251,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   - :assumption: を付けた部材。ファイルのないもの（合意、口頭の話）に立つ
     部材には、これを付ける
   根拠として指した部材も、根拠を持つか、根拠がなくてよい部材であること
+  出力文書に出る部材は、出力文書に出るものに立つ。:noexport: を付けた部材
+  や、その下の部材には立たない
   根拠をコメント行 ~# [[#m3]]~ に書けばファイルの中だけのもの、本文に
   書けば出力文書での出典にもなる
 
