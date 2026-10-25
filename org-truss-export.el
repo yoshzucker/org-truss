@@ -144,17 +144,38 @@ already being told, the note that telling it would never end."
   "Return what follows CLUSTER's words where it is told, as Org text.
 SHOWN is what the reader sees of it, as `org-truss--shown' says.  Its
 body, when its title is its words; then what is under it, as
-`org-truss--under' says at LEVEL."
-  (org-truss--join
-   (list (and (org-truss--present-p (car shown)) (org-truss--written (cdr shown)))
-         (org-truss--under cluster level))))
+`org-truss--under' says at LEVEL.  Where its text holds lists of what is
+under it, each is told where the list is, between the pieces of the
+body; see `org-truss-cluster-pieces'."
+  (let ((pieces (org-truss-cluster-pieces cluster)))
+    (if (not (and pieces (org-truss--present-p (car shown))))
+        (org-truss--join
+         (list (and (org-truss--present-p (car shown)) (org-truss--written (cdr shown)))
+               (org-truss--under cluster level)))
+      (let ((children (org-truss-cluster-children cluster))
+            told)
+        (while pieces
+          (pcase-let ((`(,text . ,n) (pop pieces)))
+            (push (org-truss--written text) told)
+            (when n
+              ;; Org has no text of a heading after the headings under
+              ;; it: what text follows is told after a list.
+              (push (org-truss--under cluster (and (not (seq-some #'car pieces)) level)
+                                      (seq-take children n))
+                    told)
+              (setq children (nthcdr n children)))))
+        (when children
+          (push (org-truss--under cluster level children) told))
+        (org-truss--join (nreverse told))))))
 
-(defun org-truss--under (cluster level)
+(defun org-truss--under (cluster level &optional children)
   "Return what is under CLUSTER as Org text, one tagged :noexport: left out.
 Each under a heading one level below LEVEL; as a list instead when LEVEL
 is nil, CLUSTER being told in a list, when it is the deepest level, or
-when a pattern of CLUSTER says so -- see `org-truss-list-form'."
-  (let ((children (seq-remove #'org-truss-noexport-p (org-truss-cluster-children cluster))))
+when a pattern of CLUSTER says so -- see `org-truss-list-form'.
+CHILDREN, if given, are those of what is under it to tell."
+  (let ((children (seq-remove #'org-truss-noexport-p
+                              (or children (org-truss-cluster-children cluster)))))
     (if (or (null level) (>= level org-truss--deepest-level) (org-truss-list-form cluster))
         (org-truss--list cluster children)
       (org-truss--join (mapcar (lambda (child)

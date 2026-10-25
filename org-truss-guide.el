@@ -44,7 +44,7 @@
 # they may sit at any level)
 #   Brief      the reader: who, and what they expect
 #   Subject    what was found: the facts
-#   Members    what is made of it: what the facts mean, and what to do
+#   Message    what the document says: what the facts mean, and what to do
 #   Structure  the document's outline: sections, each telling members
 #
 # How a heading relates to the headings right under it (its patterns)
@@ -55,6 +55,7 @@
 #                    pros-cons short-long past-present-future 5w1h 6w1h
 #                    reader-question-response-constraints (Brief's at first)
 #                    premises-issue-constraints (Subject's at first)
+#                    parts (Message's at first)
 #   TRUSS_TELLING    the order they are told in.  prep sds scqa
 #                    sky-rain-umbrella.  The heading itself is told before
 #                    them, and they in the order they are written; the check
@@ -94,17 +95,39 @@
 #   TRUSS_LOGIC in Subject points into one source in all it holds.  A
 #   source taken by org-moor, ~[[moor:ID]]~, is one wherever in it a link
 #   points; a file is one, a URL is one.  Facts of different sources are
-#   brought together by members in Members.  The check points out a
+#   brought together by members in Message.  The check points out a
 #   heading that points into more than one
 #
 # Under the four
-#   under Brief, Subject or Members
+#   under Brief, Subject or Message
 #     a member: its heading is one sentence, which reads without the
 #     sentences around it -- no \"the following\", no \"above\".  The text
 #     under the heading says more of it to the reader.  A heading put in for
 #     a role is named for the role, to be written over
 #   under Structure
 #     a section of the document: it tells members by links that tell them
+#   A heading with something under it says what it is to it by a pattern;
+#   the check points out one that does not
+#
+# Simple and compound trusses
+#   simple truss    has a pattern, and only members (one statement each)
+#                   under it
+#   compound truss  has a pattern, and a simple or compound truss under it;
+#                   truss.org as a whole is the outermost one, its four parts
+#   1  One heading is one simple truss: the statement with the pattern is
+#      the heading, its members the items of a ~#+attr_truss~ list in its
+#      text.
+#      - Except: a member tagged :assumption: or :noexport: is a heading
+#        under it (only a heading takes tags), after the members written
+#        as items
+#   2  A compound truss is built of headings, each simple truss in it one.
+#      - Except: when its text goes on after or between the trusses in it,
+#        nest ~#+attr_truss~ lists in the items instead -- Org has no text
+#        of a heading after the headings under it
+#   Where 1 and 2 leave it open, keep in one heading what is checked at
+#   once -- the facts of one source, a claim and its reasons -- and make a
+#   heading of a member pointed to from several places, to be found easily
+#   The board marks a simple truss △ and a compound truss ⟁
 #
 # Headings as items of a list, in place of headings under a heading
 #   ~#+attr_truss: :logic reasons~  on the line before a list in the text
@@ -192,7 +215,7 @@
 # 別の階層に置いてもよい）
 #   Brief      読み手のこと：誰か、何を期待するか
 #   Subject    調べたこと：事実
-#   Members    考えたこと：事実が何を意味するか（解釈）と、何をするか（判断）
+#   Message    文書が言うこと：事実の意味（解釈）と、すること（判断）
 #   Structure  生成文書の構成：節ごとに、語る部材をリンクで展開する
 #
 # 見出しとそのすぐ下の見出しの関係（型）
@@ -203,6 +226,7 @@
 #                    short-long past-present-future 5w1h 6w1h
 #                    reader-question-response-constraints（Brief の初期値）
 #                    premises-issue-constraints（Subject の初期値）
+#                    parts（Message の初期値）
 #   TRUSS_TELLING    下をどの順で語るか。prep sds scqa sky-rain-umbrella。
 #                    見出し自身は下より先に語られ、下は書いた順に語られる。
 #                    型の順と違えば検査が指摘する
@@ -239,17 +263,36 @@
 #   下で、下に見出しを持たない部分は一つの資料を指す。下に部分を持つ部分は、
 #   別の資料を指してよい。Subject の TRUSS_LOGIC は、下全体で一つの資料を
 #   指す。org-moor の資料 ~[[moor:ID]]~ は、中のどこを指しても一つ。ファイル
-#   も URL も一つずつ。別の資料の事実を組み合わせるのは Members の部材。二つ
+#   も URL も一つずつ。別の資料の事実を組み合わせるのは Message の部材。二つ
 #   以上の資料を指す見出しは、検査が指摘する
 #
 # 4つの見出しの下
-#   Brief・Subject・Members の下
+#   Brief・Subject・Message の下
 #     部材：見出しに一文を書く。前後の文を頼らずに読める文にする（「次の」
 #     「上記の」と書かない）。見出しの下の本文は、見出しについて読み手に
 #     言い足すこと。役のために入れた見出しは役の名前になっているので、
 #     書き換える
 #   Structure の下
 #     節：文書の章。語る部材を、展開するリンクで書く
+#   下にものを持つ見出しは、下が自分にとって何かを型で言う。言っていない
+#   見出しは検査が指摘する
+#
+# 単純トラスと複合トラス
+#   単純トラス  型を持ち、下が部材（一文）だけのもの
+#   複合トラス  型を持ち、下に単純トラスか複合トラスを含むもの。truss.org
+#               全体は、4つの部を組んだ一番外の複合トラス
+#   1  見出し一つを単純トラス一つにする。型を持つ一文を見出しに書き、下の
+#      部材は本文に ~#+attr_truss~ の箇条書きで書く。
+#      - 例外として、:assumption: か :noexport: を付ける部材は子の見出しに
+#        する（タグは見出しにしか付かない）。項目の部材より後に並ぶ
+#   2  複合トラスは見出しで組む。中の単純トラスは、それぞれ子の見出しにする。
+#      - 例外として、中のトラスの後ろや間に本文を続けるときは、項目の中に
+#        ~#+attr_truss~ の箇条書きを入れ子にする（子の見出しの後ろには、
+#        親の本文を書けない）
+#   1 と 2 で決まらないときは、一度に確かめるもの（一つの資料の事実、一つ
+#   の主張とその理由）を同じ見出しに置く。いくつかの場所から指される部材は、
+#   見出しにすると探しやすい
+#   盤面は単純トラスに △、複合トラスに ⟁ を付ける
 #
 # 箇条書きの見出し（見出しの下の見出しの代わりに）
 #   ~#+attr_truss: :logic reasons~  部材・4つの見出し・節の本文の箇条書きの
@@ -374,7 +417,7 @@ together: nest them under a member that says in one sentence what they
 say together, and no more, with TRUSS_LOGIC: reasons (p on the board) --
 each fact is then a reason, and must have its grounds.  What facts of
 different sources say together, what the facts mean, and what to do, go
-in the members.  None of this is written
+in the message.  None of this is written
 out; a member a section lists is, with the members under it.  p on the
 board's Subject line changes the breakdown."
      "調べたこと。事実は一つずつ、合う TRUSS_BREAKDOWN の役の下に部材として
@@ -389,7 +432,7 @@ TRUSS_BREAKDOWN: parts を付け（盤面の p）、その資料の事実（帳�
 下の事実が言っている以上のことを書かない。上の部材には TRUSS_LOGIC: reasons
 を付ける（盤面の p）。下の事実はその理由になり、それぞれ根拠を持つべき見出し
 になる。別の資料の事実が合わせて言っていること、事実の意味、することは
-Members に書く。
+Message に書く。
 ここは書き出されない。節に載せた部材は、下の部材と一緒に書き出される。内訳の
 型は盤面の Subject の行の p で替えられる。")
     ((subject premises)
@@ -401,7 +444,7 @@ Members に書く。
     ((subject constraints)
      "What cannot move: deadline, budget, policy, law."
      "動かせないもの：期限、予算、方針、法令。")
-    (members
+    (message
      "What is made of what was found: what the facts mean here, and what is
 to be done.  Each heading is a member, one statement in one sentence.
 Nest under a claim the members that are its reasons, and give the claim
@@ -477,7 +520,7 @@ Umbrella、SCQA、PREP など。盤面の p）を付けると、すぐ下の節�
 なり、節の下の本文（コメントを除く）は節の最初の文になる（盤面の S で
 リンクの前に書ける）。内訳の型の下では、節は箇条書きの項目になる。展開する
 リンクは文の中にも書け、部材と部材をつなぐ言葉の間に置ける。ここには読み手を案内
-する言葉だけを書き、事実や主張は Members の部材にする。部材なら、根拠として
+する言葉だけを書き、事実や主張は Message の部材にする。部材なら、根拠として
 指せ、どの節でも展開できるから。
 節はいくらでも入れ子にできる。"))
   "Guidance written into a truss file, in English and Japanese.
@@ -561,8 +604,9 @@ with its guide, followed by a blank line."
 (defun org-truss-skeleton (title)
   "Return the text of a new truss file titled TITLE.
 Its first line keeps what is attached to its headings beside it; see
-`org-truss--file-variables'.  The brief and the subject are given the
-breakdowns `org-truss-part-breakdowns' names, and a member for each role.
+`org-truss--file-variables'.  The brief, the subject and the members are
+given the breakdowns `org-truss-part-breakdowns' names, and a member for
+each role.
 Its headings are English whatever `org-truss-language' says: they name
 the parts and the roles, and never reach the reader.  The
 guidance is in `org-truss-language'."
@@ -584,7 +628,7 @@ guidance is in `org-truss-language'."
      (org-truss--preamble) "\n"
      (funcall part 'brief "Brief")
      (funcall part 'subject "Subject")
-     (funcall part 'members "Members")
+     (funcall part 'message "Message")
      (string-remove-suffix "\n" (funcall part 'structure "Structure")))))
 
 (defconst org-truss--guide-drawer-re
@@ -631,7 +675,7 @@ Nothing else is read or moved."
      (insert "\n" (org-truss--preamble) "\n"))
    ;; Each part from its members up, so what is changed lies below what is
    ;; still to change and positions stay good.
-   (dolist (part '(brief subject members structure))
+   (dolist (part '(brief subject message structure))
      (let ((pos (org-truss--part-pos (symbol-name part))))
        (when pos
          (dolist (child (reverse (org-truss--children pos)))

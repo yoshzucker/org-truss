@@ -96,7 +96,7 @@ where a source taken by org-moor came from, and follows any other link."
            (org-truss-language 'en)
            followed origins)
       (with-temp-file truss
-        (insert "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+        (insert "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
                 "** Approval goes to the head first\n"
                 "#+begin_quote\nThe head approves before finance.\n"
                 "[[moor:6f1c::12][Manual p. 12]]\n#+end_quote\n"
@@ -152,7 +152,7 @@ though it is kept elsewhere."
            (link (org-moor-link (org-moor-take-file-to (expand-file-name "manual.txt" dir)
                                                        (org-moor-sources file) "Manual"))))
       (with-temp-file file
-        (insert "#+title: T\n* Members\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+        (insert "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
                 "** Claim\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
                 "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n" link "\n"))
       (with-current-buffer (find-file-noselect file)

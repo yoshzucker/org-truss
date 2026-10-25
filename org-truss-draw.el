@@ -110,6 +110,23 @@ letter where the board is drawn, keeps the tree in line."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
+(defcustom org-truss-board-truss-marks
+  '((simple . "△") (compound . "⟁"))
+  "The marks before the patterns of a heading, by what truss it is.
+`simple', a heading whose pattern has only members under it; `compound',
+one with a truss under it; see `org-truss-truss-kind'.  Seen the same
+whether what is under it is written as headings or as items of a list."
+  :type '(alist :key-type symbol :value-type string)
+  :group 'org-truss)
+
+(defun org-truss--patterns-text (cluster)
+  "Return how the board names CLUSTER's patterns, its truss's mark first.
+Nil when it has none."
+  (let ((label (org-truss-patterns-label cluster)))
+    (and label
+         (concat (alist-get (org-truss-truss-kind cluster) org-truss-board-truss-marks "")
+                 (format " (%s)" label)))))
+
 (defcustom org-truss-board-fold-limit 0
   "How many headings right under a heading the board shows before folding it.
 A heading holding more -- members, sections, members its links tell --
@@ -841,8 +858,7 @@ parent's telling pattern tells after it is marked."
         under (cdr label) (org-truss--notes-shown (org-truss-member-notes member)) (cdr reader) item
         (and patterned (not folded)
              (org-truss--line
-              (concat under (propertize (format "(%s)" (org-truss-patterns-label member))
-                                        'face 'org-truss-dim))
+              (concat under (propertize (org-truss--patterns-text member) 'face 'org-truss-dim))
               nil nil (list :type 'member :pos (org-truss-member-pos member)
                             :key (append key '(pattern)))))
         stem)
@@ -916,10 +932,10 @@ CLUSTER is a section, or the brief or the subject: its breakdown and its
 telling pattern, which give what is below them their roles.
 It goes under CLUSTER's own line, at INDENT.  ITEM is CLUSTER's line's,
 kept under a key of its own."
-  (let ((label (org-truss-patterns-label cluster)))
+  (let ((label (org-truss--patterns-text cluster)))
     (and label
          (org-truss--line
-          (concat indent (propertize (format "(%s)" label) 'face 'org-truss-dim))
+          (concat indent (propertize label 'face 'org-truss-dim))
           nil nil (plist-put (copy-sequence item) :key
                              (append (plist-get item :key) '(pattern)))))))
 
@@ -1055,7 +1071,7 @@ line says how many it hides."
                                'help-echo (org-truss-check-about name))))
 
 (defun org-truss--part-of (cluster)
-  "Return the part CLUSTER is in: `brief', `subject', `members' or `structure'."
+  "Return the part CLUSTER is in: `brief', `subject', `message' or `structure'."
   (cond ((org-truss-member-p cluster) (org-truss-member-home cluster))
         ((org-truss-section-p cluster) 'structure)
         ((org-truss-part-p cluster) (org-truss-part-name cluster))))
@@ -1165,6 +1181,9 @@ finds it, as `org-truss-check-descriptions' names them."
             model "No pattern" (funcall in (plist-get checks :no-pattern))
             #'org-truss--no-pattern-text)
            (org-truss--check-group
+            model "No relation" (funcall in (mapcar #'list (plist-get checks :no-relation)))
+            (lambda (_) org-truss-no-relation-text))
+           (org-truss--check-group
             model "Out of order" (funcall in (plist-get checks :out-of-order))
             (lambda (e) (format "below %s" (org-truss-cluster-label (cdr e))))))))
     (and lines (cons (org-truss--line "") lines))))
@@ -1231,7 +1250,7 @@ a new member plays it."
   "Return the board for MODEL as a list of lines.
 Under the title come the four parts, in the order the work is done in:
 the brief, what the document must satisfy; the subject, what was found;
-the members, what is made of it; the structure, how it is told.  Each is
+the message, what the document says; the structure, how it is told.  Each is
 followed by what is left to do there."
   (let* ((org-truss--model model)
          (org-truss--uses (org-truss--member-uses model))
@@ -1270,7 +1289,7 @@ written under; see `org-truss-document-title'."
            (and pos (list :type 'brief :pos pos :key '(brief title)))))))
 
 (defun org-truss--members-part (model checks)
-  "Return the members part of the board for MODEL, then what is left to do.
+  "Return the message part of the board for MODEL, then what is left to do.
 Drawn as the brief and the subject are.  On the board of one heading of a
 file that is no truss file, that heading, as a part of its own."
   (let ((root (with-current-buffer (org-truss-model-buffer model)
@@ -1280,14 +1299,14 @@ file that is no truss file, that heading, as a part of its own."
      (cond (root
             (cons (org-truss--line "")
                   (cons (org-truss--part-line "Heading" "one heading, read as a truss file's members are"
-                                              (list :type 'brief :pos root :part 'members
-                                                    :key '(brief members)))
+                                              (list :type 'brief :pos root :part 'message
+                                                    :key '(brief message)))
                         (mapcan (lambda (m)
                                   (org-truss--member-lines model m "   " (list 'member (org-truss-member-label m))))
                                 (org-truss-model-members model)))))
            (part
-            (cons (org-truss--line "") (org-truss--part-lines model part "what is made of it"))))
-     (org-truss--check-lines model checks 'members))))
+            (cons (org-truss--line "") (org-truss--part-lines model part "what the document says"))))
+     (org-truss--check-lines model checks 'message))))
 
 (defun org-truss--column (lines)
   "Return the column the middle starts at on LINES.

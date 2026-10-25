@@ -269,8 +269,11 @@ missing role."
 
 (defcustom org-truss-part-breakdowns
   '((brief . reader-question-response-constraints)
-    (subject . premises-issue-constraints))
-  "The breakdown a new file gives its brief and its subject, as (PART . PATTERN).
+    (subject . premises-issue-constraints)
+    (message . parts))
+  "The breakdown a new file gives its parts, as (PART . PATTERN).
+The members are parts of what the document says, in no order: how they
+are told is the structure's to say.
 `org-truss-init' writes a member under the part for each role the
 pattern names, playing it.  PATTERN is a breakdown of
 `org-truss-patterns'."
@@ -329,6 +332,21 @@ logic › deduction, breakdown › 6W1H, telling › PREP."
   "Return CLUSTER's patterns as the board names them, joined, or nil for none."
   (let ((patterns (org-truss-cluster-patterns cluster)))
     (and patterns (mapconcat #'org-truss-pattern-label patterns ", "))))
+
+(defun org-truss-truss-kind (cluster)
+  "Return what truss CLUSTER is: `simple', `compound', or nil for none.
+A simple truss has a pattern, and only members under it, each one
+statement; a compound truss has a pattern, and a truss under it, right
+under it or below a heading with none.  A link under it that tells a
+member is one statement there, whatever the member it tells has under
+it."
+  (and (org-truss-cluster-patterns cluster)
+       (if (org-truss--holds-truss-p cluster) 'compound 'simple)))
+
+(defun org-truss--holds-truss-p (cluster)
+  "Non-nil when a heading with a pattern is anywhere under CLUSTER."
+  (seq-some (lambda (c) (or (org-truss-cluster-patterns c) (org-truss--holds-truss-p c)))
+            (org-truss-cluster-children cluster)))
 
 (defconst org-truss-pattern-kinds '(logic breakdown telling)
   "The kinds of pattern, in the order a heading's are named.")
@@ -426,6 +444,9 @@ Own text runs from the line after the heading to the next heading of any level."
     (cons (min (point-max) (line-beginning-position 2))
           (progn (outline-next-heading) (point)))))
 
+(defconst org-truss--list-mark "\0"
+  "What a body read by `org-truss--own-parse' has where a list it skipped was.")
+
 (defun org-truss--own-parse (start end &optional skip)
   "Parse the own text between START and END.
 Return a plist:
@@ -445,17 +466,19 @@ A comment is a line starting with # and a space, or a comment block,
 
 SKIP, if given, is a list of (BEG . END): a line starting in one is not
 read at all, as the lists of members written in the text are not; see
-`org-truss--member-lists-in'."
+`org-truss--member-lists-in'.  Where one was, the body has a line of
+`org-truss--list-mark' alone; see `org-truss--body-pieces'."
   (let* ((case-fold-search t)
          (state 'text)
          block props includes items drawers notes body comments
-         ;; A list skipped keeps what is before it and after it apart.
+         ;; A list skipped keeps what is before it and after it apart; one
+         ;; may follow another right away.
          (past (lambda ()
-                 (let ((r (seq-find (lambda (r) (and (>= (point) (car r)) (< (point) (cdr r))))
-                                    skip)))
-                   (when r
+                 (let (r)
+                   (while (setq r (seq-find (lambda (r) (and (>= (point) (car r)) (< (point) (cdr r))))
+                                            skip))
                      (goto-char (cdr r))
-                     (push "\n" body))))))
+                     (push (concat org-truss--list-mark "\n") body))))))
     (save-excursion
       (goto-char start)
       (funcall past)
@@ -700,16 +723,19 @@ text, in order.  BODY is the text the reader is told under its heading,
 or nil; NOTES, its comments, which stay in the file.  CHILDREN are the
 headings right under it.  HOLDER is nil for a heading; for an item of a
 list marked #+attr_truss, written in a heading's text, the position of
-that heading, and POS the item's.  See `org-truss--read-item'."
+that heading, and POS the item's.  See `org-truss--read-item'.  PIECES
+is nil but where its text holds such lists: then its body as they cut
+it, (TEXT . N) for the text before a list and the number of its items,
+and (TEXT) for the text after the last; see `org-truss--body-pieces'."
   pos id label level tags roles logic breakdown telling
   text-grounds source-links cited quoted
-  includes body notes children holder)
+  includes body notes children holder pieces)
 
 (cl-defstruct (org-truss-member (:include org-truss-cluster)
                                 (:constructor org-truss--make-member)
                                 (:copier nil))
   "A statement, and what is nested under it.
-HOME is the part it is written in: `brief', `subject' or `members'."
+HOME is the part it is written in: `brief', `subject' or `message'."
   home)
 
 (cl-defstruct (org-truss-section (:include org-truss-cluster)
@@ -720,7 +746,7 @@ HOME is the part it is written in: `brief', `subject' or `members'."
 (cl-defstruct (org-truss-part (:include org-truss-cluster)
                               (:constructor org-truss--make-part)
                               (:copier nil))
-  "One of the four parts, NAME: `brief', `subject' or `members'.
+  "One of the four parts, NAME: `brief', `subject' or `message'.
 Its CHILDREN are the members right under it.  The structure, the fourth,
 is the root section."
   name)
@@ -824,12 +850,28 @@ pattern of one role has it played by every item."
                               ((null (cdr roles)) (cons (car p) (car roles))))))
                     patterns)))
 
+(defun org-truss--body-pieces (body lists)
+  "Return (BODY . PIECES) for BODY, a body read with LISTS skipped.
+BODY has a line of `org-truss--list-mark' where each list was; returned
+without them, what is between them a blank line apart, and PIECES as the
+slot of `org-truss-cluster' says -- nil without LISTS."
+  (if (null lists)
+      (cons body nil)
+    (let* ((texts (mapcar (lambda (text)
+                            (let ((text (string-trim text "\\(?:[ \t]*\n\\)+" "[ \t\n]+")))
+                              (and (not (string-empty-p text)) text)))
+                          (split-string (or body "") (regexp-quote org-truss--list-mark))))
+           (counts (mapcar (lambda (list) (length (org-element-contents list))) lists))
+           (words (delq nil (copy-sequence texts))))
+      (cons (and words (string-join words "\n\n"))
+            (cl-mapcar #'cons texts (append counts '(nil)))))))
+
 (defun org-truss--dedent (text)
   "Return TEXT with the indentation its lines share taken off, nil for nil."
   (when text
     (let ((n (apply #'min most-positive-fixnum
                     (mapcar (lambda (line)
-                              (if (string-blank-p line)
+                              (if (or (string-blank-p line) (equal line org-truss--list-mark))
                                   most-positive-fixnum
                                 (string-match "\\`[ \t]*" line)
                                 (match-end 0)))
@@ -866,7 +908,10 @@ PATTERN)."
                                                               (org-element-property :end l)))
                                             lists)))
          (text (concat words "\n" (plist-get own :notes)))
-         (own-patterns (org-truss--lists-patterns lists)))
+         (own-patterns (org-truss--lists-patterns lists))
+         (body (org-truss--body-pieces
+                (org-truss--dedent (org-with-point-at holder (org-truss--read-text own :body)))
+                lists)))
     (funcall
      make
      :holder holder
@@ -883,7 +928,8 @@ PATTERN)."
      :source-links (org-truss--source-links-in text)
      :cited (car (org-truss--source-links-in text))
      :quoted (org-truss--quotes-in text)
-     :body (org-truss--dedent (org-with-point-at holder (org-truss--read-text own :body)))
+     :body (car body)
+     :pieces (cdr body)
      :notes (org-truss--dedent (org-with-point-at holder (org-truss--read-text own :comments)))
      :children (org-truss--read-items lists make holder (1+ level) own-patterns))))
 
@@ -906,7 +952,9 @@ are constructors, called with the fields."
                   pos (org-truss--own-parse (car bounds) (cdr bounds)
                                             (mapcar (lambda (l) (cons (org-element-property :begin l)
                                                                       (org-element-property :end l)))
-                                                    lists)))))
+                                                    lists))))
+         (body (org-truss--body-pieces (plist-get fields :body) lists)))
+    (setq fields (plist-put (plist-put fields :body (car body)) :pieces (cdr body)))
     (dolist (p (org-truss--lists-patterns lists))
       (let ((key (intern (format ":%s" (car p)))))
         (unless (plist-get fields key)
@@ -984,11 +1032,11 @@ has is among its duplicates, and the index finds the first.  See
                       (and pos (org-truss--read-part pos name)))))
             (brief (funcall part 'brief))
             (subject (funcall part 'subject))
-            (members-part (funcall part 'members))
+            (members-part (funcall part 'message))
             (structure (let ((pos (and (not root) (org-truss--part-pos "structure"))))
                          (and pos (org-truss--read-section pos))))
             (tops (if root
-                      (list (org-truss--read-member root 'members))
+                      (list (org-truss--read-member root 'message))
                     (and members-part (org-truss-part-children members-part))))
             (all (org-truss--by-position
                   (org-truss--flatten (append (and brief (copy-sequence (org-truss-part-children brief)))
@@ -1154,6 +1202,15 @@ TRUSS_LOGIC, say, left there when it was moved under another."
                                 (org-truss-cluster-roles child))))
           (org-truss-cluster-children cluster)))
 
+(defun org-truss-no-relation-p (cluster)
+  "Non-nil when CLUSTER has something under it and no pattern.
+Nothing then says what what is under it is to it -- reasons, parts, the
+places of a telling -- so whether it holds together cannot be checked.
+Asked of every heading, and of every item of a list marked
+#+attr_truss, alike."
+  (and (org-truss-cluster-children cluster)
+       (not (org-truss-cluster-patterns cluster))))
+
 (defun org-truss-patterns-with-role (kind role)
   "Return the ids of the patterns of KIND that have ROLE, in order."
   (seq-filter (lambda (id) (assq role (org-truss-pattern-roles id)))
@@ -1280,7 +1337,7 @@ not there to look."
 ;; The subject is checked against its sources one at a time, so what
 ;; brings facts together keeps to one: the parts of a heading that has
 ;; nothing under them, wherever it is, and all a logic of the subject
-;; holds.  Bringing sources together is reading them, the members' work.
+;; holds.  Bringing sources together is reading them, the message's work.
 
 (defun org-truss--source-of (link)
   "Return the source LINK, a link to one, points into, as a string.
@@ -1296,18 +1353,13 @@ What the link says it as is not read."
   "Return the sources CLUSTER's text points into, each once, in order."
   (seq-uniq (mapcar #'org-truss--source-of (org-truss-cluster-source-links cluster))))
 
-(defun org-truss--in-subject-p (cluster)
-  "Non-nil when CLUSTER is the subject or written in it."
-  (if (org-truss-part-p cluster)
-      (eq (org-truss-part-name cluster) 'subject)
-    (and (org-truss-member-p cluster) (eq (org-truss-member-home cluster) 'subject))))
-
 (defun org-truss-mixed-sources (cluster)
   "Return the sources CLUSTER brings together where it keeps to one, or nil.
 Under parts, those of the headings right under it with nothing under
 them; a heading with some is a part of its own, asked this itself.  Of a
-logic in the subject, those of all it holds and its own.  Nil for one
-source or none."
+logic, those of all it holds and its own, in whatever part: facts of
+different sources are brought together by pointing to the members that
+hold them.  Nil for one source or none."
   (let ((sources
          (seq-uniq
           (append
@@ -1315,7 +1367,7 @@ source or none."
                 (mapcan #'org-truss-cluster-sources
                         (seq-remove #'org-truss-cluster-children
                                     (org-truss-cluster-children cluster))))
-           (and (org-truss-cluster-logic cluster) (org-truss--in-subject-p cluster)
+           (and (org-truss-cluster-logic cluster)
                 (mapcan #'org-truss-cluster-sources (org-truss--subtree cluster)))))))
     (and (cdr sources) sources)))
 
@@ -1448,6 +1500,8 @@ heading whose pattern asks, at the heading that lacks, at the link.
 :no-pattern      (CHILD KIND . CLUSTER) for each heading right under one
                  that says a role of KIND while that one has no pattern
                  of KIND; see `org-truss-no-pattern'
+:no-relation     headings with something under them and no pattern; see
+                 `org-truss-no-relation-p'
 :out-of-order    (CHILD . ABOVE) for headings the file has below one their
                  parent's telling pattern tells after them
 :no-grounds      headings that must have grounds and have none; see
@@ -1479,6 +1533,7 @@ heading whose pattern asks, at the heading that lacks, at the link.
                                 (mapcar (lambda (hit) (cons (car hit) (cons (cdr hit) c)))
                                         (org-truss-no-pattern c)))
                               clusters)
+          :no-relation (seq-filter #'org-truss-no-relation-p clusters)
           :out-of-order (mapcan #'org-truss-out-of-order clusters)
           :no-grounds (seq-filter (lambda (c) (org-truss-missing-grounds model c)) clusters)
           :weak-grounds (funcall each (lambda (c) (org-truss-weak-grounds model c)))
@@ -1520,6 +1575,8 @@ heading whose pattern asks, at the heading that lacks, at the link.
      . "headings right under one with a pattern that play no role of it: the role property of that kind is missing, or names a role the pattern does not have")
     ("No pattern"
      . "headings that say a role, in TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE, while the heading right above has no pattern of that kind: give it the pattern the role belongs to, or take the role off")
+    ("No relation"
+     . "headings, and items of a list marked #+attr_truss, with something under them and no pattern: nothing says what what is under them is to them, so whether it holds together cannot be checked; give them a TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING, in its property or in the list's #+attr_truss")
     ("Out of order"
      . "headings the file has below one that the TRUSS_TELLING of the heading above tells after them; the document follows the file, so move them there"))
   "What each check finds, by the name the board and the report give it.
@@ -1529,6 +1586,10 @@ In the order the report prints them.")
   "no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:"
   "What the board and the report say of a heading with no grounds, and how
 it comes to hold.")
+
+(defconst org-truss-no-relation-text
+  "something under it, and no pattern saying what it is to it"
+  "What the board and the report say of a heading with no relation.")
 
 (defun org-truss-check-about (name)
   "Return what the check NAME finds, or nil."
@@ -1655,6 +1716,9 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                                                   (format " (%s has it)" (mapconcat #'symbol-name ids ", "))
                                                 "")))))
                          (plist-get checks :no-pattern)))
+           (cons "No relation"
+                 (mapcar (lambda (c) (funcall cluster-line c org-truss-no-relation-text))
+                         (plist-get checks :no-relation)))
            (cons "Out of order"
                  (mapcar (lambda (o)
                            (funcall cluster-line (car o)
@@ -1669,7 +1733,7 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
   "Non-nil when BUFFER, or the current buffer, is a truss file."
   (with-current-buffer (or buffer (current-buffer))
     (and (derived-mode-p 'org-mode)
-         (org-truss--part-pos "members")
+         (org-truss--part-pos "message")
          t)))
 
 (declare-function project-root "project" (project))

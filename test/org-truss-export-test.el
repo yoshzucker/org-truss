@@ -30,20 +30,21 @@ comment, :noexport: and unplaced members stay behind."
 
 (ert-deftest org-truss-test-render-items ()
   "Members written as items of a list are told as the headings under a
-member are, after its text: in its list, each opened with its role where
-the pattern names it, its text inside, its id and the list's marks left
-out, a link pointing to one as its words."
+member are, where the list stands in its text: in its list, each opened
+with its role where the pattern names it, its text inside, its id and the
+list's marks left out, a link pointing to one as its words.  The text
+after the list comes after it, and the headings under the member last."
   (let ((out (org-truss-test--render org-truss-test--items-file)))
     (should (string-match-p
              (concat "^- We move to fortnightly reviews\n\n"
                      "  We would meet half as often\\.\n\n"
-                     "  After the list\\.\n\n"
                      "  - Pros: Less time in meetings\n\n"
                      "    An hour a fortnight back\\.\n"
                      "  - Cons: Items wait longer\n\n"
                      "    1\\. Ask the leads\n"
                      "    2\\. Ask the team\n"
-                     "  - 人 :: Robin likes it, as Less time in meetings says\n"
+                     "  - 人 :: Robin likes it, as Less time in meetings says\n\n"
+                     "  After the list\\.\n\n"
                      "  - A heading under it too\n")
              out))
     (should-not (string-match-p "attr_truss\\|<<\\|\\[\\[" out))))
@@ -62,6 +63,27 @@ its headings are: a heading each, its text and what it tells under it."
                      "\\* Next")
              out))
     (should-not (string-match-p "attr_truss\\|<<\\|\\[\\[\\|sky ::" out))))
+
+(ert-deftest org-truss-test-render-text-after-sections ()
+  "Text after a list of sections, which Org cannot put after headings, is
+told after them with the sections as a list; text between two lists
+stays between them."
+  (let ((out (org-truss-test--render
+              (replace-regexp-in-string
+               "- umbrella :: \\[\\[truss-include:m1\\]\\]\n"
+               "- umbrella :: [[truss-include:m1]]\nSo we change.\n#+attr_truss:\n- Last\n"
+               org-truss-test--part-items-file t t))))
+    (should (string-match-p
+             (concat "^We propose a change\\.\n\n"
+                     "- Where we are\n\n"
+                     "  - Reviews take an hour\n"
+                     "- Why change\n"
+                     "- We move to fortnightly reviews\n\n"
+                     "  - Reviews run long\n\n"
+                     "So we change\\.\n\n"
+                     "\\* Last\n\n"
+                     "\\* Next")
+             out))))
 
 (ert-deftest org-truss-test-render-conditions ()
   "A member written under a field of the subject is written where it is placed,
@@ -125,7 +147,7 @@ there the document says so."
   (let* ((org-truss-language 'en)
          (out (org-truss-test--render "* M
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** Reviews run long
 :PROPERTIES:
@@ -174,7 +196,7 @@ the order of the file among the sections, its text under its heading.
 Below the sixth level, what is under a heading is a list."
   (let ((out (org-truss-test--render "* M
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** Meetings run long
 :PROPERTIES:
@@ -220,7 +242,7 @@ heading; under a telling alone, what it holds is told as the heading is,
 under headings a level down."
   (let ((out (org-truss-test--render "* M
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** We move to fortnightly
 :PROPERTIES:
@@ -259,7 +281,7 @@ under headings a level down."
 (ert-deftest org-truss-test-render-member-first ()
   "A member comes before what is under it, its title, then its body; with
 a telling pattern or none, it is told the same."
-  (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_PART: members\n:END:\n"
+  (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
                        "** Claim\n:PROPERTIES:\n:CUSTOM_ID: claim\n:TRUSS_TELLING: prep\n:END:\n"
                        "Claim body.\n"
                        "*** Doubt\n"
@@ -276,7 +298,7 @@ line in a section is no heading, but an item of a list."
   (let ((out (org-truss-test--render "#+title: T
 * M
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** Inner title
 :PROPERTIES:
@@ -363,7 +385,7 @@ told which part of the breakdown each is.  What plays none is told as
 written."
   (let ((text "* M
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
@@ -402,7 +424,7 @@ it would be a heading or an item of a list."
   (dolist (pattern '("" ":TRUSS_BREAKDOWN: parts\n"))
     (let ((out (org-truss-test--render (concat "* M
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** Kept
 :PROPERTIES:
@@ -435,7 +457,7 @@ and the sections below it, items of a list again."
   (let* ((org-truss-language 'en)
          (file "* M
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** Agree next week
 :PROPERTIES:
@@ -544,9 +566,9 @@ document, linked from where the document is written."
       (list (cons "attach/ab/cdef/shot.png" "png")
             (cons "truss.org" "# -*- org-attach-id-dir: \"attach/\"; -*-
 #+title: T
-* Members
+* Message
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
 :END:
 ** A claim
 :PROPERTIES:

@@ -45,7 +45,7 @@ a model can help fill it, but the structure is yours.
 |-----------+------------------------------------------------------------------------------------------+-------------------------|
 | Brief     | what the document must satisfy: reader, their question, the response wanted, constraints | ~TRUSS_PART: brief~     |
 | Subject   | what was found: premises, issue, constraints, and the facts under them                   | ~TRUSS_PART: subject~   |
-| Members   | what is made of it: what the facts mean, and what is to be done                          | ~TRUSS_PART: members~   |
+| Message   | what the document says: what the facts mean, and what is to be done                      | ~TRUSS_PART: message~   |
 | Structure | a tree of sections, listing the members the document tells                               | ~TRUSS_PART: structure~ |
 
 The brief is the architect's brief: the conditions the design has to meet.
@@ -78,7 +78,7 @@ The work on a document goes in three steps, one part each.
   and sum up those that belong together under a member that says in one
   sentence what they say together, and no more.  Its ~TRUSS_LOGIC~ is
   ~reasons~: each fact under it is one of its reasons.
-- /Make sense/, in the members.  Say what the facts mean here, and what is
+- /Make sense/, in the message.  Say what the facts mean here, and what is
   to be done.  A claim's reasons are nested under it, and stand on the
   facts they link to in their text; what is to be done is broken
   down into steps or parts.
@@ -86,7 +86,8 @@ The work on a document goes in three steps, one part each.
   document is told, list the members the reader is shown, from any part.
 
 Where a member is written changes nothing of how it is checked or written
-out.  The parts keep what was found apart from what is made of it.
+out.  The parts keep what was found apart from what the document says
+of it.
 
 ** Patterns and roles
 
@@ -227,7 +228,7 @@ A heading has grounds when its text has one of these:
 | a link          | to a member, ~[[#m3]]~, or to a source: a ~moor:~, ~file:~ or URL link |
 | ~#+begin_quote~ | the source's own words, quoted                                         |
 
-A link to a member stands on it: a reason in the members on the facts of
+A link to a member stands on it: a reason in the message on the facts of
 the subject it reads (see [[*Pointing to a member]]).  It is grounds on a
 line of its own or in a sentence: /as [[#m3]] shows/.  In the text under
 a heading the reader sees it too, as the citation it is -- a link to a
@@ -287,20 +288,21 @@ point and whatever words they give it, ~[[moor:ID::14]]~ and
 members are no sources.
 
 Facts of different sources are brought together by reading them, the
-members' work: a reason in the members links to the facts of each (see
+message's work: a reason in the message links to the facts of each (see
 [[*Pointing to a member]]).  So the subject reads as its sources do, each
 tree checked against one, and the mesh of what stands on what is woven in
 the members alone, where each reason shows what it reads.
 
 ** What is left to do
 
-Eight checks, each found where the problem is:
+Nine checks, each found where the problem is:
 
 | Check         | Found at                       | What it finds                                                                                                                                                     |
 |---------------+--------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Missing roles | the heading whose pattern asks | a role its pattern asks for that no heading right under it plays                                                                                                  |
 | No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them                                                              |
 | No pattern    | the heading right under it     | says a role in ~TRUSS_LOGIC_ROLE~, ~TRUSS_BREAKDOWN_ROLE~ or ~TRUSS_TELLING_ROLE~ of a kind the heading above has no pattern of; names the patterns with it       |
+| No relation   | the heading with no pattern    | has something under it, headings or items, and no pattern saying what it is to it -- the parts and the structure as any heading                                   |
 | Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                                                     |
 | No grounds    | the heading that lacks them    | must have grounds and has none: a link or a quote, a ~TRUSS_LOGIC~ over reasons of its own, or ~:assumption:~ makes it hold                                       |
 | Weak grounds  | the heading that points        | points as grounds, in its text, to a member that does not hold                                                                                                    |
@@ -425,14 +427,16 @@ Reviews ran past the hour eight times this quarter.
 :TRUSS_BREAKDOWN_ROLE: issue
 :END:
 
-,* Members
+,* Message
 :PROPERTIES:
-:TRUSS_PART: members
+:TRUSS_PART: message
+:TRUSS_BREAKDOWN: parts
 :END:
 ,** Half the items repeat
 :PROPERTIES:
 :CUSTOM_ID: m4
 :TRUSS_LOGIC: reasons
+:TRUSS_BREAKDOWN_ROLE: part
 :END:
 Half of each agenda repeats the week before.
 # Robin keeps raising the same items.  Not something to put in writing.
@@ -455,6 +459,7 @@ We assume most items need more than a week to change.
 :PROPERTIES:
 :CUSTOM_ID: m5
 :TRUSS_BREAKDOWN: steps
+:TRUSS_BREAKDOWN_ROLE: part
 :END:
 Hold the review every other week.
 # [[#m4]]
@@ -561,7 +566,7 @@ parts, the outline carries meaning in these places only:
 - Under any heading with a pattern, the headings right under it play its
   roles, by their role properties, and the order they are written in is
   the order a telling pattern tells them in, and steps are done in.
-- Under the /Brief/, the /Subject/ and the /Members/, a heading is a
+- Under the /Brief/, the /Subject/ and the /Message/, a heading is a
   member, and the order of the members there means nothing besides; the
   board and the document follow the links.
 - Under /Structure/, the outline is the document's: its sections, in order.
@@ -642,9 +647,12 @@ We would meet half as often.
 - A target in its first line, ~<<m21>>~, is its id: ~[[m21]]~ points to
   it, as a ground, and ~[[truss-include:m21]]~ tells it.  /place/ and
   /ground/ give an item one, as they give a heading a ~CUSTOM_ID~.
-- In the document the items are told as the headings under it are, after
-  its text: each opened with its role where the pattern names it, the
-  list's marks and the targets left out.
+- In the document the items are told as the headings under it are, where
+  the list stands in its text: each opened with its role where the
+  pattern names it, the list's marks and the targets left out.  Text after
+  the list follows them, and the headings under it come last.  Where they
+  would be headings of the document, text after them makes them a list:
+  Org has no text of a heading after the headings under it.
 
 #+begin_src org
 ,* Structure
@@ -743,17 +751,17 @@ This is the board of the file above:
  Title ··················· Fortnightly reviews                                Fortnightly reviews
 
  Brief  what the document must satisfy
- (breakdown › Reader, Question, Response, Constraints)
-   Reader ················ The team leads                                     The team leads
+ △ (breakdown › Reader, Question, Response, Constraints)
+   Reader ················ The team leads                                    The team leads
    Question ·············· Should the review stay weekly?                     Should the review stay weekly?
    Response wanted ······· Agree to try fortnightly reviews next quarter      Agree to try fortnightly reviews next quarter
    Constraints ··········· One page                                           One page
 
  Subject  what was found
- (breakdown › Premises, Issue, Constraints)
+ ⟁ (breakdown › Premises, Issue, Constraints)
    Premises ·············· Premises                                           Premises
    ├ member ·········· #m1 Reviews run long                                   Reviews run long
-   │ (logic › reasons)
+   │ △ (logic › reasons)
    │ │ ▤ Sky ············· Sky
    │ ├ Reason ············ Eight of twelve reviews ran past the hour          - Eight of twelve reviews ran past the hour
    │ │   ⏚ source ········ calendar export
@@ -763,24 +771,27 @@ This is the board of the file above:
    │   ↥ Reason ·········· Six of twelve items come back each week
    │   ⏚ source ·········· agendas, weeks 1-12
    └ member [assumed]  #m3 Urgent items are raised in the team chat           Urgent items are raised in the team chat
-       ↥ member ·········· Move to fortnightly
+       ↥ Part ············ Move to fortnightly
    Issue ················· The weekly review costs the team more time than …  The weekly review costs the team more time than it gives back
    Constraints —
 
  Missing roles
    Subject                                                                    Constraints
+ No relation
+   Premises ·············· Premises                                           something under it, and no pattern saying what it is to it
 
- Members  what is made of it
-   member ············ #m4 Half the items repeat                              Half the items repeat
-   (logic › reasons)
+ Message  what the document says
+ ⟁ (breakdown › parts)
+   Part ·············· #m4 Half the items repeat                              Half the items repeat
+   △ (logic › reasons)
    │ ▤ Rain ·············· Rain
-   │ ↥ member ············ Move to fortnightly
+   │ ↥ Part ·············· Move to fortnightly
    ├ Reason ·············· Six of twelve items come back each week            - Six of twelve items come back each week
    │   ⏚ ground ·· [[#m2]] Six of twelve items each week come back from the…
    ├ Reason [assumed] ···· Items need a week to move                          - Items need a week to move
    └ Reason [no grounds] · Nothing urgent waits for the review                - Nothing urgent waits for the review
-   member ············ #m5 Move to fortnightly                                Move to fortnightly
-   (breakdown › steps)
+   Part ·············· #m5 Move to fortnightly                                Move to fortnightly
+   △ (breakdown › steps)
    │ ▤ Umbrella ·········· Umbrella
    │ ⏚ ground ···· [[#m4]] Half the items repeat
    │ ⏚ ground ···· [[#m3]] Urgent items are raised in the team chat
@@ -791,8 +802,8 @@ This is the board of the file above:
    Reason [no grounds] ··· Nothing urgent waits for the review                no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
 
  Structure  how it is told: sections, telling members
- (telling › Sky, Rain, Umbrella)
- ├ Sky ··················· Sky                                                Sky
+ △ (telling › Sky, Rain, Umbrella)
+ ├ Sky ··················· Sky                                               Sky
  │   • told ▸2 ··· [[#m1]] Reviews run long                                   Reviews run long
  ├ Rain ·················· Rain                                               Rain
  │   • told ▸3 ··· [[#m4]] Half the items repeat                              Half the items repeat
@@ -807,22 +818,23 @@ each is one line.  The structure then reads as the document, the right
 down the page, beside the logic each sentence rests on:
 
 #+begin_example
- Members  what is made of it
-   member ▸3 ·········· #m4 Half the items repeat                              Half the items repeat
-   member ▸2 ·········· #m5 Move to fortnightly                                Move to fortnightly
+ Message  what the document says
+ ⟁ (breakdown › parts)
+   Part ▸3 ············ #m4 Half the items repeat                              Half the items repeat
+   Part ▸2 ············ #m5 Move to fortnightly                                Move to fortnightly
  ...
  Structure  how it is told: sections, telling members
- (telling › Sky, Rain, Umbrella)
+ △ (telling › Sky, Rain, Umbrella)
  ├ Sky ···················· Sky                                                Sky
  │   • told ······· [[#m1]] Reviews run long                                   Reviews run long
- │   (logic › reasons)
+ │   △ (logic › reasons)
  │   ├ Reason ············· Eight of twelve reviews ran past the hour          - Eight of twelve reviews ran past the hour
  │   │   ⏚ source ········· calendar export
  │   └ Reason ············· The longest ran forty minutes over                 - The longest ran forty minutes over
  │       ⏚ source ········· calendar export
  ├ Rain ··················· Rain                                               Rain
  │   • told ······· [[#m4]] Half the items repeat                              Half the items repeat
- │   (logic › reasons)
+ │   △ (logic › reasons)
  │   │ ↥ member ··········· Move to fortnightly
  │   ├ Reason ············· Six of twelve items come back each week            - Six of twelve items come back each week
  │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from the…
@@ -830,7 +842,7 @@ down the page, beside the logic each sentence rests on:
  │   └ Reason [no grounds]  Nothing urgent waits for the review                - Nothing urgent waits for the review
  └ Umbrella ··············· Umbrella                                           Umbrella
      • told ······· [[#m5]] Move to fortnightly                                Move to fortnightly
-     (breakdown › steps)
+     △ (breakdown › steps)
      │ ⏚ ground ··· [[#m4]] Half the items repeat
      │ ⏚ ground ··· [[#m3]] Urgent items are raised in the team chat
      ├ Step ··············· Cancel every second review in the calendar         1. Cancel every second review in the calendar
@@ -912,7 +924,7 @@ written, which says nothing there; a line at the other end names the
 heading the link is in by the role that heading plays.  A heading whose
 words are a link, ~*** [[truss-include:m7]]~, shows only the link in the
 middle, so the part m7 is written in is said before it, where an id
-goes: =→Subject=, =→Members=, =→Brief=, =→Structure= -- how near to its
+goes: =→Subject=, =→Message=, =→Brief=, =→Structure= -- how near to its
 sources what it stands on is.  What a
 member stands on is drawn below it, as the ground is below a building:
 =⏚ ground= a member it points to -- with =[no grounds]= when it does not
@@ -947,6 +959,8 @@ The other marks of the board are not links:
 | =[no grounds]=      | after the role          | must have grounds, and has none; after ⏚ ground, the member pointed to does not hold |
 | =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |
 | =(logic › reasons)= | the line below          | the patterns the heading names                                                       |
+| =△=                 | before the patterns     | a simple truss: only statements under its patterns                                   |
+| =⟁=                 | before the patterns     | a compound truss: a truss under it; ~org-truss-board-truss-marks~ sets both          |
 | =▸5=                | after the role          | folded, five hidden; ~TAB~ opens it                                                  |
 | =⚠=                 | after the role          | out of the order of the telling pattern above                                        |
 | =Rain —=            | below what it holds     | a role a pattern asks for that nothing plays                                         |
@@ -960,7 +974,7 @@ the right.
 
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Mixed sources/, /Missing
-roles/, /No role/, /No pattern/, /Out of order/
+roles/, /No role/, /No pattern/, /No relation/, /Out of order/
 (see [[*What is left to do]]) -- each thing listed in the part it is found
 in, and ~RET~ on it goes there.  The mouse on the name of a check says
 what it finds.
@@ -1234,7 +1248,7 @@ tells among the links there: what the file has in an order the
 telling pattern does not want, listed /Out of order/, is put right from
 the board.  The places are offered in the order of the file, and a member
 by its path -- from its part, through what it is nested under, cut short,
-to its own heading, with a step's number or the roles it plays: /Members ›
+to its own heading, with a step's number or the roles it plays: /Message ›
 Check before every … › As follows › step 2: Read the checker/.  /place/ on a
 section offers members the same way.
 
@@ -1320,8 +1334,9 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-file-name~          | ~"truss.org"~                  |                                               |
 | ~org-truss-patterns~           | those above                    | add your own                                  |
 | ~org-truss-roles~              | reason, who, sky, premises ... | roles a pattern of your own can name          |
-| ~org-truss-part-breakdowns~    | the brief's and the subject's  | the breakdowns a new file's brief and subject |
-|                                | above                          | are given, and a member for each role         |
+| ~org-truss-part-breakdowns~    | the brief's and the subject's  | the breakdowns a new file's brief, subject    |
+|                                | above; parts for the members   | and members are given, and a member for each  |
+|                                |                                | role                                          |
 | ~org-truss-output-directory~   | ~"out"~                        |                                               |
 | ~org-truss-sources-directory~  | ~"sources"~                    | what was read, beside the truss file          |
 | ~org-truss-notes-directory~    | ~"notes"~                      | what is ours and not a source                 |

@@ -850,7 +850,7 @@ plays, or its number in a numbered list."
 
 (defun org-truss--member-path (model member)
   "Return where MEMBER of MODEL is, as a path, to choose it by.
-From the part it is written in -- Brief, Subject, Members -- through the
+From the part it is written in -- Brief, Subject, Message -- through the
 members it is nested under, their headings cut short, to its own, whole.
 A heading is what names a member; the path says where it is."
   (let ((top member)
@@ -861,14 +861,14 @@ A heading is what names a member; the path says where it is."
     (let ((part (org-truss-parent model top)))
       (string-join (append (list (if (org-truss-part-p part)
                                      (capitalize (symbol-name (org-truss-part-name part)))
-                                   "Members"))
+                                   "Message"))
                            above
                            (list (org-truss--path-segment model member)))
                    " › "))))
 
 (defun org-truss--member-choices (model)
   "Return (PATH . POSITION) for every member of MODEL, those not placed first.
-Not placed: right under Members, and not told in the document."
+Not placed: right under Message, and not told in the document."
   (let* ((told (org-truss-told model))
          (not-placed (seq-remove (lambda (m) (memq m told)) (org-truss-model-members model))))
     (mapcar (lambda (m) (cons (org-truss--member-path model m) (org-truss-member-pos m)))
@@ -1515,7 +1515,7 @@ away."
                  "A section plays this; \\[org-truss-board-new-section] adds one")))
   (let* ((item (org-truss--item))
          (model (org-truss-read org-truss--source))
-         (members (with-current-buffer org-truss--source (org-truss--part-pos "members")))
+         (members (with-current-buffer org-truss--source (org-truss--part-pos "message")))
          (over (pcase (plist-get item :type)
                  ('member (org-truss--member-at model item))
                  ('brief (let ((c (org-truss-cluster-at model (plist-get item :pos))))
