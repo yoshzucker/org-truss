@@ -494,7 +494,7 @@ what the lines below draw; see `org-truss--text-shown'."
                         (org-truss--fill (or (org-truss--text-shown (cdr output)) "")
                                          org-truss--right-width))))
       (if (and words (not (string-blank-p words)))
-          (append (org-truss--break (propertize words 'face 'org-truss-reader)
+          (append (org-truss--break (propertize (org-truss--link-text words) 'face 'org-truss-reader)
                                     org-truss--right-width)
                   body)
         body))))
@@ -653,7 +653,11 @@ STEM starts each; KEY is MEMBER's line's.  Each goes to what it names."
                 (org-truss--line
                  (concat stem (org-truss--mark 'included-in)
                          (if (eq includer root) "Structure" (org-truss--role-word model includer)))
+                 ;; One whose words are the include link alone is MEMBER
+                 ;; there, and has no words of its own to show.
                  (and (not (eq includer root))
+                      (not (string-match-p (concat "\\`" org-truss--include-re "\\'")
+                                           (org-truss-member-words includer)))
                       (propertize (org-truss-member-words includer) 'face 'org-truss-dim))
                  nil
                  (list :type 'use :pos (org-truss-member-pos includer)

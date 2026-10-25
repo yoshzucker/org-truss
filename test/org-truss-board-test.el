@@ -531,6 +531,20 @@ the pattern's words run into their column."
     (org-truss-board-entry-text)
     (should-not (string-match-p "Robin" (buffer-string)))))
 
+(ert-deftest org-truss-test-board-heading-that-includes ()
+  "A member of Structure whose words are an include link alone is the
+member it includes: the reader is shown that member's words, drawn whole
+or not, and where that member is written it is marked as included there
+with no words of its own."
+  (org-truss-test--with-board (org-truss-skeleton "T")
+    (dolist (whole '(nil t))
+      (when whole
+        (org-truss-board-entry-text))
+      (let ((text (buffer-string)))
+        (should (string-match-p "├ Rain[ ·]+→Message \\[\\[truss-include:m2\\]\\] +Interpretation$" text))
+        (should (string-match-p "▤ Rain$" text))
+        (should-not (string-match-p "  \\[\\[truss-include:m2\\]\\]$" text))))))
+
 (ert-deftest org-truss-test-board-quotes-as-grounds ()
   "Each quotation is a ground of its own, drawn above the sources, and is
 left out of the notes shown under its heading.  Drawn whole, its line is
