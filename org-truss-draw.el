@@ -1242,13 +1242,13 @@ that is no truss file, that member, as a part of its own."
                         (org-truss--member-lines model alone "   "
                                                  (list 'member (org-truss-member-words alone))))))
            (message
-            (cons (org-truss--line "") (org-truss--part-lines model message "what the document says"))))
+            (cons (org-truss--line "") (org-truss--part-lines model message "what the output document says"))))
      (org-truss--check-lines model checks 'message))))
 
 (defun org-truss--board-lines (model)
   "Return the board for MODEL as a list of lines.
 Under the title come the four parts, in the order the work is done in:
-Brief, what the output document must satisfy; Subject, what was found;
+Brief, what the output document must satisfy; Subject, the facts found;
 Message, what the output document says; Structure, its outline.  Each is
 followed by what is left to do there."
   (let* ((org-truss--model model)
@@ -1261,11 +1261,11 @@ followed by what is left to do there."
     (append (org-truss--head-lines model)
             (and brief
                  (append (list (org-truss--line ""))
-                         (org-truss--part-lines model brief "what the document must satisfy")
+                         (org-truss--part-lines model brief "what the output document must satisfy")
                          (org-truss--check-lines model checks 'brief)))
             (and subject
                  (append (list (org-truss--line ""))
-                         (org-truss--part-lines model subject "what was found")
+                         (org-truss--part-lines model subject "the facts found")
                          (org-truss--check-lines model checks 'subject)))
             (org-truss--message-lines model checks)
             (list (org-truss--line ""))

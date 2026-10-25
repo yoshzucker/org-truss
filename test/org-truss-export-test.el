@@ -49,6 +49,31 @@ after the list comes after it, and the headings under the member last."
              out))
     (should-not (string-match-p "attr_truss\\|<<\\|\\[\\[" out))))
 
+(ert-deftest org-truss-test-render-items-then-headings ()
+  "A tagged end member, a heading after the items, goes on their list where
+no text follows it: one list, numbered on.  A heading under a pattern of
+one role plays it with none written, as an item does."
+  (let ((out (org-truss-test--render "* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Check
+:PROPERTIES:
+:CUSTOM_ID: m1
+:TRUSS_BREAKDOWN: steps
+:END:
+#+attr_truss:
+1. Meet the driver
+2. Read the checker
+*** Write it down                                              :assumption:
+* S
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+[[truss-include:m1]]
+")))
+    (should (string-match-p "^1\\. Meet the driver\n2\\. Read the checker\n3\\. Write it down$" out))))
+
 (ert-deftest org-truss-test-render-section-items ()
   "Sections written as items of a list in the structure's text are told as
 its headings are: a heading each, its text and what it tells under it."

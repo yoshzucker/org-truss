@@ -720,7 +720,8 @@ in the file's language."
            (move (org-truss-test--m model "We move to fortnightly reviews")))
       (should (equal (org-truss-gaps root) '((telling complication . 1) (telling question . 1))))
       (should (eq (org-truss-member-logic what) 'reasons))
-      (should (equal (mapcar #'cadr (org-truss-gaps what)) '(reason who when where what how)))
+      ;; Why it is so plays reasons' one role, unwritten.
+      (should (equal (mapcar #'cadr (org-truss-gaps what)) '(who when where what how)))
       (should (equal (mapcar #'car (plist-get (org-truss-checks model) :gaps))
                      (list move root what)))
       (should (equal (org-truss-gaps move)
@@ -842,6 +843,9 @@ See [[file:sources/a.pdf][the rule]].
 :END:
 [[#gone]]
 *** No role
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: major
+:END:
 ** Points at a bare one
 :PROPERTIES:
 :END:
@@ -1506,11 +1510,12 @@ it, the members under it.  The heading's text leaves the list out."
                      '(((breakdown . step)) ((breakdown . step)))))
       (should (eq (org-truss-parent model less) move))
       (let ((checks (org-truss-checks model)))
+        ;; The heading under it plays reasons' one role unwritten, as an
+        ;; item does, and pros-cons' none.
         (should (equal (org-truss-test--labels (plist-get checks :no-grounds))
-                       '("Items wait longer")))
+                       '("Items wait longer" "A heading under it too")))
         (should (equal (mapcar (lambda (hit) (org-truss-member-words (car hit))) (plist-get checks :no-role))
-                       '("A heading under it too" "人 :: Robin likes it, as [[m21]] says"
-                         "A heading under it too")))))))
+                       '("人 :: Robin likes it, as [[m21]] says" "A heading under it too")))))))
 
 (defconst org-truss-test--part-items-file "#+title: T
 * Brief

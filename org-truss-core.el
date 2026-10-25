@@ -906,11 +906,25 @@ are those of the member it supports, (KIND . PATTERN)."
                     (org-element-contents list)))
           lists))
 
-(defun org-truss--read-heading (pos part &optional is-part)
+(defun org-truss--heading-roles (roles patterns)
+  "Return ROLES, a heading's, with those it plays in PATTERNS unwritten.
+PATTERNS are those of the member above, (KIND . PATTERN).  A pattern of
+one role has it played by a heading whose property names none of its
+kind, as by an item with no term."
+  (append roles
+          (delq nil (mapcar (lambda (p)
+                              (let ((one (mapcar #'car (org-truss-pattern-roles (cdr p)))))
+                                (and (null (cdr one)) (not (assq (car p) roles))
+                                     (cons (car p) (car one)))))
+                            patterns))))
+
+(defun org-truss--read-heading (pos part &optional is-part patterns)
   "Read the heading at POS as a member of PART, and the members under it.
 The items of the lists marked #+attr_truss in its text first, then the
 headings under it; the lists give it the patterns its properties do not.
-IS-PART says it is the member of PART itself, with TRUSS_PART."
+IS-PART says it is the member of PART itself, with TRUSS_PART.  PATTERNS
+are those of the member above, (KIND . PATTERN): a pattern of one role
+there is played without the role written."
   (let* ((bounds (org-truss--text-bounds pos))
          (lists (org-truss--text-item-lists (car bounds) (cdr bounds)))
          (fields (org-truss--heading-fields
@@ -918,22 +932,22 @@ IS-PART says it is the member of PART itself, with TRUSS_PART."
                                              (org-truss--list-bounds lists))))
          (body (org-truss--body-pieces (plist-get fields :body) lists)))
     (setq fields (plist-put (plist-put fields :body (car body)) :pieces (cdr body)))
+    (setq fields (plist-put fields :roles (org-truss--heading-roles (plist-get fields :roles) patterns)))
     (dolist (p (org-truss--lists-patterns lists))
       (let ((key (intern (format ":%s" (car p)))))
         (unless (plist-get fields key)
           (setq fields (plist-put fields key (cdr p))))))
-    (apply #'org-truss--make-member
-           :part part
-           :is-part is-part
-           :supports (append (org-truss--read-items
-                              lists part pos (1+ (plist-get fields :level))
-                              (delq nil (mapcar (lambda (kind)
-                                                  (let ((id (plist-get fields (intern (format ":%s" kind)))))
-                                                    (and id (cons kind id))))
-                                                org-truss-pattern-kinds)))
-                             (mapcar (lambda (child) (org-truss--read-heading child part))
-                                     (org-truss--child-headings pos)))
-           fields)))
+    (let ((own (delq nil (mapcar (lambda (kind)
+                                   (let ((id (plist-get fields (intern (format ":%s" kind)))))
+                                     (and id (cons kind id))))
+                                 org-truss-pattern-kinds))))
+      (apply #'org-truss--make-member
+             :part part
+             :is-part is-part
+             :supports (append (org-truss--read-items lists part pos (1+ (plist-get fields :level)) own)
+                               (mapcar (lambda (child) (org-truss--read-heading child part nil own))
+                                       (org-truss--child-headings pos)))
+             fields))))
 
 (defun org-truss--subtree (member)
   "Return MEMBER and every member under it, in the order they are written."

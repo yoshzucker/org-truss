@@ -1,7 +1,8 @@
 #+title: org-truss
 #+options: toc:2
 
-Build an argument from members, arrange it into a document, in Org.
+Build an argument of members joined into trusses, and make an output
+document of it, in Org.
 
 It needs [[https://github.com/yoshzucker/org-dock][org-dock]], which takes a
 heading out to be written in, and works with
@@ -24,12 +25,12 @@ action, or as an answer followed by its reasons.
 So this package keeps three things apart:
 
 - *members* -- every statement, written once
-- *patterns* -- what the members under a heading are to it: its reasons,
-  its breakdown, and the order they are told in
-- *structure* -- sections that show the members in the order they are
-  told
+- *patterns* -- what the members right under a member are to it: its
+  reasons, its breakdown, and the order they are told in
+- *Structure* -- the output document's outline, which includes the
+  members it carries
 
-The structure can be rearranged as often as you like without touching a
+Structure can be rearranged as often as you like without touching a
 member, and the board says, at every point, which reasons have no
 grounds, which roles a pattern asks for that nothing plays, and what is
 taken as given.
@@ -39,91 +40,115 @@ a model can help fill it, but the structure is yours.
 
 * The model
 
+** Words
+
+The guide at the head of every truss file (see [[*The guide]]) defines these
+words, and the board, the checks and this README use them alone.
+
+| Word            | What it is                                                                                                  |
+|-----------------+-------------------------------------------------------------------------------------------------------------|
+| pattern         | what a heading or an item says the ones right under it are to it: ~TRUSS_LOGIC~, ~TRUSS_BREAKDOWN~, ~TRUSS_TELLING~ |
+| role            | what one right under plays in the pattern above: /reason/, /who/, /sky/                                       |
+| member          | one heading, or one item of a list marked ~#+attr_truss~                                                     |
+| truss           | a member with a pattern (its /apex member/) and the members right under it (its /supporting members/)        |
+| end member      | a member with no pattern; it has nothing under it                                                            |
+| simple truss    | a truss whose supporting members are all end members; =△= on the board                                      |
+| compound truss  | a truss with an apex member among its supporting members; =⟁= on the board                                  |
+| ID              | the name a member is pointed to by: a heading's ~CUSTOM_ID~ (~m7~), or ~<<m7>>~ in an item's first line      |
+| pointing link   | ~[[#m7]]~ (~[[m7]]~ for an item): points to m7 as grounds                                                    |
+| include link    | ~[[truss-include:m7]]~: includes m7 there in the output document, the whole truss when m7 is an apex member  |
+| output document | what the file is written out as, in ~out/~                                                                   |
+
 ** Four parts
 
-| Part      | What it holds                                                                            | Where                   |
-|-----------+------------------------------------------------------------------------------------------+-------------------------|
-| Brief     | what the document must satisfy: reader, their question, the response wanted, constraints | ~TRUSS_PART: brief~     |
-| Subject   | what was found: premises, issue, constraints, and the facts under them                   | ~TRUSS_PART: subject~   |
-| Message   | what the document says: what the facts mean, and what is to be done                      | ~TRUSS_PART: message~   |
-| Structure | a tree of sections, listing the members the document tells                               | ~TRUSS_PART: structure~ |
+| Part      | What it holds                                                                          | Where                   |
+|-----------+----------------------------------------------------------------------------------------+-------------------------|
+| Brief     | the reader, and what the output document must satisfy                                  | ~TRUSS_PART: brief~     |
+| Subject   | the facts found: one truss for each source                                             | ~TRUSS_PART: subject~   |
+| Message   | what the output document says: what the facts mean, and what to do                     | ~TRUSS_PART: message~   |
+| Structure | the output document's outline, built of trusses, its text holding the include links   | ~TRUSS_PART: structure~ |
 
-The brief is the architect's brief: the conditions the design has to meet.
+Each part is found by its ~TRUSS_PART~, at whatever level and in whatever
+order the parts sit.  They are filled from the top.
+
+Brief is the architect's brief: the conditions the design has to meet.
 Every check is measured against it.
 
-The subject is the brief's other half.  The brief is about the reader; the
-subject is about what the document takes up -- what is taken as given, what
-the problem is taken to be, what cannot move.  A proposal is held to both:
-the document has to move its reader, and what it proposes has to solve the
-problem within its constraints.
+Subject is the brief's other half.  The brief is about the reader; the
+subject is about what the output document takes up -- what is taken as
+given, what the problem is taken to be, what cannot move.  A proposal is
+held to both: the output document has to move its reader, and what it
+proposes has to solve the problem within its constraints.
 
-Each of the two is broken down as any heading can be.  A new file gives
-the brief the breakdown /Reader, Question, Response, Constraints/ and the
-subject /Premises, Issue, Constraints/, and a member right under each for
-each role, playing it by its ~TRUSS_BREAKDOWN_ROLE~, with a guide to what
-to write there.  A role none plays is missing, as anywhere.  Another
-breakdown, of your own in ~org-truss-patterns~ or one there, or any other
-pattern, can be put on instead: /pattern/ on the part's line on the board puts
-it on, and puts in a heading for each role it lacks.
+A part is an apex member like any other, and is broken down as any member
+can be.  A new file gives Brief the breakdown
+/reader-question-response-constraints/, Subject
+/premises-issue-constraints/ and Message /parts/, with a supporting member
+for each role.  A role none plays is missing, as anywhere.  Another
+pattern can be put on instead: /pattern/ on the part's line on the board
+puts it on, and puts in a member for each role it lacks.  What each part,
+and each role of Brief's and Subject's breakdowns, is for, ~?~ on its line
+of the board says.
 
-These members are members like any other: they can have grounds, be
-assumptions, hold members under them and be shown in the structure.  A
-book states its intended reader; a proposal states the constraints it
-works within.  Such a statement is written once, under the role it
-belongs to, and the structure shows it from there.
+The members of the parts are members like any other: they can have
+grounds, be assumptions, be apex members of trusses of their own and be
+included by Structure.  A book states its intended reader; a proposal
+states the constraints it works within.  Such a statement is written once,
+under the role it belongs to, and Structure includes it from there.
 
-The work on a document goes in three steps, one part each.
+The work on an output document goes in three steps, one part each.
 
-- /Find out/, in the subject.  Gather the facts, each with its grounds,
-  and sum up those that belong together under a member that says in one
-  sentence what they say together, and no more.  Its ~TRUSS_LOGIC~ is
-  ~reasons~: each fact under it is one of its reasons.
-- /Make sense/, in the message.  Say what the facts mean here, and what is
-  to be done.  A claim's reasons are nested under it, and stand on the
-  facts they link to in their text; what is to be done is broken
-  down into steps or parts.
-- /Tell/, in the structure.  Sections, each playing a role in how the
-  document is told, list the members the reader is shown, from any part.
+- /Find out/, in Subject.  Gather the facts, each with its grounds, one
+  truss for each source: a member naming the source as its apex member,
+  the source's facts as its supporting members.
+- /Make sense/, in Message.  Say what the facts mean here, and what is to
+  be done, one statement each.  A claim's reasons are its supporting
+  members, and stand on the facts they point to in their text; what is to
+  be done is broken down into steps or parts.
+- /Tell/, in Structure.  Its members are the headings of the output
+  document; their text includes the trusses and members the reader is
+  shown, from any part.
 
 Where a member is written changes nothing of how it is checked or written
-out.  The parts keep what was found apart from what the document says
-of it.
+out.  The parts keep what was found apart from what the output document
+says of it.
 
 ** Patterns and roles
 
-A heading names, in three properties, patterns for the headings right
-under it, and each of those says the role it plays in each pattern, in
-the pattern's property with ~_ROLE~ after it.
+An apex member names, in three properties, patterns for its supporting
+members, and each of those says the role it plays in each pattern, in the
+pattern's property with ~_ROLE~ after it.
 
-| Pattern property  | Role property          | The headings right under it are | Patterns                                    |
-|-------------------+------------------------+---------------------------------+---------------------------------------------|
-| ~TRUSS_LOGIC~     | ~TRUSS_LOGIC_ROLE~     | its reasons                     | reasons, deduction, induction               |
-| ~TRUSS_BREAKDOWN~ | ~TRUSS_BREAKDOWN_ROLE~ | its breakdown: its parts        | steps, parts, 5W1H, 6W1H, pros and cons ... |
-| ~TRUSS_TELLING~   | ~TRUSS_TELLING_ROLE~   | told in the pattern's order     | PREP, SDS, SCQA, Sky, Rain, Umbrella        |
+| Pattern property  | Role property          | Its supporting members are  | Patterns                                    |
+|-------------------+------------------------+-----------------------------+---------------------------------------------|
+| ~TRUSS_LOGIC~     | ~TRUSS_LOGIC_ROLE~     | its reasons                 | reasons, deduction, induction               |
+| ~TRUSS_BREAKDOWN~ | ~TRUSS_BREAKDOWN_ROLE~ | its breakdown: its parts    | steps, parts, 5W1H, 6W1H, pros and cons ... |
+| ~TRUSS_TELLING~   | ~TRUSS_TELLING_ROLE~   | told in the pattern's order | PREP, SDS, SCQA, Sky, Rain, Umbrella        |
 
-The three are apart.  A heading has at most one of each, and a heading
-under it plays a role in each it has: a reason that is also a pro, and
-told as PREP's reason, says ~reason~, ~pros~ and ~reason~ in the three.
-Nothing is read into a heading that names no pattern: what is under it
-is nested there and nothing more, and it asks for nothing.  Every heading
-takes all three, and reads them alike: a part, a member, a section.
+The three are apart.  A member has at most one of each, and a supporting
+member plays a role in each its apex member has: a reason that is also a
+pro, and told as PREP's reason, says ~reason~, ~pros~ and ~reason~ in the
+three.  A member with members under it and no pattern is listed /No
+relation/: nothing says what they are to it.  Every member takes all
+three, and reads them alike: a part, a member of Message, a member of
+Structure.
 
-/Logic/ is the truss itself: what holds the heading up.  Reasons each
+/Logic/ is the truss itself: what holds the apex member up.  Reasons each
 hold it up alone; a deduction's major and minor premise hold it up only
 together; an induction generalises two cases or more.  A premise that
-needs proving is itself the head of a deduction nested under it, so a
-chain of reasoning is a tree of them.  Each reason must have grounds;
-see [[*Grounds]].
+needs proving is itself the apex member of a deduction, so a chain of
+reasoning is a compound truss.  Each reason must have grounds; see
+[[*Grounds]].
 
-/Breakdown/ is what the heading is made of.  Steps are in order, parts in
-none; the other breakdowns name their parts -- pros and cons; past,
+/Breakdown/ is what the apex member is made of.  Steps are in order, parts
+in none; the other breakdowns name their parts -- pros and cons; past,
 present and future; who does it, to whom, when, where, what, why and how
 -- so that nothing is left out.  A part needs no grounds of its own: what
-holds up the whole holds it up.  A document is written for someone, and
-what it asks done is mostly done by someone to someone, so 6W1H is the
-cut to reach for when nothing smaller does; 5W1H, without /whom/, is
-there for what is done to no one.  A notice reads naturally cut this way,
-with its steps inside its /how/:
+holds up the whole holds it up.  An output document is written for
+someone, and what it asks done is mostly done by someone to someone, so
+6W1H is the cut to reach for when nothing smaller does; 5W1H, without
+/whom/, is there for what is done to no one.  A notice reads naturally cut
+this way, with its steps inside its /how/:
 
 #+begin_example
 Check before every test
@@ -137,12 +162,6 @@ Check before every test
   2. Read the checker
 #+end_example
 
-A heading broken down is written out as a list of its parts, steps
-numbered, with reasons or without; where the breakdown names its roles,
-each part opens with its own, /Who:/, /Pros:/.  So is a section: the
-sections below one broken down are items of its list, not headings, each
-its title and lead, with what it holds inside.
-
 Steps and parts differ by whether order matters.  /Keep a record of each
 check/, in parts: the name of whoever checked, the driver, the time, the
 reading, what was said; in any order, nothing is lost.  /Check before
@@ -150,23 +169,22 @@ every test/, in steps: meet the driver, then read the checker; in another
 order, it is another procedure.
 
 /Telling/ is a framework of telling, which says nothing of what is told:
-its places in order, each played by a heading right under the one that
-names it.  PREP is a point, a reason, an example and the point again;
-each is a heading you write, the point again too, in the words it is to
-be told in the second time.
+its places in order, each played by a supporting member.  PREP is a
+point, a reason, an example and the point again; each is a member you
+write, the point again too, in the words it is to be told in the second
+time.
 
-Everything is told in the order of the file: a heading before what is
-under it, and what is under it in the order it is written, the order the
-reader meets them; the board shows it so.  A telling pattern changes
+Everything is told in the order of the file: an apex member before its
+supporting members, and those in the order they are written, the order
+the reader meets them; the board shows it so.  A telling pattern changes
 nothing of that order.  It asks for its places, and what the file has
-below a heading the pattern tells after it is marked =⚠= and listed /Out
+below a member the pattern tells after it is marked =⚠= and listed /Out
 of order/, to be moved in the file.
 
-So a member's claim is told before its reasons: the pyramid, read top
-down.  A story that keeps the conclusion for the end -- SCQA, Sky, Rain,
-Umbrella -- is told by the sections of the structure, the claim listed in
-the last of them; its reasons come after it there, as they are nested
-under it.
+So a claim is told before its reasons: the pyramid, read top down.  A
+story that keeps the conclusion for the end -- SCQA, Sky, Rain, Umbrella
+-- is told by the members of Structure, the claim included in the last of
+them; its reasons come after it there, as they are its supporting members.
 
 | On the board                      | Gives                                                        |
 |-----------------------------------+--------------------------------------------------------------|
@@ -193,12 +211,12 @@ much as of telling, and it tells the umbrella last.
 Patterns nest: the umbrella of one Sky, Rain, Umbrella can hold another,
 and a deduction can stand where SCQA puts its answer.
 
-/pattern/ on the board offers every pattern, of each kind, on any heading, and
-takes one of a kind off.  What the pattern asks for and is not there is
-put in, a heading for each role named for it and playing it, where the
+/pattern/ on the board offers every pattern, of each kind, on any member,
+and takes one of a kind off.  What the pattern asks for and is not there
+is put in, a member for each role named for it and playing it, where the
 pattern lists it, to be written over: a deduction's premises, a PREP's
-reason and example, a 6W1H's seven.  On a section, a telling pattern
-first takes the sections there into its places by their
+reason and example, a 6W1H's seven.  On a member of Structure, a telling
+pattern first takes the members there into its places by their
 ~TRUSS_TELLING_ROLE~, and puts them in its order in the file.
 
 Every pattern is written in ~org-truss-patterns~ in one form: its kind,
@@ -207,7 +225,7 @@ Each role can say how it is asked for:
 
 | Flag          | The role                                                               |
 |---------------+------------------------------------------------------------------------|
-| ~:at-least N~ | is asked of N headings or more: induction's cases, two                 |
+| ~:at-least N~ | is asked of N members or more: induction's cases, two                  |
 | ~:any~        | takes what plays no role: SDS's details                                |
 | ~:label~      | opens each part playing it with its name when written out: Pros:, Who: |
 
@@ -215,113 +233,186 @@ Each role can say how it is asked for:
 breakdown from ~org-truss-roles~, a framework of telling -- and
 ~org-truss-roles~ the roles they name.
 
+** Writing members
+
+A member is a heading, or an item of a list marked ~#+attr_truss~ in a
+member's text.  Two rules say which:
+
+1. One heading is one simple truss: its apex member is the heading, its
+   end members the items of a list in its text.
+   - Except: an end member tagged ~:assumption:~ or ~:noexport:~ is a
+     heading under it (only a heading takes tags), after the end members
+     written as items.
+2. A compound truss is built of headings: each supporting member that is
+   an apex member is a heading under it.
+   - Except: when its text goes on after or between the trusses in it,
+     nest lists in the items instead -- Org has no text of a heading
+     after the headings under it.
+
+Where the two leave it open, keep in one heading a truss checked at once
+-- the facts of one source, a claim and its reasons -- and make a heading
+of a member pointed to from several places, to be found easily.
+
+For a heading, the pattern goes in a property, ~TRUSS_LOGIC~ and the
+rest, and the role in the property of the same name with ~_ROLE~ after
+it.  For an item, the pattern goes in ~#+attr_truss~ before the list, and
+the role before ~::~:
+
+#+begin_src org
+,** We move to fortnightly reviews
+We would meet half as often.
+,#+attr_truss: :logic reasons :breakdown pros-cons
+- pros :: <<m21>>Less time in meetings
+  # [[#m2]]
+  An hour a fortnight back.
+- cons :: Items wait longer
+  ,#+attr_truss: :breakdown steps
+  1. Ask the leads
+  2. Ask the team
+#+end_src
+
+- ~#+attr_truss~ names patterns as the properties do, ~:logic~,
+  ~:breakdown~ and ~:telling~; the heading takes them for the kinds its
+  properties leave out.  Its items come before the headings under it.
+  ~#+attr_truss:~ naming none marks the items alone, under a heading
+  whose properties name its patterns, or with none.
+- The term before ~::~ is the role an item plays, by its English name, as
+  in ~TRUSS_BREAKDOWN_ROLE~; a term that names no role is part of the
+  item's words.
+- A pattern of one role -- ~reasons~, ~steps~, ~parts~ -- needs no role
+  written: every item plays it with a term or none, and every heading
+  whose property names no role of its kind.
+- An item's first line is its words, as a heading's are; the lines under
+  it are its text, a comment left out; a list marked so inside it holds
+  its supporting members.  A list not marked stays text, the include links
+  ~- [[truss-include:m7]]~ of a member of Structure among it.
+- A target in its first line, ~<<m21>>~, is its ID: ~[[m21]]~ points to
+  it, and ~[[truss-include:m21]]~ includes it.  /include/ and /ground/
+  give an item one, as they give a heading a ~CUSTOM_ID~.
+
+Every part reads items so, Brief and Structure among them:
+
+#+begin_src org
+,* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:TRUSS_TELLING: sky-rain-umbrella
+:END:
+,#+attr_truss:
+- sky :: Where we are
+  [[truss-include:m2]]
+- rain :: Why change
+- umbrella :: [[truss-include:m1]]
+#+end_src
+
+On the board, /edit/ on an item takes out the heading whose text holds
+it, at the item; the commands that change a heading -- /rename/, /refile/,
+/delete/, /pattern/ and the rest -- say so on an item instead, which is
+written by hand there.
+
 ** Grounds
 
-A heading that plays a role of the ~TRUSS_LOGIC~ above it is a reason,
-and must have grounds -- unless it has a ~TRUSS_LOGIC~ of its own, whose
-reasons must have them instead, or is tagged ~:assumption:~, taken as
-given.  Whether a heading must have grounds comes from its role alone: not
-from the part it is written in, nor from whether anything uses it.
+In a ~TRUSS_LOGIC~ truss, each supporting member has grounds.  Grounds
+are, in its text:
 
-A heading has grounds when its text has one of these:
+| a pointing link or an include link | to a member, ~[[#m3]]~, ~[[truss-include:m3]]~                  |
+| a link to a source                 | a ~moor:~, ~file:~ or URL link                                  |
+| a quote                            | ~#+begin_quote~, the source's own words                         |
 
-| a link          | to a member, ~[[#m3]]~, or to a source: a ~moor:~, ~file:~ or URL link |
-| ~#+begin_quote~ | the source's own words, quoted                                         |
+These supporting members need none:
 
-A link to a member stands on it: a reason in the message on the facts of
-the subject it reads (see [[*Pointing to a member]]).  It is grounds on a
-line of its own or in a sentence: /as [[#m3]] shows/.  In the text under
-a heading the reader sees it too, as the citation it is -- a link to a
-member as its words, a ~moor:~ link written out as a link to where its
-source came from (see [[*The document]]).  On a comment line, ~# [[#m3]]~,
-as /ground/ on the board writes it, it is for the file alone.  So a
-source is written once, where it is cited.
+- the apex member of a ~TRUSS_LOGIC~ truss: its supporting members are
+  its grounds;
+- a member tagged ~:assumption:~, taken as given.  Tag so a member that
+  stands on what has no file: an agreement, a talk.
+
+Whether a member must have grounds comes from its role alone: not from
+the part it is written in, nor from whether anything includes it.
+
+Grounds on a comment line, ~# [[#m3]]~, as /ground/ on the board writes
+them, are the file's alone; in the text, they are the output document's
+citation too -- a pointing link as m7's words, a ~moor:~ link as a link to
+where its source came from (see [[*The output document]]).  So a source is
+written once, where it is cited.
 
 Words naming what has no file -- /team agreement/, /what was said in the
 hallway/ -- are no grounds: nothing in the file can be gone back to.
-Write them in the text, and tag the heading ~:assumption:~: it is then
-taken as given, as what no text records is, and the board lists it so.
+Write them in the text, and tag the member ~:assumption:~.
 
-A link that tells a member, ~[[truss-include:m7]]~, says where the member
-is told (see [[*Two links to a heading]]); in a reason it is a ground as
-well.  What a link means is what the heading is asked: a reason is asked
-why it holds, and a reason that tells the reader m7 and did not stand on
-it would put beside itself what has nothing to do with it.  So in a
-reason the link both tells m7 and stands on it, on its heading's line or
-in its text, and ~[[#m7]]~ stands on m7 without telling it.  On its
-heading's line, ~*** [[truss-include:m7]]~, the reason is m7 there, as it
-is: a fact that needs no words of yours to be the reason is not said
-again by a member of its own.  In a heading that is no reason -- a part
-of a breakdown, a section -- the link only tells.
+An include link in a reason is grounds as well as what it includes: a
+reason is asked why it holds, and one that included m7 and did not stand
+on it would put beside itself what has nothing to do with it.  A member
+whose words are an include link alone, ~*** [[truss-include:m7]]~, is m7
+itself there: a fact that needs no words of yours to be the reason is not
+said again by a member of its own.  In a member that is no reason -- a
+part of a breakdown, a member of Structure -- the link only includes.
 
-Whether a heading has grounds is read from what it writes, not from what
-that points to.  What it points to is asked something of its own, of
-every heading alike, whether it must have grounds or not: what is pointed
-to as grounds must hold as what it is.
+A member pointed to as grounds has grounds too, or needs none:
 
-| Pointed to          | Holds when                                                                                                    |
-|---------------------+---------------------------------------------------------------------------------------------------------------|
-| a member, ~[[#m3]]~ | it has grounds, or a ~TRUSS_LOGIC~, or the tag ~:assumption:~ -- as a heading that must have grounds is asked |
-| a source, ~moor:~   | the truss file's ~sources/~ holds it                                                                          |
-| a file, ~file:~     | it is there                                                                                                   |
-| a URL               | not checked: nothing in the file can tell                                                                     |
+| Pointed to          | Holds when                                                               |
+|---------------------+--------------------------------------------------------------------------|
+| a member, ~[[#m3]]~ | it has grounds, a ~TRUSS_LOGIC~, or the tag ~:assumption:~                |
+| a source, ~moor:~   | the truss file's ~sources/~ holds it                                     |
+| a file, ~file:~     | it is there                                                              |
+| a URL               | not checked: nothing in the file can tell                                |
 
 It is asked one step: what a member pointed to points to in turn is asked
 of that member, where it is written.  Whether a source says what it is
-cited for is not asked of any heading; that is past what the file's
-structure can tell.
+cited for is past what the file's structure can tell.
 
 The line between a fact and an assumption is whether you can say where it
 came from.
 
 ** One source at a time
 
-The subject is checked against its sources, and a source is read one at a
-time, so what brings facts together keeps to one.  Under a
-~TRUSS_BREAKDOWN~ of parts, the parts with nothing under them point into
-one source; a part with parts under it is held to this itself, and may
-point into another -- a form's fields under the form, beside the law
-under the law.  A ~TRUSS_LOGIC~ in the subject points into one source in
-all it holds.  A source taken by org-moor is one wherever in it its links
-point and whatever words they give it, ~[[moor:ID::14]]~ and
-~[[moor:ID::200][field B]]~ alike; a file is one, a URL is one.  Links to
-members are no sources.
+Write a truss to be checked against one source; the check sees to it.
 
-Facts of different sources are brought together by reading them, the
-message's work: a reason in the message links to the facts of each (see
-[[*Pointing to a member]]).  So the subject reads as its sources do, each
-tree checked against one, and the mesh of what stands on what is woven in
-the members alone, where each reason shows what it reads.
+- A parts truss: the links to sources in its end members' text point into
+  one source.  An apex member among its supporting members is held to
+  this itself, and may point into another -- a form's fields under the
+  form, beside the law under the law.
+- A ~TRUSS_LOGIC~ truss, in any part: the links to sources in the text of
+  its apex member and of every member under it point into one source.
+
+A source taken by org-moor is one wherever in it its links point and
+whatever words they give it, ~[[moor:ID::14]]~ and ~[[moor:ID::200][field
+B]]~ alike; a file is one, a URL is one.  Pointing links are no sources.
+
+To bring facts of different sources together, point to the members that
+hold them, not to the sources: the work of Message.  So Subject reads as
+its sources do, each truss checked against one, and the mesh of what
+stands on what is woven in the pointing links alone, where each reason
+shows what it reads.
 
 ** What is left to do
 
 Nine checks, each found where the problem is:
 
-| Check         | Found at                       | What it finds                                                                                                                                                     |
-|---------------+--------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Missing roles | the heading whose pattern asks | a role its pattern asks for that no heading right under it plays                                                                                                  |
-| No role       | the heading right under it     | plays no role of a pattern of the heading above: its role property is missing, or names none of them                                                              |
-| No pattern    | the heading right under it     | says a role in ~TRUSS_LOGIC_ROLE~, ~TRUSS_BREAKDOWN_ROLE~ or ~TRUSS_TELLING_ROLE~ of a kind the heading above has no pattern of; names the patterns with it       |
-| No relation   | the heading with no pattern    | has something under it, headings or items, and no pattern saying what it is to it -- the parts and the structure as any heading                                   |
-| Out of order  | the heading right under it     | written below one its parent's ~TRUSS_TELLING~ tells after it                                                                                                     |
-| No grounds    | the heading that lacks them    | must have grounds and has none: a link or a quote, a ~TRUSS_LOGIC~ over reasons of its own, or ~:assumption:~ makes it hold                                       |
-| Weak grounds  | the heading that points        | points as grounds, in its text, to a member that does not hold                                                                                                    |
-| Mixed sources | the heading that brings them   | points into more than one source where it keeps to one: parts with nothing under them, or a ~TRUSS_LOGIC~ in the subject (see [[*One source at a time]])          |
-| Broken links  | the link                       | a link to nothing: one that tells or points to no member, one to no source or file; a ~CUSTOM_ID~ two members have; a link that tells what tells its heading back |
+| Check         | Found at                        | What it finds                                                                                                                         |
+|---------------+---------------------------------+---------------------------------------------------------------------------------------------------------------------------------------|
+| Missing roles | the apex member                 | a role its pattern asks for that none of its supporting members plays                                                                 |
+| No role       | the supporting member           | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                               |
+| No pattern    | the supporting member           | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                       |
+| No relation   | the member with no pattern      | has members right under it, and no pattern saying what they are to it -- the parts and Structure as any member                       |
+| Out of order  | the supporting member           | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                    |
+| No grounds    | the member that lacks them      | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                          |
+| Weak grounds  | the member that points          | points as grounds, in its text, to a member that does not hold                                                                        |
+| Mixed sources | the apex member                 | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                      |
+| Broken links  | the link                        | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
 
 They say what is so; what to do about it is written in the file.
 
 * The file
 
-There is one ~truss.org~ per document, in a directory of its own.
+There is one ~truss.org~ per output document, in a directory of its own.
 ~M-x org-truss-init~ sets the directory up; run on one set up before, it
 adds what is missing and leaves what is there.
 
-| ~truss.org~ | the manuscript; the rest is written from it or for it                  |
-| ~sources/~  | what was read: with org-moor, a directory each, its file and record    |
-| ~notes/~    | what is ours and not a source: memos, slides, minutes                  |
+| ~truss.org~ | the file; the rest is written from it or for it                        |
+| ~sources/~  | sources referred to: with org-moor, a directory each, its file and record |
+| ~notes/~    | what is ours and no source: memos, slides of our own, minutes          |
 | ~attach/~   | what ~org-attach~ (~C-c C-a~) attaches to a heading: a picture, a file |
-| ~out/~      | the document, written by ~x~ on the board or ~M-x org-truss-export~    |
+| ~out/~      | the output document, written by ~x~ on the board or ~M-x org-truss-export~ |
 
 So the directory can be moved, or handed over, whole.  With org-moor, a
 source taken from a truss file goes in its ~sources/~: a directory named by
@@ -333,8 +424,8 @@ on a line of its own; either gives it grounds.  The first line of
 on its headings is kept there, not where attachments go elsewhere, each
 heading's in a directory named by its ~ID~; it is a file variable Org
 declares safe, so it holds whether org-truss is loaded or not.  The board
-and the document read a link to an attachment, ~[[attachment:NAME]]~, as a
-link to its file.
+and the output document read a link to an attachment,
+~[[attachment:NAME]]~, as a link to its file.
 
 ~org-truss-project-file~, when it names one, is an empty file written there
 too, that marks the directory as a project: ~".project"~, say, with
@@ -343,23 +434,39 @@ project even outside a repository, and what starts at a project's root --
 a coding agent among them -- starts beside ~truss.org~ and its sources.
 Inside a repository it makes the directory a project apart from the rest.
 
-A comment block at the head of ~truss.org~ holds the rules of the file,
-the same for whoever edits it, by hand, on the board, or as a language
-model working in the file: what each part holds, what the patterns and
-the roles are, which headings must have grounds and what grounds are, how
-one member points to another, what is written out, what each other
-property and tag means, what goes in the directories beside it, and the
-command that checks the file.  A folded ~:GUIDE:~ drawer under each part,
-and under each member playing a role of the brief's or the subject's
-breakdown, says how to work there.  The board's keys are at its foot, and
-what each check finds is said where it is reported.  The headings of a new
-file are English whatever ~org-truss-language~ says: they name the parts
-and the roles, and the reader never sees them.
+** The guide
 
-The guidance learns, and a file keeps the wording it was written with.
-~M-x org-truss-refresh-guides~ puts the current wording back -- the comment
-block and every drawer, adding those that were deleted -- and touches
-nothing else you wrote.
+A ~:GUIDE:~ drawer at the head of ~truss.org~, before the first heading,
+holds the rules of the file, the same for whoever edits it, by hand, on
+the board, or as a language model working in the file: the words above,
+the four parts, how members and trusses are written, grounds, sources,
+what is in the output document, what goes in the directories beside it,
+and the command that checks the file.  Org folds it as it folds any
+drawer, out of the way of the parts, and ~TAB~ on it opens it to be read.
+Its example is in an example block, and its IDs, ~<<m21>>~ among them, are
+no member's: IDs are counted from the first heading.
+
+What each part, and each role of Brief's and Subject's breakdowns, is for
+is not written in the file: ~?~ on the board says it in the echo area, on
+the line of the part, of the member playing the role, or of the role
+missing; on any other member, ~?~ says its patterns and the roles it
+plays.  ~org-truss-batch-guide~ prints the guide and all of these, for an
+agent (see [[*Batch]]).  The board's keys are at its foot, and what each
+check finds is said where it is reported.  The headings of a new file are
+English whatever ~org-truss-language~ says: they name the parts and the
+roles, and the reader never sees them.
+
+The guide learns, and a file keeps the wording it was written with.
+~M-x org-truss-refresh-guides~ puts the current guide back in its drawer,
+in place of the guide before it -- a drawer, or the comments it was once
+written in -- and takes away the ~:GUIDE:~ drawers once written under the
+parts and the members playing their roles.  One of your own, of a role
+nothing is said of or of any other member, stays, and so does anything
+else you wrote.
+
+** An example
+
+The guide's drawer left out:
 
 #+begin_src org
 # -*- org-attach-id-dir: "attach/"; -*-
@@ -370,22 +477,11 @@ nothing else you wrote.
 :TRUSS_PART: brief
 :TRUSS_BREAKDOWN: reader-question-response-constraints
 :END:
-,** The team leads
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: reader
-:END:
-,** Should the review stay weekly?
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: question
-:END:
-,** Agree to try fortnightly reviews next quarter
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: response
-:END:
-,** One page
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: constraints
-:END:
+,#+attr_truss:
+- reader :: The team leads
+- question :: Should the review stay weekly?
+- response :: Agree to try fortnightly reviews next quarter
+- constraints :: One page
 
 ,* Subject
 :PROPERTIES:
@@ -394,6 +490,7 @@ nothing else you wrote.
 :END:
 ,** Premises
 :PROPERTIES:
+:TRUSS_BREAKDOWN: parts
 :TRUSS_BREAKDOWN_ROLE: premises
 :END:
 ,*** Reviews run long
@@ -402,16 +499,11 @@ nothing else you wrote.
 :TRUSS_LOGIC: reasons
 :END:
 Reviews ran past the hour eight times this quarter.
-,**** Eight of twelve reviews ran past the hour
-:PROPERTIES:
-:TRUSS_LOGIC_ROLE: reason
-:END:
-# [[https://calendar.example.com/export][calendar export]]
-,**** The longest ran forty minutes over
-:PROPERTIES:
-:TRUSS_LOGIC_ROLE: reason
-:END:
-# [[https://calendar.example.com/export][calendar export]]
+,#+attr_truss:
+- Eight of twelve reviews ran past the hour
+  # [[https://calendar.example.com/export][calendar export]]
+- The longest ran forty minutes over
+  # [[https://calendar.example.com/export][calendar export]]
 ,*** Six of twelve items each week come back from the week before
 :PROPERTIES:
 :CUSTOM_ID: m2
@@ -436,90 +528,68 @@ Reviews ran past the hour eight times this quarter.
 :PROPERTIES:
 :CUSTOM_ID: m4
 :TRUSS_LOGIC: reasons
-:TRUSS_BREAKDOWN_ROLE: part
 :END:
 Half of each agenda repeats the week before.
 # Robin keeps raising the same items.  Not something to put in writing.
-,*** Six of twelve items come back each week
-:PROPERTIES:
-:TRUSS_LOGIC_ROLE: reason
-:END:
-# [[#m2]]
+,#+attr_truss:
+- Six of twelve items come back each week
+  # [[#m2]]
+- Nothing urgent waits for the review
 ,*** Items need a week to move                                  :assumption:
-:PROPERTIES:
-:TRUSS_LOGIC_ROLE: reason
-:END:
 We assume most items need more than a week to change.
-,*** Nothing urgent waits for the review
-:PROPERTIES:
-:TRUSS_LOGIC_ROLE: reason
-:END:
 
 ,** Move to fortnightly
 :PROPERTIES:
 :CUSTOM_ID: m5
 :TRUSS_BREAKDOWN: steps
-:TRUSS_BREAKDOWN_ROLE: part
 :END:
 Hold the review every other week.
 # [[#m4]]
 # [[#m3]]
-,*** Cancel every second review in the calendar
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: step
-:END:
-,*** Carry what is still open to the next one
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: step
-:END:
+,#+attr_truss:
+1. Cancel every second review in the calendar
+2. Carry what is still open to the next one
 
 ,* Structure
 :PROPERTIES:
 :TRUSS_PART: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
-,** Sky
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: sky
-:END:
-- [[truss-include:m1]]
-
-,** Rain
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: rain
-:END:
-- [[truss-include:m4]]
-
-,** Umbrella
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: umbrella
-:END:
-What we propose:
-- [[truss-include:m5]]
+,#+attr_truss:
+- sky :: Where we are
+  [[truss-include:m1]]
+- rain :: Why change
+  [[truss-include:m4]]
+- umbrella :: What we propose
+  [[truss-include:m5]]
 #+end_src
 
-** Headings assert; the structure tells
+/Reviews run long/ is one simple truss in one heading: the claim, its two
+reasons as items.  /Items need a week to move/ is a heading only because
+it is tagged.  /Premises/ and /Message/ are compound trusses, built of
+headings.
 
-A member's heading is the sentence it asserts, and what the checks read.
-Links point to it by its ~CUSTOM_ID~, not its heading, so the heading can
-be reworded at any time.  It can be wrong and can stand on others,
-so write it to read on its own, pulled out of the document -- no "the
-following", no "above", no "first".  The order it is told in is the
-structure's, and a heading that leans on that order stops being true when
-the structure changes.  What a heading asserts is tied to the reader's
-question, in the brief: ask another question and the top claim changes,
-while what it stood on stays.  It is not tied to how it is told.
+** Members assert; Structure tells
 
-The structure asserts nothing.  It chooses what the reader sees and in
-what order, and writes only what guides them -- what is true of the
+A member's words are the sentence it asserts, and what the checks read.
+Links point to it by its ID, not its words, so they can be reworded at any
+time.  It can be wrong and can stand on others, so write it to read on its
+own, pulled out of the output document -- no "the following", no "above",
+no "first".  The order it is told in is Structure's, and words that lean
+on that order stop being true when Structure changes.  What a member
+asserts is tied to the reader's question, in Brief: ask another question
+and the top claim changes, while what it stood on stays.  It is not tied
+to how it is told.
+
+Structure asserts nothing.  It chooses what the reader sees and in what
+order, and writes only what guides them -- what is true of the output
 document rather than of the world, so it needs no grounds:
 
-- a section's title, its heading;
-- a section's lead, the text under its heading, read under the title
-  before the members the section tells.  The structure's own lead opens
-  the document;
-- the links that tell members, where they stand -- in its items, or in
-  its lead, between the words that lead from one to the next.
+- a member of Structure's words, a heading of the output document;
+- its text, read under that heading before the members it includes.
+  Structure's own text opens the output document;
+- the include links, where they stand -- in its items, or in its text,
+  between the words that lead from one to the next.
 
 #+begin_src org
 ,** What to do
@@ -529,17 +599,18 @@ And it is written down:
 [[truss-include:m13]]
 #+end_src
 
-The joins between members are seldom the structure's to write either: a
-member's patterns say what is under it is to it -- steps numbered, a part
-labelled with its role -- and the document is written so.  Whatever could
-be wrong is a member, where the checks reach it.
+The joins between members are seldom Structure's to write either: a
+member's patterns say what its supporting members are to it -- steps
+numbered, a part labelled with its role -- and the output document is
+written so.  Whatever could be wrong is a member, where the checks reach
+it.
 
-A member is told by its heading, wherever it is told, and the text under
-the heading follows it: what it says more to the reader.  To say it to
-the reader otherwise, rewrite the heading -- what it asserts is what the
-reader is told.  What is for you alone -- why you believe it, who said
-it, what cannot be said -- goes in a comment, as Org writes one, which
-stays in the file:
+A member is written out as its words, wherever it is included, and its
+text follows them: what it says more to the reader.  To say it to the
+reader otherwise, rewrite its words -- what it asserts is what the reader
+is told.  What is for you alone -- why you believe it, who said it, what
+cannot be said -- goes in a comment, as Org writes one, which stays in
+the file:
 
 #+begin_src org
 ,** Half the items repeat
@@ -550,148 +621,78 @@ Not something to put in writing.
 ,#+end_comment
 #+end_src
 
-A member tagged ~:noexport:~ stays in
-the file whole, with what is nested under it: evidence you keep for
-yourself, a note on what to check.  A document generated from the file can
-be regenerated as often as you change it, so the file stays the place where
-the thinking happens, and the document is never a copy that has to be kept
-in step by hand.
+A member tagged ~:noexport:~ stays in the file whole, with what is under
+it: evidence you keep for yourself, a note on what to check.  An output
+document generated from the file can be generated again as often as you
+change it, so the file stays the place where the thinking happens, and the
+output document is never a copy that has to be kept in step by hand.
 
 ** What the outline means
 
-Each part is found by its ~TRUSS_PART~, at whatever level and in whatever
-order the parts sit, so the file can be laid out as suits you.  Within the
-parts, the outline carries meaning in these places only:
+Within the parts, the outline carries meaning in these places only:
 
-- Under any heading with a pattern, the headings right under it play its
-  roles, by their role properties, and the order they are written in is
-  the order a telling pattern tells them in, and steps are done in.
-- Under the /Brief/, the /Subject/ and the /Message/, a heading is a
-  member, and the order of the members there means nothing besides; the
-  board and the document follow the links.
-- Under /Structure/, the outline is the document's: its sections, in order.
+- Under an apex member, its supporting members play its roles, and the
+  order they are written in is the order a telling pattern tells them in,
+  and steps are done in.
+- Under Brief, Subject and Message, the order of the members means
+  nothing besides; the board and the output document follow the links.
+- Under Structure, the outline is the output document's: its headings, in
+  order.
 
-So members can be reordered and their headings rewritten freely; nesting
-one under another, though, makes it play a role in the other's patterns,
-and a member moved under a section would be read as a section.  The board
-does not depend on where in the file a member is written -- only on what
-it is nested under and what links to it.
+So members can be reordered and reworded freely; putting one under
+another, though, makes it a supporting member of the other, and a member
+moved under a member of Structure would be read as a heading of the
+output document.  The board does not depend on where in the file a
+member is written -- only on what it is under and what links to it.
 
-** Two links to a heading
+** Two links to a member
 
-A heading -- a member or a section -- is linked to in one of two ways,
-and the kind of link alone says which: not where it is written, nor
-whether it is a list item, nor what kind of heading it points to.
+A member is linked to in one of two ways, and the kind of link alone says
+which: not where it is written, nor whether it is a list item, nor what
+kind of member it points to.
 
-| Link                   | What it does                                                                            |
-|------------------------+-----------------------------------------------------------------------------------------|
-| ~[[#m7]]~              | points to heading m7: a ground, in a heading's text                                     |
-| ~[[truss-include:m7]]~ | tells heading m7 there: it, with what is under it, is written out where the link stands |
+| Link                   | What it does                                                                           |
+|------------------------+----------------------------------------------------------------------------------------|
+| ~[[#m7]]~              | a pointing link: points to m7 as grounds, in a member's text                           |
+| ~[[truss-include:m7]]~ | an include link: includes m7 there, with what is under it, in the output document      |
 
-A link that tells a heading can stand in any heading -- a section, or a
-member that brings another along -- on a line of its own, as a list item,
-or in a sentence; or on a section's
-heading line, ~*** [[truss-include:m7]]~.  Where it stands says how it is
-told.  On a heading line, it is a heading of the document: its words,
-then what is under it, under headings a level down.  In text, it is its
-words in the sentence, and the rest -- its body, then what is under it --
+An include link can stand in any member -- a member of Structure, or one
+that brings another along -- on a line of its own, as a list item, or in a
+sentence; or as the words of a member, ~*** [[truss-include:m7]]~, which
+is then m7 itself.  Where it stands says how m7 is written out.  On a
+heading line, it is a heading of the output document: its words, then
+what is under it, under headings a level down.  In text, it is its words
+in the sentence, and the rest -- its text, then what is under it --
 follows the paragraph, or goes inside the list item, as a list.  Its
-description, ~[[truss-include:m7][words]]~, is its words there.  A
-section told is told as a member is.
-Two places that tell the same section tell its chapter twice: that is
-yours to want or not.  A link that points to a heading reads as its
-description, or the heading; in a comment it is not told.  What a heading
-brings with it is told inside it, and so on down; a link that would tell
-what tells it back, without end, is reported under /Broken links/, and
-the document says so where it stops.
-
-A section tells the members it shows by such links, ~- [[truss-include:m7]]~,
-from whatever part they are written in.  A section can hold sections of
-its own.
-
-** Headings as items of a list
-
-A member whose reasons, parts or steps say little beyond their one line
-need not have a heading each: written as the items of a list in its
-text, marked ~#+attr_truss~, they are members right under it all the
-same -- the patterns ask for them, the checks reach them, the board draws
-them, and links point to them.  A part's text holds members so, the
-fields of the brief among them, and a section's text sections.
-
-#+begin_src org
-,** We move to fortnightly reviews
-We would meet half as often.
-,#+attr_truss: :logic reasons :breakdown pros-cons
-- pros :: <<m21>>Less time in meetings
-  # [[#m2]]
-  An hour a fortnight back.
-- cons :: Items wait longer
-  ,#+attr_truss: :breakdown steps
-  1. Ask the leads
-  2. Ask the team
-#+end_src
-
-- ~#+attr_truss~ names patterns as the properties do, ~:logic~,
-  ~:breakdown~ and ~:telling~; the heading takes them for the kinds its
-  properties leave out.  Its items come before the headings under it.
-  ~#+attr_truss:~ naming none marks the items alone, under a heading
-  whose properties name its patterns, or with none.
-- The term before ~::~ is the role an item plays, by its English name, as
-  in ~TRUSS_BREAKDOWN_ROLE~.  A pattern of one role -- ~reasons~, ~steps~,
-  ~parts~ -- is played by every item, with a term or none; a term that
-  names no role is part of the item's words.
-- An item's first line is its words, as a heading's are; the lines under
-  it are its text, a comment left out; a list marked so inside it holds
-  what is under it.  In a section, a list not marked stays its text, the
-  links ~- [[truss-include:m7]]~ that tell members among it.
-- A target in its first line, ~<<m21>>~, is its id: ~[[m21]]~ points to
-  it, as a ground, and ~[[truss-include:m21]]~ tells it.  /include/ and
-  /ground/ give an item one, as they give a heading a ~CUSTOM_ID~.
-- In the document the items are told as the headings under it are, where
-  the list stands in its text: each opened with its role where the
-  pattern names it, the list's marks and the targets left out.  Text after
-  the list follows them, and the headings under it come last.  Where they
-  would be headings of the document, text after them makes them a list:
-  Org has no text of a heading after the headings under it.
-
-#+begin_src org
-,* Structure
-:PROPERTIES:
-:TRUSS_PART: structure
-:TRUSS_TELLING: sky-rain-umbrella
-:END:
-,#+attr_truss:
-- sky :: Where we are
-  - [[truss-include:m2]]
-- rain :: Why change
-- umbrella :: [[truss-include:m1]]
-#+end_src
-
-On the board, /edit/ on an item takes out the heading whose text holds
-it, at the item; the commands that change a heading -- /rename/, /refile/,
-/delete/, /pattern/ and the rest -- say so on an item instead, which is
-written by hand there.
+description, ~[[truss-include:m7][words]]~, is its words there.  Two
+places that include the same member include it twice: that is yours to
+want or not.  A pointing link reads as its description, or m7's words; in
+a comment it is not written out.  What a member brings with it is
+included inside it, and so on down; an include link that would include
+what includes it back, without end, is reported under /Broken links/, and
+the output document says so where it stops.
 
 ** Pointing to a member
 
-Both links point to a heading by its ~CUSTOM_ID~: ~m7~ is the heading
-with ~:CUSTOM_ID: m7~; an item of a list, by its target, ~<<m7>>~, with
-~[[m7]]~.  Org resolves ~[[#m7]]~ within the file alone -- ~C-c
-C-o~ follows it, in a section or in a property -- and, unlike ~:ID:~, it
-is not entered in ~org-id-locations~, nor made a node by org-roam; with
-org-truss loaded, ~C-c C-o~ follows ~[[truss-include:m7]]~ the same way.
+Both links point to a member by its ID: ~m7~ is the heading with
+~:CUSTOM_ID: m7~, or the item with ~<<m7>>~ in its first line, pointed to
+with ~[[m7]]~.  Org resolves ~[[#m7]]~ within the file alone -- ~C-c C-o~
+follows it, in the text or in a property -- and, unlike ~:ID:~, it is not
+entered in ~org-id-locations~, nor made a node by org-roam; with org-truss
+loaded, ~C-c C-o~ follows ~[[truss-include:m7]]~ the same way.
 
-A heading is what a member asserts, and it gets reworded as the argument
-and the document take shape.  Were links to name headings, each rewording
-would break what pointed to it; pointing by id, a heading can be rewritten
-anywhere -- on the board with /rename/, in the file by hand, or by a model
-editing the file -- and nothing breaks.
+A member's words are what it asserts, and they get reworded as the
+argument and the output document take shape.  Were links to name words,
+each rewording would break what pointed to it; pointing by ID, a member
+can be reworded anywhere -- on the board with /rename/, in the file by
+hand, or by a model editing the file -- and nothing breaks.
 
-A member is given an id only once something points to it: /include/ placing it,
-/ground/ making it a ground, /new/ writing it in a section.  An id is ~m~ and the
-next number free in the file; one you write yourself is kept.  Two
-headings with one id, and a link or a ground that points to no heading,
-are reported as /Broken links/, at each in the part it is in.  /include/ on a broken link places a member where it
+A member is given an ID only once something points to it: /include/
+including it, /ground/ making it grounds, /new/ writing it in Structure.
+An ID is ~m~ and the next number free in the file, counted from the first
+heading; one you write yourself is kept.  Two members with one ID, and a
+link that points to no member, are reported as /Broken links/, at each in
+the part it is in.  /include/ on a broken link includes a member where it
 stands.
 
 A link written by words, ~[[*words]]~ or ~[[truss-include:*words]]~ --
@@ -699,26 +700,27 @@ with Org's completion, say -- names no ID and shows as broken.
 
 * The board
 
-~M-x org-truss-board~ draws the nearest ~truss.org~: under its title, its
-brief, its subject, its members and its structure, in the order the work
-is done, each followed by what is left to do there.
+~M-x org-truss-board~ draws the nearest ~truss.org~: under its title,
+Brief, Subject, Message and Structure, in the order the work is done,
+each followed by what is left to do there.
 
 The board is where a truss file is worked from, as the agenda is for Org
 files.
 
 A heading of any other Org file can be drawn on a board of its own: in a
-file that is no truss file, ~M-x org-truss-board~ draws the nearest heading
-at or above point with a pattern -- or, when no truss file is near, the
+file that is no truss file, ~M-x org-truss-board~ draws the nearest
+apex member at or above point -- or, when no truss file is near, the
 heading at point -- as a truss file's members are drawn, under a line
-/Heading/.  Its patterns, the headings under it by the roles they play,
-and the roles still missing are all there, without a brief, a subject or a
-structure.  /pattern/ on it puts a pattern on it, and a heading in for each
+/Heading/.  Its patterns, its supporting members by the roles they play,
+and the roles still missing are all there, without Brief, Subject or
+Structure.  /pattern/ on it puts a pattern on it, and a member in for each
 role, to be written over -- and in the file itself, in a truss file or any
-other, ~M-x org-truss-apply-pattern~ does what /pattern/ does, on the heading at
-point; written over with the statement that plays it, a role still shows
-on the right what it is -- /Who:/, /When:/ -- so the heading need not say
-it.  An agent asked about it with org-dock is told what its patterns ask,
-and how to check its copy; see [[*Batch][Batch]].
+other, ~M-x org-truss-apply-pattern~ does what /pattern/ does, on the
+heading at point; written over with the statement that plays it, a role
+still shows on the right what it is -- /Who:/, /When:/ -- so the words
+need not say it.  An agent asked about it with org-dock is told what its
+patterns ask, and how to check its copy; see [[*Batch][Batch]].
+
 It can be called from anywhere: when no ~truss.org~ is near the current
 buffer, or with a prefix argument, it asks for one as ~find-file~ asks for
 a file -- the file, its directory, or anything below it -- and offers to
@@ -728,295 +730,297 @@ board visits it again before its next command.  ~C-x C-s~, or whatever
 saves a buffer, saves it from the board, and the title line says
 /unsaved/ until then.
 
-This is the board of the file above:
+This is the board of the file above, every line open:
 
 #+begin_example
- Title ··················· Fortnightly reviews                                Fortnightly reviews
+ Title ···················· Fortnightly reviews                     Fortnightly reviews
 
- Brief  what the document must satisfy
+ Brief  what the output document must satisfy
  △ (breakdown › Reader, Question, Response, Constraints)
-   Reader ················ The team leads                                    The team leads
-   Question ·············· Should the review stay weekly?                     Should the review stay weekly?
-   Response wanted ······· Agree to try fortnightly reviews next quarter      Agree to try fortnightly reviews next quarter
-   Constraints ··········· One page                                           One page
+   Reader ················· The team leads                          The team leads
+   Question ··············· Should the review stay weekly?          Should the review stay weekly?
+   Response wanted ········ Agree to try fortnightly reviews next…  Agree to try fortnightly reviews next quarter
+   Constraints ············ One page                                One page
 
- Subject  what was found
+ Subject  the facts found
  ⟁ (breakdown › Premises, Issue, Constraints)
-   Premises ·············· Premises                                           Premises
-   ├ member ·········· #m1 Reviews run long                                   Reviews run long
+   Premises ··············· Premises                                Premises
+   ⟁ (breakdown › parts)
+   ├ Part ············· #m1 Reviews run long                        - Reviews run long
    │ △ (logic › reasons)
-   │ │ ▤ Sky ············· Sky
-   │ ├ Reason ············ Eight of twelve reviews ran past the hour          - Eight of twelve reviews ran past the hour
-   │ │   ⏚ source ········ calendar export
-   │ └ Reason ············ The longest ran forty minutes over                 - The longest ran forty minutes over
-   │     ⏚ source ········ calendar export
-   ├ member ·········· #m2 Six of twelve items each week come back from the…  Six of twelve items each week come back from the week before
-   │   ↥ Reason ·········· Six of twelve items come back each week
-   │   ⏚ source ·········· agendas, weeks 1-12
-   └ member [assumed]  #m3 Urgent items are raised in the team chat           Urgent items are raised in the team chat
-       ↥ Part ············ Move to fortnightly
-   Issue ················· The weekly review costs the team more time than …  The weekly review costs the team more time than it gives back
+   │ │ ▤ Sky ·············· Where we are
+   │ ├ Reason ············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
+   │ │   ⏚ source ········· calendar export
+   │ └ Reason ············· The longest ran forty minutes over      - The longest ran forty minutes over
+   │     ⏚ source ········· calendar export
+   ├ Part ············· #m2 Six of twelve items each week come ba…  - Six of twelve items each week come back from the week before
+   │   ↥ Reason ··········· Six of twelve items come back each we…
+   │   ⏚ source ··········· agendas, weeks 1-12
+   └ Part [assumed] ··· #m3 Urgent items are raised in the team c…  - Urgent items are raised in the team chat
+       ↥ Part ············· Move to fortnightly
+   Issue ·················· The weekly review costs the team more…  The weekly review costs the team more time than it gives back
    Constraints —
 
  Missing roles
-   Subject                                                                    Constraints
- No relation
-   Premises ·············· Premises                                           something under it, and no pattern saying what it is to it
+   Subject                                                          Constraints
 
- Message  what the document says
+ Message  what the output document says
  ⟁ (breakdown › parts)
-   Part ·············· #m4 Half the items repeat                              Half the items repeat
+   Part ··············· #m4 Half the items repeat                   Half the items repeat
    △ (logic › reasons)
-   │ ▤ Rain ·············· Rain
-   │ ↥ Part ·············· Move to fortnightly
-   ├ Reason ·············· Six of twelve items come back each week            - Six of twelve items come back each week
-   │   ⏚ ground ·· [[#m2]] Six of twelve items each week come back from the…
-   ├ Reason [assumed] ···· Items need a week to move                          - Items need a week to move
-   └ Reason [no grounds] · Nothing urgent waits for the review                - Nothing urgent waits for the review
-   Part ·············· #m5 Move to fortnightly                                Move to fortnightly
+   │ ▤ Rain ··············· Why change
+   │ ↥ Part ··············· Move to fortnightly
+   ├ Reason ··············· Six of twelve items come back each we…  - Six of twelve items come back each week
+   │   ⏚ ground ··· [[#m2]] Six of twelve items each week come ba…
+   ├ Reason [no grounds] ·· Nothing urgent waits for the review     - Nothing urgent waits for the review
+   └ Reason [assumed] ····· Items need a week to move               - Items need a week to move
+   Part ··············· #m5 Move to fortnightly                     Move to fortnightly
    △ (breakdown › steps)
-   │ ▤ Umbrella ·········· Umbrella
-   │ ⏚ ground ···· [[#m4]] Half the items repeat
-   │ ⏚ ground ···· [[#m3]] Urgent items are raised in the team chat
-   ├ Step ················ Cancel every second review in the calendar         1. Cancel every second review in the calendar
-   └ Step ················ Carry what is still open to the next one           2. Carry what is still open to the next one
+   │ ▤ Umbrella ··········· What we propose
+   │ ⏚ ground ····· [[#m4]] Half the items repeat
+   │ ⏚ ground ····· [[#m3]] Urgent items are raised in the team c…
+   ├ Step ················· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+   └ Step ················· Carry what is still open to the next …  2. Carry what is still open to the next one
 
  No grounds
-   Reason [no grounds] ··· Nothing urgent waits for the review                no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
+   Reason [no grounds] ···· Nothing urgent waits for the review     no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
 
- Structure  how it is told: sections, telling members
+ Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ··················· Sky                                               Sky
- │   • told ▸2 ··· [[#m1]] Reviews run long                                   Reviews run long
- ├ Rain ·················· Rain                                               Rain
- │   • told ▸3 ··· [[#m4]] Half the items repeat                              Half the items repeat
- └ Umbrella ·············· Umbrella                                           Umbrella
-     • told ▸2 ··· [[#m5]] Move to fortnightly                                Move to fortnightly
+ ├ Sky ···················· Where we are                            Where we are
+ │   • included ▸2  [[#m1]] Reviews run long                        Reviews run long
+ ├ Rain ··················· Why change                              Why change
+ │   • included ▸3  [[#m4]] Half the items repeat                   Half the items repeat
+ └ Umbrella ··············· What we propose                         What we propose
+     • included ▸2  [[#m5]] Move to fortnightly                     Move to fortnightly
 #+end_example
 
-/order/ opens the members links tell where they are told instead: under
-the heading whose link tells them, with what is nested under them, where they are used, what
-they stand on and what their patterns lack, and where they are written
-each is one line.  The structure then reads as the document, the right
-down the page, beside the logic each sentence rests on:
+/order/ opens the members include links include where they are included
+instead: under the member of Structure whose link includes them, with
+what is under them, where they are used, what they stand on and what
+their patterns lack, and where they are written each is one line.
+Structure then reads as the output document, the right down the page,
+beside the logic each sentence rests on:
 
 #+begin_example
- Message  what the document says
+ Message  what the output document says
  ⟁ (breakdown › parts)
-   Part ▸3 ············ #m4 Half the items repeat                              Half the items repeat
-   Part ▸2 ············ #m5 Move to fortnightly                                Move to fortnightly
+   Part ▸3 ············ #m4 Half the items repeat                   Half the items repeat
+   Part ▸2 ············ #m5 Move to fortnightly                     Move to fortnightly
  ...
- Structure  how it is told: sections, telling members
+ Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ···················· Sky                                                Sky
- │   • told ······· [[#m1]] Reviews run long                                   Reviews run long
+ ├ Sky ···················· Where we are                            Where we are
+ │   • included ··· [[#m1]] Reviews run long                        Reviews run long
  │   △ (logic › reasons)
- │   ├ Reason ············· Eight of twelve reviews ran past the hour          - Eight of twelve reviews ran past the hour
+ │   ├ Reason ············· Eight of twelve reviews ran past the …  - Eight of twelve reviews ran past the hour
  │   │   ⏚ source ········· calendar export
- │   └ Reason ············· The longest ran forty minutes over                 - The longest ran forty minutes over
+ │   └ Reason ············· The longest ran forty minutes over      - The longest ran forty minutes over
  │       ⏚ source ········· calendar export
- ├ Rain ··················· Rain                                               Rain
- │   • told ······· [[#m4]] Half the items repeat                              Half the items repeat
+ ├ Rain ··················· Why change                              Why change
+ │   • included ··· [[#m4]] Half the items repeat                   Half the items repeat
  │   △ (logic › reasons)
- │   │ ↥ member ··········· Move to fortnightly
- │   ├ Reason ············· Six of twelve items come back each week            - Six of twelve items come back each week
- │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from the…
- │   ├ Reason [assumed] ··· Items need a week to move                          - Items need a week to move
- │   └ Reason [no grounds]  Nothing urgent waits for the review                - Nothing urgent waits for the review
- └ Umbrella ··············· Umbrella                                           Umbrella
-     • told ······· [[#m5]] Move to fortnightly                                Move to fortnightly
+ │   │ ↥ Part ············· Move to fortnightly
+ │   ├ Reason ············· Six of twelve items come back each we…  - Six of twelve items come back each week
+ │   │   ⏚ ground · [[#m2]] Six of twelve items each week come ba…
+ │   ├ Reason [no grounds]  Nothing urgent waits for the review     - Nothing urgent waits for the review
+ │   └ Reason [assumed] ··· Items need a week to move               - Items need a week to move
+ └ Umbrella ··············· What we propose                         What we propose
+     • included ··· [[#m5]] Move to fortnightly                     Move to fortnightly
      △ (breakdown › steps)
      │ ⏚ ground ··· [[#m4]] Half the items repeat
-     │ ⏚ ground ··· [[#m3]] Urgent items are raised in the team chat
-     ├ Step ··············· Cancel every second review in the calendar         1. Cancel every second review in the calendar
-     └ Step ··············· Carry what is still open to the next one           2. Carry what is still open to the next one
+     │ ⏚ ground ··· [[#m3]] Urgent items are raised in the team c…
+     ├ Step ··············· Cancel every second review in the cal…  1. Cancel every second review in the calendar
+     └ Step ··············· Carry what is still open to the next …  2. Carry what is still open to the next one
 #+end_example
 
-/order/ again opens them where they are written.  Point stays on the member it
-was on, where it is opened now; what was folded or unfolded by hand starts
-again; the mode line says /Truss told/ while they are opened where told.
-Either way ~TAB~ opens a member where it is one line.
+/order/ again opens them where they are written.  Point stays on the
+member it was on, where it is opened now; what was folded or unfolded by
+hand starts again; the mode line says /Truss included/ while they are
+opened where included.  Either way ~TAB~ opens a member where it is one
+line.
+
+** Three columns
 
 Each line has three columns.  On the left is what the board says the line
-is: the role a section or a member plays in the patterns above
-it -- /member/ for one that plays none -- and the tree that joins them.
-After the role come, in brackets, what wants seeing to: =[no role]= for a
-heading that plays no role of a pattern above it, =[no pattern]= for one
-that plays a role the heading above has no pattern for, =[assumed]= for an
+is: the role a member plays in the patterns above it -- /member/ for one
+that plays none -- and the tree that joins them.  After the role come, in
+brackets, what wants seeing to: =[no role]= for a supporting member that
+plays no role of its apex member's patterns, =[no pattern]= for one that
+plays a role the member above has no pattern for, =[assumed]= for an
 assumption, =[no grounds]= for a reason that must have grounds and has
-none.  At the end of the left, just before its heading, a member is named
-by its ~CUSTOM_ID~ as the file names it: =#m9= where it is written, in the
-subject and the members, and =[[#m9]]= where a link that tells it or a
-ground calls it.  So what the structure shows can be found where it is
-written, and a member nested under one a link calls, which is not called
-itself, has none.  In the middle, from one column the same on every line,
-are the file's own words -- headings, labels, the title, the brief -- as
-written, with dots leading to them.  A member's heading is in the face Org
-gives a heading of its level, so it looks as it does in the file; the
-board colours it itself, so it does not matter whether the file has been
-shown yet.  The headings of the parts are not among them: the
-structure's, like the brief's and the members', names a part and never
-reaches the reader, so its line says only /Structure/.  Words too long for
-the middle are cut short, the whole of them in the tooltip, so the right
-keeps its column.  The left is as wide as it needs; the middle and the
-right share the rest of the window evenly, and are drawn again when it is
-resized.  What a section or a member holds starts two columns right of
-its word: what it stands on, the members its links tell.  The
-sections under a section, and the members nested under a member, branch
-off from the column of its word.  The line of the tree starts right under
-the line naming its patterns and runs down past whatever comes before the
-first branch -- what it stands on or the members its links tell, and with entry
-text its comments -- so each heading is held by it as far down as it goes.
-The members' tree is drawn in the face ~org-truss-branch~, faint by
-default, so where it meets the sections' tree in the structure the two
-read apart.
+none.  At the end of the left, just before its words, a member is named
+by its ID as the file names it: =#m9= where it is written, and =[[#m9]]=
+where an include link or a pointing link calls it.  So what Structure
+includes can be found where it is written, and a member under one a link
+calls, which is not called itself, has none.  In the middle, from one
+column the same on every line, are the file's own words -- members'
+words, the title -- as written, with dots leading to them.  A heading's
+words are in the face Org gives a heading of its level, so they look as
+they do in the file; the board colours them itself, so it does not matter
+whether the file has been shown yet.  The words of the parts' headings
+are not among them: a part's heading never reaches the reader, so its
+line says only /Brief/, /Structure/.  Words too long for the middle are
+cut short, the whole of them in the tooltip, so the right keeps its
+column.  The left is as wide as it needs; the middle and the right share
+the rest of the window evenly, and are drawn again when it is resized.
+What a member holds starts two columns right of its word: what it stands
+on, the members its links include.  Its supporting members branch off
+from the column of its word.  The line of the tree starts right under the
+line naming its patterns and runs down past whatever comes before the
+first branch -- what it stands on or the members its links include, and
+with entry text its comments -- so each member is held by it as far down
+as it goes.  The tree of the members outside Structure is drawn in the
+face ~org-truss-branch~, faint by default, so where it meets Structure's
+tree the two read apart.
 
 The three columns say the same in every part.  The left is where a line
 stands in the patterns; the middle, what is asserted, so whether the logic
-holds -- or, in the structure, whether the story does -- is read down it;
-the right, what the reader is told, so whether it reads as prose is read
-down that.  A member's right is the same where it is written and where a
-link tells it: its heading, and with entry text the text under it; a step with its number,
-a part with its role.  It is in the face ~org-truss-outside~ while the
-document does not tell it.  So a heading and what is under it can be read through as
-prose beside its logic where it is written.
+holds -- or, in Structure, whether the story does -- is read down it; the
+right, what the reader is told, so whether it reads as prose is read down
+that.  A member's right is the same where it is written and where a link
+includes it: its words, and with entry text its text; a step with its
+number, a part with its role.  It is in the face ~org-truss-outside~
+while the output document does not include it.  So a truss can be read
+through as prose beside its logic where it is written.
+
+** Marks
 
 There are two kinds of link, and the board draws each at both its ends.
-A ground is written by the heading that stands on it, ~[[#m12]]~, in its
-text: logic, never told.  A link that tells a
-member, ~[[truss-include:m12]]~, is written by the heading that tells it,
-a section or a member: what the reader is shown, and where.  Every line drawn for an end of a link is marked, and a line
-with no mark is written where it stands, as a heading in the file.  The
-mark says what what the line names is to the one above it, the member or
-the section the line hangs from:
+A pointing link is written by the member that stands on it, ~[[#m12]]~,
+in its text: logic, never written out but as words.  An include link,
+~[[truss-include:m12]]~, is written by the member that includes it, a
+member of Structure or another: what the reader is shown, and where.
+Every line drawn for an end of a link is marked, and a line with no mark
+is written where it stands, in the file.  The mark says what what the line
+names is to the one above it, the member the line hangs from:
 
 | Mark | Names                                  | To the one above                                       |
 |------+----------------------------------------+--------------------------------------------------------|
-| =⏚=  | a member, by its id and heading; or a  | what it stands on, linked in its text                  |
+| =⏚=  | a member, by its ID and words; or a    | what it stands on, linked in its text                  |
 |      | source, or the words it quotes         |                                                        |
-| =↥=  | a member, by its roles and heading     | built on it: this stands on it, in its own grounds     |
-| =•=  | a member, as =told=, by its id and     | told by the one above: its link tells it here          |
-|      | heading                                |                                                        |
-| =▤=  | a heading, by its role and heading     | told here: this heading's link tells it there          |
+| =↥=  | a member, by its roles and words       | built on it: this stands on it, in its own grounds     |
+| =•=  | a member, as =included=, by its ID and | included by the one above: its link includes it here   |
+|      | words                                  |                                                        |
+| =▤=  | a member, by its role and words        | included there: this member's include link is there    |
 
 =⏚= and =•= are where a link is written, and name what it calls by its
-id; =↥= and =▤= are the other end, where a member is written.  A line at
-the end where a link is written says what the link is to its heading --
-=⏚ ground=, =• told= -- not the role the member plays where it is
+ID; =↥= and =▤= are the other end, where a member is written.  A line at
+the end where a link is written says what the link is to its member --
+=⏚ ground=, =• included= -- not the role the member plays where it is
 written, which says nothing there; a line at the other end names the
-heading the link is in by the role that heading plays.  A heading whose
-words are a link, ~*** [[truss-include:m7]]~, shows only the link in the
-middle, so the part m7 is written in is said before it, where an id
-goes: =→Subject=, =→Message=, =→Brief=, =→Structure= -- how near to its
-sources what it stands on is.  What a
-member stands on is drawn below it, as the ground is below a building:
-=⏚ ground= a member it points to -- with =[no grounds]= when it does not
-hold -- then =⏚ quote= each quotation in its text, and below them
-=⏚ source= each source it links to, with =[not found]= when the link
-points to nothing: the words are read from the source, so the source is
-furthest down.  A quotation, and a line of its text holding nothing but
-such a link, is not drawn again in its text, and a link in a sentence
-there is drawn as it is written, =[[#m3]]= or =[[moor:6f1c::12][Manual
-p. 12]]=, the words it points to left to the line below.  What stands on a
-member is drawn below it too, as everything under a line is, so its mark
-points up, from the member to it.  A line marked =⏚=, =↥= or
-=▤= is cut to the middle, its whole heading in the tooltip; the mouse on
-any mark says what it means, and ~RET~ on the line goes to what it names.
-/same/ goes between a member and its calls.  A member with no line marked =▤=
-or =↥= is not used.  ~org-truss-board-marks~ sets the marks.  A role a
-member's pattern asks for and it lacks -- /Minor premise —/ -- follows what
-it holds, with the pattern that asks when the member has more than one.
-So does a role the structure's or a section's pattern asks for and no
-section right below plays -- /Rain —/ -- and /new-in-structure/ on it adds a member that
-plays it.
+member the link is in by the role that member plays.  A member whose
+words are an include link, ~*** [[truss-include:m7]]~, shows only the
+link in the middle, so the part m7 is written in is said before it, where
+an ID goes: =→Subject=, =→Message=, =→Brief=, =→Structure= -- how near to
+its sources what it stands on is.  What a member stands on is drawn below
+it, as the ground is below a building: =⏚ ground= a member it points to
+-- with =[no grounds]= when it does not hold -- then =⏚ quote= each
+quotation in its text, and below them =⏚ source= each source it links to,
+with =[not found]= when the link points to nothing: the words are read
+from the source, so the source is furthest down.  A quotation, and a line
+of its text holding nothing but such a link, is not drawn again in its
+text, and a link in a sentence there is drawn as it is written,
+=[[#m3]]= or =[[moor:6f1c::12][Manual p. 12]]=, the words it points to
+left to the line below.  What stands on a member is drawn below it too,
+as everything under a line is, so its mark points up, from the member to
+it.  A line marked =⏚=, =↥= or =▤= is cut to the middle, its whole words
+in the tooltip; the mouse on any mark says what it means, and ~RET~ on the
+line goes to what it names.  /same/ goes between a member and its calls.
+A member with no line marked =▤= or =↥= is not used.
+~org-truss-board-marks~ sets the marks.  A role a member's pattern asks
+for and it lacks -- /Minor premise —/ -- follows what it holds, with the
+pattern that asks when the member has more than one.  /new/ on it writes
+a member playing it; in Structure, /new-in-structure/ does.
 
 The other marks of the board are not links:
 
 | Mark                | Where                   | Says                                                                                 |
 |---------------------+-------------------------+--------------------------------------------------------------------------------------|
 | =#m9=               | end of the left         | the member, where it is written                                                      |
-| =[[#m9]]=           | end of the left         | the member, where a link that tells it or a ground calls it                          |
-| =[no role]=         | after the role          | plays no role of a pattern of the heading above                                      |
-| =[no pattern]=      | after the role          | plays a role, but the heading above has no pattern of its kind                       |
+| =[[#m9]]=           | end of the left         | the member, where an include link or a pointing link calls it                        |
+| =[no role]=         | after the role          | plays no role of its apex member's patterns                                          |
+| =[no pattern]=      | after the role          | plays a role, but the member above has no pattern of its kind                        |
 | =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
 | =[no grounds]=      | after the role          | must have grounds, and has none; after ⏚ ground, the member pointed to does not hold |
 | =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |
-| =(logic › reasons)= | the line below          | the patterns the heading names                                                       |
-| =△=                 | before the patterns     | a simple truss: only statements under its patterns                                   |
-| =⟁=                 | before the patterns     | a compound truss: a truss under it; ~org-truss-board-truss-marks~ sets both          |
+| =(logic › reasons)= | the line below          | the patterns the member names                                                        |
+| =△=                 | before the patterns     | a simple truss: its supporting members are all end members                           |
+| =⟁=                 | before the patterns     | a compound truss: an apex member among them; ~org-truss-board-truss-marks~ sets both |
 | =▸5=                | after the role          | folded, five hidden; ~TAB~ opens it                                                  |
 | =⚠=                 | after the role          | out of the order of the telling pattern above                                        |
 | =Rain —=            | below what it holds     | a role a pattern asks for that nothing plays                                         |
-| =[loop]=            | after the role          | told inside what it tells: drawn as one line, since it would never end               |
+| =[loop]=            | after the role          | included inside what it includes: drawn as one line, since it would never end        |
 
-In the structure a member a link tells is one line, as written, the
-words it is told in on its right; opened there, as told (/order/), it brings
-with it what the document tells -- what is nested under it -- beside its
-uses, what it stands on and its gaps, so the document can be read down
-the right.
+In Structure a member an include link includes is one line, as written,
+the words it is written out in on its right; opened there, as included
+(/order/), it brings with it what the output document includes -- what is
+under it -- beside its uses, what it stands on and its gaps, so the output
+document can be read down the right.
 
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Mixed sources/, /Missing
-roles/, /No role/, /No pattern/, /No relation/, /Out of order/
-(see [[*What is left to do]]) -- each thing listed in the part it is found
-in, and ~RET~ on it goes there.  The mouse on the name of a check says
-what it finds.
+roles/, /No role/, /No pattern/, /No relation/, /Out of order/ (see
+[[*What is left to do]]) -- each thing listed in the part it is found in,
+and ~RET~ on it goes there.  The mouse on the name of a check says what it
+finds.
 
-The patterns a heading names go on the line just below it, in
-parentheses, where the headings they arrange branch off.  A step or a
-part shows on the right the number, the bullet or the label the reader
-will see it with, and a reason the label of the role it plays in a
-breakdown.  A section marked =⚠= comes below a section the pattern tells
-after it; the document gives sections in the order of the file, so the
-order is put right there.  The mark's tooltip, or ~C-h .~ on the line,
-says which.
+The patterns a member names go on the line just below it, in parentheses,
+where its supporting members branch off.  A step or a part shows on the
+right the number, the bullet or the label the reader will see it with,
+and a reason the label of the role it plays in a breakdown.  A member
+marked =⚠= comes below one the pattern tells after it; the output
+document follows the order of the file, so the order is put right there.
+The mark's tooltip, or ~C-h .~ on the line, says which.
 
-What the reader sees is the words the section tells a member in, when it
-has some; else its heading -- for a section, its heading in the
-document; /noexport/ when the reader sees nothing of it.  On the
-/Structure/ line is the start of the structure's own lead.  A heading the
-reader sees is drawn as a title; the text under it, in the faint face the
-comments in the middle take.  The brief is the reader's only through the title.
-Under the title come the brief, then the subject, each drawn as the
-members are: its line, its patterns, and the members under it, each named
-by the role it plays, so what the structure has to meet stays in view.  A
-role the breakdown asks for and none plays -- /Constraints —/ -- follows
-them, and /new/ on it writes a member playing it.  A member that plays none
-of the breakdown's roles is marked =[no role]=, and /roles/ gives it one.
+What the reader sees is the words an include link writes a member out in,
+its description when it has one; else its words; /noexport/ when the
+reader sees nothing of it.  On the /Structure/ line is the start of
+Structure's own text.  A heading the reader sees is drawn as a title; the
+text under it, in the faint face the comments in the middle take.  Brief
+is the reader's only through the title.  Under the title come Brief, then
+Subject, each drawn as the members are: its line, its patterns, and its
+supporting members, each named by the role it plays, so what Structure has
+to meet stays in view.  A role the breakdown asks for and none plays --
+/Constraints —/ -- follows them, and /new/ on it writes a member playing
+it.  A member that plays none of the breakdown's roles is marked
+=[no role]=, and /roles/ gives it one.
 
-/entry-text/, as in the agenda, shows what is written under each heading, below its
-line: the comments that stay in the file in the middle, under the heading,
+** Reading lines whole
+
+/entry-text/, as in the agenda, shows the text of each member below its
+line: the comments that stay in the file in the middle, under its words,
 and the text the reader sees on the right, broken to fit the window.
-A heading too long for the middle is broken there too instead of cut
-short, since the board is now for reading, and so is every other line: a
-member's text, a ground, what a check lists.  The line naming a heading's
+Words too long for the middle are broken there too instead of cut short,
+since the board is now for reading, and so is every other line: a
+member's text, a ground, what a check lists.  The line naming a member's
 patterns stays right under its line, on the left of what follows it; when
-it is too wide for the left it takes the line after the heading's words,
+it is too wide for the left it takes the line after the member's words,
 and the comments start below it.  Read down the right, with the members
-opened where told, the board is then the document, near enough, beside
-the tree and the comments it was built from:
+opened where included, the board is then the output document, near
+enough, beside the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ··················· Rain                                                Rain
- │   • told ······· [[#m4]] Half the items repeat                               Half the items repeat
- │   (logic › reasons)      Robin keeps raising the same items.  Not something  Half of each agenda repeats the week before.
- │   │                      to put in writing.
- │   │ ↥ member ··········· Move to fortnightly
- │   ├ Reason ············· Six of twelve items come back each week             - Six of twelve items come back each week
- │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from the
- │   │                      week before
- │   ├ Reason [assumed] ··· Items need a week to move                           - Items need a week to move
- │   │                                                                            We assume most items need more than a week to
- │   │                                                                            change.
- │   └ Reason [no grounds]  Nothing urgent waits for the review                 - Nothing urgent waits for the review
+ ├ Rain ··················· Why change                                    Why change
+ │   • included ··· [[#m4]] Half the items repeat                         Half the items repeat
+ │   △ (logic › reasons)    Robin keeps raising the same items.  Not      Half of each agenda repeats the week before.
+ │   │                      something to put in writing.
+ │   │ ↥ Part ············· Move to fortnightly
+ │   ├ Reason ············· Six of twelve items come back each week       - Six of twelve items come back each week
+ │   │   ⏚ ground · [[#m2]] Six of twelve items each week come back from
+ │   │                      the week before
+ │   ├ Reason [no grounds]  Nothing urgent waits for the review           - Nothing urgent waits for the review
+ │   └ Reason [assumed] ··· Items need a week to move                     - Items need a week to move
+ │                                                                          We assume most items need more than a week
+ │                                                                          to change.
 #+end_example
 
 ~i~ does the same for the line at point alone, inline as ~i~ in Dired
 shows a directory, so the board can be scanned a line each and one line
-read through: a member with its text, a ground.  ~i~ again, on
-any of its lines, puts it back on one.  While /entry-text/ shows every line whole,
-~i~ puts the line at point on one line instead, and /entry-text/ again draws every
-line the same way.
+read through: a member with its text, a ground.  ~i~ again, on any of its
+lines, puts it back on one.  While /entry-text/ shows every line whole,
+~i~ puts the line at point on one line instead, and /entry-text/ again
+draws every line the same way.
 
 A picture linked on a line of its own -- an attachment, or a file by a
 relative path -- is drawn on a line drawn whole, in its column: as wide as
@@ -1027,175 +1031,178 @@ to a file reads as the file's name.
 
 The board's words are English whatever ~org-truss-language~ says, so in a
 file written in another language the two sides read apart at a glance.
+What ~?~ says of a part or a role is in ~org-truss-language~, as the
+guide is.
+
+** Commands
 
 The board is read-only.  Its commands change the truss file and draw the
-board again.  The writing itself happens in the file: ~RET~, ~o~ and /show/
-open it where the line points, as RET, TAB and SPC do in the agenda, and /edit/ takes just
-that heading out, by org-dock, into a copy of its own beside the board, with
-what is under it and the rest of the file out of the way.  The headings
-under it are folded to their lines, and its own text is shown with its
-blocks open -- a comment block, its quotation -- even where
-~org-hide-block-startup~ folds blocks, since they are part of what it
-says.  While it is out the heading cannot change in the file.  As in a
-capture buffer, ~C-c C-c~ there writes it back, saves the file and closes
-the copy, and ~C-c C-k~ lets the copy go, the heading as it was; its header
-line says so.  ~C-c C-c~ is taken for this, so a source block in an entry
-is run with ~C-c C-v e~ instead.  An agent can be asked to work on the
-copy, and on nothing else; see org-dock.
-Back on the board after the file has changed, it draws again, and before
-each command it draws again first if the file's text has changed, so the
-command acts on the file as it is.  Only the text counts: fontifying the
-file, which happens whenever it is shown, changes nothing the board holds.
-An edit made while a command is asking something makes the command stop
-and draw again rather than act on positions that have moved.
+board again.  The writing itself happens in the file: ~RET~, ~o~ and
+/show/ open it where the line points, as RET, TAB and SPC do in the
+agenda, and /edit/ takes just that heading out, by org-dock, into a copy of
+its own beside the board, with what is under it and the rest of the file
+out of the way.  The headings under it are folded to their lines, and its
+own text is shown with its blocks open -- a comment block, its quotation
+-- even where ~org-hide-block-startup~ folds blocks, since they are part
+of what it says.  While it is out the heading cannot change in the file.
+As in a capture buffer, ~C-c C-c~ there writes it back, saves the file and
+closes the copy, and ~C-c C-k~ lets the copy go, the heading as it was;
+its header line says so.  ~C-c C-c~ is taken for this, so a source block
+in a member's text is run with ~C-c C-v e~ instead.  An agent can be asked
+to work on the copy, and on nothing else; see org-dock.  Back on the board
+after the file has changed, it draws again, and before each command it
+draws again first if the file's text has changed, so the command acts on
+the file as it is.  Only the text counts: fontifying the file, which
+happens whenever it is shown, changes nothing the board holds.  An edit
+made while a command is asking something makes the command stop and draw
+again rather than act on positions that have moved.
 
 The board's commands fall into four groups, by what they work on.
-/Write/ works on the members themselves, the headings in the file.
-/Place/ works on the links that tell them: a section tells the members it
-shows, and the members do not move.  /Shape/ works on the sections, on
-what the structure says itself, and on the patterns of any heading.
-/See/ moves about the board and the document.  Each is named here by what
-follows ~org-truss-board-~ in its name -- /include/ is
+/Write/ works on the members themselves, in the file.  /Include/ works on
+the include links: a member of Structure includes the members it carries,
+and the members do not move.  /Shape/ works on Structure's outline, on
+what Structure says itself, and on the patterns of any member.  /See/
+moves about the board and the output document.  Each is named here by
+what follows ~org-truss-board-~ in its name -- /include/ is
 ~org-truss-board-include~.  Few have a key of their own: those that move
-through the board and read it, ~m~ for a source, ~x~ for the document.
-The rest are called by name, ~M-x org-truss-board-include~, or bound where
-you want them, in ~org-truss-board-mode-map~.  The foot of the board lists
-those with a key, in the same four lines.
+through the board and read it, ~m~ for a source, ~x~ for the output
+document, ~?~ for what a line is for.  The rest are called by name, ~M-x
+org-truss-board-include~, or bound where you want them, in
+~org-truss-board-mode-map~.  The foot of the board lists those with a key,
+in the same four lines.
 
-| Group | Command            | Key         | On a section                                                                      | On a member                                        |
-|-------+--------------------+-------------+-----------------------------------------------------------------------------------+----------------------------------------------------|
-| write | new                |             | write a new member, placed in it                                                  | write a member under it, last                      |
-|       | edit               |             | edit its entry alone, beside the board                                            | same                                               |
-|       | rename             |             | rewrite its heading                                                               | rewrite its heading                                |
-|       | moor-map           | ~m~         | take a source for it, or link one taken before (with org-moor)                    | same                                               |
-|       | ground             |             | make a heading a ground of it, or not                                             | same                                               |
-|       | assume             |             | tag it an assumption, or take the tag off                                         | same                                               |
-|       | refile             |             | refile it, last under another section                                             | refile it, last under a part or another member     |
-|       | delete             |             |                                                                                   | delete it from the file, after asking              |
-| include | include          |             | include a member in it, by an include link                                        | same                                               |
-|       | take-out           |             | take it out, handing what it places up                                            | take it out of its section; it stays in the file   |
-|       | up, down           |             | move it among its siblings                                                        | move it among its siblings; listed, in its section |
-| shape | new-in-structure   |             | add a member under it; on a missing role, playing it, where the pattern lists it  |                                                    |
-|       | say                |             | write its lead                                                                    | write the text it is told with                     |
-|       | unwrap             |             | take the sections below away, keeping their links                                 |                                                    |
-|       | pattern            |             | apply a pattern of any kind, or take one off                                      | same                                               |
-|       | roles              |             | set the roles it plays in the patterns of the                                     | same                                               |
-|       |                    |             | heading above                                                                     |                                                    |
-| see   | visit              | ~RET~       | go to it                                                                          | same                                               |
-|       | visit-other-window | ~o~         | go to it in the other window                                                      | same                                               |
-|       | show               |             | show it in the other window, staying on the board                                 | same                                               |
-|       | cycle              | ~TAB~       | fold it, show what is right under it, or all under it                             | same                                               |
-|       | cycle-all          | ~C-u TAB~   | fold every line, or open every one; ~S-TAB~ too                                   | same                                               |
-|       | fold               |             | fold what is under it, or unfold it                                               | fold what is nested under it, or unfold it         |
-|       | same               |             | go to where it is written, or there, to a call                                    | same                                               |
-|       | order              |             | open the members sections list where told, or                                     | same                                               |
-|       |                    |             | where written                                                                     |                                                    |
-|       | entry-text         | ~C-u i~     | show the text under every heading, or stop                                        |                                                    |
-|       | wrap               | ~i~         | show it whole, with the text under it, or stop                                    | same                                               |
-|       | view               |             | show the document in another window, kept current                                 |                                                    |
-|       | export             | ~x~         | write the document                                                                |                                                    |
-|       | redraw             | ~g~         | draw again                                                                        |                                                    |
-|       | save               | ~C-x C-s~   | save the truss file                                                               |                                                    |
+| Group   | Command            | Key       | On a member of Structure                                                     | On any other member                                |
+|---------+--------------------+-----------+------------------------------------------------------------------------------+----------------------------------------------------|
+| write   | new                |           | write a new member, included in it                                           | write a member under it, last                      |
+|         | edit               |           | edit its heading alone, beside the board                                     | same                                               |
+|         | rename             |           | reword it                                                                    | same                                               |
+|         | moor-map           | ~m~       | take a source for it, or link one taken before (with org-moor)               | same                                               |
+|         | ground             |           | make a member its grounds, or not                                            | same                                               |
+|         | assume             |           | tag it an assumption, or take the tag off                                    | same                                               |
+|         | refile             |           | refile it, last under another member of Structure                            | refile it, last under a part or another member     |
+|         | delete             |           |                                                                              | delete it from the file, after asking              |
+| include | include            |           | include a member in it, by an include link                                   | same                                               |
+|         | take-out           |           | take it out, handing what it includes up                                     | take it out of where it is included; it stays      |
+|         | up, down           |           | move it among its siblings                                                   | move it among its siblings; included, among the links there |
+| shape   | new-in-structure   |           | add a member under it; on a missing role, playing it, where the pattern lists it |                                                |
+|         | say                |           | write its text                                                               | write the text it is written out with              |
+|         | unwrap             |           | take the members under it away, keeping their include links                  |                                                    |
+|         | pattern            |           | apply a pattern of any kind, or take one off                                 | same                                               |
+|         | roles              |           | set the roles it plays in the patterns of the member above                   | same                                               |
+| see     | visit              | ~RET~     | go to it                                                                     | same                                               |
+|         | visit-other-window | ~o~       | go to it in the other window                                                 | same                                               |
+|         | show               |           | show it in the other window, staying on the board                            | same                                               |
+|         | cycle              | ~TAB~     | fold it, show what is right under it, or all under it                        | same                                               |
+|         | cycle-all          | ~C-u TAB~ | fold every line, or open every one; ~S-TAB~ too                              | same                                               |
+|         | fold               |           | fold what is under it, or unfold it                                          | same                                               |
+|         | same               |           | go to where it is written, or there, to a call                               | same                                               |
+|         | order              |           | open the members included where included, or where written                   | same                                               |
+|         | guide              | ~?~       | say what it is for, in the echo area                                         | same                                               |
+|         | entry-text         | ~C-u i~   | show the text of every member, or stop                                       |                                                    |
+|         | wrap               | ~i~       | show it whole, with its text, or stop                                        | same                                               |
+|         | view               |           | show the output document in another window, kept current                     |                                                    |
+|         | export             | ~x~       | write the output document                                                    |                                                    |
+|         | redraw             | ~g~       | draw again                                                                   |                                                    |
+|         | save               | ~C-x C-s~ | save the truss file                                                          |                                                    |
 
-/include/ on any heading -- a section, a member, a part -- writes in it a link
-that tells the heading chosen, ~- [[truss-include:m7]]~: a member, those
-placed nowhere offered first, or a section.  A heading can be told in as
-many places as want it, and is told in each; /take-out/ takes it out of one.
-On a broken link, /include/ tells the heading chosen where the link stands, in
-its place: the way to mend one.  /take-out/ loses nothing
-written: on a member a link tells, the link goes and the member stays in
-the file, whatever heading the link is in; a section taken out hands what
-it tells up, asking before its own text is lost.  To be rid of
-a member, /delete/ deletes it, with what is under it and the lines that tell
-it; a ground that named it is left, a broken link on the board, so what
-stood on it shows.
+/include/ on any member -- of Structure, of another part, a part --
+writes in it an include link to the member chosen, ~- [[truss-include:m7]]~:
+those included nowhere offered first.  A member can be included in as
+many places as want it, and is included in each; /take-out/ takes it out
+of one.  On a broken link, /include/ includes the member chosen where the
+link stands, in its place: the way to mend one.  /take-out/ loses nothing
+written: on a member an include link includes, the link goes and the
+member stays in the file, whatever member the link is in; a member of
+Structure taken out hands what it includes up, asking before its own text
+is lost.  To be rid of a member, /delete/ deletes it, with what is under
+it and the include links to it; a pointing link to it is left, a broken
+link on the board, so what stood on it shows.
 
-/say/ writes the text the reader is told under a heading: it opens the
-heading beside the board as /edit/ opens an entry, at an empty line made
-before the first link that tells a member -- a section's lead -- or after
-the heading's text when no link tells one; the line goes again when the
-entry is let go.  On the /Structure/ line, it writes the document's
-opening.
+/say/ writes the text the reader is told under a member: it opens the
+heading beside the board as /edit/ opens one, at an empty line made
+before the first include link -- a member of Structure's text -- or after
+its text when it has none; the line goes again when the heading is let
+go.  On the /Structure/ line, it writes the output document's opening.
 
-/same/ goes between where a heading is written and where it is called, a
-member or a section.  On a line calling it -- a link that tells it,
-=[[#m9]]=, or a ground -- or showing it under a member a link calls, it
-goes to where it is written, =#m9=, unfolding what hides it.  There, it goes to the next call after the one
-come from, and round, saying which of how many it is.  The line at point
-is lit, and so are the other lines naming the member on it -- where it is
-written, where it is called -- in the face ~org-truss-same~; set
+/same/ goes between where a member is written and where it is called.
+On a line calling it -- an include link, =[[#m9]]=, or a ground -- or
+showing it under a member a link calls, it goes to where it is written,
+=#m9=, unfolding what hides it.  There, it goes to the next call after the
+one come from, and round, saying which of how many it is.  The line at
+point is lit, and so are the other lines naming the member on it -- where
+it is written, where it is called -- in the face ~org-truss-same~; set
 ~org-truss-board-highlight~ to nil for neither.
 
 ~TAB~ cycles a line as it cycles a heading in Org.  A folded line opens
 to what is right under it, each of those folded; again, everything under
 it opens; again, it folds into its line, which then says how many it
-hides.  Under a member, that is what is nested under it and what its
-links tell; under a section, the sections below it and what its links
-tell.  On a line with nothing under it, the line it is under cycles.
-~C-u TAB~, or ~S-TAB~, opens every line while any is folded, and else
-folds them all.  /fold/ folds one line or unfolds it, without the cycle.
-The board starts as an Org file does in overview, and as ~C-u TAB~ folds
-it: every line with something under it folded, each line on one line.
-~org-truss-board-fold-limit~, 0 unless set, is how many a heading may hold
-and still start open; nil starts the board open.  A member a link tells
-starts folded where it is not opened, as /order/ says, since it is drawn
-whole where it is.
+hides.  Under a member, that is its supporting members and what its
+include links include.  On a line with nothing under it, the line it is
+under cycles.  ~C-u TAB~, or ~S-TAB~, opens every line while any is
+folded, and else folds them all.  /fold/ folds one line or unfolds it,
+without the cycle.  The board starts as an Org file does in overview, and
+as ~C-u TAB~ folds it: every line with something under it folded, each
+line on one line.  ~org-truss-board-fold-limit~, 0 unless set, is how many
+a member may hold and still start open; nil starts the board open.  A
+member an include link includes starts folded where it is not opened, as
+/order/ says, since it is drawn whole where it is.
 
 Folding and drawing a line whole are apart: ~TAB~ shapes the tree, ~i~
 reads one line through, and each leaves the other as it is.  Each line
 starts on one line; ~C-u i~ draws every line whole, as /entry-text/ does,
 and again every line on one.
 
-A link is drawn as what it is to its heading.  In a reason every link
-to a member is a ground, so each is a =⏚ ground= under it, in m7's words
-and called by its id, =[[#m7]]=, as any ground is.  None is drawn there
-besides as a member told.  A reason whose heading's line is the link,
-~*** [[truss-include:m7]]~, is drawn as written, its role and the link,
-which says already that it tells m7.  Under m7, where it is written, each
-reason is one line, =↥=, built on it.  In a heading that is no reason
-the link only tells, and is drawn as =• told=.
+A link is drawn as what it is to its member.  In a reason every link to a
+member is grounds, so each is a =⏚ ground= under it, in m7's words and
+called by its ID, =[[#m7]]=, as any ground is.  None is drawn there
+besides as a member included.  A reason whose words are the link, ~***
+[[truss-include:m7]]~, is drawn as written, its role and the link, which
+says already that it includes m7.  Under m7, where it is written, each
+reason is one line, =↥=, built on it.  In a member that is no reason the
+link only includes, and is drawn as =• included=.
 
-A heading keeps the words of its source with it, in a ~#+begin_quote~
+A member keeps the words of its source with it, in a ~#+begin_quote~
 block in its own text, which is written out as the quotation it is -- in
-a comment block it stays in the file -- and gives it
-grounds; it may keep several, each drawn as a =⏚ quote= line of its own.
-/edit/ on the heading, or on a quotation's line, writes one or rewrites it.
-With org-moor, reading a source beside it -- ~org-moor-noter~ -- writes
-the quotation and the link to its page or line in one go.
+a comment block it stays in the file -- and gives it grounds; it may keep
+several, each drawn as a =⏚ quote= line of its own.  /edit/ on the
+member, or on a quotation's line, writes one or rewrites it.  With
+org-moor, reading a source beside it -- ~org-moor-noter~ -- writes the
+quotation and the link to its page or line in one go.
 
-~m~, with org-moor, takes a source for the heading as org-moor takes one,
+~m~, with org-moor, takes a source for the member as org-moor takes one,
 into the truss file's ~sources/~, and writes the link to it on a line of
-its own after the heading's text, the reader's citation too: ~m w~ a page
+its own after the member's text, the reader's citation too: ~m w~ a page
 or a file on the web, its copy fetched in the background
 (~org-moor-take-url~); ~m f~ a file (~org-moor-take-file~); ~m c~ the
 clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file
 has, by its title, and ~m k~ keeps a copy, from their origins, of the
-sources the heading links to that have none -- those an agent took
-without being able to fetch them as you, signed in (~org-moor-keep-copy~).
-~m o~ opens a source to check what a heading says against it: on a
-source's own line, the one marked =⏚=, that source; on a quotation's, the
-source it quotes, linked in it or else the first the text cites; on a
-heading's, one its own text links to, asked for when there are several.
-The copy, at the page or line the link names, as following the link
-does; ~m O~ where it came from instead, the page on the web.  A link to
-anything but a source org-moor took is followed as it is, with either.
-A link put on a comment line, ~# [[moor:...]]~, is the file's alone.
-/ground/ makes a heading -- a member or a section -- something it stands
-on, a link to it on a comment line of its own after the heading's text,
-~# [[#m3]]~, which the reader is not told: it offers what
-it stands on first, and choosing one takes that line away; any other is
-added, and given a ~CUSTOM_ID~ when it has none.  On a ground's own line, the one marked =⏚=, /ground/ takes that ground
-away at once; one linked in the text is edited there, with /edit/.  /assume/ tags
-a heading ~:assumption:~, or takes the tag off.  Each works on a section
-as on a member: a section has grounds as any heading does.
+sources the member links to that have none -- those an agent took without
+being able to fetch them as you, signed in (~org-moor-keep-copy~).  ~m o~
+opens a source to check what a member says against it: on a source's own
+line, the one marked =⏚=, that source; on a quotation's, the source it
+quotes, linked in it or else the first the text cites; on a member's, one
+its own text links to, asked for when there are several.  The copy, at
+the page or line the link names, as following the link does; ~m O~ where
+it came from instead, the page on the web.  A link to anything but a
+source org-moor took is followed as it is, with either.  A link put on a
+comment line, ~# [[moor:...]]~, is the file's alone.
 
-/pattern/ works the same on every line with a heading: on the /Structure/ line
-it gives the document a pattern -- a telling pattern, Sky, Rain,
-Umbrella, SCQA, PREP, with its sections -- and on a section the same for
-the sections below it; on the /Brief/ or the /Subject/ line, it changes
-what they are broken down into, and puts in a member for each role none
-plays.  ~no logic~, ~no breakdown~ and ~no telling~ take each off, and
-nothing is asked of what is below for it.
+/ground/ makes a member something it stands on, a pointing link to it on
+a comment line of its own after the member's text, ~# [[#m3]]~, which the
+reader is not told: it offers what it stands on first, and choosing one
+takes that line away; any other is added, and given an ID when it has
+none.  On a ground's own line, the one marked =⏚=, /ground/ takes that
+ground away at once; one linked in the text is edited there, with /edit/.
+/assume/ tags a member ~:assumption:~, or takes the tag off.  Each works
+on a member of Structure as on any: it has grounds as any member does.
+
+/pattern/ works the same on every line with a member: on the /Structure/
+line it gives the output document a pattern -- a telling pattern, Sky,
+Rain, Umbrella, SCQA, PREP, with its members -- and on a member of
+Structure the same for those under it; on the /Brief/ or the /Subject/
+line, it changes what they are broken down into, and puts in a member for
+each role none plays.  ~no logic~, ~no breakdown~ and ~no telling~ take
+each off, and nothing is asked of what is below for it.
 
 The foot of the board lists the commands with a key, as they are bound
 where it is drawn, so a key moved or added -- by an Evil configuration,
@@ -1204,105 +1211,143 @@ say -- shows as it is, and a command with none is left off.
 ** Writing members from the board
 
 A statement can be started without deciding where it goes.  /new/ asks for
-its heading, writes it, and opens it as /edit/ does, below the heading, to be
-written; ~C-c C-k~ there takes it away again.  It goes under the heading
-the line at point is:
+its words, writes it, and opens it as /edit/ does, to be written; ~C-c
+C-k~ there takes it away again.  It goes under the member the line at
+point is:
 
-- a member, or the brief, the subject or the members; on a missing role,
-  playing that role, where the pattern lists it;
-- on a section, at the end of the members, and told in the section by a
-  link;
-- anywhere else, at the end of the members, where order means nothing.
+- a member, or Brief, Subject or Message; on a missing role, playing that
+  role, where the pattern lists it;
+- on a member of Structure, at the end of Message, and included there by
+  an include link;
+- anywhere else, at the end of Message, where order means nothing.
 
-Under a heading with patterns, the new member plays a role in each: the
-one a pattern has alone -- a reason under reasons, a step under steps --
-without asking, and else the one asked for, those no heading plays yet
-first.  It goes where the patterns list the roles it plays: before the
-first heading there that plays one listed after its own, or else last --
-as /pattern/ puts in what a pattern asks for, and /new-in-structure/ a member of Structure.
+Under an apex member, the new member plays a role in each of its
+patterns: the one a pattern has alone -- a reason under reasons, a step
+under steps -- without asking, and else the one asked for, those no
+member plays yet first.  It goes where the patterns list the roles it
+plays: before the first member there that plays one listed after its own,
+or else last -- as /pattern/ puts in what a pattern asks for, and
+/new-in-structure/ a member of Structure.
 
-/refile/ refiles a heading, as Org's ~C-c C-w~ does: it moves it, with what is
-under it, last under another -- a member under the brief, the subject, the
-members, or another member; a section under another section, or the
-structure.  Links and grounds point to a member by its ~CUSTOM_ID~, which
-goes with it, so the structure still shows it wherever it goes.  /up/ and
-/down/ move a heading among its siblings in the file, and a member a link
-tells among the links there: what the file has in an order the
-telling pattern does not want, listed /Out of order/, is put right from
-the board.  The places are offered in the order of the file, and a member
-by its path -- from its part, through what it is nested under, cut short,
-to its own heading, with a step's number or the roles it plays: /Message ›
-Check before every … › As follows › step 2: Read the checker/.  /include/ on a
-section offers members the same way.
+/refile/ refiles a member, as Org's ~C-c C-w~ does: it moves it, with what
+is under it, last under another -- a member under Brief, Subject, Message,
+or another member; a member of Structure under another, or Structure.
+Links point to a member by its ID, which goes with it, so Structure still
+includes it wherever it goes.  /up/ and /down/ move a member among its
+siblings in the file, and a member an include link includes among the
+links there: what the file has in an order the telling pattern does not
+want, listed /Out of order/, is put right from the board.  The places are
+offered in the order of the file, and a member by its path -- from its
+part, through the members above it, cut short, to its own words, with a
+step's number or the roles it plays: /Message › Check before every … › As
+follows › step 2: Read the checker/.  /include/ offers members the same
+way.
 
-Applying a telling pattern to a section that already has sections puts
-each, as it is, in the place of the new section whose role it plays; the
-pattern adds sections, named in ~org-truss-language~, only for the places
-none plays.  So switching patterns changes the order and the marks, never
-a heading.  A section in none of the places is kept after the rest, and
-the board marks it =[no role]=.  /include/, /roles/ and /take-out/ sort it out.  /unwrap/ and /take-out/
-ask before discarding text.  /unwrap/ takes the section's patterns
-off too, of every kind, since what they asked for was asked of the
-sections it takes away.
+Applying a telling pattern to a member of Structure that already has
+members under it puts each, as it is, in the place of the new member
+whose role it plays; the pattern adds members, named in
+~org-truss-language~, only for the places none plays.  So switching
+patterns changes the order and the marks, never a member's words.  A
+member in none of the places is kept after the rest, and the board marks
+it =[no role]=.  /include/, /roles/ and /take-out/ sort it out.  /unwrap/
+and /take-out/ ask before discarding text.  /unwrap/ takes the member's
+patterns off too, of every kind, since what they asked for was asked of
+the members it takes away.
 
-* The document
+* The output document
 
-/view/ on the board shows the document in another window without writing it,
-and the board keeps it current while it is shown: the place to read it.
-The right of the board comes close but is not the same.  The brief and
-the subject under the title and the lists of what is left to do are not
-in the document, and without /entry-text/ each line shows only a title or the
-start of a paragraph.
+/view/ on the board shows the output document in another window without
+writing it, and the board keeps it current while it is shown: the place
+to read it.  The right of the board comes close but is not the same.
+Brief and Subject under the title and the lists of what is left to do are
+not in the output document, and without /entry-text/ each line shows only
+a title or the start of a paragraph.
 
-~M-x org-truss-export~, or ~x~ on the board, walks the structure and writes
-what the reader sees to ~out/truss.org~ (~org-truss-output-directory~), then runs
-pandoc, when it is installed, to make ~out/truss.md~.
+~M-x org-truss-export~, or ~x~ on the board, walks Structure and writes
+what the reader sees to ~out/truss.org~ (~org-truss-output-directory~),
+then runs pandoc, when it is installed, to make ~out/truss.md~.  Only
+Structure is in it, and the trusses and members its include links reach.
 
-- Under every heading, what is written out is its text, a comment left
-  out: a line starting with ~#~ and a space, or a ~#+begin_comment~ block.
-- The document is titled by the file's ~#+title~; the structure's text,
-  its lead, opens the document.
-- A section is titled by its heading; its text, its lead, follows the
-  title.  One tagged ~:noexport:~ is left out, with what is under it, as
-  a member is.
-- A link that tells a member, ~[[truss-include:m7]]~, is the member
-  written where it stands, in its words: its link's description, else its
-  heading.  What follows its words is its text, the links in it telling
-  what they tell where they stand; then what is nested under it, in the
-  order of the file.  One tagged ~:noexport:~ is left out, with what is
-  nested under it.  A link that points to one, ~[[#m7]]~, is written as
-  its description, or the member's heading.
-- Where the link stands says the shape.  On a section's heading line,
-  ~*** [[truss-include:m7]]~, the member's words are that heading, and
-  what is nested under it is told under headings a level down, as the
-  sections are.  In text -- a section's lead, a list item, a sentence --
-  its words are written in place and the rest follows the paragraph, or
-  goes inside the list item, as a list one level in.  Once a list, what
-  is nested stays a list.  Below the sixth level,
-  Markdown's last, what is under a heading is a list.
-- What a heading with a logic or a breakdown holds -- its reasons, its
-  parts -- is the content of what it says, and is written as a list, the
-  heading itself a heading still: so a heading of the document is a
-  claim, and the list below it what holds it up.  A telling says only
-  the order, and what is under it is told as the heading is.
-- A heading broken down, member or section, has its parts written as a
-  list, with reasons or without: steps numbered, the rest bulleted, each
-  part opening with its role where the breakdown names its roles.  What
-  is nested under a part goes inside its item, as a list again; a
-  section's title and lead open its item, and the members it lists and
-  the sections below it follow inside.
-- A link that tells no member is written as /(broken link: …)/, and one
-  that would tell without end as /(told without end: …)/, where it will
-  be seen.
+- A member is its words (a heading, an item's first line), then its text;
+  a comment is left out: a line starting with ~#~ and a space, or a
+  ~#+begin_comment~ block.  A member tagged ~:noexport:~ is left out, with
+  what is under it.
+- The output document is titled by the file's ~#+title~; Structure's
+  text opens it.
+- A member of Structure is a heading of the output document; its text
+  follows, the include links in it including what they include where they
+  stand.
+- Where an include link stands says the shape.  On a heading line, ~***
+  [[truss-include:m7]]~, m7's words are that heading, and what is under it
+  is written under headings a level down.  In text -- a member's text, a
+  list item, a sentence -- its words are written in place and the rest
+  follows the paragraph, or goes inside the list item, as a list one level
+  in.  Once a list, what is under it stays a list.  Below the sixth level,
+  Markdown's last, what is under a heading is a list.  A pointing link,
+  ~[[#m7]]~, is written as its description, or m7's words.
+- The supporting members of a ~TRUSS_LOGIC~ or ~TRUSS_BREAKDOWN~ truss are
+  a list, the apex member a heading still: so a heading of the output
+  document is a claim, and the list below it what holds it up.  Steps are
+  numbered, the rest bulleted, and where the pattern names its roles each
+  opens with its own, /Who:/, /Pros:/.  What is under a supporting member
+  goes inside its item, as a list again.  The supporting members of a
+  ~TRUSS_TELLING~ truss are headings: a telling says only the order.
+- A member written as an item stands where its list stands in its apex
+  member's text: text after the list follows it, and the members written
+  as headings come last, on the last list when no text follows it.  Where
+  they would be headings of the output
+  document, text after them makes them a list: Org has no text of a
+  heading after the headings under it.
+- An include link to no member is written as /(broken link: …)/, and one
+  that would include without end as /(included without end: …)/, where it
+  will be seen.
 - A link to a file by a relative path -- a picture in ~attach/~, a source --
-  is written relative to ~out/~, so the document still finds it, and pandoc
-  makes a picture an image.  /view/ shows the pictures where they are.
+  is written relative to ~out/~, so the output document still finds it,
+  and pandoc makes a picture an image.  /view/ shows the pictures where
+  they are.
 - A ~moor:~ link, with org-moor, goes where its source came from, since
   the copy in ~sources/~ is yours and the reader has none: to the page on
   the web, at the page the link names when it is a PDF,
   ~[[https://e.x/act.pdf#page=14][Act p. 14]]~.  A source that came from
   no such page -- a file, a mail -- is named by the link's words, or its
-  title, as text.  /view/ keeps the link to the copy, to be followed in Emacs.
+  title, as text.  /view/ keeps the link to the copy, to be followed in
+  Emacs.
+
+The file above is written out as:
+
+#+begin_src org
+,#+title: Fortnightly reviews
+
+,* Where we are
+
+Reviews run long
+
+Reviews ran past the hour eight times this quarter.
+
+- Eight of twelve reviews ran past the hour
+- The longest ran forty minutes over
+
+,* Why change
+
+Half the items repeat
+
+Half of each agenda repeats the week before.
+
+- Six of twelve items come back each week
+- Nothing urgent waits for the review
+- Items need a week to move
+
+  We assume most items need more than a week to change.
+
+,* What we propose
+
+Move to fortnightly
+
+Hold the review every other week.
+
+1. Cancel every second review in the calendar
+2. Carry what is still open to the next one
+#+end_src
 
 pandoc is given ~org+east_asian_line_breaks~, so a filled paragraph of
 Chinese, Japanese or Korean does not gain a space at every line break.
@@ -1313,33 +1358,33 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 
 | Variable                       | Default                        |                                               |
 |--------------------------------+--------------------------------+-----------------------------------------------|
-| ~org-truss-language~           | ~en~                           | ~ja~ for Japanese guidance and section names  |
+| ~org-truss-language~           | ~en~                           | ~ja~ for a Japanese guide and member names    |
 | ~org-truss-file-name~          | ~"truss.org"~                  |                                               |
 | ~org-truss-patterns~           | those above                    | add your own                                  |
 | ~org-truss-roles~              | reason, who, sky, premises ... | roles a pattern of your own can name          |
-| ~org-truss-part-breakdowns~    | the brief's and the subject's  | the breakdowns a new file's brief, subject    |
-|                                | above; parts for the members   | and members are given, and a member for each  |
+| ~org-truss-part-breakdowns~    | Brief's and Subject's above;   | the breakdowns a new file's Brief, Subject    |
+|                                | parts for Message              | and Message are given, and a member for each  |
 |                                |                                | role                                          |
 | ~org-truss-output-directory~   | ~"out"~                        |                                               |
-| ~org-truss-sources-directory~  | ~"sources"~                    | what was read, beside the truss file          |
-| ~org-truss-notes-directory~    | ~"notes"~                      | what is ours and not a source                 |
+| ~org-truss-sources-directory~  | ~"sources"~                    | sources referred to, beside the truss file    |
+| ~org-truss-notes-directory~    | ~"notes"~                      | what is ours and no source                    |
 | ~org-truss-attach-directory~   | ~"attach"~                     | what ~org-attach~ attaches to its headings    |
 | ~org-truss-project-file~       | ~nil~                          | an empty file marking the directory a project |
 | ~org-truss-pandoc-program~     | ~"pandoc"~                     |                                               |
 | ~org-truss-board-middle-width~ | ~nil~, half the window         | room for the file's words before the right    |
 | ~org-truss-board-right-width~  | ~nil~, the window's edge       | where a line drawn whole breaks its right     |
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
-| ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | headings one holds before it starts folded    |
+| ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =↥= =•= =▤=                | marks of the lines that are an end of a link  |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
 |                                |                                | the same member                               |
 
 The language is that of what org-truss writes for you to read or to
-rewrite: a new file's guidance, the sections a pattern adds, and what the
-document says of a broken link.  The board stays English.  Identifiers in
-the file -- property values and tags -- stay in English too, and so do the
-headings of a new file's parts and their roles, so a file reads the same
-to everyone.
+rewrite: the guide, what ~?~ says, the members a pattern adds, and what
+the output document says of a broken link.  The board stays English.
+Identifiers in the file -- property values and tags -- stay in English
+too, and so do the headings of a new file's parts and their roles, so a
+file reads the same to everyone.
 
 * Batch
 
@@ -1347,6 +1392,7 @@ to everyone.
 emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-check  truss.org
 emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-board  truss.org
 emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-export truss.org
+emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-guide
 emacs --batch -L . -L ../org-dock -L ../org-moor -l org-truss -l org-moor \
       -f org-truss-batch-take truss.org FILE-OR-URL [TITLE]
 #+end_src
@@ -1355,27 +1401,32 @@ The first prints what is left to do, as ~M-x org-truss-check~ lists it:
 under the name of each check that finds something and what it finds, a
 line for each thing, ~truss.org:42: …~.  Anything that edits the file
 without the board -- you by hand, or a model working in the file -- can
-run it to see what it broke or left undone.  The comment block at the head
-of a truss file gives this line, with the directories org-truss and
-org-dock are loaded from, and org-moor, when it is there, so that ~moor:~
-links are checked too.
+run it to see what it broke or left undone.  The guide at the head of a
+truss file gives this line, with the directories org-truss and org-dock
+are loaded from, and org-moor, when it is there, so that ~moor:~ links are
+checked too.
 
 Any other Org file is checked as the board of one heading reads it: each
-heading with a pattern and none above it with one.  A copy taken out by
-org-dock is checked written back where it came from, so that its links,
-grounds and sources are found as they will be: what is in the copy is
-given by the copy's lines, and what is outside it only when the copy
-brings it about.  An agent handed a copy is told to check it so, with its
-patterns, what its heading plays in the pattern above it, and -- out of a
-truss file -- that the rest of the rules are in the file's head comment;
-the same words whichever heading, or the whole file, was taken out.  The second prints the board as text, for
-anything that reads the structure without Emacs open.
+apex member with none above it.  A copy taken out by org-dock is checked
+written back where it came from, so that its links, grounds and sources
+are found as they will be: what is in the copy is given by the copy's
+lines, and what is outside it only when the copy brings it about.  An
+agent handed a copy is told to check it so, with its patterns, what its
+heading plays in the pattern above it, and -- out of a truss file -- that
+the rest of the rules are in the file's guide; the same words whichever
+heading, or the whole file, was taken out.
+
+The second prints the board as text, for anything that reads the
+structure without Emacs open.  The fourth prints the guide, as the drawer
+at a truss file's head holds it, and then what ~?~ says of each part and
+of each role of Brief's and Subject's breakdowns, in
+~org-truss-language~.
 
 The last, with org-moor, takes a file -- copied, never moved -- or a web
 page into the truss file's ~sources/~ and prints a link to it named by its
 title, for a model working in the file, which cannot ask Emacs: written
-in a member's text, it cites the source.  The comment block gives this line
-too when org-moor is there.
+in a member's text, it cites the source.  The guide gives this line too
+when org-moor is there.
 
 * Tests
 

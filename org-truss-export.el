@@ -153,6 +153,11 @@ each is written where the list is, between the pieces of the body; see
           (pcase-let ((`(,text . ,n) (pop pieces)))
             (push (org-truss--written text) written)
             (when n
+              ;; The last list with no text after it takes the members
+              ;; written as headings too, which follow its items: one
+              ;; list, numbered on.
+              (when (and (not (seq-some #'car pieces)) (not (seq-some #'cdr pieces)))
+                (setq n (length supports)))
               ;; Org has no text of a heading after the headings under
               ;; it: what text follows is written after a list.
               (push (org-truss--supports-text member (and (not (seq-some #'car pieces)) level)
