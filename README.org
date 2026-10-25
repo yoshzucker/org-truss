@@ -400,6 +400,19 @@ A source taken by org-moor is one wherever in it its links point and
 whatever words they give it, ~[[moor:ID::14]]~ and ~[[moor:ID::200][field
 B]]~ alike; a file is one, a URL is one.  Pointing links are no sources.
 
+A truss pointing into one source names it once, in its apex member: a
+link with the source's title in the apex member's text, before the list
+of its supporting members, ~[[moor:ID][Manual]]~; under it, each link is
+named by its place alone, ~[[moor:ID::223][l. 223]]~, ~[[moor:ID::12][p.
+12]]~.  The link goes to the same source either way; only its words
+change, so the file and the output document say which source once,
+where the facts of it begin, and where in it beside each fact.  With
+org-moor, what it writes in ~truss.org~ -- a place noted beside the
+source, ~C-c C-l~, what an agent the heading is handed to is told to
+write -- is named so: a link to a place by the place, one to the source
+by its title.  A fact included alone, its apex member left where it is,
+is not left without its source: see [[*The output document]].
+
 To bring facts of different sources together, point to the members that
 hold them, not to the sources: the work of Message.  So Subject reads as
 its sources do, each truss checked against one, and the mesh of what
@@ -441,8 +454,9 @@ adds what is missing and leaves what is there.
 So the directory can be moved, or handed over, whole.  With org-moor, a
 source taken from a truss file goes in its ~sources/~: a directory named by
 the source's id, holding its copy and its record -- a title, where it came
-from, how and when.  A member cites it with a ~moor:~ link, ~[[moor:ID::12][Manual
-p. 12]]~ for a page or a line, in its text, beside the words it quotes or
+from, how and when.  A member cites it with a ~moor:~ link, ~[[moor:ID::12][p. 12]]~
+for a page or a line, the source named once above it (see [[*One source
+at a time]]), in its text, beside the words it quotes or
 on a line of its own; either gives it grounds.  The first line of
 ~truss.org~ sets ~org-attach-id-dir~ to ~attach/~, so what ~org-attach~ puts
 on its headings is kept there, not where attachments go elsewhere, each
@@ -1394,8 +1408,11 @@ Structure is in it, and the trusses and members its include links reach.
   the web, at the page the link names when it is a PDF,
   ~[[https://e.x/act.pdf#page=14][Act p. 14]]~.  A source that came from
   no such page -- a file, a mail -- is named by the link's words, or its
-  title, as text.  /view/ keeps the link to the copy, to be followed in
-  Emacs.
+  title, as text.  The first link to a source in the output document,
+  named by a place alone, ~l. 223~, has the source's title put before
+  it, ~Manual l. 223~, so the reader is told which source wherever it
+  is first cited; the links after it are as written.  /view/ keeps the
+  link to the copy, to be followed in Emacs.
 
 The file above is written out as:
 

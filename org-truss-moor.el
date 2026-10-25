@@ -19,13 +19,16 @@
 ;; record -- and a member cites one with a `moor:' link in its text, which
 ;; gives it grounds.
 ;;
-;; Here: the sources of a truss file are put beside it; `m' on the board
+;; Here: the sources of a truss file are put beside it; a link to a place
+;; in one is named by the place alone, p. 12, the source named once by
+;; the apex member of the truss pointing into it; `m' on the board
 ;; takes one for a member as org-moor takes one -- a page, a file, the
 ;; clipboard -- or links one taken before, for it to stand on; `m o' and
 ;; `m O' open a source the board's line names, its copy or where it came
 ;; from, so what a member stands on is read beside it; the check finds a
 ;; `moor:' link to a source that is not there; the output document links
-;; to where a source came from, not to the copy; and
+;; to where a source came from, not to the copy, and names the source at
+;; the first link to it there; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
 ;; cannot ask Emacs, and prints the link to cite it with.
 
@@ -45,6 +48,14 @@
      (expand-file-name org-truss-sources-directory (file-name-directory file)))))
 
 (add-hook 'org-moor-sources-directory-functions #'org-truss-moor-sources)
+
+(defun org-truss-moor-place-alone-p (file)
+  "Non-nil when FILE is a truss file, whose links to a place are named by it alone.
+The apex member of a truss pointing into a source names it, by its
+title; the members under it name the place, p. 12."
+  (equal (file-name-nondirectory file) org-truss-file-name))
+
+(add-hook 'org-moor-place-alone-functions #'org-truss-moor-place-alone-p)
 
 (defun org-truss-moor--at-heading (command)
   "Call COMMAND, an org-moor command, at the member of the board's line.
@@ -168,16 +179,27 @@ FILE is the file the link to it is in; with none, the current buffer's."
 
 (setq org-truss-moor-missing-function #'org-truss-moor-missing-p)
 
-(defun org-truss-moor-export-link (path words file)
+(defconst org-truss-moor--place-name-re
+  "\\`\\(?:[pl]\\. [0-9]+\\|“[^”]*”\\)\\'"
+  "Words naming a place alone, as org-moor names it in a truss file.")
+
+(defun org-truss-moor-export-link (path words file &optional first)
   "Return the `moor:' link to PATH, named WORDS, as the reader of FILE follows it.
 The reader has no copy of the source, so the link goes to its origin: a
 page on the web, at the page of a PDF the link names.  A source that came
 from no such page -- a file, a mail -- is named by WORDS, or its title, as
-text, since nothing there can be opened by the reader."
+text, since nothing there can be opened by the reader.  FIRST, the first
+link to the source in the output document, has the title before WORDS
+naming a place alone, p. 12: a fact included without the member naming
+its source above it is not left without it."
   (pcase-let* ((`(,id . ,place) (org-moor-link-parse path))
                (record (org-moor-record id (org-moor-sources file)))
                (origin (plist-get record :origin))
-               (name (or words (plist-get record :title) id)))
+               (title (plist-get record :title))
+               (name (cond ((not words) (or title id))
+                           ((and first title (string-match-p org-truss-moor--place-name-re words))
+                            (concat title " " words))
+                           (t words))))
     (if (not (and origin (string-match-p "\\`https?://" origin)))
         name
       (org-link-make-string

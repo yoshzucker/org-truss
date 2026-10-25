@@ -143,6 +143,10 @@ Sources
   A moor: source is one wherever in it a link points.  To bring facts of
   different sources together, point to the members that hold them, not
   to the sources
+  Name the source once, in the apex member of the truss that points into
+  it: a link with its title in the apex member's text, before the list
+  of its supporting members, ~[[moor:ID][TITLE]]~ ; under it, a link named
+  by its place alone, ~[[moor:ID::223][l. 223]]~ , ~[[moor:ID::12][p. 12]]~
 
 In the output document
   Only Structure, and the trusses and members its include links reach
@@ -152,7 +156,8 @@ In the output document
     the pattern names its roles, each opens with its role (\"Pros: \")
   - a member written as an item stands where its list stands
   - a pointing link is m7's words (its description, if it has one); a
-    moor: link, where the source came from
+    moor: link, where the source came from.  The first link to a source,
+    named by its place alone, has the source's title before it
   - comments (a line starting with # and a space, a #+begin_comment
     block) and members tagged :noexport: are left out
 
@@ -264,6 +269,10 @@ M-x org-truss-export で、OUT/ に書き出す。
     へのリンクが、一つの資料を指す
   moor: の資料は、中のどこを指しても一つ。別の資料の事実を組み合わせる
   ときは、資料へのリンクを書かず、その事実の部材を指すリンクで指す
+  資料の名前は、その資料を指すトラスの頂点部材に一度だけ書く。頂点部材の
+  本文の、支持部材の箇条書きの前に題で ~[[moor:ID][題]]~ と書き、その下
+  の部材では場所だけで ~[[moor:ID::223][l. 223]]~ 、 ~[[moor:ID::12][p. 12]]~
+  と書く
 
 出力文書に出るもの
   Structure と、そこから展開リンクでたどれるトラスや部材だけが出る
@@ -273,7 +282,8 @@ M-x org-truss-export で、OUT/ に書き出す。
     名前を出す型では、役の名前から始まる（pros なら「メリット：」）
   - 項目の部材は、箇条書きのあった場所に出る
   - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料の
-    取り込み元になる
+    取り込み元になる。場所だけで名指した、その資料への最初のリンクには、
+    前に資料の題が付く
   - コメント（# と空白で始まる行、#+begin_comment のブロック）と、
     :noexport: を付けた部材は出ない
 

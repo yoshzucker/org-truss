@@ -393,7 +393,8 @@ it is."
 
 (defvar org-truss-moor-export-function nil
   "Function writing a `moor:' link as the reader is to follow it, or nil.
-Called with the link's path, its words or nil, and the truss file; returns
+Called with the link's path, its words or nil, the truss file, and
+non-nil for the first link to its source in the output document; returns
 what the output document says in its place.  Set by org-truss-moor.el;
 without org-moor a `moor:' link is written as it is.")
 
@@ -405,17 +406,22 @@ without org-moor a `moor:' link is written as it is.")
   "Return TEXT with each `moor:' link written for the reader.
 For the reader of FILE's output document.  The copy a link opens is the
 writer's; the reader is sent where the source came from, by
-`org-truss-moor-export-function'."
+`org-truss-moor-export-function'.  The first link to each source, in the
+order the reader reads, is told it is: the source is named there."
   (if (not org-truss-moor-export-function)
       text
-    (replace-regexp-in-string
-     org-truss--moor-link-re
-     (lambda (link)
-       (let ((path (match-string 1 link))
-             (words (match-string 2 link)))
-         (save-match-data
-           (funcall org-truss-moor-export-function path words file))))
-     text t t)))
+    (let (named)
+      (replace-regexp-in-string
+       org-truss--moor-link-re
+       (lambda (link)
+         (let* ((path (match-string 1 link))
+                (words (match-string 2 link))
+                (id (replace-regexp-in-string "::.*" "" path))
+                (first (not (member id named))))
+           (push id named)
+           (save-match-data
+             (funcall org-truss-moor-export-function path words file first))))
+       text t t))))
 
 (defun org-truss-export-buffer (buffer)
   "Write the output document of the truss file in BUFFER.

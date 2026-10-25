@@ -179,5 +179,29 @@ on the web, at the page of a PDF; a source from a file is named as text."
                       truss)
                      "As [[https://e.x/act.pdf#page=14][Act p. 14]] says, [[https://e.x/guide][Guide]] and the memo; [[#m7]].")))))
 
+(ert-deftest org-truss-test-place-named-alone ()
+  "In a truss file a link to a place is named by the place alone, and in
+the output document the first link to a source names it: a fact included
+without the member naming its source above it still says which."
+  (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
+    (let* ((truss (expand-file-name "truss.org" dir))
+           (sources (org-moor-sources truss))
+           (law (org-moor-new-source "Act" "https://e.x/act.pdf" 'web sources))
+           (memo (org-moor-new-source "Memo" "/x/memo.txt" 'file sources))
+           (id (plist-get memo :id)))
+      (org-moor-record-set law :file "act.pdf")
+      (should (org-moor-place-alone-p truss))
+      (should-not (org-moor-place-alone-p (expand-file-name "notes.org" dir)))
+      (should (equal (org-truss--export-moor-links
+                      (format "[[moor:%s::3][l. 3]], [[moor:%s::9][l. 9]], [[moor:%s::14][p. 14]]"
+                              id id (plist-get law :id))
+                      truss)
+                     "Memo l. 3, l. 9, [[https://e.x/act.pdf#page=14][Act p. 14]]"))
+      (should (equal (org-truss--export-moor-links
+                      (format "[[moor:%s][Memo]], [[moor:%s::3][l. 3]]; [[moor:%s::9][its last page]]"
+                              id id (plist-get law :id))
+                      truss)
+                     "Memo, l. 3; [[https://e.x/act.pdf#page=9][its last page]]")))))
+
 (provide 'org-truss-moor-test)
 ;;; org-truss-moor-test.el ends here
