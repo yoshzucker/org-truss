@@ -1110,7 +1110,7 @@ finds it, as `org-truss-check-descriptions' names them."
             (lambda (e) (format "%s has no grounds" (funcall ids (list (cdr e))))))
            (org-truss--check-group
             model "Hidden grounds" (funcall in (plist-get checks :hidden-grounds))
-            (lambda (e) (format "%s %s" (funcall ids (list (cdr e))) org-truss-hidden-grounds-text)))
+            #'org-truss-hidden-ground-text)
            (org-truss--check-group
             model "Mixed sources" (funcall in (plist-get checks :mixed-sources))
             (lambda (e) (format "points into %s" (string-join (cdr e) ", "))))

@@ -1013,6 +1013,41 @@ tell is not asked."
     (org-truss-test--with (replace-regexp-in-string "^\\*\\* \\[\\[truss-include:check\\]\\]\n" "" text)
       (should-not (plist-get (org-truss-checks (org-truss-read)) :hidden-grounds)))))
 
+(ert-deftest org-truss-test-hidden-reasons ()
+  "The apex member of a logic truss the output document tells stands on its
+reasons: one tagged :noexport: is hidden grounds, as a link to one is."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Half the items repeat
+:PROPERTIES:
+:CUSTOM_ID: half
+:TRUSS_LOGIC: reasons
+:END:
+*** Fifty-two percent came back                         :noexport:assumption:
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+*** The agendas show it                                          :assumption:
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+* T
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** [[truss-include:half]]
+"
+    (let* ((model (org-truss-read))
+           (hidden (plist-get (org-truss-checks model) :hidden-grounds)))
+      (should (equal (mapcar (lambda (h) (cons (org-truss-member-words (car h))
+                                               (org-truss-member-words (cdr h))))
+                             hidden)
+                     '(("Half the items repeat" . "Fifty-two percent came back"))))
+      (should (string-match-p ": Half the items repeat -- Fifty-two percent came back is left out of the output document$"
+                              (org-truss-check-report model))))))
+
 (ert-deftest org-truss-test-placeholders ()
   "The words a new file gives its members reach the reader, through
 Structure, until they are written over: a part's name, or a role's in

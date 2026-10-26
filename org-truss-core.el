@@ -1538,14 +1538,35 @@ see `org-truss-in-document' and `org-truss-left-out-p'."
                                  (org-truss-in-document model))))))
 
 (defun org-truss-hidden-grounds (model member)
-  "Return the IDs MEMBER of MODEL stands on of members left out.
+  "Return what MEMBER of MODEL stands on that is left out.
 Asked of a member the output document tells: the reader is given what
 it says, and not what it stands on when that is tagged :noexport:, or
-is under a member that is.  See `org-truss-left-out-p'."
-  (seq-filter (lambda (id)
-                (let ((ground (org-truss-member-by-id model id)))
-                  (and ground (org-truss-left-out-p model ground))))
-              (org-truss-member-grounds member)))
+is under a member that is.  See `org-truss-left-out-p'.  The IDs of the
+members it stands on by its links, then, as the apex member of a logic
+truss, its supporting members playing a role there, themselves: they
+are what it stands on."
+  (append
+   (seq-filter (lambda (id)
+                 (let ((ground (org-truss-member-by-id model id)))
+                   (and ground (org-truss-left-out-p model ground))))
+               (org-truss-member-grounds member))
+   (and (org-truss-member-logic member)
+        (seq-filter (lambda (s) (and (org-truss-member-role s 'logic)
+                                     (org-truss-left-out-p model s)))
+                    (org-truss-member-supports member)))))
+
+(defun org-truss-hidden-ground-text (entry)
+  "Return what the board and the report say of ENTRY, (MEMBER . GROUND).
+GROUND is the ID of a member it stands on by a link, or a supporting
+member; see `org-truss-hidden-grounds'."
+  (let ((ground (cdr entry)))
+    (format "%s %s"
+            (cond ((stringp ground) (format "[[%s]]" (org-truss--pointing-target ground)))
+                  ((org-truss-include-alone-p ground)
+                   (format "[[%s]]" (org-truss--pointing-target
+                                     (car (org-truss-member-includes ground)))))
+                  (t (org-truss-member-words ground)))
+            org-truss-hidden-grounds-text)))
 
 (defun org-truss-placeholder-p (member)
   "Non-nil when MEMBER's words are those it was given, to be written over.
@@ -1601,9 +1622,10 @@ member whose pattern asks, at the member that lacks, at the link.
                  `org-truss-missing-grounds'
 :weak-grounds    (MEMBER . ID) for each member MEMBER stands on that does
                  not hold; see `org-truss-weak-grounds'
-:hidden-grounds  (MEMBER . ID) for each member MEMBER, one the output
-                 document tells, stands on that it leaves out; see
-                 `org-truss-hidden-grounds'
+:hidden-grounds  (MEMBER . GROUND) for each member, or supporting member,
+                 MEMBER, one the output document tells, stands on that
+                 it leaves out: GROUND is an ID or the supporting member;
+                 see `org-truss-hidden-grounds'
 :placeholders    members the output document tells whose words are still
                  those they were given; see `org-truss-placeholder-p'
 :mixed-sources   (MEMBER . SOURCES) for apex members whose truss brings
@@ -1679,7 +1701,7 @@ member whose pattern asks, at the member that lacks, at the link.
     ("Weak grounds"
      . "members a member stands on, by a link in its text, that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
     ("Hidden grounds"
-     . "members the output document tells that stand on a member it leaves out, tagged :noexport: or under one: the reader is given what it says and not what it stands on; take the tag off, or stand on another")
+     . "members the output document tells that stand on a member it leaves out, tagged :noexport: or under one -- by a link, or as the apex member of a TRUSS_LOGIC truss whose reason it is: the reader is given what it says and not what it stands on; take the tag off, or stand on another")
     ("Mixed sources"
      . "trusses that bring sources together where they keep to one, so each can be checked against its source: a parts truss whose end members link to more than one, or a TRUSS_LOGIC truss whose members do -- one taken by org-moor counts once, wherever in it the links point; bring facts of different sources together by pointing to the members that hold them")
     ("Said again"
@@ -1819,9 +1841,7 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                                               (format "[[%s]] has no grounds" (org-truss--pointing-target (cdr w)))))
                          (plist-get checks :weak-grounds)))
            (cons "Hidden grounds"
-                 (mapcar (lambda (h) (funcall member-line (car h)
-                                              (format "[[%s]] %s" (org-truss--pointing-target (cdr h))
-                                                      org-truss-hidden-grounds-text)))
+                 (mapcar (lambda (h) (funcall member-line (car h) (org-truss-hidden-ground-text h)))
                          (plist-get checks :hidden-grounds)))
            (cons "Mixed sources"
                  (mapcar (lambda (m) (funcall member-line (car m)

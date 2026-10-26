@@ -499,7 +499,7 @@ Thirteen checks, each found where the problem is:
 | Out of order   | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
 | No grounds     | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
 | Weak grounds   | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
-| Hidden grounds | the member that points     | is in the output document, and points as grounds to a member ~:noexport:~ leaves out                                                    |
+| Hidden grounds | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~ |
 | Mixed sources  | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
 | Said again     | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])        |
 | Not a heading  | the claim                  | a heading of its own in Message that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])             |
