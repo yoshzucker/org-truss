@@ -579,22 +579,33 @@ In its part's tree, the member itself, not included."
 An include link includes it, or a member drawn above stands on it."
   (and (org-truss--head-p item) (or (plist-get item :link) (plist-get item :ground))))
 
-(defun org-truss--lines-where (test)
-  "Return (START . ITEM) for each line of the board whose ITEM passes TEST."
+(defvar org-truss--item-lines nil
+  "The board's lines, as (START . ITEM), while one look over them is shared.
+Bound by what asks of the board many times without changing it, so it
+is read once; nil at any other time, when each asking reads the board.")
+
+(defun org-truss--read-item-lines ()
+  "Return (START . ITEM) for each line of the board with an item, in order."
   (save-excursion
     (goto-char (point-min))
     (let (found)
       (while (not (eobp))
         (let ((item (get-text-property (point) 'org-truss-item)))
-          (when (and item (funcall test item))
+          (when item
             (push (cons (point) item) found)))
         (forward-line 1))
       (nreverse found))))
 
+(defun org-truss--lines-where (test)
+  "Return (START . ITEM) for each line of the board whose ITEM passes TEST.
+See `org-truss--item-lines'."
+  (seq-filter (lambda (line) (funcall test (cdr line)))
+              (or org-truss--item-lines (org-truss--read-item-lines))))
+
 (defun org-truss--lines-naming (pos)
   "Return (START . ITEM) for each line of the board naming the member at POS.
 A line whose words are an include link alone names the member it
-includes too, when it stands for it; see `org-truss--absorbed-lines'."
+includes too, when it stands for it; see `org-truss--brought-lines'."
   (org-truss--lines-where (lambda (item) (or (eql (org-truss--member-pos item) pos)
                                              (eql (plist-get item :alone) pos)))))
 
@@ -706,7 +717,8 @@ line they were lit for."
       (mapc #'delete-overlay org-truss--same-overlays)
       (setq org-truss--same-overlays nil)
       (let ((pos (org-truss--member-pos item))
-            (here (line-beginning-position)))
+            (here (line-beginning-position))
+            (org-truss--item-lines (org-truss--read-item-lines)))
         (when pos
           (dolist (line (seq-uniq (append (org-truss--lines-naming pos)
                                           (org-truss--lines-linked item))
@@ -1695,7 +1707,8 @@ other member, in the file, with every member under it."
 
 (defun org-truss-board-view ()
   "Show the output document in another window.
-As \\[org-truss-board-export] would write it.  Nothing is written.  While it is shown, the board keeps it current."
+As \\[org-truss-board-export] would write it.  Nothing is written.  While
+it is shown, the board keeps it current."
   (interactive)
   (unless (buffer-live-p org-truss--view)
     (let ((directory default-directory))

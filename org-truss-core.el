@@ -1368,33 +1368,45 @@ tell a quote from its source; a word changed does."
   (replace-regexp-in-string "[[:space:]　﻿​]+" ""
                             (ucs-normalize-NFKC-string text)))
 
-(defvar org-truss--quote-texts (make-hash-table :test #'equal)
-  "The texts of files quotes were looked for in, squeezed, by file and time.")
+(defvar org-truss--source-texts nil
+  "While the quotes of one file are looked for, the sources read so far.
+A hash table from each file to its text, squeezed, or `unreadable'; nil
+at any other time, when each source is read as it is asked for.  Bound
+by `org-truss-checks' and the board for one reading of the file alone,
+so nothing read is kept past it.")
 
-(defun org-truss--quote-source-text (file)
+(defun org-truss--read-source-text (file)
   "Return FILE's text as a quote is matched against it, or nil.
 Nil when it may not read as it was written: read as raw bytes, with
 characters no coding could read, or, beyond ASCII, in a coding of one
 byte a letter -- Latin-1 and its kin -- which is what a file in a coding
 Emacs did not guess, EUC-JP where Japanese is not set, is read as."
-  (let* ((time (file-attribute-modification-time (file-attributes file)))
-         (key (cons file time)))
-    (or (gethash key org-truss--quote-texts)
-        (let ((text (with-temp-buffer
-                      (insert-file-contents file)
-                      (let* ((coding last-coding-system-used)
-                             (type (coding-system-type coding))
-                             (wide (or (memq type '(utf-8 utf-16 shift-jis iso-2022 big5))
-                                       (and (eq type 'charset)
-                                            (seq-some (lambda (charset) (> (charset-dimension charset) 1))
-                                                      (coding-system-charset-list coding))))))
-                        (goto-char (point-min))
-                        (unless (or (re-search-forward "[�\x3fff80-\x3fffff]" nil t)
-                                    (and (not wide)
-                                         (progn (goto-char (point-min))
-                                                (re-search-forward "[^\0-\177]" nil t))))
-                          (buffer-string))))))
-          (and text (puthash key (org-truss--squeezed text) org-truss--quote-texts))))))
+  (with-temp-buffer
+    (insert-file-contents file)
+    (let* ((coding last-coding-system-used)
+           (type (coding-system-type coding))
+           (wide (or (memq type '(utf-8 utf-16 shift-jis iso-2022 big5))
+                     (and (eq type 'charset)
+                          (seq-some (lambda (charset) (> (charset-dimension charset) 1))
+                                    (coding-system-charset-list coding))))))
+      (goto-char (point-min))
+      (unless (or (re-search-forward "[�\x3fff80-\x3fffff]" nil t)
+                  (and (not wide)
+                       (progn (goto-char (point-min))
+                              (re-search-forward "[^\0-\177]" nil t))))
+        (org-truss--squeezed (buffer-string))))))
+
+(defun org-truss--quote-source-text (file)
+  "Return FILE's text as a quote is matched against it, or nil.
+Read once while `org-truss--source-texts' is bound; see
+`org-truss--read-source-text'."
+  (if (null org-truss--source-texts)
+      (org-truss--read-source-text file)
+    (let ((text (gethash file org-truss--source-texts 'unread)))
+      (when (eq text 'unread)
+        (setq text (or (org-truss--read-source-text file) 'unreadable))
+        (puthash file text org-truss--source-texts))
+      (and (stringp text) text))))
 
 (defun org-truss-quote-found (quote link file)
   "Return whether QUOTE is in the source LINK points to: `found', `missing' or nil.
@@ -1666,6 +1678,10 @@ are what it stands on."
                                      (org-truss-left-out-p model s)))
                     (org-truss-member-supports member)))))
 
+(defconst org-truss-hidden-grounds-text
+  "is left out of the output document"
+  "What the board and the report say of a member's grounds left out.")
+
 (defun org-truss-hidden-ground-text (entry)
   "Return what the board and the report say of ENTRY, (MEMBER . GROUND).
 GROUND is the ID of a member it stands on by a link, or a supporting
@@ -1780,6 +1796,7 @@ member whose pattern asks, at the member that lacks, at the link.
                  point to nothing there
 :duplicates      IDs more than one member has"
   (let* ((members (org-truss-model-members model))
+         (org-truss--source-texts (or org-truss--source-texts (make-hash-table :test #'equal)))
          (told (org-truss-told model))
          (each (lambda (f &optional of)
                  (mapcan (lambda (m) (mapcar (lambda (x) (cons m x)) (funcall f m)))
@@ -1872,10 +1889,6 @@ In the order the report prints them.")
   "no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:"
   "What the board and the report say of a member with no grounds, and how
 it comes to hold.")
-
-(defconst org-truss-hidden-grounds-text
-  "is left out of the output document"
-  "What the board and the report say of a member's grounds left out.")
 
 (defconst org-truss-placeholder-text
   "the words it was given, which reach the reader"
