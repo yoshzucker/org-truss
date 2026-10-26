@@ -881,56 +881,56 @@ saves a buffer, saves it from the board, and the title line says
 This is the board of the file above, every line open:
 
 #+begin_example
- Title ···················· Fortnightly reviews
+ Title ······················ Fortnightly reviews
 
  Brief  what the output document must satisfy
  △ (breakdown › Reader, Question, Response, Constraints)
-   Reader ················· The team leads
-   Question ··············· Should the review stay weekly?
-   Response wanted ········ Agree to try fortnightly reviews next quarter
-   Constraints ············ One page
+   Reader ··················· The team leads
+   Question ················· Should the review stay weekly?
+   Response wanted ·········· Agree to try fortnightly reviews next quarter
+   Constraints ·············· One page
 
  Subject  the facts found
  ▲ (breakdown › parts)
-   Part ··················· The calendar this quarter
+   Part ····················· The calendar this quarter
    △ (breakdown › parts)
-   ├ Part ·········· <<m2>> - Eight of twelve reviews ran past the hour
-   │   ⏚ source ··········· calendar export
-   └ Part ·········· <<m3>> - The longest ran forty minutes over
-       ⏚ source ··········· calendar export
-   Part ··················· The agendas, weeks 1-12
+   ├ Part ··················· - Eight of twelve reviews ran past the hour
+   │   ⏚ source ············· calendar export
+   └ Part ··················· - The longest ran forty minutes over
+       ⏚ source ············· calendar export
+   Part ····················· The agendas, weeks 1-12
    △ (breakdown › parts)
-   └ Part ·········· <<m4>> - Six of twelve items each week come back from the …
-       ⏚ source ··········· agendas, weeks 1-12
+   └ Part ··················· - Six of twelve items each week come back from th…
+       ⏚ source ············· agendas, weeks 1-12
 
  Message  what the output document says
  ▲ (breakdown › Interpretation, Action)
-   Interpretation ····· #m5 The weekly review costs the team more time than it …
+   Interpretation ··········· The weekly review costs the team more time than i…
    ▲ (breakdown › parts)
-   ├ Part ················· The review takes longer than it is given
+   ├ Part ··················· The review takes longer than it is given
    │ △ (logic › reasons)
-   │ ├ Reason ············· - Most weeks it runs past the hour
-   │ └ Reason ············· - It can run forty minutes over
-   └ Part ············· #m6 Half the items repeat
+   │ ├ Reason ··············· - Most weeks it runs past the hour
+   │ └ Reason ··············· - It can run forty minutes over
+   └ Part ··················· Half the items repeat
      △ (logic › reasons)
-     ├ Reason ············· - Half of each agenda is what was open the week bef…
-     ├ Reason [no grounds]  - Nothing urgent waits for the review
-     └ Reason [assumed] ··· - Items need a week to move
-   Action ············· #m7 Hold the review every other week
+     ├ Reason ··············· - Half of each agenda is what was open the week b…
+     ├ Reason [no grounds] ·· - Nothing urgent waits for the review
+     └ Reason [assumed] ····· - Items need a week to move
+   Action ··················· Hold the review every other week
    △ (breakdown › steps)
-   ├ Step ················· 1. Cancel every second review in the calendar
-   └ Step ················· 2. Carry what is still open to the next one
+   ├ Step ··················· 1. Cancel every second review in the calendar
+   └ Step ··················· 2. Carry what is still open to the next one
 
  No grounds
-   Reason [no grounds] ···· Nothing urgent waits for …  no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
+   Reason [no grounds] ······ Nothing urgent waits for…  no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
  Not a heading
-   Part ··················· The review takes longer t…  used in 1 place, on 2 grounds
+   Part ····················· The review takes longer …  used in 1 place, on 2 grounds
 
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ··········· →Subject Reviews run long, and the same items come back
- ├ Rain ·········· →Message The weekly review costs the team more time than it …
- └ Umbrella ······ →Message Hold the review every other week
+ ├ Sky ············· ↪Subject Reviews run long, and the same items come back
+ ├ Rain ············ ↪Message The weekly review costs the team more time than i…
+ └ Umbrella ········ ↪Message Hold the review every other week
 #+end_example
 
 Each member is drawn once, where it is written.  What links it to the
@@ -962,47 +962,48 @@ beside the logic each sentence rests on:
  ...
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ··········· →Subject       Reviews run long, and the same items come back
+ ├ Sky ············· ↪Subject Reviews run long, and the same items come back
  │ ▲ (breakdown › parts)
- │ ├ Part ·················       The calendar this quarter
+ │ ├ Part ··················· The calendar this quarter
  │ │ △ (breakdown › parts)
- │ │ ├ Part ··············· ×2    - Eight of twelve reviews ran past the hour
- │ │ │   ⏚ source ·········       calendar export
- │ │ └ Part ··············· ×2    - The longest ran forty minutes over
- │ │     ⏚ source ·········       calendar export
- │ └ Part ·················       The agendas, weeks 1-12
+ │ │ ├ Part ·············· +1 - Eight of twelve reviews ran past the hour
+ │ │ │   ⏚ source ··········· calendar export
+ │ │ └ Part ·············· +1 - The longest ran forty minutes over
+ │ │     ⏚ source ··········· calendar export
+ │ └ Part ··················· The agendas, weeks 1-12
  │   △ (breakdown › parts)
- │   └ Part ··············· ×2    - Six of twelve items each week come back fro…
- │       ⏚ source ·········       agendas, weeks 1-12
- ├ Rain ·········· →Message       The weekly review costs the team more time th…
+ │   └ Part ·············· +1 - Six of twelve items each week come back from th…
+ │       ⏚ source ··········· agendas, weeks 1-12
+ ├ Rain ············ ↪Message The weekly review costs the team more time than i…
  │ ▲ (breakdown › parts)
- │ ├ Part ·················       The review takes longer than it is given
+ │ ├ Part ··················· The review takes longer than it is given
  │ │ △ (logic › reasons)
- │ │ ├ Reason ·············       - Most weeks it runs past the hour
- │ │ │   ⏚ reason ·· [[m2]] ↑Sky  Eight of twelve reviews ran past the hour
- │ │ └ Reason ·············       - It can run forty minutes over
- │ │     ⏚ reason ·· [[m3]] ↑Sky  The longest ran forty minutes over
- │ └ Part ················· ×2    Half the items repeat
+ │ │ ├ Reason ··············· - Most weeks it runs past the hour
+ │ │ │   ⏚ reason ······ ◌Sky Eight of twelve reviews ran past the hour
+ │ │ └ Reason ··············· - It can run forty minutes over
+ │ │     ⏚ reason ······ ◌Sky The longest ran forty minutes over
+ │ └ Part ················ +1 Half the items repeat
  │   △ (logic › reasons)
- │   ├ Reason ·············       - Half of each agenda is what was open the we…
- │   │   ⏚ reason ·· [[m4]] ↑Sky  Six of twelve items each week come back from …
- │   ├ Reason [no grounds]        - Nothing urgent waits for the review
- │   └ Reason [assumed] ···       - Items need a week to move
- └ Umbrella ······ →Message       Hold the review every other week
+ │   ├ Reason ··············· - Half of each agenda is what was open the week b…
+ │   │   ⏚ reason ······ ◌Sky Six of twelve items each week come back from the …
+ │   ├ Reason [no grounds] ·· - Nothing urgent waits for the review
+ │   └ Reason [assumed] ····· - Items need a week to move
+ └ Umbrella ········ ↪Message Hold the review every other week
    △ (breakdown › steps)
-   │ ⏚ reason ▸3 ·· [[#m6]] ↑Rain Half the items repeat
-   ├ Step ·················       1. Cancel every second review in the calendar
-   └ Step ·················       2. Carry what is still open to the next one
+   │ ⏚ reason ▸3 ······ ◌Rain Half the items repeat
+   ├ Step ··················· 1. Cancel every second review in the calendar
+   └ Step ··················· 2. Carry what is still open to the next one
 #+end_example
 
 A member whose words are an include link alone -- Sky, Rain, Umbrella
 here, or a reason ~*** [[truss-include:m7]]~ -- is the member it
 includes, so its line stands for both, and what that member brings
-follows it, with no line of its own.  Sky brings the facts first, so the
-reasons' facts are one line each, =↑Sky=, their sources with them where
-Sky brought them, and there each says it is drawn twice, =×2=; m6, a
-part of m5, is one line where m7 stands on it, =↑Rain=.  /same/ on such
-a line goes to where it was drawn in full; see [[*Marks]].
+follows it, with no line of its own.  Sky brings the facts first, so
+there they are drawn in full, each the original with one ghost, =+1=,
+and the reasons' facts are ghosts, one line each, =◌Sky=: their
+sources are with the original, under Sky.  m6, a part of m5, is a ghost
+where m7 stands on it, =◌Rain=.  /same/ on a ghost goes to its
+original; see [[*Marks]].
 
 /order/ again opens them where they are written.  Point stays on the
 member it was on, where it is opened now; what was folded or unfolded by
@@ -1019,16 +1020,16 @@ brackets, what wants seeing to: =[no role]= for a supporting member that
 plays no role of its apex member's patterns, =[no pattern]= for one that
 plays a role the member above has no pattern for, =[assumed]= for an
 assumption, =[noexport]= for one tagged ~:noexport:~, =[no grounds]= for
-a reason that must have grounds and has none.  At the end of the left,
-just before its words, a member is named
-by its ID as the file names it: =#m9= where it is written, and =[[#m9]]=
-where an include link includes it.  So what Structure
-includes can be found where it is written, and a member under one a link
-calls, which is not called itself, has none.  Opened as included, a thin
-column runs between the left and the words, saying where a member was
-drawn before, or how many use it; see [[*Marks]].  After it, from one
-column the same on every line, are the file's own words -- members'
-words, the title -- with dots leading to them, and links read as the
+a reason that must have grounds and has none.  Dots lead from the left
+to the words, and the mouse on them names the member by its ID as the
+file names it: =#m9= where it is written, and =[[#m9]]= where an include
+link includes it; a member under one a link calls, which is not called
+itself, has none.  Where the dots end, just before the words, a line may
+have marks saying where else the member is: the part the member its
+words link to is written in, =↪Subject=, and, opened as included, its
+ghosts, =+1= and =◌Sky=, or how a quotation was found, =✓=; see
+[[*Marks]].  After them, from one column the same on every line, are the
+file's own words -- members' words, the title -- and links read as the
 reader reads them: a member whose words are an include link alone reads
 as the words of the member it includes.  A heading is the reader's
 words, and its text is what the reader is told but its comments, so the
@@ -1076,36 +1077,36 @@ member that includes it, a member of Structure or another: what the
 reader is shown, and where.  A member is drawn once, where it is
 written, and its line says little of its links:
 
-| Mark    | Where                                         | Says                                                                    |
-|---------+-----------------------------------------------+-------------------------------------------------------------------------|
-| =⏚m7=   | after a member's words                        | it stands on m7, which no member is, or which has no grounds itself     |
-| =×2=    | the thin column, as included, drawn in full   | the chain draws it in two places                                        |
-| =↑Sky=  | the thin column, as included, drawn again     | drawn in full above, under Sky; here one line, folded                   |
+| Mark       | Where                                    | Says                                                                    |
+|------------+------------------------------------------+-------------------------------------------------------------------------|
+| =⏚m7=      | after a member's words                   | it stands on m7, which no member is, or which has no grounds itself     |
+| =↪Subject= | before the words, which are a link alone | the member they link to is written in Subject                           |
+| =+1=       | before the words, as included, in full   | the original: the chain draws it in one more place, as a ghost          |
+| =◌Sky=     | before the words, as included, again     | a ghost: the original is above, under Sky; here one line, folded        |
 
 Opened as included (/order/), the board draws what Structure stands on
 in one tree, and a member there may come again: a fact Sky tells that a
 reason in Rain stands on, a claim Rain tells that Umbrella's action
 follows from, one fact two reasons stand on.  Those are the logic's own
 shape, not faults -- what is said twice is caught by /Said again/ and
-/Grounds set low/ -- so the second time it is one line, folded, and
-the thin column says where it was read in full, =↑Sky=.  Where it is
-drawn in full, the column counts the places the chain draws it, =×2=:
-each member standing on it or including it, and the member it is under
-when the chain has that one.  All of them stand or fall with it, so it
-is checked against its sources first.  The members a member stands on
+/Grounds set low/ -- so it is drawn in full once, the original, and
+the second time it is a ghost, one line, folded, saying under which
+member of Structure the original is, =◌Sky=.  The original counts its
+ghosts, =+1=: one for each more member standing on it or including it,
+and the member it is under when the chain has that one.  All of them
+stand or fall with it, so it is checked against its sources first.  The members a member stands on
 that hold are not named as written: opened as included, the board draws
 them below it.  With point on a line, the lines linked to it light up,
 one step either way: where each member it stands on is drawn in full,
 and each line standing on it or including it.  /same/ goes to them in
 turn.  An include link written besides a member's words has a line of
 its own under the member:
-=• included=, naming the member it includes by its ID, =[[#m12]]=.  A
-member of Structure whose words are an include link alone is that
-member, and has no such line.  A member whose
-words hold a link, ~*** [[truss-include:m7]]~, reads as m7's words, so
-the part m7 is written in is said before them, where an ID goes:
-=→Subject=, =→Message=, =→Brief=, =→Structure= -- how near to its
-sources what it stands on is.  The sources a member stands on are drawn
+=• included=, the mouse on its dots naming the member it includes by its
+ID, =[[#m12]]=.  A member of Structure whose words are an include link
+alone is that member, and has no such line.  A member whose words hold
+a link, ~*** [[truss-include:m7]]~, reads as m7's words, so the part m7
+is written in is said just before them: =↪Subject=, =↪Message=,
+=↪Brief=, =↪Structure= -- how near to its sources what it stands on is.  The sources a member stands on are drawn
 below it, as the ground is below a building: =⏚ quote= each quotation in
 its text, and below them =⏚ source= each source it links to, with
 =[not found]= when the link points to nothing: the words are read from
@@ -1114,7 +1115,8 @@ its text holding nothing but such a link, is not drawn again in its
 text, and a link in a sentence there is drawn as it is written,
 =[[#m3]]= or =[[moor:6f1c::12][Manual p. 12]]=.  The mouse on any mark
 says what it means, and ~RET~ on a source's line goes to the member it
-is under.  ~org-truss-board-marks~ sets the marks.  A role a member's
+is under.  ~org-truss-board-marks~ sets the marks of a link, and
+~org-truss-board-where-marks~ those before the words.  A role a member's
 pattern asks for and it lacks -- /Minor premise —/ -- follows what it holds, with the
 pattern that asks when the member has more than one.  /new/ on it writes
 a member playing it; in Structure, /new-in-structure/ does.
@@ -1123,8 +1125,8 @@ The other marks of the board are not links:
 
 | Mark                | Where                   | Says                                                                                 |
 |---------------------+-------------------------+--------------------------------------------------------------------------------------|
-| =#m9=               | end of the left         | the member, where it is written                                                      |
-| =[[#m9]]=           | end of the left         | the member, where an include link includes it                                        |
+| =#m9=               | the mouse on the dots   | the member, where it is written                                                      |
+| =[[#m9]]=           | the mouse on the dots   | the member, where an include link includes it                                        |
 | =[no role]=         | after the role          | plays no role of its apex member's patterns                                          |
 | =[no pattern]=      | after the role          | plays a role, but the member above has no pattern of its kind                        |
 | =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
@@ -1188,30 +1190,30 @@ where included, the board drawn whole is the output document, near
 enough, beside the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ·········· →Message       The weekly review costs the team more time
- │                                than it gives back
+ ├ Rain ············ ↪Message The weekly review costs the team more time than it
+ │                            gives back
  │ ▲ (breakdown › parts)
- │ ├ Part ·················       The review takes longer than it is given
+ │ ├ Part ··················· The review takes longer than it is given
  │ │ △ (logic › reasons)
- │ │ ├ Reason ·············       - Most weeks it runs past the hour
- │ │ │   ⏚ reason ·· [[m2]] ↑Sky  Eight of twelve reviews ran past the hour
- │ │ │     ⏚ source ·······       calendar export
- │ │ └ Reason ·············       - It can run forty minutes over
- │ │     ⏚ reason ·· [[m3]] ↑Sky  The longest ran forty minutes over
- │ │       ⏚ source ·······       calendar export
- │ └ Part ················· ×2    Half the items repeat
- │   △ (logic › reasons)          Half of each agenda repeats the week before.
- │   │                            # Robin keeps raising the same items.  Not
- │   │                            # something to put in writing.
- │   ├ Reason ·············       - Half of each agenda is what was open the
- │   │                              week before
- │   │   ⏚ reason ·· [[m4]] ↑Sky  Six of twelve items each week come back from
- │   │                            the week before
- │   │     ⏚ source ·······       agendas, weeks 1-12
- │   ├ Reason [no grounds]        - Nothing urgent waits for the review
- │   └ Reason [assumed] ···       - Items need a week to move
- │                                We assume most items need more than a week to
- │                                change.
+ │ │ ├ Reason ··············· - Most weeks it runs past the hour
+ │ │ │   ⏚ reason ······ ◌Sky Eight of twelve reviews ran past the hour
+ │ │ │     ⏚ source ········· calendar export
+ │ │ └ Reason ··············· - It can run forty minutes over
+ │ │     ⏚ reason ······ ◌Sky The longest ran forty minutes over
+ │ │       ⏚ source ········· calendar export
+ │ └ Part ················ +1 Half the items repeat
+ │   △ (logic › reasons)      Half of each agenda repeats the week before.
+ │   │                        # Robin keeps raising the same items.  Not
+ │   │                        # something to put in writing.
+ │   ├ Reason ··············· - Half of each agenda is what was open the week
+ │   │                          before
+ │   │   ⏚ reason ······ ◌Sky Six of twelve items each week come back from the
+ │   │                        week before
+ │   │     ⏚ source ········· agendas, weeks 1-12
+ │   ├ Reason [no grounds] ·· - Nothing urgent waits for the review
+ │   └ Reason [assumed] ····· - Items need a week to move
+ │                            We assume most items need more than a week to
+ │                            change.
 #+end_example
 
 A picture linked on a line of its own -- an attachment, or a file by a
@@ -1602,6 +1604,8 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =•=                        | marks the board says a link with              |
+| ~org-truss-board-where-marks~  | =↪= =+= =◌=                    | marks of where else a member is, before its   |
+|                                |                                | words: its part, its ghosts                   |
 | ~org-truss-board-truss-marks~  | =△= =▲=                        | marks of a simple and a compound truss        |
 | ~org-truss-board-quote-marks~  | =✓= =✗= =?=                    | marks of a quotation found, not, unchecked    |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
