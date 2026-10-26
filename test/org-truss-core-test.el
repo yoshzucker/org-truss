@@ -1242,6 +1242,117 @@ facts of different sources are brought together by pointing to them."
       (should (string-match-p "^Mixed sources -- .*\n.*:[0-9]+: Mixed -- points into moor:form, https://e.x/page$"
                               (org-truss-check-report model))))))
 
+(defconst org-truss-test--claims-file "* Subject
+:PROPERTIES:
+:TRUSS_PART: subject
+:TRUSS_BREAKDOWN: parts
+:END:
+** Minutes
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+*** Eight of twelve ran past the hour
+:PROPERTIES:
+:CUSTOM_ID: f1
+:END:
+*** Half the items came back
+:PROPERTIES:
+:CUSTOM_ID: f2
+:END:
+*** Urgent ones were settled in chat
+:PROPERTIES:
+:CUSTOM_ID: f3
+:END:
+* Message
+:PROPERTIES:
+:TRUSS_PART: message
+:TRUSS_BREAKDOWN: interpretation-action
+:END:
+** Interpretation
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: interpretation
+:TRUSS_BREAKDOWN: parts
+:END:
+*** The weekly review does not get through its items
+:PROPERTIES:
+:CUSTOM_ID: c1
+:END:
+#+attr_truss: :logic reasons
+- [[truss-include:f1]]
+- [[truss-include:f2]]
+*** It drags on
+# [[#f2]] [[#f1]]
+*** Nothing urgent waits
+:PROPERTIES:
+:CUSTOM_ID: c2
+:TRUSS_LOGIC: reasons
+:END:
+**** Chat settles it                                             :assumption:
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+** Action
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: action
+:TRUSS_BREAKDOWN: steps
+:END:
+*** Meet every other week
+:PROPERTIES:
+:CUSTOM_ID: a1
+:END:
+# [[#c1]] [[#c2]]
+*** Move the calendar
+# [[#a1]]
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+- [[truss-include:m0]]
+- [[truss-include:c1]]
+"
+  "Claims: one said again, two not worth a heading of their own.")
+
+(ert-deftest org-truss-test-checks-claims-said-again ()
+  (org-truss-test--with org-truss-test--claims-file
+    (let* ((model (org-truss-read))
+           (said (plist-get (org-truss-checks model) :said-again)))
+      (should (equal (mapcar (lambda (e) (list (org-truss-member-words (car e)) (cadr e)
+                                               (mapcar #'org-truss-member-words (cddr e))))
+                             said)
+                     '(("The weekly review does not get through its items" ("f1" "f2") ("It drags on"))
+                       ("It drags on" ("f1" "f2") ("The weekly review does not get through its items")))))
+      (should (string-match-p "^Said again -- .*\n.*:[0-9]+: The weekly review does not get through its items -- stands on \\[\\[#f1\\]\\] \\[\\[#f2\\]\\], as It drags on does$"
+                              (org-truss-check-report model))))))
+
+(ert-deftest org-truss-test-checks-claims-not-a-heading ()
+  (org-truss-test--with org-truss-test--claims-file
+    (let* ((model (org-truss-read))
+           (unearned (plist-get (org-truss-checks model) :unearned)))
+      ;; c1 is used by the step and by Structure, on two facts; the step
+      ;; and Interpretation are no claims, nor the reason under c2.
+      (should (equal (mapcar (lambda (e) (list (org-truss-member-words (car e))
+                                               (length (cadr e)) (cddr e)))
+                             unearned)
+                     '(("It drags on" 0 2)
+                       ("Nothing urgent waits" 1 1))))
+      (should (string-match-p ":[0-9]+: Nothing urgent waits -- used in 1 place, on 1 ground$"
+                              (org-truss-check-report model))))))
+
+(ert-deftest org-truss-test-checks-claims-used-by-including-above ()
+  (org-truss-test--with (replace-regexp-in-string
+                         "- \\[\\[truss-include:m0\\]\\]\n" "- [[truss-include:i]]\n"
+                         (replace-regexp-in-string
+                          ":TRUSS_BREAKDOWN_ROLE: interpretation\n"
+                          ":TRUSS_BREAKDOWN_ROLE: interpretation\n:CUSTOM_ID: i\n"
+                          org-truss-test--claims-file))
+    ;; Structure includes Interpretation whole: that uses every claim in it.
+    (let ((model (org-truss-read)))
+      (should (equal (mapcar (lambda (e) (list (org-truss-member-words (car e))
+                                               (length (cadr e)) (cddr e)))
+                             (plist-get (org-truss-checks model) :unearned))
+                     '(("It drags on" 1 2)
+                       ("Nothing urgent waits" 2 1)))))))
+
 (defconst org-truss-test--includes-file "* M
 :PROPERTIES:
 :TRUSS_PART: message

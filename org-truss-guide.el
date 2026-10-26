@@ -140,11 +140,12 @@ Claims
   Make none of these; point to the fact or claim, or include it, instead
   - a claim between a claim and the facts that, pointed to straight,
     convince of it
-  - a claim that says a fact or another claim again
+  - a claim that says a fact or another claim again.  Of two claims
+    standing on the same grounds, one says the other again
   Make a claim a heading only when two or more members use it, by a
-  pointing or an include link, and it stands on two or more grounds.  One
-  used in one place is a reason, an item in the text of the member using
-  it
+  pointing or an include link, and it stands on two or more grounds.
+  Including a member it is under uses it too.  One used in one place is
+  a reason, an item in the text of the member using it
   A claim is as wide as its grounds hold up, and no wider.  For example,
   not \"every team\" from one team's minutes
   Write so that the words of an apex member and its supporting members
@@ -287,10 +288,12 @@ M-x org-truss-export で、OUT/ に書き出す。
   下に、読み手がそれに納得するのに要る主張を置く
   次の主張は作らない。代わりに、その事実や主張を指すか展開する
   - 事実を直に指せば納得できる主張とその事実のあいだに挟まれる別の主張
-  - 事実や別の主張を言い直す主張
+  - 事実や別の主張を言い直す主張。同じ根拠の組に立つ主張が二つあれば、
+    一方はもう一方の言い直し
   主張を見出しにするのは、2か所以上から（指すリンクか展開リンクで）使わ
-  れ、2つ以上の根拠に立つときだけ。1か所でしか使わない主張は、使う部材の
-  本文に、理由の項目として書く
+  れ、2つ以上の根拠に立つときだけ。主張の上の部材を展開すれば、その主張
+  も使ったことになる。1か所でしか使わない主張は、使う部材の本文に、理由
+  の項目として書く
   主張は、根拠が支える範囲いっぱいまで広げて書き、根拠が支えられない範囲
   までは広げない。例えば、一つのチームの議事録から「どのチームも」とは
   言わない

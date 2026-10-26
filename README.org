@@ -414,6 +414,20 @@ members use it, by a pointing or an include link, and it stands on two or
 more grounds.  One used in one place is no heading but a reason, an item
 in the text of the member using it.
 
+Two checks count these (see [[*What is left to do]]).  /Not a heading/
+asks it of each claim written as a heading of its own in Message: not
+one right under the part, where its breakdown is told; not one in what
+plays /action/, a step being no claim; not a reason written as a heading
+under the member it holds up, which is where it is used already.  A
+member uses it by pointing to it, standing on it or including it, or by
+including a member it is under, which brings it into the output document
+-- Structure including Interpretation whole, say.  Its grounds are the
+members and sources it links to, its quotes, and its reasons.  /Said
+again/ finds members of Message that stand on the same members, two or
+more, as another does.  A claim that only reads one fact again is past
+what the file can tell from one read on its own: one fact can bear a
+claim of its own, as a rule read for this case does.
+
 A claim is as wide as its grounds hold up, and no wider.  Wider, it says
 what they do not -- /every team/ from one team's minutes -- or says
 nothing at all; narrower, it is the fact said again.
@@ -474,7 +488,7 @@ shows what it reads.
 
 ** What is left to do
 
-Eleven checks, each found where the problem is:
+Thirteen checks, each found where the problem is:
 
 | Check          | Found at                   | What it finds                                                                                                                           |
 |----------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -487,6 +501,8 @@ Eleven checks, each found where the problem is:
 | Weak grounds   | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
 | Hidden grounds | the member that points     | is in the output document, and points as grounds to a member ~:noexport:~ leaves out                                                    |
 | Mixed sources  | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
+| Said again     | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])        |
+| Not a heading  | the claim                  | a heading of its own in Message that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])             |
 | Broken links   | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
 | Words to write | the member                 | is in the output document with the words it was given: its part's name, or the name of a role it plays                                  |
 
@@ -887,6 +903,8 @@ This is the board of the file above, every line open:
 
  No grounds
    Reason [no grounds] ···· Nothing urgent waits for…  no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
+ Not a heading
+   Part ··················· The review takes longer …  used in 1 place, on 2 grounds
 
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
@@ -1083,8 +1101,8 @@ on and its gaps, so the output document can be read down Structure.
 
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Mixed
-sources/, /Missing roles/, /No role/, /No pattern/, /No relation/, /Out
-of order/, /Words to write/ (see
+sources/, /Said again/, /Not a heading/, /Missing roles/, /No role/, /No
+pattern/, /No relation/, /Out of order/, /Words to write/ (see
 [[*What is left to do]]) -- each thing listed in the part it is found in,
 and ~RET~ on it goes there.  The mouse on the name of a check says what it
 finds.

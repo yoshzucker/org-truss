@@ -1361,6 +1361,109 @@ its apex member and every member under it.  Nil for one source or none."
                 (mapcan #'org-truss-member-sources (org-truss--subtree member)))))))
     (and (cdr sources) sources)))
 
+;;;; Claims
+
+;; Message is written down from its end, and a claim is made where it
+;; saves more than it costs: standing on N grounds and used by K members,
+;; it is N + K links where pointing to the facts straight would be K × N.
+
+(defun org-truss-include-alone-p (member)
+  "Non-nil when MEMBER's words are an include link alone: it is that member."
+  (string-match-p (concat "\\`" org-truss--include-re "\\'") (org-truss-member-words member)))
+
+(defun org-truss-stood-on (member)
+  "Return the IDs of the members MEMBER stands on, each once, in order.
+Its grounds, see `org-truss-member-grounds', then the members its
+supporting members are, written as include links alone."
+  (seq-uniq
+   (append (org-truss-member-grounds member)
+           (mapcan (lambda (s) (and (org-truss-include-alone-p s)
+                                    (copy-sequence (org-truss-member-includes s))))
+                   (org-truss-member-supports member)))))
+
+(defun org-truss-said-again (model)
+  "Return (MEMBER IDS . OTHERS) for members of MODEL's Message saying one thing.
+Each stands on the members of IDS, two or more, and so does each of
+OTHERS: what one of them says, the others say again.  The order of IDS
+is not asked.  A member that is an include link alone is the member it
+includes, and says nothing of its own."
+  (let ((sets (delq nil
+                    (mapcar (lambda (m)
+                              (let ((ids (sort (copy-sequence (org-truss-stood-on m)) #'string<)))
+                                (and (cdr ids) (cons m ids))))
+                            (seq-remove #'org-truss-include-alone-p
+                                        (org-truss-members-in model 'message))))))
+    (delq nil
+          (mapcar (lambda (set)
+                    (let ((others (seq-filter (lambda (o) (and (not (eq (car o) (car set)))
+                                                               (equal (cdr o) (cdr set))))
+                                              sets)))
+                      (and others (cons (car set) (cons (cdr set) (mapcar #'car others))))))
+                  sets))))
+
+(defun org-truss-claim-heading-p (model member)
+  "Non-nil when MEMBER of MODEL is a claim written as a heading of its own.
+A heading in Message, but not one right under the part, where its
+breakdown is told, not one in what plays `action', and not an include
+link alone.  A reason, or the like, written as a heading under the
+member it holds up is placed where it is used already."
+  (let ((up (org-truss-parent model member)))
+    (and (eq (org-truss-member-part member) 'message)
+         (not (org-truss-member-is-part member))
+         (not (org-truss-item-p member))
+         (not (org-truss-include-alone-p member))
+         up (not (org-truss-member-is-part up))
+         (not (and (org-truss-member-logic up) (org-truss-member-role member 'logic)))
+         (let ((m member) action)
+           (while (and m (not action))
+             (setq action (eq (org-truss-member-role m 'breakdown) 'action)
+                   m (org-truss-parent model m)))
+           (not action)))))
+
+(defun org-truss-claim-users (model member)
+  "Return the members of MODEL that use MEMBER, each once, in file order.
+Those that point to it, stand on it or include it, or include a member it
+is under, which brings it into the output document; but MEMBER and those
+under it."
+  (let ((id (org-truss-member-id member))
+        (own (org-truss--subtree member))
+        (above (let ((m (org-truss-parent model member)) ids)
+                 (while (and m (not (org-truss-member-is-part m)))
+                   (when (org-truss-member-id m) (push (org-truss-member-id m) ids))
+                   (setq m (org-truss-parent model m)))
+                 ids)))
+    (seq-filter (lambda (m)
+                  (and (not (memq m own))
+                       (or (and id (member id (org-truss-member-points m)))
+                           (seq-intersection (if id (cons id above) above)
+                                             (org-truss-member-includes m)))))
+                (org-truss-model-members model))))
+
+(defun org-truss-claim-grounds (member)
+  "Return how many grounds MEMBER stands on.
+The members and sources it links to, its quotations, and, as the apex
+member of a logic truss, its supporting members playing a role there."
+  (+ (length (org-truss-stood-on member))
+     (length (org-truss-member-sources member))
+     (length (org-truss-member-quoted member))
+     (if (org-truss-member-logic member)
+         (seq-count (lambda (s) (and (org-truss-member-role s 'logic)
+                                     (not (org-truss-include-alone-p s))))
+                    (org-truss-member-supports member))
+       0)))
+
+(defun org-truss-unearned-heading (model member)
+  "Return (USERS . GROUNDS) when MEMBER of MODEL is a claim not worth a heading.
+USERS are the members using it, GROUNDS how many it stands on; see
+`org-truss-claim-users' and `org-truss-claim-grounds'.  A claim is a
+heading when two or more members use it and it stands on two or more
+grounds.  Nil for a member that is no claim written as a heading."
+  (and (org-truss-claim-heading-p model member)
+       (let ((users (org-truss-claim-users model member))
+             (grounds (org-truss-claim-grounds member)))
+         (and (or (< (length users) 2) (< grounds 2))
+              (cons users grounds)))))
+
 ;;;; The output document
 
 (defun org-truss-document-title (model)
@@ -1505,6 +1608,10 @@ member whose pattern asks, at the member that lacks, at the link.
                  those they were given; see `org-truss-placeholder-p'
 :mixed-sources   (MEMBER . SOURCES) for apex members whose truss brings
                  more than one source together; see `org-truss-mixed-sources'
+:said-again      (MEMBER IDS . OTHERS) for members of Message standing on
+                 the same members as others; see `org-truss-said-again'
+:unearned        (MEMBER USERS . GROUNDS) for claims written as headings
+                 that are not worth one; see `org-truss-unearned-heading'
 :broken-links    (MEMBER . ID) for include links to no member
 :loops           (MEMBER . ID) for include links that include MEMBER
                  back; see `org-truss-include-loops'
@@ -1540,6 +1647,11 @@ member whose pattern asks, at the member that lacks, at the link.
                                              (let ((sources (org-truss-mixed-sources m)))
                                                (and sources (cons m sources))))
                                            members))
+          :said-again (org-truss-said-again model)
+          :unearned (delq nil (mapcar (lambda (m)
+                                        (let ((unearned (org-truss-unearned-heading model m)))
+                                          (and unearned (cons m unearned))))
+                                      members))
           :broken-links (funcall each (lambda (m)
                                         (seq-remove (lambda (id) (org-truss-member-by-id model id))
                                                     (seq-uniq (org-truss-member-includes m)))))
@@ -1570,6 +1682,10 @@ member whose pattern asks, at the member that lacks, at the link.
      . "members the output document tells that stand on a member it leaves out, tagged :noexport: or under one: the reader is given what it says and not what it stands on; take the tag off, or stand on another")
     ("Mixed sources"
      . "trusses that bring sources together where they keep to one, so each can be checked against its source: a parts truss whose end members link to more than one, or a TRUSS_LOGIC truss whose members do -- one taken by org-moor counts once, wherever in it the links point; bring facts of different sources together by pointing to the members that hold them")
+    ("Said again"
+     . "members of Message that stand on the same members, two or more, as another does -- by pointing links, include links, or supporting members that are include links alone: one says what the other says again; keep the one, and point to it or include it where the other was")
+    ("Not a heading"
+     . "claims written as headings of their own in Message -- not right under the part, not in Action, not reasons under the member they hold up -- that fewer than two members use, by a pointing or an include link, or that stand on fewer than two grounds: one used in one place is a reason, an item in the text of the member using it; one that only says a fact again is not written, and the fact is included; one nothing uses is not needed")
     ("Missing roles"
      . "roles the TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING of an apex member asks for that none of its supporting members plays")
     ("No role"
@@ -1601,6 +1717,19 @@ it comes to hold.")
 (defconst org-truss-no-relation-text
   "members under it, and no pattern saying what they are to it"
   "What the board and the report say of a member with no relation.")
+
+(defun org-truss-said-again-text (entry)
+  "Return what the board and the report say of ENTRY, (MEMBER IDS . OTHERS)."
+  (format "stands on %s, as %s does"
+          (mapconcat (lambda (id) (format "[[%s]]" (org-truss--pointing-target id))) (cadr entry) " ")
+          (mapconcat #'org-truss-member-words (cddr entry) "; ")))
+
+(defun org-truss-unearned-text (entry)
+  "Return what the board and the report say of ENTRY, (MEMBER USERS . GROUNDS)."
+  (let ((users (length (cadr entry)))
+        (grounds (cddr entry)))
+    (format "used in %d place%s, on %d ground%s"
+            users (if (= users 1) "" "s") grounds (if (= grounds 1) "" "s"))))
 
 (defun org-truss-check-about (name)
   "Return what the check NAME finds, or nil."
@@ -1698,6 +1827,12 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                  (mapcar (lambda (m) (funcall member-line (car m)
                                               (format "points into %s" (string-join (cdr m) ", "))))
                          (plist-get checks :mixed-sources)))
+           (cons "Said again"
+                 (mapcar (lambda (e) (funcall member-line (car e) (org-truss-said-again-text e)))
+                         (plist-get checks :said-again)))
+           (cons "Not a heading"
+                 (mapcar (lambda (e) (funcall member-line (car e) (org-truss-unearned-text e)))
+                         (plist-get checks :unearned)))
            (cons "Missing roles"
                  (mapcan (lambda (g)
                            (mapcar (lambda (kind)

@@ -1115,6 +1115,12 @@ finds it, as `org-truss-check-descriptions' names them."
             model "Mixed sources" (funcall in (plist-get checks :mixed-sources))
             (lambda (e) (format "points into %s" (string-join (cdr e) ", "))))
            (org-truss--check-group
+            model "Said again" (funcall in (plist-get checks :said-again))
+            #'org-truss-said-again-text)
+           (org-truss--check-group
+            model "Not a heading" (funcall in (plist-get checks :unearned))
+            #'org-truss-unearned-text)
+           (org-truss--check-group
             model "Missing roles" (funcall in (plist-get checks :gaps))
             (lambda (e) (mapconcat (lambda (gap)
                                      (let ((asking (org-truss--asking (car e) gap)))
