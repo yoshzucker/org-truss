@@ -640,14 +640,16 @@ broken to its column."
               "#+end_quote\n"
               "#+begin_quote\nFinance comes after.\n#+end_quote\n"
               "[[file:manual.txt][Manual]]\n")
-    (should (string-match-p (concat "⏚ quote[ ·]+The head approves\\.\n"
-                                    ".*⏚ quote[ ·]+Every request.*…\n"
-                                    ".*⏚ quote[ ·]+Finance comes after\\.\n"
+    (should (string-match-p (concat "⏚ quote[ ·]+\\(?:[✓✗?] \\)?The head approves\\.\n"
+                                    ".*⏚ quote[ ·]+\\(?:[✓✗?] \\)?Every request.*…\n"
+                                    ".*⏚ quote[ ·]+\\(?:[✓✗?] \\)?Finance comes after\\.\n"
                                     ".*⏚ source.*Manual")
                             (buffer-string)))
+    ;; The manual is not there to look in: the quotes are not looked for.
+    (should (string-match-p "⏚ quote[ ·]+\\? The head approves\\.$" (buffer-string)))
     (org-truss-test--show-all)
     (should (string-match-p "Read in the manual" (buffer-string)))
-    (should (string-match-p "⏚ quote[ ·]+Every request[^…\n]*\n +[^⏚\n]*its lines\\." (buffer-string)))
+    (should (string-match-p "⏚ quote[ ·]+\\(?:[✓✗?] \\)?Every request[^…\n]*\n +[^⏚\n]*its lines\\." (buffer-string)))
     (should (= (how-many "The head approves" (point-min) (point-max)) 1))
     (should (= (how-many "Finance comes after" (point-min) (point-max)) 1)))))
 

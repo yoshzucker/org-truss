@@ -93,6 +93,16 @@ letter where the board is drawn, keeps the tree in line."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
+(defcustom org-truss-board-quote-marks
+  '((found . "✓") (missing . "✗") (unchecked . "?"))
+  "The marks before a quote's words, by what its source was found to say.
+`found', its words are in the source; `missing', they are not, and the
+quote is listed under Quotes not found; `unchecked', the source's text
+cannot surely be read -- a PDF, a picture, a file in an unknown coding,
+none linked -- and was not looked in.  See `org-truss-quote-found'."
+  :type '(alist :key-type symbol :value-type string)
+  :group 'org-truss)
+
 (defcustom org-truss-board-truss-marks
   '((simple . "△") (compound . "▲"))
   "The marks before the patterns of an apex member, by the shape of its truss.
@@ -776,12 +786,30 @@ carries the tree down past it to the next, unless the member is the LAST."
 
 (defun org-truss--ground-line (stem key left middle item)
   "Return a line naming what a member stands on, below it.
-STEM starts it, with the mark of a ground and LEFT; MIDDLE names it; ITEM
-is what it stands for, under KEY."
+STEM starts it, with the mark of a ground and LEFT; MIDDLE names it,
+dimmed under the faces its own marks have; ITEM is what it stands for,
+under KEY."
   (append (org-truss--line (concat stem (org-truss--mark 'ground) left)
-                           (and middle (propertize middle 'face 'org-truss-dim))
+                           (and middle (let ((middle (copy-sequence middle)))
+                                         (add-face-text-property 0 (length middle) 'org-truss-dim t middle)
+                                         middle))
                            nil (plist-put item :key key))
           (list :under stem)))
+
+(defun org-truss--quote-mark (member quote)
+  "Return the mark before QUOTE of MEMBER, and a space.
+Whether its words were found in its source, were not, or were not looked
+for; see `org-truss-board-quote-marks'."
+  (let* ((file (and org-truss--model (buffer-file-name (org-truss-model-buffer org-truss--model))))
+         (link (and org-truss--model (org-truss-quote-link org-truss--model member quote)))
+         (found (or (and link (org-truss-quote-found quote link file)) 'unchecked)))
+    (concat (propertize (or (alist-get found org-truss-board-quote-marks) "?")
+                        'face (if (eq found 'missing) 'org-truss-attention 'org-truss-dim)
+                        'help-echo (pcase found
+                                     ('found "Found in its source")
+                                     ('missing "Not found in its source: copy its words as they are")
+                                     (_ "Not looked for: its source's text cannot surely be read")))
+            " ")))
 
 (defun org-truss--grounds-lines (member stem key)
   "Return a line for each source MEMBER stands on, below it.
@@ -802,7 +830,10 @@ starts each; KEY is MEMBER's line's."
                                        (concat (symbol-name (car source))
                                                (if (funcall found-p (cdr source)) ""
                                                  (propertize " [not found]" 'face 'org-truss-attention)))
-                                       (org-truss--one-line (org-truss--link-text (cdr source)))
+                                       (concat (if (eq (car source) 'quote)
+                                                   (org-truss--quote-mark member (cdr source))
+                                                 "")
+                                               (org-truss--one-line (org-truss--link-text (cdr source))))
                                        (list :type 'member :pos pos
                                              :links (if (eq (car source) 'source)
                                                         (list (cdr source))
@@ -1362,6 +1393,10 @@ finds it, as `org-truss-check-descriptions' names them."
            (org-truss--check-group
             model "Hidden grounds" (funcall in (plist-get checks :hidden-grounds))
             #'org-truss-hidden-ground-text)
+           (org-truss--check-group
+            model "Quotes not found" (funcall in (plist-get checks :quotes-not-found))
+            (lambda (e) (format "“%s” is not in its source"
+                                (truncate-string-to-width (org-truss--one-line (cdr e)) 30 nil nil "…"))))
            (org-truss--check-group
             model "Grounds set low" (funcall in (plist-get checks :low-grounds))
             #'org-truss-grounds-set-low-text)

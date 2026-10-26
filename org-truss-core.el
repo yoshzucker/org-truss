@@ -47,6 +47,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
+(require 'ucs-normalize)
 
 (defgroup org-truss nil
   "Trusses of members, arranged into an output document."
@@ -1325,6 +1326,116 @@ not there to look."
           ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
            (not (file-exists-p (expand-file-name path dir)))))))
 
+;;;; Quotes against their sources
+
+;; A quote is the source's words as they are, so it is looked for in the
+;; source.  Only where the source's text can surely be read as the agent
+;; that quoted it read it: a copy that is text, or what org-moor made a
+;; copy readable as.  A PDF, a picture, a file that does not read cleanly
+;; is not looked in, and nothing is said of a quote from it: a quote not
+;; found must be one that is not there.
+
+(defvar org-truss-moor-text-function nil
+  "Function returning the text file a `moor:' link's quote is looked for in.
+Called with the link's path and the truss file; nil when there is none
+to look in.  Set by org-truss-moor.el.")
+
+(defconst org-truss-quote-text-extensions
+  '("txt" "md" "markdown" "org" "csv" "tsv" "json" "yaml" "yml" "rst" "tex" "log")
+  "Extensions of files a quote is looked for in, read as text.")
+
+(defun org-truss--quote-text-file (link file)
+  "Return the text file LINK's quote is looked for in, or nil.
+FILE is the truss file, from whose directory a relative path is read.
+A `file:' link to a text file; a `moor:' link as
+`org-truss-moor-text-function' says; nothing else."
+  (let* ((target (org-link-unescape (or (org-truss--link-target link) "")))
+         (path (car (split-string (replace-regexp-in-string "\\`[a-z]+:" "" target) "::")))
+         (dir (if file (file-name-directory file) default-directory)))
+    (cond ((string-prefix-p "moor:" target)
+           (and org-truss-moor-text-function
+                (funcall org-truss-moor-text-function path file)))
+          ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
+           (let ((full (expand-file-name path dir)))
+             (and (member (downcase (or (file-name-extension full) "")) org-truss-quote-text-extensions)
+                  (file-readable-p full)
+                  full))))))
+
+(defun org-truss--squeezed (text)
+  "Return TEXT as a quote is matched: NFKC, with no white space at all.
+So a line broken, a space put in or left out, a full-width digit, do not
+tell a quote from its source; a word changed does."
+  (replace-regexp-in-string "[[:space:]　﻿​]+" ""
+                            (ucs-normalize-NFKC-string text)))
+
+(defvar org-truss--quote-texts (make-hash-table :test #'equal)
+  "The texts of files quotes were looked for in, squeezed, by file and time.")
+
+(defun org-truss--quote-source-text (file)
+  "Return FILE's text as a quote is matched against it, or nil.
+Nil when it may not read as it was written: read as raw bytes, with
+characters no coding could read, or, beyond ASCII, in a coding of one
+byte a letter -- Latin-1 and its kin -- which is what a file in a coding
+Emacs did not guess, EUC-JP where Japanese is not set, is read as."
+  (let* ((time (file-attribute-modification-time (file-attributes file)))
+         (key (cons file time)))
+    (or (gethash key org-truss--quote-texts)
+        (let ((text (with-temp-buffer
+                      (insert-file-contents file)
+                      (let* ((coding last-coding-system-used)
+                             (type (coding-system-type coding))
+                             (wide (or (memq type '(utf-8 utf-16 shift-jis iso-2022 big5))
+                                       (and (eq type 'charset)
+                                            (seq-some (lambda (charset) (> (charset-dimension charset) 1))
+                                                      (coding-system-charset-list coding))))))
+                        (goto-char (point-min))
+                        (unless (or (re-search-forward "[�\x3fff80-\x3fffff]" nil t)
+                                    (and (not wide)
+                                         (progn (goto-char (point-min))
+                                                (re-search-forward "[^\0-\177]" nil t))))
+                          (buffer-string))))))
+          (and text (puthash key (org-truss--squeezed text) org-truss--quote-texts))))))
+
+(defun org-truss-quote-found (quote link file)
+  "Return whether QUOTE is in the source LINK points to: `found', `missing' or nil.
+Nil when the source's text cannot surely be read; see
+`org-truss--quote-text-file'.  Words left out of QUOTE are marked …
+or ...: each piece between them is to be there, in order.  A link in
+QUOTE, to where it is from, is no words of the source.  FILE is the
+truss file."
+  (let* ((path (org-truss--quote-text-file link file))
+         (text (and path (org-truss--quote-source-text path)))
+         (words (replace-regexp-in-string org-truss--source-link-re "" quote)))
+    (when text
+      (let ((from 0) (found t))
+        (dolist (piece (split-string words "…\\|\\.\\.\\." t "[[:space:]]+"))
+          (let ((at (and found (string-search (org-truss--squeezed piece) text from))))
+            (if at
+                (setq from (+ at (length (org-truss--squeezed piece))))
+              (setq found nil))))
+        (if found 'found 'missing)))))
+
+(defun org-truss-quote-link (model member quote)
+  "Return the link to the source QUOTE of MEMBER of MODEL is from, or nil.
+One linked in the quote; else the first MEMBER's text cites; else the
+first the text of a member above it cites, the apex member a source is
+named in once."
+  (or (car (org-truss--source-links-in quote))
+      (let ((m member) link)
+        (while (and m (not link))
+          (setq link (org-truss-member-cited m)
+                m (org-truss-parent model m)))
+        link)))
+
+(defun org-truss-quotes-not-found (model member file)
+  "Return the quotes of MEMBER of MODEL not found in their sources.
+Each one whose source's text can be read and does not hold it; see
+`org-truss-quote-found'.  FILE is the truss file."
+  (seq-filter (lambda (quote)
+                (let ((link (org-truss-quote-link model member quote)))
+                  (and link (eq (org-truss-quote-found quote link file) 'missing))))
+              (org-truss-member-quoted member)))
+
 ;;;; Sources
 
 ;; A truss is checked against one source, so a parts truss's end members
@@ -1648,6 +1759,11 @@ member whose pattern asks, at the member that lacks, at the link.
 :low-grounds     (APEX . ID) for each member every supporting member of
                  APEX stands on and APEX does not; see
                  `org-truss-grounds-set-low'
+:quotes-not-found (MEMBER . QUOTE) for each quote not in the source it is
+                 from, where that source's text can be read; see
+                 `org-truss-quotes-not-found'.  The board lists them; the
+                 report does not yet, while how surely they are found is
+                 tried on real files
 :placeholders    members the output document tells whose words are still
                  those they were given; see `org-truss-placeholder-p'
 :mixed-sources   (MEMBER . SOURCES) for apex members whose truss brings
@@ -1687,6 +1803,8 @@ member whose pattern asks, at the member that lacks, at the link.
           :hidden-grounds (and told
                                (funcall each (lambda (m) (org-truss-hidden-grounds model m)) told))
           :low-grounds (funcall each #'org-truss-grounds-set-low)
+          :quotes-not-found (let ((file (buffer-file-name (org-truss-model-buffer model))))
+                              (funcall each (lambda (m) (org-truss-quotes-not-found model m file))))
           :placeholders (seq-filter #'org-truss-placeholder-p told)
           :mixed-sources (delq nil (mapcar (lambda (m)
                                              (let ((sources (org-truss-mixed-sources m)))
@@ -1725,6 +1843,8 @@ member whose pattern asks, at the member that lacks, at the link.
      . "members a member stands on, by a link in its text, that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
     ("Hidden grounds"
      . "members the output document tells that stand on a member it leaves out, tagged :noexport: or under one -- by a link, or as the apex member of a TRUSS_LOGIC truss whose reason it is: the reader is given what it says and not what it stands on; take the tag off, or stand on another")
+    ("Quotes not found"
+     . "quotes, #+begin_quote, whose words are not in the source they are from -- the one linked in the quote, or else the first the member's text cites -- matched with line breaks, spaces and full- or half-width letters set aside, and the words left out marked … : copy the source's words as they are.  A source whose text cannot surely be read, a PDF or a file in an unknown coding, is not looked in")
     ("Grounds set low"
      . "apex members whose supporting members, two or more, all stand on the same member, by a pointing or an include link, while the apex member does not: that member holds up the apex member, not each supporting member; point to it once, from the apex member's text, and take the links out of the supporting members' text")
     ("Mixed sources"

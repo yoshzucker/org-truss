@@ -186,6 +186,20 @@ Sources
   by its place alone, ~[[moor:ID::223][l. 223]]~ , ~[[moor:ID::12][p. 12]]~ ,
   at the end of an item's first line, not on a line of its own
 
+Quotes
+  A fact of Subject is an end member: its words (a heading, an item's first
+  line) one fact, in one sentence, keeping the bounds it holds within (its
+  period, its team)
+  In its text, a quote, #+begin_quote: the source's words that hold the
+  fact up, one or two sentences, copied as they are from what you read (a
+  moor: source's copy, or what the copy was made readable as).  Change no
+  word; mark words left out with …
+  Put the quote in the text, not in a comment: the output document shows
+  it, and its reader checks the fact by it
+  Where no words can be quoted (counted from data, read from a figure, what
+  the source does not say), quote nothing: write in the text how the fact
+  was found from the source
+
 In the output document
   Only Structure, and the trusses and members its include links reach
   - a member is its words (a heading, an item's first line), then its text
@@ -349,6 +363,17 @@ M-x org-truss-export で、OUT/ に書き出す。
   本文の、支持部材の箇条書きの前に題で ~[[moor:ID][題]]~ と書き、その下
   の部材では場所だけで ~[[moor:ID::223][l. 223]]~ 、 ~[[moor:ID::12][p. 12]]~
   と書く。項目では、改行せずに1行目の終わりに書く
+
+引用
+  Subject の事実は末端部材で、その言葉（見出し、項目なら1行目）には事実を
+  一つ、一文で書く。その事実が成り立つ範囲（期間、チームなど）は削らない
+  その本文に、#+begin_quote で引用を置く。中身は、その事実を支える資料の
+  言葉を1〜2文、読んだ資料（moor: の資料なら、その写しか、写しを読める形
+  にしたもの）からそのまま写したもの。言葉は変えない。省いた所は … で示す
+  引用はコメントではなく本文に書く。出力文書に出て、読み手もそれで事実を
+  確かめる
+  引用できる言葉がないとき（データから数えた、図から読んだ、資料に書かれて
+  いないこと）は、引用しない。その事実を資料からどう得たかを本文に書く
 
 出力文書に出るもの
   Structure と、そこから展開リンクでたどれるトラスや部材だけが出る

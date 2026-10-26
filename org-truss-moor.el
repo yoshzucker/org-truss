@@ -40,6 +40,7 @@
 
 (defvar org-truss-moor-missing-function)
 (defvar org-truss-moor-export-function)
+(defvar org-truss-moor-text-function)
 
 (defun org-truss-moor-sources (file)
   "Return the sources directory of FILE when it is a truss file, else nil."
@@ -178,6 +179,21 @@ FILE is the file the link to it is in; with none, the current buffer's."
   (not (org-moor-record id (org-moor-sources file))))
 
 (setq org-truss-moor-missing-function #'org-truss-moor-missing-p)
+
+(defun org-truss-moor-quote-text (id file)
+  "Return the text file a quote from source ID of FILE is looked for in, or nil.
+Its copy when that is text; else what org-moor made the copy readable as
+-- a slide deck, a page, a document by pandoc -- when it has, which is
+what an agent read.  Nil for a PDF and for a copy not made readable:
+their text cannot surely be read as the agent read it.  Nothing is made
+here."
+  (let* ((record (ignore-errors (org-moor-record id (org-moor-sources file))))
+         (copy (and record (plist-get record :copy))))
+    (cond ((null copy) nil)
+          ((org-moor-text-file-p copy) copy)
+          (t (org-moor--made-readable copy)))))
+
+(setq org-truss-moor-text-function #'org-truss-moor-quote-text)
 
 (defconst org-truss-moor--place-name-re
   "\\`\\(?:[pl]\\. [0-9]+\\|“[^”]*”\\)\\'"

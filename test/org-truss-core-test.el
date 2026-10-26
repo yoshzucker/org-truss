@@ -1013,6 +1013,60 @@ tell is not asked."
     (org-truss-test--with (replace-regexp-in-string "^\\*\\* \\[\\[truss-include:check\\]\\]\n" "" text)
       (should-not (plist-get (org-truss-checks (org-truss-read)) :hidden-grounds)))))
 
+(ert-deftest org-truss-test-quote-found ()
+  "A quote is found in its source's text with line breaks, spaces and
+full- or half-width letters set aside, and the words left out marked …;
+a word changed is not found.  A source whose text cannot surely be read
+-- a PDF, raw bytes -- is not looked in."
+  (org-truss-test--in-directory
+      '(("sources/rule.txt" . "4.2 レビュー記録\n開発チームは、設計及び\nコードのレビューを月２回以上行い、その記録を残すこと。\nTeams review designs and code\ntwice a month.\n")
+        ("sources/scan.pdf" . "%PDF-1.4 開発チームは"))
+    (let ((file (expand-file-name "truss.org" dir))
+          (link "[[file:sources/rule.txt][rule 4.2]]"))
+      (with-temp-file (expand-file-name "sources/bytes.txt" dir)
+        (set-buffer-multibyte nil)
+        (insert (unibyte-string #x80 #xff #xfe #x81 #x00 #xc0)))
+      (dolist (found '("開発チームは、設計及びコードのレビューを月2回以上行い、その記録を残すこと。"
+                       "開発チームは、設計及び コードのレビュー"
+                       "開発チームは、…その記録を残すこと。"
+                       "Teams review designs and code twice a month."
+                       "Teamsreviewdesigns"))
+        (should (eq (org-truss-quote-found found link file) 'found)))
+      (dolist (missing '("開発チームは、設計とコードのレビュー"
+                         "4.2 開発チームは、設計及びコードのレビュー"
+                         "その記録を残すこと。…開発チームは"))
+        (should (eq (org-truss-quote-found missing link file) 'missing)))
+      (should-not (org-truss-quote-found "開発チームは" "[[file:sources/scan.pdf]]" file))
+      (should-not (org-truss-quote-found "x" "[[file:sources/bytes.txt]]" file))
+      (should-not (org-truss-quote-found "x" "[[https://e.x/rule]]" file))
+      (should-not (org-truss-quote-found "x" "[[file:sources/gone.txt]]" file))
+      ;; A file in another coding is found, or not looked in where Emacs
+      ;; may misread it; never said to lack a quote it holds.
+      (dolist (coding '(shift_jis cp932 euc-jp utf-16le utf-8-with-signature utf-8-dos))
+        (let ((coding-system-for-write coding))
+          (with-temp-file (expand-file-name (format "sources/%s.txt" coding) dir)
+            (insert "4.2 レビュー記録\n開発チームは、設計及びコードのレビューを月2回以上行い、その記録を残すこと。\n")))
+        (should-not (eq (org-truss-quote-found "開発チームは、設計及びコードのレビュー"
+                                               (format "[[file:sources/%s.txt]]" coding) file)
+                        'missing)))
+      (should (eq (org-truss-quote-found "開発チームは、設計及びコードのレビュー"
+                                         "[[file:sources/shift_jis.txt]]" file)
+                  'found)))))
+
+(ert-deftest org-truss-test-quotes-not-found ()
+  "A quote not in its source is listed for the board, not yet in the
+report: how surely quotes are found is still tried on real files.  A
+quote under a member linking nowhere is looked for in the source the
+member above names."
+  (org-truss-test--in-directory
+      '(("sources/rule.txt" . "Teams review designs and code twice a month.\n")
+        ("truss.org" . "* S\n:PROPERTIES:\n:TRUSS_PART: subject\n:END:\n** The rule\n[[file:sources/rule.txt][rule]]\n*** Reviews are twice a month\n#+begin_quote\nTeams review designs twice a month.\n#+end_quote\n*** Reviews are kept\n#+begin_quote\nTeams review designs and code\n#+end_quote\n"))
+    (let ((model (org-truss-read (find-file-noselect (expand-file-name "truss.org" dir)))))
+      (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
+                             (plist-get (org-truss-checks model) :quotes-not-found))
+                     '(("Reviews are twice a month" . "Teams review designs twice a month."))))
+      (should-not (string-match-p "Quotes not found" (org-truss-check-report model))))))
+
 (ert-deftest org-truss-test-grounds-set-low ()
   "An apex member whose supporting members, two or more, all stand on the
 same member, while it does not, has its grounds set low: it is to stand

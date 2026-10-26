@@ -1360,6 +1360,30 @@ member, or on a quotation's line, writes one or rewrites it.  With
 org-moor, reading a source beside it -- ~org-moor-noter~ -- writes the
 quotation and the link to its page or line in one go.
 
+A quotation is the source's words as they are, so the board looks for
+it in the source: the one linked in the quotation, else the first the
+member's text cites, else the first a member above it cites.  Line
+breaks, spaces and full- or half-width letters are set aside, and words
+left out are marked =…=; a word changed is not found.  It looks only
+where the source's text can surely be read as the one who quoted it
+read it: a copy that is text, or what org-moor made a slide deck, a page
+or a document readable as.  A PDF, a picture, a file that does not read
+cleanly -- raw bytes, or beyond ASCII in a coding of one byte a letter,
+as a file in a coding Emacs did not guess is read -- is not looked in,
+and nothing is said of a quotation from it: one said not to be found is
+one that is not there.  Before its words the quotation's line marks
+which:
+
+| Mark | Says                                                                     |
+|------+--------------------------------------------------------------------------|
+| =✓=  | found in the source                                                      |
+| =✗=  | not found: listed under /Quotes not found/, below the part               |
+| =?=  | not looked for: the source's text cannot surely be read, or none linked |
+
+~org-truss-board-quote-marks~ sets them.  /Quotes not found/ is the
+board's alone for now: the report (see [[*What is left to do]]) does not
+list it, while how surely quotations are found is tried on real files.
+
 ~m~, with org-moor, takes a source for the member as org-moor takes one,
 into the truss file's ~sources/~, and writes the link to it on a line of
 its own after the member's text, the reader's citation too: ~m w~ a page
@@ -1575,6 +1599,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =•=                        | marks the board says a link with              |
+| ~org-truss-board-quote-marks~  | =✓= =✗= =?=                    | marks of a quotation found, not, unchecked    |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
 |                                |                                | the same member or linked to it               |
 
