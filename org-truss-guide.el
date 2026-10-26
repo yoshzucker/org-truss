@@ -82,7 +82,7 @@ The four parts (told apart by TRUSS_PART; filled from the top)
     each, its reasons under it (TRUSS_LOGIC: reasons) pointing to the
     facts.  Action is steps, and points to the claim it follows from; a
     step has a TRUSS_LOGIC of its own only for reasons of its own
-  - Structure: sky-rain-umbrella, its headings ~[[truss-include:m1]]~
+  - Structure: sky-rain-umbrella, its items ~[[truss-include:m1]]~
     (Situation), m2 (Interpretation) and m3 (Action), each that member
     there: its words are the output document's heading
   For a document of another form, change the patterns of Message and
@@ -120,7 +120,8 @@ Writing
       # [[#m2]]
       Text
     #+end_example
-  A pattern of one role -- reasons, steps, parts -- needs no role written.
+  A pattern of one role -- reasons, steps, parts -- has no role written:
+  what is under it plays it, and a heading there needs no properties.
   An item's first line is its words, the lines under it its text; a list
   marked #+attr_truss inside it holds its supporting members
 
@@ -278,7 +279,7 @@ M-x org-truss-export で、OUT/ に書き出す。
     一つずつ書き、その下に理由（TRUSS_LOGIC: reasons）を置いて事実を指す。
     Action は steps で、それが従う主張は Action が指す。その手順だけの
     理由がある手順にだけ、TRUSS_LOGIC を付ける
-  - Structure：sky-rain-umbrella。見出しは ~[[truss-include:m1]]~
+  - Structure：sky-rain-umbrella。項目は ~[[truss-include:m1]]~
     （Situation）、m2（Interpretation）、m3（Action）で、それぞれその部材
     そのものになる。その言葉が出力文書の見出しになる
   別の形の文書にするときは、Message と Structure の型を替える。事実は
@@ -312,7 +313,8 @@ M-x org-truss-export で、OUT/ に書き出す。
       # [[#m2]]
       本文
     #+end_example
-  役が一つの型（reasons、steps、parts）では、役を書かなくてよい。項目の
+  役が一つの型（reasons、steps、parts）では、役を書かない。下にある部材
+  がその役を担うので、見出しにもプロパティは要らない。項目の
   1行目が言葉、その下が本文。中に #+attr_truss の箇条書きがあれば、それ
   がその項目の支持部材になる
 
@@ -601,7 +603,9 @@ NAME is the part or the role it is written for, WORDS its words, PROPS
 the properties it opens with, as (PROPERTY . VALUE).  SPEC, as
 `org-truss-new-parts' gives one, says its patterns and what is written
 under it: a supporting member for each role, as items when all are end
-members, else as headings.  IDS holds, in its car, the IDs of
+members, or members of a telling that are include links alone, which
+are headings of the output document all the same; else as headings.
+IDS holds, in its car, the IDs of
 `org-truss--new-ids' not yet given: the first member written for a name
 takes its ID, and is taken off."
   (let* ((id (assq name (car ids)))
@@ -616,6 +620,12 @@ takes its ID, and is taken off."
                                       (cdr roles)))
                               roles)))
                   patterns))
+         (item-p (lambda (s)
+                   (let ((spec (nth 2 s)))
+                     (or (null spec)
+                         (and (eq (nth 0 s) 'telling)
+                              (plist-get spec :include) (= (length spec) 2))))))
+         (link (lambda (name) (org-truss--include-link (or (alist-get name (cdr ids)) name))))
          (props (append (and id (list (cons "CUSTOM_ID" (cdr id))))
                         props
                         (mapcar (lambda (pattern)
@@ -626,16 +636,14 @@ takes its ID, and is taken off."
       (setcar ids (delq id (car ids))))
     (concat
      (format "%s %s\n" (make-string level ?*)
-             (if include
-                 (org-truss--include-link (or (alist-get include (cdr ids)) include))
-               words))
+             (if include (funcall link include) words))
      (if props
          (format ":PROPERTIES:\n%s:END:\n"
                  (mapconcat (lambda (p) (format ":%s: %s\n" (car p) (cdr p))) props ""))
        "")
      "\n"
      (cond ((null supports) "")
-           ((seq-every-p (lambda (s) (null (nth 2 s))) supports)
+           ((seq-every-p item-p supports)
             (let ((n 0))
               (concat
                "#+attr_truss:\n"
@@ -647,7 +655,10 @@ takes its ID, and is taken off."
                               (format "%s%s%s\n"
                                       (if numbered (format "%d. " (setq n (1+ n))) "- ")
                                       (if (nth 3 s) (format "%s :: " (nth 1 s)) "")
-                                      (org-truss-role-name (nth 1 s)))))
+                                      (let ((include (plist-get (nth 2 s) :include)))
+                                        (if include
+                                            (funcall link include)
+                                          (org-truss-role-name (nth 1 s)))))))
                           supports "")
                "\n")))
            (t

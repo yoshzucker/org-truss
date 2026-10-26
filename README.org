@@ -329,9 +329,11 @@ We would meet half as often.
 - The term before ~::~ is the role an item plays, by its English name, as
   in ~TRUSS_BREAKDOWN_ROLE~; a term that names no role is part of the
   item's words.
-- A pattern of one role -- ~reasons~, ~steps~, ~parts~ -- needs no role
+- A pattern of one role -- ~reasons~, ~steps~, ~parts~ -- has no role
   written: every item plays it with a term or none, and every heading
-  whose property names no role of its kind.
+  whose property names no role of its kind.  So a heading under it that
+  is an include link alone, or a fact tagged ~:assumption:~, needs no
+  properties, and the board writes none.
 - An item's first line is its words, as a heading's are; the lines under
   it are its text, a comment left out; a list marked so inside it holds
   its supporting members.  A list not marked stays text, the include links
@@ -716,18 +718,10 @@ We assume most items need more than a week to change.
 :TRUSS_PART: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
-,** [[truss-include:m1]]
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: sky
-:END:
-,** [[truss-include:m5]]
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: rain
-:END:
-,** [[truss-include:m7]]
-:PROPERTIES:
-:TRUSS_TELLING_ROLE: umbrella
-:END:
+,#+attr_truss:
+- sky :: [[truss-include:m1]]
+- rain :: [[truss-include:m5]]
+- umbrella :: [[truss-include:m7]]
 #+end_src
 
 Subject holds the facts, a truss for each source, and nothing else: what
@@ -736,7 +730,8 @@ links.  Message tells them first, in its Situation, which includes each
 source's truss whole: the reader is told what the calendar and the
 agendas say before what is made of them.  The words of Situation,
 Interpretation and Action are the output document's headings, since
-Structure includes each as a heading.  /Half
+Structure tells each, and a telling's members are headings, written as
+items as they are here.  /Half
 the items repeat/ is one simple truss in one heading: the claim, its
 reasons as items.  /Items need a week to move/ is a heading only because
 it is tagged.  Subject and Message are compound trusses, built of

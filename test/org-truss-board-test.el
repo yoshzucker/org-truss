@@ -1438,19 +1438,23 @@ missing role one playing it; on a section a member listed there."
 
 (ert-deftest org-truss-test-board-new-member-plays-its-role ()
   "c under a member with patterns writes the new member playing a role in
-each: the one a pattern has alone, without asking; else the one asked
-for.  Under a member with none, nothing is written but the member, and
-taking it back leaves the file as it was."
+each: the one a pattern has alone, without asking and without a term;
+else the one asked for.  Under a member with none, nothing is written
+but the member, and taking it back leaves the file as it was."
   (org-truss-test--with-board org-truss-test--file
     (let ((role (lambda (label kind)
                   (with-current-buffer source
-                    (org-entry-get (org-truss-test--heading-pos label) (org-truss-role-property kind))))))
+                    (org-entry-get (org-truss-test--heading-pos label) (org-truss-role-property kind)))))
+          (plays (lambda (label kind)
+                   (org-truss-member-role (org-truss-member-by-words (org-truss-read source) label) kind))))
       (org-truss-test--goto-member "Half the items repeat")
       (org-truss-test--creating '("Most agendas match")
-        (should (equal (funcall role "Most agendas match" 'logic) "reason")))
+        (should-not (funcall role "Most agendas match" 'logic))
+        (should (eq (funcall plays "Most agendas match" 'logic) 'reason)))
       (org-truss-test--goto-line-with "Reason \\[no grounds\\][ ·]+Some items are urgent")
       (org-truss-test--creating '("Releases cannot wait")
-        (should (equal (funcall role "Releases cannot wait" 'breakdown) "part")))
+        (should-not (funcall role "Releases cannot wait" 'breakdown))
+        (should (eq (funcall plays "Releases cannot wait" 'breakdown) 'part)))
       (org-truss-test--goto-member "Move to fortnightly")
       (org-truss-test--creating '("Our review repeats itself" "Minor premise")
         (should (equal (funcall role "Our review repeats itself" 'logic) "minor")))

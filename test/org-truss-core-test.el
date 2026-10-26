@@ -2476,7 +2476,9 @@ copied, not read."
   "A new file has its parts and members for their roles, their words in
 English whatever the language: facts in Subject; in Message, the facts
 told, what they mean and what to do; and Structure telling those in that
-order, each heading that member there.  End members are items.  The guide is in the
+order, each item that member there.  End members are items, and so are
+Structure's, include links alone, which its telling makes headings of
+the output document all the same.  The guide is in the
 language, in a drawer at its head, and only there.  Its first line keeps
 what is attached to its headings beside it, and the guide names the
 directories there."
@@ -2492,8 +2494,7 @@ directories there."
           (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries (lambda () (org-get-heading t t t t)))
                        '("Brief" "Subject" "Part" "Message" "Situation" "Interpretation" "Part" "Action"
-                         "Structure" "[[truss-include:m1]]" "[[truss-include:m2]]"
-                         "[[truss-include:m3]]")))
+                         "Structure")))
         (should (string-match-p (if (eq org-truss-language 'ja)
                                     "^:GUIDE:\nこの truss\\.org から出力文書を一つ作る。"
                                   "^:GUIDE:\nThis truss\\.org makes one output document\\.")
@@ -2532,6 +2533,9 @@ directories there."
             (should (eq (org-truss-member-pattern structure 'telling) 'sky-rain-umbrella))
             (should (equal (mapcar #'org-truss-member-includes (org-truss-member-supports structure))
                            '(("m1") ("m2") ("m3"))))
+            (should (seq-every-p #'org-truss-item-p (org-truss-member-supports structure)))
+            (should (equal (mapcar #'org-truss-member-roles (org-truss-member-supports structure))
+                           '(((telling . sky)) ((telling . rain)) ((telling . umbrella)))))
             (should (equal (mapcar (lambda (id) (org-truss-member-by-id model id)) '("m1" "m2" "m3"))
                            (list situation interpretation action)))))
         (let ((checks (org-truss-checks model)))

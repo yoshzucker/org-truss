@@ -281,12 +281,20 @@ order asked of its supporting members."
                     role)
       most-positive-fixnum))
 
+(defun org-truss--one-role-p (pos kind)
+  "Non-nil when the pattern of KIND of the heading at POS has one role.
+That role is played without a term: a heading under it names none."
+  (let ((roles (org-truss-pattern-roles
+                (org-truss--intern (org-entry-get pos (alist-get kind org-truss-pattern-properties))))))
+    (and roles (null (cdr roles)))))
+
 (defun org-truss-add-heading (parent words &optional props text)
   "Write a heading of WORDS, with PROPS and TEXT under it, under PARENT.
 PARENT is the position of any heading.  The new one goes where the
 patterns of PARENT list the roles its PROPS give it: before the first
 heading there that plays, in one of those patterns, a role listed after
-its own; or else last.  Return a marker at it."
+its own; or else last.  A role of a pattern of one role is not
+written; see `org-truss--one-role-p'.  Return a marker at it."
   (let* ((kinds (seq-filter (lambda (kind) (assoc (org-truss-role-property kind) props))
                             org-truss-pattern-kinds))
          (rank (lambda (kind role) (org-truss--rank parent kind role)))
@@ -298,7 +306,13 @@ its own; or else last.  Return a marker at it."
                                            (and theirs (> (funcall rank kind theirs)
                                                           (funcall rank kind (funcall own kind))))))
                                        kinds))
-                           (org-truss--child-headings parent))))
+                           (org-truss--child-headings parent)))
+         (written (seq-remove (lambda (prop)
+                                (seq-some (lambda (kind)
+                                            (and (equal (car prop) (org-truss-role-property kind))
+                                                 (org-truss--one-role-p parent kind)))
+                                          kinds))
+                              props)))
     (save-excursion
       (if before
           (goto-char before)
@@ -307,7 +321,7 @@ its own; or else last.  Return a marker at it."
         (unless (bolp) (insert "\n")))
       (let ((at (point-marker)))
         (insert (make-string (1+ (org-truss--level parent)) ?*) " " words "\n"
-                (org-truss--drawer props) (or text "") "\n")
+                (org-truss--drawer written) (or text "") "\n")
         at))))
 
 (defun org-truss-add-member (parent words &optional roles)
