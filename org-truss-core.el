@@ -1130,13 +1130,15 @@ Its words, and its text.  Nil when it is tagged :noexport:."
   "Non-nil when MEMBER is an end member: it has no pattern."
   (not (org-truss-apex-p member)))
 
-(defun org-truss-truss-shape (member)
+(defun org-truss-truss-shape (model member)
   "Return the truss MEMBER is the apex member of: `simple', `compound', or nil.
 A simple truss has only end members as its supporting members; a compound
 truss, an apex member among them.  A supporting member that is an include
-link alone is an end member there, whatever the member it includes."
+link alone is the member of MODEL it includes; see
+`org-truss-member-itself'."
   (and (org-truss-apex-p member)
-       (if (seq-some #'org-truss-apex-p (org-truss-member-supports member))
+       (if (seq-some (lambda (s) (org-truss-apex-p (org-truss-member-itself model s)))
+                     (org-truss-member-supports member))
            'compound
          'simple)))
 
@@ -1238,6 +1240,28 @@ In the output document, as a `numbered' or `bulleted' list: the :list of
 the first of its patterns that has one."
   (seq-some (lambda (id) (plist-get (org-truss-pattern id) :list))
             (org-truss-member-patterns member)))
+
+(defun org-truss-split-supports (model member)
+  "Return (ITEMS . HEADINGS) when MEMBER's supporting members are written apart.
+How many of them are written as items, how many as headings, one tagged
+:noexport: left out, where MEMBER of MODEL is the apex of a compound
+truss whose pattern lists them: the output document writes them as the
+file does, a list and headings a level down, and the reader does not
+see they stand side by side.  Nil where they are written alike, or are
+written alike whatever the file does."
+  (when (and (org-truss-list-form member)
+             (eq (org-truss-truss-shape model member) 'compound))
+    (let* ((supports (seq-remove #'org-truss-noexport-p (org-truss-member-supports member)))
+           (items (seq-count #'org-truss-item-p supports))
+           (headings (- (length supports) items)))
+      (and (> items 0) (> headings 0) (cons items headings)))))
+
+(defun org-truss-split-text (entry)
+  "Return what the board and the report say of ENTRY, (MEMBER ITEMS . HEADINGS)."
+  (let ((items (cadr entry))
+        (headings (cddr entry)))
+    (format "written as %d item%s and %d heading%s"
+            items (if (= items 1) "" "s") headings (if (= headings 1) "" "s"))))
 
 (defun org-truss-labelling-role (member support)
   "Return the role SUPPORT plays in a pattern of MEMBER that labels it, or nil.
@@ -1512,6 +1536,15 @@ its apex member and every member under it.  Nil for one source or none."
 (defun org-truss-include-alone-p (member)
   "Non-nil when MEMBER's words are an include link alone: it is that member."
   (string-match-p (concat "\\`" org-truss--include-re "\\'") (org-truss-member-words member)))
+
+(defun org-truss-member-itself (model member)
+  "Return the member of MODEL that MEMBER is.
+The member it includes, when its words are an include link alone to one
+there; else MEMBER.  The role it plays and where it is written, as a
+heading or an item, are its own."
+  (or (and (org-truss-include-alone-p member)
+           (org-truss-member-by-id model (car (org-truss--includes-in (org-truss-member-words member)))))
+      member))
 
 (defun org-truss-stood-on (member)
   "Return the IDs of the members MEMBER stands on, each once, in order.
@@ -1843,6 +1876,9 @@ member whose pattern asks, at the member that lacks, at the link.
 :no-relation     members with members right under them and no pattern,
                  or members included in their text; see
                  `org-truss-no-relation-p'
+:split           (MEMBER ITEMS . HEADINGS) for apex members whose
+                 supporting members are written apart, some as items, some
+                 as headings; see `org-truss-split-supports'
 :out-of-order    (SUPPORT . ABOVE) for supporting members the file has
                  below one the telling pattern tells after them
 :no-grounds      members that must have grounds and have none; see
@@ -1898,6 +1934,10 @@ member whose pattern asks, at the member that lacks, at the link.
                                         (org-truss-no-pattern m)))
                               members)
           :no-relation (seq-filter #'org-truss-no-relation-p members)
+          :split (delq nil (mapcar (lambda (m)
+                                     (let ((split (org-truss-split-supports model m)))
+                                       (and split (cons m split))))
+                                   members))
           :out-of-order (mapcan #'org-truss-out-of-order members)
           :no-grounds (seq-filter (lambda (m) (org-truss-missing-grounds model m)) members)
           :weak-grounds (funcall each (lambda (m) (org-truss-weak-grounds model m)))
@@ -1965,6 +2005,8 @@ member whose pattern asks, at the member that lacks, at the link.
      . "members that play a role, in TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE or before ::, while the member right above has no pattern of that kind: give it the pattern the role belongs to, or take the role off")
     ("No relation"
      . "members with members right under them and no pattern, or with include links in their text: nothing says what those are to them, so whether they hold together cannot be checked; give them a TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING, in a property or in the list's #+attr_truss, its items then members of it")
+    ("Items and headings"
+     . "apex members of a compound truss whose pattern lists them, with supporting members written some as items of a list, some as headings: the output document writes them so, a list and headings a level down, and the reader does not see they stand side by side; write them all as items, nesting lists, or all as headings -- an include link alone can be either, - [[truss-include:m7]] or *** [[truss-include:m7]]")
     ("Out of order"
      . "supporting members the file has below one that the TRUSS_TELLING of their apex member tells after them; the output document follows the file, so move them there")
     ("Words to write"
@@ -2141,6 +2183,9 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
            (cons "No relation"
                  (mapcar (lambda (m) (funcall member-line m org-truss-no-relation-text))
                          (plist-get checks :no-relation)))
+           (cons "Items and headings"
+                 (mapcar (lambda (e) (funcall member-line (car e) (org-truss-split-text e)))
+                         (plist-get checks :split)))
            (cons "Out of order"
                  (mapcar (lambda (o)
                            (funcall member-line (car o)

@@ -130,7 +130,7 @@ are written as headings or as items of a list."
 Nil when it has none."
   (let ((label (org-truss-patterns-label member)))
     (and label
-         (concat (alist-get (org-truss-truss-shape member) org-truss-board-truss-marks "")
+         (concat (alist-get (org-truss-truss-shape org-truss--model member) org-truss-board-truss-marks "")
                  (format " (%s)" label)))))
 
 (defcustom org-truss-board-fold-limit 0
@@ -1455,6 +1455,9 @@ finds it, as `org-truss-check-descriptions' names them."
            (org-truss--check-group
             model "No relation" (funcall in (mapcar #'list (plist-get checks :no-relation)))
             (lambda (_) org-truss-no-relation-text))
+           (org-truss--check-group
+            model "Items and headings" (funcall in (plist-get checks :split))
+            #'org-truss-split-text)
            (org-truss--check-group
             model "Out of order" (funcall in (plist-get checks :out-of-order))
             (lambda (e) (format "below %s" (org-truss-member-words (cdr e)))))

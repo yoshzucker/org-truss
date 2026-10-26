@@ -288,11 +288,16 @@ member's text.  Two rules say which:
    - Except: an end member tagged ~:assumption:~ or ~:noexport:~ is a
      heading under it (only a heading takes tags), after the end members
      written as items.
-2. A compound truss is built of headings: each supporting member that is
-   an apex member is a heading under it.
+2. A compound truss is built of headings: each supporting member is a
+   heading under it, its end members too.  One that is an include link
+   alone, ~*** [[truss-include:m7]]~, is m7 there, an apex member when m7
+   is one.
    - Except: when its text goes on after or between the trusses in it,
-     nest lists in the items instead -- Org has no text of a heading
-     after the headings under it.
+     nest lists in the items instead, all of them -- Org has no text of a
+     heading after the headings under it.
+   - Except: a ~TRUSS_TELLING~ truss's supporting members are headings
+     of the output document however they are written, so they can be
+     items, ~- sky :: [[truss-include:m1]]~, if that reads lighter.
 
 Where the two leave it open, keep in one heading a truss checked at once
 -- the facts of one source, a claim and its reasons -- and make a heading
@@ -522,7 +527,7 @@ shows what it reads.
 
 ** What is left to do
 
-Fifteen checks, each found where the problem is:
+Sixteen checks, each found where the problem is:
 
 | Check                | Found at                   | What it finds                                                                                                                           |
 |----------------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -530,6 +535,7 @@ Fifteen checks, each found where the problem is:
 | No role              | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                 |
 | No pattern           | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                        |
 | No relation          | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the parts and Structure as any   |
+| Items and headings   | the apex member            | of a compound truss its pattern lists, its supporting members written some as items, some as headings: write them all one way           |
 | Out of order         | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
 | No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
 | Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
@@ -1174,7 +1180,7 @@ down Structure.
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Grounds
 set low/, /Mixed sources/, /Sources in Situation/, /Said again/, /Not a heading/, /Missing roles/, /No role/, /No
-pattern/, /No relation/, /Out of order/, /Words to write/ (see
+pattern/, /No relation/, /Items and headings/, /Out of order/, /Words to write/ (see
 [[*What is left to do]]) -- each thing listed in the part it is found in,
 and ~RET~ on it goes there.  The mouse on the name of a check says what it
 finds.
@@ -1540,7 +1546,13 @@ Structure is in it, and the trusses and members its include links reach.
   those written as headings, after it, are headings a level down, numbered
   on in a numbered list, /2. Ask them/, and opened with their role as an
   item is.  So a simple truss is a list under its heading, and a compound
-  truss headings over theirs; no level is worked out from below.
+  truss headings over theirs; no level is worked out from below.  A
+  supporting member that is an include link alone is the member it
+  includes here too: a heading including the facts of a source,
+  ~*** [[truss-include:m20]]~, makes its truss compound, and is a
+  heading, the facts a list under it.  Written some as items and some as headings, the
+  supporting members of one truss would not read as side by side; /Items
+  and headings/ finds them.
 - A member written as an item stands where its list stands in its apex
   member's text: text after the list follows it, and the members written
   as headings come last, on the last list when no text follows it.  Where

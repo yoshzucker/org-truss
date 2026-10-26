@@ -1461,6 +1461,52 @@ facts of different sources are brought together by pointing to them."
       (should (string-match-p ":[0-9]+: Nothing urgent waits -- used in 1 place, on 1 ground$"
                               (org-truss-check-report model))))))
 
+(ert-deftest org-truss-test-checks-items-and-headings ()
+  "A compound truss whose pattern lists its supporting members, written
+some as items and some as headings, is found; a simple truss's are one
+list whatever the file does, and so are not."
+  (org-truss-test--with "#+title: T
+* Message
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Do it
+:PROPERTIES:
+:TRUSS_BREAKDOWN: steps
+:END:
+#+attr_truss:
+1. Book a room
+*** Ask them
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: step
+:TRUSS_BREAKDOWN: steps
+:END:
+#+attr_truss:
+1. Write
+2. Send
+** Why
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+#+attr_truss:
+- It is cheap
+  # [[#m9]]
+*** It is quick                                                :assumption:
+:PROPERTIES:
+:TRUSS_LOGIC_ROLE: reason
+:END:
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+"
+    (let ((model (org-truss-read)))
+      (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
+                             (plist-get (org-truss-checks model) :split))
+                     '(("Do it" 1 . 1))))
+      (should (string-match-p "^Items and headings -- .*\n.*:[0-9]+: Do it -- written as 1 item and 1 heading$"
+                              (org-truss-check-report model))))))
+
 (ert-deftest org-truss-test-checks-claims-used-by-including-above ()
   (org-truss-test--with (replace-regexp-in-string
                          "- \\[\\[truss-include:m0\\]\\]\n" "- [[truss-include:i]]\n"
@@ -1985,23 +2031,25 @@ under no source.  A file with no Situation is asked nothing."
 (ert-deftest org-truss-test-truss-shape ()
   "An apex member whose supporting members are all end members is the
 apex of a simple truss; one with an apex member among them, of a compound
-truss.  A supporting member that is an include link alone is an end
-member, and a member with no pattern is no apex member."
+truss.  A supporting member that is an include link alone is the member
+it includes, and a member with no pattern is no apex member."
   (org-truss-test--with org-truss-test--items-file
     (let ((model (org-truss-read)))
-      (should (eq (org-truss-truss-shape (org-truss-test--m model "We move to fortnightly reviews"))
+      (should (eq (org-truss-truss-shape model (org-truss-test--m model "We move to fortnightly reviews"))
                   'compound))
-      (should (eq (org-truss-truss-shape (org-truss-test--m model "Items wait longer")) 'simple))
-      (should-not (org-truss-truss-shape (org-truss-test--m model "Six of twelve items come back")))))
+      (should (eq (org-truss-truss-shape model (org-truss-test--m model "Items wait longer")) 'simple))
+      (should-not (org-truss-truss-shape model (org-truss-test--m model "Six of twelve items come back")))))
   (org-truss-test--with org-truss-test--part-items-file
     (let* ((model (org-truss-read))
            (umbrella (car (last (butlast (org-truss-member-supports (org-truss-model-structure model)))))))
-      (should (eq (org-truss-truss-shape (org-truss-model-brief model)) 'simple))
+      (should (eq (org-truss-truss-shape model (org-truss-model-brief model)) 'simple))
       (should (equal (org-truss-member-words umbrella) "[[truss-include:m1]]"))
-      (should (eq (org-truss-truss-shape (org-truss-model-structure model)) 'simple))
-      (should (eq (org-truss-truss-shape (org-truss-model-message model)) nil))))
+      ;; Umbrella includes m1, the apex member of a truss of reasons.
+      (should (eq (org-truss-truss-shape model (org-truss-model-structure model)) 'compound))
+      (should (eq (org-truss-truss-shape model (org-truss-model-message model)) nil))))
   (org-truss-test--with org-truss-test--clusters-file
-    (should (eq (org-truss-truss-shape (org-truss-model-subject (org-truss-read))) 'simple))))
+    (let ((model (org-truss-read)))
+      (should (eq (org-truss-truss-shape model (org-truss-model-subject model)) 'simple)))))
 
 (ert-deftest org-truss-test-items-take-ids-and-grounds ()
   "An item is given a target where its words start, the next id free among

@@ -95,11 +95,16 @@ Writing
      - Except: an end member tagged :assumption: or :noexport: is a heading
        under it (only a heading takes tags), after the end members written
        as items
-  2  A compound truss is built of headings: each supporting member that is
-     an apex member is a heading under it.
+  2  A compound truss is built of headings: each supporting member is a
+     heading under it, its end members too.  One that is an include link
+     alone is the member it includes: an apex member there, when that is
+     one.
      - Except: when its text goes on after or between the trusses in it,
-       nest lists in the items instead -- Org has no text of a heading
-       after the headings under it
+       nest lists in the items instead, all of them -- Org has no text of
+       a heading after the headings under it
+     - Except: a TRUSS_TELLING truss's supporting members are headings of
+       the output document however they are written, so write them as
+       items, if you like: ~- sky :: [[truss-include:m1]]~
   Where 1 and 2 leave it open, keep in one heading a truss checked at once
   -- the facts of one source, a claim and its reasons -- and make a heading
   of a member pointed to from several places, to be found easily
@@ -209,8 +214,10 @@ In the output document
     truss (numbered for steps), headings in a TRUSS_TELLING truss.  Where
     the pattern names its roles, each opens with its role (\"Pros: \")
   - in a compound truss, the supporting members written as headings are
-    headings, after the list of those written as items: the output
-    document is in the shape of the file, written by 1 and 2
+    headings, and those written as items a list: the output document is
+    in the shape of the file, written by 1 and 2.  Written some one way
+    and some the other, they would not read as side by side; the check
+    Items and headings finds them
   - a member written as an item stands where its list stands
   - a pointing link is m7's words (its description, if it has one); a
     moor: link, where the source came from.  The first link to a source,
@@ -283,10 +290,15 @@ M-x org-truss-export で、OUT/ に書き出す。
      は本文の箇条書きに書く。
      - 例外として、:assumption: か :noexport: を付ける末端部材は子の見出し
        にする（タグは見出しにしか付かない）。項目の末端部材より後に並ぶ
-  2  複合トラスは見出しで組む。支持部材のうち頂点部材であるものは、
-     それぞれ子の見出しにする。
-     - 例外として、中のトラスの後ろや間に本文を続けるときは、項目の中に
-       箇条書きを入れ子にする（子の見出しの後ろには、親の本文を書けない）
+  2  複合トラスは見出しで組む。支持部材は末端部材も含めて、それぞれ子の
+     見出しにする。展開リンクだけの部材は展開先の部材そのものなので、
+     展開先が頂点部材なら、そこでも頂点部材になる
+     - 例外として、中のトラスの後ろや間に本文を続けるときは、すべて項目
+       にして箇条書きを入れ子にする（子の見出しの後ろには、親の本文を書
+       けない）
+     - 例外として、TRUSS_TELLING のトラスの支持部材は、どう書いても出力
+       文書では見出しになるので、項目で書いてもよい（
+       ~- sky :: [[truss-include:m1]]~ ）
   1 と 2 で決まらないときは、一度に確かめるトラス（一つの資料の事実、一つ
   の主張とその理由）を同じ見出しに置く。いくつかの場所から指される部材は、
   見出しにすると探しやすい
@@ -385,8 +397,9 @@ M-x org-truss-export で、OUT/ に書き出す。
   - 支持部材は、TRUSS_LOGIC と TRUSS_BREAKDOWN のトラスなら箇条書き
     （steps は番号付き）、TRUSS_TELLING のトラスなら見出しで出る。役の
     名前を出す型では、役の名前から始まる（pros なら「メリット：」）
-  - 複合トラスでは、見出しに書いた支持部材は、項目に書いた支持部材の
-    箇条書きの後に、見出しで出る。書き方の 1 と 2 で書いた形のまま出る
+  - 複合トラスでは、見出しに書いた支持部材は見出しで、項目に書いた支持
+    部材は箇条書きで出る。書き方の 1 と 2 で書いた形のまま出る。両方が
+    混ざると並んだ部材に読めないので、Items and headings の検査で見つかる
   - 項目の部材は、箇条書きのあった場所に出る
   - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料の
     取り込み元になる。場所だけで名指した、その資料への最初のリンクには、

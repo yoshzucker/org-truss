@@ -184,7 +184,7 @@ is written.  SUPPORTS, if given, are those of them to write."
            (org-truss--supports-list member supports))
           ((not (org-truss-list-form member))
            (org-truss--supports-headings member supports level))
-          ((eq (org-truss-truss-shape member) 'compound)
+          ((eq (org-truss-truss-shape org-truss--model member) 'compound)
            (let ((items (seq-filter #'org-truss-item-p supports)))
              (org-truss--join
               (list (org-truss--supports-list member items)
@@ -204,7 +204,7 @@ level, which it writes as a list, are not told apart."
   (unless (org-truss-noexport-p support)
     (let* ((supports (seq-remove #'org-truss-noexport-p (org-truss-member-supports apex)))
            (form (org-truss-list-form apex))
-           (compound (eq (org-truss-truss-shape apex) 'compound))
+           (compound (eq (org-truss-truss-shape org-truss--model apex) 'compound))
            (listed-p (lambda (s) (or in-list (and form (or (not compound) (org-truss-item-p s))))))
            (items (seq-filter listed-p supports))
            (listed (funcall listed-p support)))

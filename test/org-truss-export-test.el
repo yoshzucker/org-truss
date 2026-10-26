@@ -679,6 +679,48 @@ a simple truss, a heading is an item."
                      "1\\. Write\n2\\. Send\n\n\\* Why\n\n- It is cheap\n")
              text))))
 
+(ert-deftest org-truss-test-render-include-alone-is-the-member ()
+  "A heading that is an include link alone is the member it includes: one
+including an apex member makes its truss compound, and it is a heading,
+the apex member's own supporting members under it as its pattern lists
+them.  Written as an item, it is an item, and all under it a list."
+  (let ((file "#+title: T
+* Subject
+:PROPERTIES:
+:TRUSS_PART: subject
+:TRUSS_BREAKDOWN: parts
+:END:
+** The minutes
+:PROPERTIES:
+:CUSTOM_ID: m1
+:TRUSS_BREAKDOWN: parts
+:END:
+#+attr_truss:
+- Eight of twelve ran over
+* Message
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Where we are
+:PROPERTIES:
+:CUSTOM_ID: m2
+:TRUSS_BREAKDOWN: parts
+:END:
+*** [[truss-include:m1]]
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** [[truss-include:m2]]
+"))
+    (should (string-match-p "^\\* Where we are\n\n\\*\\* The minutes\n\n- Eight of twelve ran over\n"
+                            (org-truss-test--render file)))
+    (should (string-match-p "^\\* Where we are\n\n- The minutes\n\n  - Eight of twelve ran over\n"
+                            (org-truss-test--render
+                             (replace-regexp-in-string
+                              "^\\*\\*\\* \\[\\[truss-include:m1\\]\\]$" "#+attr_truss:\n- [[truss-include:m1]]"
+                              file))))))
+
 (provide 'org-truss-export-test)
 
 ;;; org-truss-export-test.el ends here
