@@ -134,6 +134,23 @@ Grounds
   Grounds on a comment line, ~# [[#m3]]~, are the file's alone; in the
   text, they are the output document's citation too
 
+Claims
+  Write Message from its end: what Brief's response asks for first, then
+  under it the claims the reader needs to be convinced of it
+  Make none of these; point to the fact or claim, or include it, instead
+  - a claim between a claim and the facts that, pointed to straight,
+    convince of it
+  - a claim that says a fact or another claim again
+  Make a claim a heading only when two or more members use it, by a
+  pointing or an include link, and it stands on two or more grounds.  One
+  used in one place is a reason, an item in the text of the member using
+  it
+  A claim is as wide as its grounds hold up, and no wider.  For example,
+  not \"every team\" from one team's minutes
+  Write so that the words of an apex member and its supporting members
+  (a heading, an item's first line) alone show its pattern holds.  Words
+  fit one line, about 60 columns
+
 Sources
   Write a truss to be checked against one source; the check sees to it
   - a parts truss: the links to sources in its end members' text point
@@ -265,6 +282,21 @@ M-x org-truss-export で、OUT/ に書き出す。
   根拠をコメント行 ~# [[#m3]]~ に書けばファイルの中だけのもの、本文に
   書けば出力文書での出典にもなる
 
+主張
+  Message は結論から書く。Brief の response が求めるものを先に書き、その
+  下に、読み手がそれに納得するのに要る主張を置く
+  次の主張は作らない。代わりに、その事実や主張を指すか展開する
+  - 事実を直に指せば納得できる主張とその事実のあいだに挟まれる別の主張
+  - 事実や別の主張を言い直す主張
+  主張を見出しにするのは、2か所以上から（指すリンクか展開リンクで）使わ
+  れ、2つ以上の根拠に立つときだけ。1か所でしか使わない主張は、使う部材の
+  本文に、理由の項目として書く
+  主張は、根拠が支える範囲いっぱいまで広げて書き、根拠が支えられない範囲
+  までは広げない。例えば、一つのチームの議事録から「どのチームも」とは
+  言わない
+  頂点部材と支持部材の言葉（見出し、項目なら1行目）だけを読んで、型が
+  成り立つことがわかるように書く。言葉は1行、全角30字ほどまでにする
+
 資料
   トラスは、一つの資料と突き合わせて確かめられるように書く。検査が確かめる
   - parts のトラス：末端部材の本文にある資料へのリンクが、一つの資料を
@@ -300,7 +332,7 @@ M-x org-truss-export で、OUT/ に書き出す。
   "The guide of a truss file, in English and Japanese.
 It holds the rules of the file, the same for whoever edits it -- a person,
 or a model working in the file: the words, the four parts, how members
-and trusses are written, grounds, sources, what is in the output
+and trusses are written, grounds, claims, sources, what is in the output
 document, and what goes in the directories beside it.  ORG-TRUSS-DIR and
 ORG-DOCK-DIR stand for where org-truss and org-dock are loaded from, FILE
 for `org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the

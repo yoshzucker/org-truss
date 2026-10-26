@@ -35,6 +35,15 @@ member, and the board says, at every point, which reasons have no
 grounds, which roles a pattern asks for that nothing plays, and what is
 taken as given.
 
+The way an argument is built here follows Paul Graham's bottom-up
+programming, carried from programs over to prose: Subject is the language
+the sources give, Message the words built up from it toward what the
+document has to say, written down from that end at once, and Structure
+the document written in them.  See Paul Graham, "Programming Bottom-Up"
+(1993), and /On Lisp/ (1993): 1.1 "Design by Evolution", 1.2
+"Programming Bottom-Up", 4.1 "Birth of a Utility", 4.2 "Invest in
+Abstraction" and 4.8 "Density".
+
 Nothing here needs a language model.  The file is meant to be filled by hand;
 a model can help fill it, but the structure is yours.
 
@@ -385,6 +394,38 @@ cited for is past what the file's structure can tell.
 The line between a fact and an assumption is whether you can say where it
 came from.
 
+** Claims
+
+Subject is written up from the sources; Message is written down from its
+end.  What Brief's response asks for comes first, and under it only the
+claims the reader needs to be convinced of it.  How many claims there are
+is then set by what the document has to say, not by how many facts were
+found.
+
+Two kinds of claim are not made: one between a claim and the facts that,
+pointed to straight, convince of it; and one that says a fact or another
+claim again.  The fact or claim is pointed to or included instead, not
+written again in other words.
+
+A claim is worth a heading when it saves more than it costs.  Standing on
+n grounds and used by k members, it is n + k links where pointing to the
+facts straight would be k × n.  So a claim is a heading when two or more
+members use it, by a pointing or an include link, and it stands on two or
+more grounds.  One used in one place is no heading but a reason, an item
+in the text of the member using it.
+
+A claim is as wide as its grounds hold up, and no wider.  Wider, it says
+what they do not -- /every team/ from one team's minutes -- or says
+nothing at all; narrower, it is the fact said again.
+
+The words of an apex member and its supporting members alone -- a
+heading, an item's first line -- show its pattern holds: a claim and the
+words of its reasons, read without their text, are enough to see the
+reasons bear it.  Trusting that each is held
+up by what is under it, a reader follows the document by its words, and
+each claim is checked on its own, against what is right under it.  Words
+fit one line, about 60 columns.
+
 ** One source at a time
 
 Write a truss to be checked against one source; the check sees to it.
@@ -489,9 +530,9 @@ Inside a repository it makes the directory a project apart from the rest.
 A ~:GUIDE:~ drawer at the head of ~truss.org~, before the first heading,
 holds the rules of the file, the same for whoever edits it, by hand, on
 the board, or as a language model working in the file: the words above,
-the four parts, how members and trusses are written, grounds, sources,
-what is in the output document, what goes in the directories beside it,
-and the command that checks the file.  Org folds it as it folds any
+the four parts, how members and trusses are written, grounds, claims,
+sources, what is in the output document, what goes in the directories
+beside it, and the command that checks the file.  Org folds it as it folds any
 drawer, out of the way of the parts, and ~TAB~ on it opens it to be read.
 Its example is in an example block, and its IDs, ~<<m21>>~ among them, are
 no member's: IDs are counted from the first heading.
