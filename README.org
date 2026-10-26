@@ -962,46 +962,47 @@ beside the logic each sentence rests on:
  ...
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ··········· →Subject Reviews run long, and the same items come back
+ ├ Sky ··········· →Subject       Reviews run long, and the same items come back
  │ ▲ (breakdown › parts)
- │ ├ Part ················· The calendar this quarter
+ │ ├ Part ·················       The calendar this quarter
  │ │ △ (breakdown › parts)
- │ │ ├ Part ··············· - Eight of twelve reviews ran past the hour
- │ │ │   ⏚ source ········· calendar export
- │ │ └ Part ··············· - The longest ran forty minutes over
- │ │     ⏚ source ········· calendar export
- │ └ Part ················· The agendas, weeks 1-12
+ │ │ ├ Part ··············· ×2    - Eight of twelve reviews ran past the hour
+ │ │ │   ⏚ source ·········       calendar export
+ │ │ └ Part ··············· ×2    - The longest ran forty minutes over
+ │ │     ⏚ source ·········       calendar export
+ │ └ Part ·················       The agendas, weeks 1-12
  │   △ (breakdown › parts)
- │   └ Part ··············· - Six of twelve items each week come back from the …
- │       ⏚ source ········· agendas, weeks 1-12
- ├ Rain ·········· →Message The weekly review costs the team more time than it …
+ │   └ Part ··············· ×2    - Six of twelve items each week come back fro…
+ │       ⏚ source ·········       agendas, weeks 1-12
+ ├ Rain ·········· →Message       The weekly review costs the team more time th…
  │ ▲ (breakdown › parts)
- │ ├ Part ················· The review takes longer than it is given
+ │ ├ Part ·················       The review takes longer than it is given
  │ │ △ (logic › reasons)
- │ │ ├ Reason ············· - Most weeks it runs past the hour
- │ │ │   ⏚ reason ·· [[m2]] Eight of twelve reviews ran past the hour
- │ │ └ Reason ············· - It can run forty minutes over
- │ │     ⏚ reason ·· [[m3]] The longest ran forty minutes over
- │ └ Part ················· Half the items repeat
+ │ │ ├ Reason ·············       - Most weeks it runs past the hour
+ │ │ │   ⏚ reason ·· [[m2]] ↑Sky  Eight of twelve reviews ran past the hour
+ │ │ └ Reason ·············       - It can run forty minutes over
+ │ │     ⏚ reason ·· [[m3]] ↑Sky  The longest ran forty minutes over
+ │ └ Part ················· ×2    Half the items repeat
  │   △ (logic › reasons)
- │   ├ Reason ············· - Half of each agenda is what was open the week bef…
- │   │   ⏚ reason ·· [[m4]] Six of twelve items each week come back from the we…
- │   ├ Reason [no grounds]  - Nothing urgent waits for the review
- │   └ Reason [assumed] ··· - Items need a week to move
- └ Umbrella ······ →Message Hold the review every other week
+ │   ├ Reason ·············       - Half of each agenda is what was open the we…
+ │   │   ⏚ reason ·· [[m4]] ↑Sky  Six of twelve items each week come back from …
+ │   ├ Reason [no grounds]        - Nothing urgent waits for the review
+ │   └ Reason [assumed] ···       - Items need a week to move
+ └ Umbrella ······ →Message       Hold the review every other week
    △ (breakdown › steps)
-   │ ⏚ reason ▸3 ·· [[#m6]] Half the items repeat
-   ├ Step ················· 1. Cancel every second review in the calendar
-   └ Step ················· 2. Carry what is still open to the next one
+   │ ⏚ reason ▸3 ·· [[#m6]] ↑Rain Half the items repeat
+   ├ Step ·················       1. Cancel every second review in the calendar
+   └ Step ·················       2. Carry what is still open to the next one
 #+end_example
 
 A member whose words are an include link alone -- Sky, Rain, Umbrella
 here, or a reason ~*** [[truss-include:m7]]~ -- is the member it
 includes, so its line stands for both, and what that member brings
 follows it, with no line of its own.  Sky brings the facts first, so the
-reasons' facts are one line each, their sources with them where Sky
-brought them; and m6, a part of m5, is one line where m7 stands on it.
-/same/ on such a line goes to where it was drawn in full.
+reasons' facts are one line each, =↑Sky=, their sources with them where
+Sky brought them, and there each says it is drawn twice, =×2=; m6, a
+part of m5, is one line where m7 stands on it, =↑Rain=.  /same/ on such
+a line goes to where it was drawn in full; see [[*Marks]].
 
 /order/ again opens them where they are written.  Point stays on the
 member it was on, where it is opened now; what was folded or unfolded by
@@ -1023,9 +1024,9 @@ just before its words, a member is named
 by its ID as the file names it: =#m9= where it is written, and =[[#m9]]=
 where an include link includes it.  So what Structure
 includes can be found where it is written, and a member under one a link
-calls, which is not called itself, has none.  Between the left and the
-words runs a thin column, which says how many use a member; see
-[[*Marks]].  After it, from one
+calls, which is not called itself, has none.  Opened as included, a thin
+column runs between the left and the words, saying where a member was
+drawn before, or how many use it; see [[*Marks]].  After it, from one
 column the same on every line, are the file's own words -- members'
 words, the title -- with dots leading to them, and links read as the
 reader reads them: a member whose words are an include link alone reads
@@ -1075,16 +1076,23 @@ member that includes it, a member of Structure or another: what the
 reader is shown, and where.  A member is drawn once, where it is
 written, and its line says little of its links:
 
-| Mark  | Where                                    | Says                                                                |
-|-------+------------------------------------------+---------------------------------------------------------------------|
-| =↥3=  | the thin column, before a member's words | three members stand on it or include it: links meet here            |
-| =⏚m7= | after a member's words                   | it stands on m7, which no member is, or which has no grounds itself |
+| Mark    | Where                                         | Says                                                                    |
+|---------+-----------------------------------------------+-------------------------------------------------------------------------|
+| =⏚m7=   | after a member's words                        | it stands on m7, which no member is, or which has no grounds itself     |
+| =×2=    | the thin column, as included, drawn in full   | two members of the chain stand on it or include it                      |
+| =↑Sky=  | the thin column, as included, drawn again     | drawn in full above, under Sky; here one line, folded                   |
 
-=↥= is drawn when two or more members use a member, since all of them
-stand or fall with it: check it against its sources before trusting
-what is built on it.  A member used once has none, and so does one not
-used at all.  The members a member stands on that hold are not named:
-opened as included, the board draws them below it; see /order/.  With
+Opened as included (/order/), the board draws what Structure stands on
+in one tree, and a member there may come again: a fact Sky tells that a
+reason in Rain stands on, a claim Rain tells that Umbrella's action
+follows from, one fact two reasons stand on.  Those are the logic's own
+shape, not faults -- what is said twice is caught by /Said again/ and
+/Grounds set low/ -- so the second time it is one line, folded, and
+the thin column says where it was read in full, =↑Sky=.  Where it is
+drawn in full, the column counts the members of the chain that use it,
+=×2=: they all stand or fall with it, so it is checked against its
+sources first.  The members a member stands on that hold are not named
+as written: opened as included, the board draws them below it.  With
 point on a line, the lines linked to it light up, one
 step either way: where each member it stands on is written, and each
 line standing on it or including it.  /same/ goes to them in turn.  An
@@ -1179,30 +1187,30 @@ where included, the board drawn whole is the output document, near
 enough, beside the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ·········· →Message The weekly review costs the team more time than it
- │                          gives back
+ ├ Rain ·········· →Message       The weekly review costs the team more time
+ │                                than it gives back
  │ ▲ (breakdown › parts)
- │ ├ Part ················· The review takes longer than it is given
+ │ ├ Part ·················       The review takes longer than it is given
  │ │ △ (logic › reasons)
- │ │ ├ Reason ············· - Most weeks it runs past the hour
- │ │ │   ⏚ reason ·· [[m2]] Eight of twelve reviews ran past the hour
- │ │ │     ⏚ source ······· calendar export
- │ │ └ Reason ············· - It can run forty minutes over
- │ │     ⏚ reason ·· [[m3]] The longest ran forty minutes over
- │ │       ⏚ source ······· calendar export
- │ └ Part ················· Half the items repeat
- │   △ (logic › reasons)    Half of each agenda repeats the week before.
- │   │                      # Robin keeps raising the same items.  Not something
- │   │                      # to put in writing.
- │   ├ Reason ············· - Half of each agenda is what was open the week
- │   │                        before
- │   │   ⏚ reason ·· [[m4]] Six of twelve items each week come back from the
- │   │                      week before
- │   │     ⏚ source ······· agendas, weeks 1-12
- │   ├ Reason [no grounds]  - Nothing urgent waits for the review
- │   └ Reason [assumed] ··· - Items need a week to move
- │                          We assume most items need more than a week to
- │                          change.
+ │ │ ├ Reason ·············       - Most weeks it runs past the hour
+ │ │ │   ⏚ reason ·· [[m2]] ↑Sky  Eight of twelve reviews ran past the hour
+ │ │ │     ⏚ source ·······       calendar export
+ │ │ └ Reason ·············       - It can run forty minutes over
+ │ │     ⏚ reason ·· [[m3]] ↑Sky  The longest ran forty minutes over
+ │ │       ⏚ source ·······       calendar export
+ │ └ Part ················· ×2    Half the items repeat
+ │   △ (logic › reasons)          Half of each agenda repeats the week before.
+ │   │                            # Robin keeps raising the same items.  Not
+ │   │                            # something to put in writing.
+ │   ├ Reason ·············       - Half of each agenda is what was open the
+ │   │                              week before
+ │   │   ⏚ reason ·· [[m4]] ↑Sky  Six of twelve items each week come back from
+ │   │                            the week before
+ │   │     ⏚ source ·······       agendas, weeks 1-12
+ │   ├ Reason [no grounds]        - Nothing urgent waits for the review
+ │   └ Reason [assumed] ···       - Items need a week to move
+ │                                We assume most items need more than a week to
+ │                                change.
 #+end_example
 
 A picture linked on a line of its own -- an attachment, or a file by a
@@ -1341,8 +1349,7 @@ member is grounds, as any ground is: opened as included, it is drawn
 under the reason, =• reason= or =⏚ reason=.  None is drawn there
 besides as a member included.  A reason whose words
 are the link, ~*** [[truss-include:m7]]~, is drawn as written, its role
-and m7's words.  Where m7 is written, the thin column counts the members
-built on it, =↥2=, when there are two or more.  In a member that is no
+and m7's words.  In a member that is no
 reason the link only includes, and is drawn as =• included=.
 
 A member keeps the words of its source with it, in a ~#+begin_quote~
@@ -1567,7 +1574,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-middle-width~ | ~nil~, the window's edge       | room for the file's words, cut short there    |
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
-| ~org-truss-board-marks~        | =⏚= =↥= =•=                    | marks the board says a link with              |
+| ~org-truss-board-marks~        | =⏚= =•=                        | marks the board says a link with              |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
 |                                |                                | the same member or linked to it               |
 

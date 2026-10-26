@@ -81,17 +81,15 @@ the column and no taller than this; elsewhere it is its file's name."
   :group 'org-truss)
 
 (defcustom org-truss-board-marks
-  '((ground . "⏚") (used . "↥") (includes . "•"))
+  '((ground . "⏚") (includes . "•"))
   "The marks the board says a link with, by what is at its other end.
 `ground', what a member stands on: on a line of its own under it, a
-source its text links to or the words it quotes, and after its words,
-before the ID of a member it stands on that no member has or that has
-no grounds itself; `used', before how many members use a member,
-standing on it or including it, in the thin column before its words,
-when two or more do; and `includes', on the line of a member the member
-above includes by its include link, [[truss-include:m7]].  One character
-each, as wide as a letter where the board is drawn, keeps the tree in
-line."
+source its text links to, the words it quotes or, drawn as included, a
+member it points to; and after its words, before the ID of a member it
+stands on that no member has or that has no grounds itself.
+`includes', on the line of a member the member above includes by its
+include link, [[truss-include:m7]].  One character each, as wide as a
+letter where the board is drawn, keeps the tree in line."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
@@ -218,7 +216,12 @@ Its words, then, are the line above's; see `org-truss--absorbed-lines'.")
 
 (defvar org-truss--shown nil
   "While Structure is drawn as included, the members drawn in it so far.
-A hash table.  One drawn again starts folded.")
+A hash table, from each to the name of the member of Structure it was
+drawn under, as `org-truss--where-label' gives it.  One drawn again
+starts folded, and says where it was drawn; see `org-truss--lane-text'.")
+
+(defvar org-truss--telling nil
+  "While Structure is drawn, the member of it being drawn, or nil.")
 
 ;;;; Drawing
 
@@ -254,10 +257,10 @@ ID is how a link to the member is written, [[#m9]], or the member itself
 is pointed to, #m9; see `org-truss--id-text'."
   (if id (append line (list :id (propertize id 'face 'org-truss-dim))) line))
 
-(defun org-truss--with-member (line member)
-  "Return LINE as the line of MEMBER where it is written, or LINE as it is.
-The thin column says how MEMBER is linked on it; see `org-truss--lanes'."
-  (if member (append line (list :member member)) line))
+(defun org-truss--with-lane (line lane)
+  "Return LINE with LANE in its thin column, or LINE as it is.
+See `org-truss--lane-text'."
+  (if lane (append line (list :lane lane)) line))
 
 (defun org-truss--id-text (member &optional id)
   "Return how the board names MEMBER by its ID, or nil.
@@ -623,7 +626,6 @@ ground, what a check lists."
 
 (defconst org-truss--mark-help
   '((ground . "Its grounds: what this member stands on, linked in its text")
-    (used . "Used: how many members stand on this member or include it")
     (includes . "Included by the member above: its include link, [[truss-include:id]], includes this member, and the output document has it here"))
   "What the mark of each kind of link says.")
 
@@ -659,36 +661,59 @@ As `org-truss--uses' has them."
   (let ((use (and org-truss--uses (gethash member org-truss--uses))))
     (seq-uniq (append (car use) (cdr use)))))
 
-(defun org-truss--used-text (member)
-  "Return what the thin column says of MEMBER: how many use it, ↥3, or nil.
-Nil when fewer than two do: one used by many is where the links meet,
-and wants checking before it is trusted, since all of them stand on it."
-  (let ((n (length (org-truss--users member))))
-    (and (> n 1) (concat (org-truss--mark-only 'used)
-                         (propertize (number-to-string n) 'face 'org-truss-dim)))))
-
 (defun org-truss--linked-to (model member)
   "Return the members MEMBER of MODEL stands on or includes, each once."
   (delq nil (mapcar (lambda (id) (org-truss-member-by-id model id))
                     (seq-uniq (append (org-truss-member-grounds member)
                                       (org-truss--included member))))))
 
+(defun org-truss--chain-uses (model member)
+  "Return how many places of the output document's chain draw MEMBER of MODEL.
+The members of Structure and those it brings, `org-truss--chained', that
+stand on it or include it, see `org-truss--users'; and the member it is
+under, when the chain has that one, which brings it as its own -- once,
+when that one stands on it too."
+  (let ((in-chain (lambda (m) (and m (or (org-truss-in-structure-p m)
+                                         (and org-truss--chained (gethash m org-truss--chained)))))))
+    (length (seq-uniq (seq-filter in-chain (cons (org-truss-parent model member)
+                                                 (org-truss--users member)))))))
+
+(defun org-truss--where-label (member)
+  "Return how the thin column names MEMBER of Structure, or Structure for nil.
+By the roles it plays, Sky; one that plays none, by its words cut short."
+  (cond ((null member) "Structure")
+        ((org-truss--role-names member))
+        (t (truncate-string-to-width (org-truss-member-words member) 10 nil nil "…"))))
+
+(defun org-truss--lane-text (model member before)
+  "Return what the thin column says of MEMBER of MODEL, drawn as included.
+In Structure's chain.  BEFORE, when it was drawn there before, names the
+member of Structure it was drawn in full under, ↑Sky: read there, it is
+one line here.
+Else, in how many places the chain draws it, ×2, when two or more: all
+of them stand on it, so it is checked first; see
+`org-truss--chain-uses'.  Nil when neither."
+  (if before
+      (propertize (concat "↑" before) 'face 'org-truss-dim
+                  'help-echo (format "Drawn in full above, under %s" before))
+    (let ((n (org-truss--chain-uses model member)))
+      (and (> n 1)
+           (propertize (format "×%d" n) 'face 'org-truss-dim
+                       'help-echo (format "Drawn in %d places of the output document's chain" n))))))
+
 (defun org-truss--lanes (lines)
   "Return what the thin column of each of LINES says, a string or nil.
-A member's line where it is written says how many use it, when two or
-more do; see `org-truss--used-text'."
-  (mapcar (lambda (line)
-            (let ((m (plist-get line :member)))
-              (and m (org-truss--used-text m))))
-          lines))
+See `org-truss--lane-text'."
+  (mapcar (lambda (line) (plist-get line :lane)) lines))
 
-(defun org-truss--lane-room (model)
-  "Return the width the thin column takes on MODEL's board, a space after it.
-0 when it says nothing; see `org-truss--lanes'."
-  (let ((widest (seq-reduce (lambda (widest m)
-                              (let ((text (org-truss--used-text m)))
-                                (if text (max widest (string-width text)) widest)))
-                            (org-truss-model-members model) 0)))
+(defun org-truss--lane-room (lines)
+  "Return the width the thin column takes for LINES, a space after it.
+As wide as the widest it says on them; 0 when it says nothing, as on a
+board drawn as written.  See `org-truss--lane-text'."
+  (let ((widest (seq-reduce (lambda (widest line)
+                              (let ((lane (plist-get line :lane)))
+                                (if lane (max widest (string-width lane)) widest)))
+                            lines 0)))
     (if (> widest 0) (1+ widest) 0)))
 
 (defun org-truss--linked-positions (model member &optional including)
@@ -945,7 +970,8 @@ its apex member's telling pattern tells after it is marked."
          ;; drawn there before, it starts folded.
          (chain (and in-structure (eq org-truss--order 'included)))
          (again (and chain org-truss--shown (gethash member org-truss--shown)))
-         (_ (and chain org-truss--shown (puthash member t org-truss--shown)))
+         (_ (and chain org-truss--shown (not again)
+                 (puthash member (org-truss--where-label org-truss--telling) org-truss--shown)))
          ;; One whose words are an include link alone is the member it
          ;; includes: its line stands for both, and what that member brings
          ;; follows it, once.
@@ -995,9 +1021,11 @@ its apex member's telling pattern tells after it is marked."
     (cons
      ;; Included from Structure, it names the member as the link does;
      ;; where it is written, by its ID.  Under a member included there,
-     ;; it is not linked to itself, and names nothing.  Where it is
-     ;; written, not under a link, the thin column says how it is linked.
-     (org-truss--with-member
+     ;; it is not linked to itself, and names nothing.  Drawn in Structure
+     ;; as included, the thin column says where it was drawn before, or
+     ;; how many use it -- the member it includes, when its words are an
+     ;; include link alone.
+     (org-truss--with-lane
       (org-truss--with-id
        (org-truss--line
         (concat indent
@@ -1020,7 +1048,9 @@ its apex member's telling pattern tells after it is marked."
                                   (and (or link ground (not in-structure))
                                        (org-truss--id-text member (or ground link)))))))
          (and ids (string-join ids " "))))
-      (and (eq (car key) 'member) member))
+      (and chain (if alone
+                     (org-truss--lane-text model (cdr alone) alone-again)
+                   (org-truss--lane-text model member again))))
      (append
        (org-truss--lines-under-words
         ;; Drawn without its line, its words are the line above's, broken
@@ -1162,6 +1192,7 @@ line; see `org-truss--absorbed-lines'."
          (inner (concat prefix (if last "  " "│ ")))
          (key (list 'structure path))
          (org-truss--whole (org-truss--whole-p key))
+         (org-truss--telling member)
          (included (eq org-truss--order 'included))
          (alone (and included (org-truss--alone-target model member)))
          (alone-again (and alone org-truss--shown (gethash (cdr alone) org-truss--shown)))
@@ -1207,7 +1238,7 @@ line; see `org-truss--absorbed-lines'."
                                        :names (org-truss--linked-positions model member (null includes))
                                        :folded (and (> nested 0) folded))))
     (append
-     (list (org-truss--with-member
+     (list (org-truss--with-lane
             (org-truss--with-id
              (org-truss--line (concat prefix (if last "└ " "├ ")
                                       (org-truss--role-word model member)
@@ -1217,7 +1248,7 @@ line; see `org-truss--absorbed-lines'."
                               note
                               (append item (and (not (string-empty-p why)) (list :why why))))
              (org-truss--parts-text model words))
-            member))
+            (and alone (org-truss--lane-text model (cdr alone) alone-again))))
      (org-truss--lines-under-words inner (cdr lines)
                                    (and org-truss--whole
                                         (org-truss--text-lines (org-truss-member-body member)
@@ -1386,8 +1417,7 @@ plays it."
          (item (list :type 'part :pos (org-truss-member-pos part)
                      :key (list 'part name) :part name)))
     (append
-     (list (org-truss--with-member (org-truss--part-line (capitalize (symbol-name name)) gloss item)
-                                   part))
+     (list (org-truss--part-line (capitalize (symbol-name name)) gloss item))
      (delq nil (list (org-truss--pattern-line part " " item)))
      (mapcan (lambda (m)
                (org-truss--member-lines model m "   " (list 'member (org-truss-member-words m))))
@@ -1412,10 +1442,8 @@ plays it."
          ;; Its text is the output document's opening, drawn whole as a
          ;; member's is.
          (let ((org-truss--whole (org-truss--whole-p (plist-get item :key))))
-           (cons (org-truss--with-member
-                  (org-truss--part-line "Structure" "the output document's outline"
-                                        (append item (list :fold (plist-get item :key) :nested 0)))
-                  root)
+           (cons (org-truss--part-line "Structure" "the output document's outline"
+                                       (append item (list :fold (plist-get item :key) :nested 0)))
                  (org-truss--lines-under-words
                   " " nil
                   (and org-truss--whole
@@ -1525,15 +1553,15 @@ see `org-truss--lanes'.  WIDTH is that of the window the board is drawn
 for: the middle has it from that column to its edge, and a line drawn
 whole is broken to fit; see `org-truss-board-middle-width'."
   (let* ((org-truss--uses (org-truss--member-uses model))
-         (org-truss--lane-width (org-truss--lane-room model))
          ;; Where the middle starts does not depend on what is drawn whole,
-         ;; so the drawing on one line each says.
-         (column (+ (org-truss--column
-                     (let ((org-truss--folding
-                            (mapcar (lambda (fold) (if (eq (cdr fold) 'whole) (cons (car fold) 'open) fold))
-                                    org-truss--folding)))
-                       (org-truss--board-lines model)))
-                    org-truss--lane-width))
+         ;; so the drawing on one line each says, and how wide the thin
+         ;; column is, by what it says there.
+         (one-line (let ((org-truss--folding
+                          (mapcar (lambda (fold) (if (eq (cdr fold) 'whole) (cons (car fold) 'open) fold))
+                                  org-truss--folding)))
+                     (org-truss--board-lines model)))
+         (org-truss--lane-width (org-truss--lane-room one-line))
+         (column (+ (org-truss--column one-line) org-truss--lane-width))
          (org-truss--middle-width
           (cond (org-truss-board-middle-width)
                 (width (max 20 (- width 1 column)))
