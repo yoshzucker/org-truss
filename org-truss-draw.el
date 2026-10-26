@@ -1034,16 +1034,18 @@ its apex member's telling pattern tells after it is marked."
          (seen (and chain (org-truss--seen member)))
          (_ (and chain (not seen) (org-truss--see member)))
          ;; One whose words are an include link alone is the member it
-         ;; includes: its line stands for both, and what that member brings
-         ;; follows it, once.
-         (stands-for (and chain (org-truss--stands-for model member)))
+         ;; includes: its line stands for both, and no line under it
+         ;; names that member again.  In Structure as included, what that
+         ;; member brings follows it, once.
+         (alone (org-truss--stands-for model member))
+         (stands-for (and chain alone))
          (stood-seen (and stands-for (org-truss--seen (cdr stands-for))))
          (brings (and stands-for (not stood-seen)))
          (grounds (and chain (remq (cdr stands-for) (org-truss--ground-members model member))))
          (supports (if in-structure
                        (org-truss-member-supports member)
                      (seq-remove #'org-truss--chained-p (org-truss-member-supports member))))
-         (includes (remove (car stands-for) (org-truss--included member)))
+         (includes (remove (car alone) (org-truss--included member)))
          (nested (+ (length (mapcan #'org-truss--subtree supports)) (length includes) (length grounds)
                     (if brings (org-truss--brought-count model (cdr stands-for)) 0)))
          ;; It is opened in one place, by the order the board is drawn
@@ -1132,7 +1134,7 @@ its apex member's telling pattern tells after it is marked."
                (org-truss--brought-lines model (cdr stands-for) under
                                          (list 'ground key (car stands-for)) nil (car stands-for)))
           (and full (org-truss--ground-members-lines model member grounds stem key))
-          (and (not folded) (org-truss--includes-lines model member stem key (car stands-for)))))
+          (and (not folded) (org-truss--includes-lines model member stem key (car alone)))))
        (let ((i 0))
          (mapcan (lambda (support)
                    ;; It opens as the output document has it: an item of a
@@ -1426,6 +1428,9 @@ finds it, as `org-truss-check-descriptions' names them."
            (org-truss--check-group
             model "Mixed sources" (funcall in (plist-get checks :mixed-sources))
             (lambda (e) (format "points into %s" (string-join (cdr e) ", "))))
+           (org-truss--check-group
+            model "Sources in Situation" (funcall in (plist-get checks :situation-sources))
+            #'org-truss-situation-sources-text)
            (org-truss--check-group
             model "Said again" (funcall in (plist-get checks :said-again))
             #'org-truss-said-again-text)

@@ -44,7 +44,7 @@ Words
     TRUSS_BREAKDOWN  a breakdown.  steps parts what-why-how pros-cons
                      short-long past-present-future 5w1h 6w1h
                      reader-question-response-constraints
-                     interpretation-action
+                     situation-interpretation-action
     TRUSS_TELLING    the order of telling.  prep sds scqa sky-rain-umbrella
   role            what one right under plays in the pattern above: reason,
                   who, sky
@@ -76,12 +76,14 @@ The four parts (told apart by TRUSS_PART; filled from the top)
   A new file is written in the basic form: facts, what they mean, what to
   do, told in that order.  Its words are to be written over
   - Subject: parts, a truss for each source.  Facts only
-  - Message: interpretation-action.  Interpretation is parts, a claim
+  - Message: situation-interpretation-action.  Situation is parts,
+    include links to the trusses of the sources whose facts the claims
+    stand on.  Interpretation is parts, a claim
     each, its reasons under it (TRUSS_LOGIC: reasons) pointing to the
     facts.  Action is steps, and points to the claim it follows from; a
     step has a TRUSS_LOGIC of its own only for reasons of its own
   - Structure: sky-rain-umbrella, its headings ~[[truss-include:m1]]~
-    (Subject), m2 (Interpretation) and m3 (Action), each that member
+    (Situation), m2 (Interpretation) and m3 (Action), each that member
     there: its words are the output document's heading
   For a document of another form, change the patterns of Message and
   Structure; the facts stay in Subject.  What each part, and each role of
@@ -238,7 +240,7 @@ M-x org-truss-export で、OUT/ に書き出す。
     TRUSS_BREAKDOWN  内訳。steps parts what-why-how pros-cons short-long
                      past-present-future 5w1h 6w1h
                      reader-question-response-constraints
-                     interpretation-action
+                     situation-interpretation-action
     TRUSS_TELLING    語る順。prep sds scqa sky-rain-umbrella
   役          すぐ下のものが、上の型の中で担うもの。reason、who、sky など
   部材        見出し一つか、#+attr_truss を付けた箇条書きの項目一つ
@@ -263,12 +265,14 @@ M-x org-truss-export で、OUT/ に書き出す。
   新しいファイルは基本形で書かれている。事実、その意味、することを、この
   順に語る。言葉は書き換える
   - Subject：parts。資料ごとにトラスを一つ作る。事実だけを書く
-  - Message：interpretation-action。Interpretation は parts で、主張を
+  - Message：situation-interpretation-action。Situation は parts で、
+    主張が立脚する事実を持つ資料のトラスへの展開リンクを置く。
+    Interpretation は parts で、主張を
     一つずつ書き、その下に理由（TRUSS_LOGIC: reasons）を置いて事実を指す。
     Action は steps で、それが従う主張は Action が指す。その手順だけの
     理由がある手順にだけ、TRUSS_LOGIC を付ける
   - Structure：sky-rain-umbrella。見出しは ~[[truss-include:m1]]~
-    （Subject）、m2（Interpretation）、m3（Action）で、それぞれその部材
+    （Situation）、m2（Interpretation）、m3（Action）で、それぞれその部材
     そのものになる。その言葉が出力文書の見出しになる
   別の形の文書にするときは、Message と Structure の型を替える。事実は
   Subject に置いたまま。それぞれの部と、Brief・Message の役が何を書く所か
@@ -445,6 +449,14 @@ facts under it."
 reasons under the claim."
      "事実がここで何を意味するか（解釈）と、何をするか（行動）。一文ずつ書き、
 主張の下に理由を置く。")
+    ((message situation)
+     "The sources the reader is shown first, each whole, to see the whole
+from before what is drawn from it.  Its supporting members are include
+links to the trusses of the sources whose facts the claims stand on, and
+no others.  Its words are the output document's heading."
+     "読み手に最初に示す資料。資料ごとにまるごと示し、そこから引き出すことの前に
+全体像をつかんでもらう。支持部材は、主張が立脚する事実を持つ資料のトラスへの
+展開リンクにし、それ以外は置かない。この言葉が出力文書の見出しになる。")
     ((message interpretation)
      "What the facts mean here.  A claim each, its reasons under it, pointing
 to the facts in Subject.  Its words are the output document's heading."

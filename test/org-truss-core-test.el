@@ -1143,7 +1143,7 @@ either language.  Those the output document does not tell are not asked."
   (org-truss-test--with (org-truss-skeleton "T")
     (let ((model (org-truss-read)))
       (should (equal (mapcar #'org-truss-member-words (plist-get (org-truss-checks model) :placeholders))
-                     '("Subject" "Part" "Part" "Interpretation" "Part" "Reason" "Action" "Step")))
+                     '("Situation" "Part" "Interpretation" "Part" "Reason" "Action" "Step")))
       (should (org-truss-placeholder-p (org-truss-model-structure model)))))
   (org-truss-test--with (replace-regexp-in-string
                          "^\\*\\* Interpretation$" "** 解釈"
@@ -1152,7 +1152,7 @@ either language.  Those the output document does not tell are not asked."
     (should (equal (mapcar #'org-truss-member-words
                            (seq-filter #'org-truss-member-roles
                                        (plist-get (org-truss-checks (org-truss-read)) :placeholders)))
-                   '("Part" "Part" "解釈" "Part" "Reason" "Step")))))
+                   '("Situation" "Part" "解釈" "Part" "Reason" "Step")))))
 
 (ert-deftest org-truss-test-grounds-in-the-text ()
   "A link in a heading's text to a member is grounds: it gives the heading
@@ -1389,7 +1389,7 @@ facts of different sources are brought together by pointing to them."
 * Message
 :PROPERTIES:
 :TRUSS_PART: message
-:TRUSS_BREAKDOWN: interpretation-action
+:TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
 ** Interpretation
 :PROPERTIES:
@@ -1896,18 +1896,91 @@ under it.  A section's other lists stay its text."
 
 (ert-deftest org-truss-test-no-relation ()
   "A member with members right under it and no pattern says no relation to
-them, and is found, a part as any member; one with a pattern in its
-property or in its list's #+attr_truss is not."
+them, and is found, a part as any member; so is one that includes
+members in its text, Where we are, saying nothing of what they are to
+it.  One with a pattern in its property or in its list's #+attr_truss,
+its items members of it, is not."
   (org-truss-test--with org-truss-test--part-items-file
     (let ((model (org-truss-read)))
-      (should (equal (plist-get (org-truss-checks model) :no-relation)
-                     (list (org-truss-model-message model))))
-      (should (string-match-p "^truss\\.org:[0-9]+: Message -- members under it, and no pattern saying what they are to it$"
+      (should (equal (mapcar #'org-truss-member-words (plist-get (org-truss-checks model) :no-relation))
+                     '("Message" "Where we are")))
+      (should (string-match-p "^truss\\.org:[0-9]+: Message -- members under it or included, and no pattern saying what they are to it$"
                               (org-truss-check-report model "truss.org")))))
   (org-truss-test--with (replace-regexp-in-string
-                         "#\\+attr_truss:\n- <<m1>>" "#+attr_truss: :breakdown parts\n- part :: <<m1>>"
-                         org-truss-test--part-items-file t t)
+                         "  - \\[\\[truss-include:m2\\]\\]" "  #+attr_truss: :breakdown parts\n  - [[truss-include:m2]]"
+                         (replace-regexp-in-string
+                          "#\\+attr_truss:\n- <<m1>>" "#+attr_truss: :breakdown parts\n- part :: <<m1>>"
+                          org-truss-test--part-items-file t t)
+                         t t)
     (should-not (plist-get (org-truss-checks (org-truss-read)) :no-relation))))
+
+(ert-deftest org-truss-test-situation-sources ()
+  "Situation includes the truss of each source with a fact the claims of
+Message stand on, and no other.  A source a claim stands on that it
+leaves out is found, one it includes that no claim stands on, and a fact
+it includes alone in place of its source -- but one taken as given and
+under no source.  A file with no Situation is asked nothing."
+  (org-truss-test--with "* S
+:PROPERTIES:
+:TRUSS_PART: subject
+:TRUSS_BREAKDOWN: parts
+:END:
+** Minutes
+:PROPERTIES:
+:CUSTOM_ID: s1
+:TRUSS_BREAKDOWN: parts
+:END:
+#+attr_truss:
+- <<f1>>Reviews run long
+** Agendas
+:PROPERTIES:
+:CUSTOM_ID: s2
+:TRUSS_BREAKDOWN: parts
+:END:
+#+attr_truss:
+- <<f2>>Items come back
+** Calendar
+:PROPERTIES:
+:CUSTOM_ID: s3
+:TRUSS_BREAKDOWN: parts
+:END:
+#+attr_truss:
+- <<f3>>Reviews are weekly
+* M
+:PROPERTIES:
+:TRUSS_PART: message
+:TRUSS_BREAKDOWN: situation-interpretation-action
+:END:
+** Where we are
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: situation
+:TRUSS_BREAKDOWN: parts
+:END:
+#+attr_truss:
+- [[truss-include:s1]]
+- [[truss-include:f2]]
+- [[truss-include:s3]]
+- [[truss-include:given]]
+** Given                                                        :assumption:
+:PROPERTIES:
+:CUSTOM_ID: given
+:END:
+** Reviews cost more than they give
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: interpretation
+:END:
+# [[f1]] [[f2]]
+"
+    (let ((model (org-truss-read)))
+      (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
+                             (plist-get (org-truss-checks model) :situation-sources))
+                     '(("Items come back" . fact) ("Agendas" . missing) ("Calendar" . unused))))
+      (should (string-match-p "^Sources in Situation -- .*\n.*:[0-9]+: Items come back -- Situation includes this alone: include its source's truss$"
+                              (org-truss-check-report model)))))
+  (org-truss-test--with (org-truss-skeleton "T")
+    (should-not (plist-get (org-truss-checks (org-truss-read)) :situation-sources)))
+  (org-truss-test--with org-truss-test--claims-file
+    (should-not (plist-get (org-truss-checks (org-truss-read)) :situation-sources))))
 
 (ert-deftest org-truss-test-truss-shape ()
   "An apex member whose supporting members are all end members is the
@@ -2353,9 +2426,9 @@ copied, not read."
 
 (ert-deftest org-truss-test-skeleton ()
   "A new file has its parts and members for their roles, their words in
-English whatever the language: facts in Subject, what they mean and what
-to do in Message, and Structure telling them in that order, each heading
-that member there.  End members are items.  The guide is in the
+English whatever the language: facts in Subject; in Message, the facts
+told, what they mean and what to do; and Structure telling those in that
+order, each heading that member there.  End members are items.  The guide is in the
 language, in a drawer at its head, and only there.  Its first line keeps
 what is attached to its headings beside it, and the guide names the
 directories there."
@@ -2370,7 +2443,7 @@ directories there."
         (dolist (dir '("^  sources/ " "^  notes/ " "^  attach/ " "^  out/ "))
           (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries (lambda () (org-get-heading t t t t)))
-                       '("Brief" "Subject" "Part" "Message" "Interpretation" "Part" "Action"
+                       '("Brief" "Subject" "Part" "Message" "Situation" "Interpretation" "Part" "Action"
                          "Structure" "[[truss-include:m1]]" "[[truss-include:m2]]"
                          "[[truss-include:m3]]")))
         (should (string-match-p (if (eq org-truss-language 'ja)
@@ -2384,7 +2457,7 @@ directories there."
                     'reader-question-response-constraints))
         (should (eq (org-truss-member-breakdown (org-truss-model-subject model)) 'parts))
         (should (eq (org-truss-member-breakdown (org-truss-model-message model))
-                    'interpretation-action))
+                    'situation-interpretation-action))
         (should-not (plist-get (org-truss-checks model) :no-relation))
         (should (equal (mapcar #'car (org-truss-test--fields (org-truss-model-brief model)))
                        '(((breakdown . reader)) ((breakdown . question))
@@ -2396,7 +2469,10 @@ directories there."
         (let ((source (car (org-truss-member-supports (org-truss-model-subject model)))))
           (should (eq (org-truss-member-breakdown source) 'parts))
           (should (seq-every-p #'org-truss-item-p (org-truss-member-supports source))))
-        (pcase-let ((`(,interpretation ,action) (org-truss-message-supports model)))
+        (pcase-let ((`(,situation ,interpretation ,action) (org-truss-message-supports model)))
+          (should (equal (org-truss-member-roles situation) '((breakdown . situation))))
+          (should (eq (org-truss-member-breakdown situation) 'parts))
+          (should (seq-every-p #'org-truss-item-p (org-truss-member-supports situation)))
           (should (equal (org-truss-member-roles interpretation) '((breakdown . interpretation))))
           (should (eq (org-truss-member-breakdown interpretation) 'parts))
           (should (eq (org-truss-member-logic (car (org-truss-member-supports interpretation)))
@@ -2409,7 +2485,7 @@ directories there."
             (should (equal (mapcar #'org-truss-member-includes (org-truss-member-supports structure))
                            '(("m1") ("m2") ("m3"))))
             (should (equal (mapcar (lambda (id) (org-truss-member-by-id model id)) '("m1" "m2" "m3"))
-                           (list (org-truss-model-subject model) interpretation action)))))
+                           (list situation interpretation action)))))
         (let ((checks (org-truss-checks model)))
           (should-not (plist-get checks :gaps))
           (should-not (plist-get checks :no-role))

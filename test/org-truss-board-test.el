@@ -191,7 +191,7 @@ are named in `org-truss-language'."
       (org-truss-test--answering '("telling › SCQA")
         (org-truss-board-pattern))
       (should (equal (org-truss-test--structure-labels source)
-                     '("状況" "複雑化" "問い" "答え" "Sky" "Rain" "Umbrella")))
+                     '("現状" "複雑化" "問い" "答え" "Sky" "Rain" "Umbrella")))
       (let ((text (buffer-string)))
         (should (string-match-p "^ Structure .*\n [△▲] (telling › SCQA)$" text))
         (should (string-match-p (concat "├ Complication[ ·]+" org-truss-test--gap "複雑化$") text))
@@ -295,7 +295,7 @@ member playing none of them is marked, and r gives it a role."
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints
-                       interpretation-action prep sds scqa sky-rain-umbrella (none . breakdown))))
+                       situation-interpretation-action prep sds scqa sky-rain-umbrella (none . breakdown))))
       (org-truss-test--answering '("breakdown › Pros and cons")
         (org-truss-board-pattern))
       (should (equal (funcall property "Subject" "TRUSS_BREAKDOWN") "pros-cons"))
@@ -590,6 +590,37 @@ member is written it is counted as used."
         (should (string-match-p "^   Interpretation[ ·]+Interpretation$" text))
         (should (equal (org-truss-test--id-at "^   Interpretation[ ·]+Interpretation$") "#m2"))
         (should-not (string-match-p "\\[\\[truss-include:m2\\]\\]" text))))))
+
+(ert-deftest org-truss-test-board-part-that-includes ()
+  "A part whose words are an include link alone is the member it includes,
+where it is written as well: no line under it names that member again,
+which is drawn where it is written."
+  (org-truss-test--with-board "* S
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** The minutes
+:PROPERTIES:
+:CUSTOM_ID: src
+:TRUSS_BREAKDOWN: parts
+:END:
+#+attr_truss:
+- Reviews run long
+* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Where we are
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:END:
+#+attr_truss:
+- [[truss-include:src]]
+"
+    (let ((text (buffer-string)))
+      (should (string-match-p "^   └ Part[ ·]+↪Subject - The minutes$" text))
+      (should-not (string-match-p "• included" text))
+      (should (= (how-many "The minutes" (point-min) (point-max)) 2)))))
 
 (ert-deftest org-truss-test-board-draws-the-chain ()
   "Opened where included, Structure brings the trusses it includes, and
@@ -1619,13 +1650,13 @@ in, a heading for each role."
                      '(reasons deduction induction steps parts
                        what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints
-                       interpretation-action prep sds scqa sky-rain-umbrella)))
+                       situation-interpretation-action prep sds scqa sky-rain-umbrella)))
       (should (equal (last (funcall choices (org-truss-test--m model "Move to fortnightly")))
                      '((none . logic))))
       (should (equal (funcall choices (org-truss-model-structure model))
                      '(reasons deduction induction steps parts what-why-how pros-cons short-long past-present-future 5w1h 6w1h
                        reader-question-response-constraints
-                       interpretation-action prep sds scqa sky-rain-umbrella (none . telling))))
+                       situation-interpretation-action prep sds scqa sky-rain-umbrella (none . telling))))
       (should (equal (car (rassq 'prep (org-truss--pattern-choices
                                         (org-truss-test--m model "Lone remark"))))
                      "telling › PREP"))))

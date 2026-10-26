@@ -142,7 +142,7 @@ the directory attachments go in elsewhere."
     (recap    "Point again"   "まとめ")
     (summary  "Summary"       "要約")
     (details  "Details"       "詳細")
-    (situation "Situation"    "状況")
+    (situation "Situation"    "現状")
     (complication "Complication" "複雑化")
     (question "Question"      "問い")
     (answer   "Answer"        "答え")
@@ -212,10 +212,10 @@ here."
      :kind breakdown :name "Reader, Question, Response, Constraints" :list bulleted
      :roles ((reader :label t) (question :label t) (response :label t) (constraints :label t))
      :about "who reads it, what they ask, what they are to do, what it keeps to")
-    (interpretation-action
-     :kind breakdown :name "Interpretation, Action" :list bulleted
-     :roles ((interpretation) (action))
-     :about "what the facts mean, and what to do")
+    (situation-interpretation-action
+     :kind breakdown :name "Situation, Interpretation, Action" :list bulleted
+     :roles ((situation) (interpretation) (action))
+     :about "the facts as they are, what they mean, and what to do")
     (prep
      :kind telling :name "PREP"
      :roles ((point) (reason) (example) (recap))
@@ -268,19 +268,24 @@ to be headings.  A role asked for and played by none is a missing role."
   '((brief :patterns ((breakdown . reader-question-response-constraints)))
     (subject :patterns ((breakdown . parts))
              :members ((part :patterns ((breakdown . parts)))))
-    (message :patterns ((breakdown . interpretation-action))
-             :members ((interpretation :patterns ((breakdown . parts))
+    (message :patterns ((breakdown . situation-interpretation-action))
+             :members ((situation :patterns ((breakdown . parts)))
+                       (interpretation :patterns ((breakdown . parts))
                                        :members ((part :patterns ((logic . reasons)))))
                        (action :patterns ((breakdown . steps)))))
     (structure :patterns ((telling . sky-rain-umbrella))
-               :members ((sky :include subject)
+               :members ((sky :include situation)
                          (rain :include interpretation)
                          (umbrella :include action))))
   "What a new file gives its parts, as (PART . SPEC).
 The basic form: Subject holds the facts, a truss for each source, its
-facts under it; Message what they mean, a claim each with its reasons,
-and what to do, in steps; Structure tells the facts, what they mean and
-what to do, in that order.
+facts under it; Message the facts the output document tells, its
+situation, as parts that include them or a source's truss whole, what
+they mean, a claim each with its reasons, and what to do, in steps;
+Structure tells the situation, what it means and what to do, in that
+order.  The include links to Subject being in Message, a source added to
+Subject reaches the output document only once a member of Message
+includes it.
 
 SPEC is a plist.  :patterns are the member's, each (KIND . PATTERN), a
 pattern of `org-truss-patterns'.  `org-truss-init' writes a supporting
@@ -1201,12 +1206,26 @@ moved under another."
                                 (org-truss-member-roles child))))
           (org-truss-member-supports member)))
 
+(defun org-truss-loose-includes (member)
+  "Return the IDs MEMBER includes in its text, as no member of it.
+Include links in its text, not on its heading's line, which make it the
+member included, and not those it stands on, a reason's: they put a
+member there and say nothing of what it is to MEMBER.  An item under
+#+attr_truss that is an include link alone is a supporting member, and
+its link is its own."
+  (seq-difference (seq-uniq (org-truss-member-includes member))
+                  (append (org-truss--includes-in (org-truss-member-words member))
+                          (org-truss-standing-includes member))))
+
 (defun org-truss-no-relation-p (member)
-  "Non-nil when MEMBER has members right under it and no pattern.
-Nothing then says what they are to it -- reasons, parts, the places of a
-telling -- so whether it holds together cannot be checked."
-  (and (org-truss-member-supports member)
-       (not (org-truss-member-patterns member))))
+  "Non-nil when nothing says what the members under MEMBER are to it.
+When it has members right under it and no pattern, or includes members
+in its text, `org-truss-loose-includes': reasons, parts, the places of
+a telling, nothing says which, so whether it holds together cannot be
+checked."
+  (or (and (org-truss-member-supports member)
+           (not (org-truss-member-patterns member)))
+      (org-truss-loose-includes member)))
 
 (defun org-truss-patterns-with-role (kind role)
   "Return the ids of the patterns of KIND that have ROLE, in order."
@@ -1714,6 +1733,67 @@ stand on it instead, once.  See `org-truss-member-grounds'."
 See `org-truss-grounds-set-low'."
   (format "every supporting member stands on [[%s]]" (org-truss--pointing-target (cdr entry))))
 
+(defun org-truss-source-of (model member)
+  "Return the source MEMBER of MODEL is written under, or nil.
+The member right under Subject that MEMBER is or is under: a source's
+truss.  Nil for Subject itself, and for a member outside it."
+  (let ((subject (org-truss-model-subject model))
+        (m member))
+    (and subject
+         (progn (while (and m (not (eq (org-truss-parent model m) subject)))
+                  (setq m (org-truss-parent model m)))
+                m))))
+
+(defun org-truss-situation-sources (model)
+  "Return (MEMBER . WHAT) for each source MODEL's Situation shows amiss.
+Situation, a member of Message playing `situation', shows the sources
+the claims of Message stand on, a source's truss each, and only those.
+WHAT is `missing' for a source with a fact a claim stands on that
+Situation does not include, `unused' for one it includes on whose facts
+no claim stands, and `fact' for a member it includes that is no source
+nor Subject, but one taken as given, tagged :assumption:, that is under
+no source and so has none to show.  A claim stands on a member by its
+grounds, see `org-truss-member-grounds'; one Situation includes Subject
+whole shows every source.  Nil when Message has no Situation."
+  (let* ((situations (seq-filter (lambda (m) (eq (org-truss-member-role m 'breakdown) 'situation))
+                                 (org-truss-members-in model 'message)))
+         (subject (org-truss-model-subject model))
+         (by-id (lambda (ids) (delq nil (mapcar (lambda (id) (org-truss-member-by-id model id)) ids))))
+         (shown (seq-uniq
+                 (funcall by-id (mapcan (lambda (s)
+                                          (append (copy-sequence (org-truss-member-includes s))
+                                                  (mapcan (lambda (p) (copy-sequence (org-truss-member-includes p)))
+                                                          (org-truss-member-supports s))))
+                                        situations))))
+         (in-situation (mapcan (lambda (s) (copy-sequence (org-truss--subtree s))) situations))
+         (stood (seq-uniq
+                 (delq nil (mapcar (lambda (ground) (org-truss-source-of model ground))
+                                   (funcall by-id
+                                            (mapcan (lambda (m) (copy-sequence (org-truss-member-grounds m)))
+                                                    (seq-remove (lambda (m) (memq m in-situation))
+                                                                (org-truss-members-in model 'message))))))))
+         (sources (and subject (org-truss-member-supports subject)))
+         (shown-sources (if (memq subject shown) sources (seq-filter (lambda (s) (memq s shown)) sources))))
+    (and situations
+         (append
+          (mapcar (lambda (m) (cons m 'fact))
+                  (seq-remove (lambda (m) (or (eq m subject) (memq m sources)
+                                              (and (org-truss-assumption-p m)
+                                                   (not (org-truss-source-of model m)))))
+                              shown))
+          (delq nil (mapcar (lambda (s)
+                              (cond ((and (memq s stood) (not (memq s shown-sources))) (cons s 'missing))
+                                    ((and (memq s shown-sources) (not (memq s stood))) (cons s 'unused))))
+                            sources))))))
+
+(defun org-truss-situation-sources-text (entry)
+  "Return what the board and the report say of ENTRY, (MEMBER . WHAT).
+See `org-truss-situation-sources'."
+  (pcase (cdr entry)
+    ('missing "a claim stands on its facts, and Situation does not include it")
+    ('unused "Situation includes it, and no claim stands on its facts")
+    (_ "Situation includes this alone: include its source's truss")))
+
 (defun org-truss-placeholder-p (member)
   "Non-nil when MEMBER's words are those it was given, to be written over.
 A part's name, for a part; for any member, the name of a role it plays,
@@ -1760,8 +1840,9 @@ member whose pattern asks, at the member that lacks, at the link.
 :no-pattern      (CHILD KIND . MEMBER) for each member right under MEMBER
                  that plays a role of KIND while MEMBER has no pattern of
                  KIND; see `org-truss-no-pattern'
-:no-relation     members with members right under them and no pattern;
-                 see `org-truss-no-relation-p'
+:no-relation     members with members right under them and no pattern,
+                 or members included in their text; see
+                 `org-truss-no-relation-p'
 :out-of-order    (SUPPORT . ABOVE) for supporting members the file has
                  below one the telling pattern tells after them
 :no-grounds      members that must have grounds and have none; see
@@ -1784,6 +1865,9 @@ member whose pattern asks, at the member that lacks, at the link.
                  those they were given; see `org-truss-placeholder-p'
 :mixed-sources   (MEMBER . SOURCES) for apex members whose truss brings
                  more than one source together; see `org-truss-mixed-sources'
+:situation-sources (MEMBER . WHAT) for each source Situation shows
+                 amiss, or member it shows that is no source; see
+                 `org-truss-situation-sources'
 :said-again      (MEMBER IDS . OTHERS) for members of Message standing on
                  the same members as others; see `org-truss-said-again'
 :unearned        (MEMBER USERS . GROUNDS) for claims written as headings
@@ -1827,6 +1911,7 @@ member whose pattern asks, at the member that lacks, at the link.
                                              (let ((sources (org-truss-mixed-sources m)))
                                                (and sources (cons m sources))))
                                            members))
+          :situation-sources (org-truss-situation-sources model)
           :said-again (org-truss-said-again model)
           :unearned (delq nil (mapcar (lambda (m)
                                         (let ((unearned (org-truss-unearned-heading model m)))
@@ -1866,6 +1951,8 @@ member whose pattern asks, at the member that lacks, at the link.
      . "apex members whose supporting members, two or more, all stand on the same member, by a pointing or an include link, while the apex member does not: that member holds up the apex member, not each supporting member; point to it once, from the apex member's text, and take the links out of the supporting members' text")
     ("Mixed sources"
      . "trusses that bring sources together where they keep to one, so each can be checked against its source: a parts truss whose end members link to more than one, or a TRUSS_LOGIC truss whose members do -- one taken by org-moor counts once, wherever in it the links point; bring facts of different sources together by pointing to the members that hold them")
+    ("Sources in Situation"
+     . "sources Situation shows amiss: Situation, the member of Message playing situation, includes the truss of each source with a fact the claims of Message stand on, and no other, so the reader sees each such source whole before what is drawn from it; a source a claim stands on that it leaves out, one it includes that no claim stands on, and a fact it includes alone in place of its source's truss -- unless tagged :assumption: and under no source, taken as given with none to show")
     ("Said again"
      . "members of Message that stand on the same members, two or more, as another does -- by pointing links, include links, or supporting members that are include links alone: one says what the other says again; keep the one, and point to it or include it where the other was")
     ("Not a heading"
@@ -1877,7 +1964,7 @@ member whose pattern asks, at the member that lacks, at the link.
     ("No pattern"
      . "members that play a role, in TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE or before ::, while the member right above has no pattern of that kind: give it the pattern the role belongs to, or take the role off")
     ("No relation"
-     . "members with members right under them and no pattern: nothing says what those are to them, so whether they hold together cannot be checked; give them a TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING, in a property or in the list's #+attr_truss")
+     . "members with members right under them and no pattern, or with include links in their text: nothing says what those are to them, so whether they hold together cannot be checked; give them a TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING, in a property or in the list's #+attr_truss, its items then members of it")
     ("Out of order"
      . "supporting members the file has below one that the TRUSS_TELLING of their apex member tells after them; the output document follows the file, so move them there")
     ("Words to write"
@@ -1895,7 +1982,7 @@ it comes to hold.")
   "What the board and the report say of a member whose words are to be written.")
 
 (defconst org-truss-no-relation-text
-  "members under it, and no pattern saying what they are to it"
+  "members under it or included, and no pattern saying what they are to it"
   "What the board and the report say of a member with no relation.")
 
 (defun org-truss-said-again-text (entry)
@@ -2008,6 +2095,9 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                  (mapcar (lambda (m) (funcall member-line (car m)
                                               (format "points into %s" (string-join (cdr m) ", "))))
                          (plist-get checks :mixed-sources)))
+           (cons "Sources in Situation"
+                 (mapcar (lambda (e) (funcall member-line (car e) (org-truss-situation-sources-text e)))
+                         (plist-get checks :situation-sources)))
            (cons "Said again"
                  (mapcar (lambda (e) (funcall member-line (car e) (org-truss-said-again-text e)))
                          (plist-get checks :said-again)))

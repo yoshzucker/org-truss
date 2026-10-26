@@ -96,18 +96,24 @@ A part is an apex member like any other, and is broken down as any member
 can be.  A new file is written in the basic form: the facts, what they
 mean, what to do, told in that order.
 
-| Member         | Pattern                                          | Written                                                             |
-|----------------+--------------------------------------------------+---------------------------------------------------------------------|
-| Brief          | breakdown › reader-question-response-constraints | an item for each role                                               |
-| Subject        | breakdown › parts                                | a source, its facts as items under it                               |
-| Message        | breakdown › interpretation-action                | Interpretation and Action                                           |
-| Interpretation | breakdown › parts                                | a claim, with ~TRUSS_LOGIC: reasons~ and a reason as an item        |
-| Action         | breakdown › steps                                | a step, as an item                                                  |
-| Structure      | telling › Sky, Rain, Umbrella                    | ~[[truss-include:m1]]~, ~m2~, ~m3~: Subject, Interpretation, Action |
+| Member         | Pattern                                           | Written                                                               |
+|----------------+---------------------------------------------------+-----------------------------------------------------------------------|
+| Brief          | breakdown › reader-question-response-constraints  | an item for each role                                                 |
+| Subject        | breakdown › parts                                 | a source, its facts as items under it                                 |
+| Message        | breakdown › situation-interpretation-action       | Situation, Interpretation and Action                                  |
+| Situation      | breakdown › parts                                 | a part, as an item, to be an include link to a source's truss         |
+| Interpretation | breakdown › parts                                 | a claim, with ~TRUSS_LOGIC: reasons~ and a reason as an item          |
+| Action         | breakdown › steps                                 | a step, as an item                                                    |
+| Structure      | telling › Sky, Rain, Umbrella                     | ~[[truss-include:m1]]~, ~m2~, ~m3~: Situation, Interpretation, Action |
 
 Structure's headings are include links alone, so each is the member it
 includes there, and that member's words are the output document's
-heading.  A new file is an output document as it stands, each word of it
+heading.  Situation is the sources the reader is shown first, each
+whole: its parts include the trusses of the sources whose facts the
+claims stand on, and no others, so the reader sees what each source says
+before what is drawn from it, and a source added to Subject, however
+poor, reaches the output document only once a claim stands on it.
+/Sources in Situation/ lists what it shows amiss.  A new file is an output document as it stands, each word of it
 to be written over, which /Words to write/ lists until it is.  Action
 points to the claim it follows from, once; a step takes a ~TRUSS_LOGIC~
 of its own only for reasons of its own.  For a document of another form, give Message
@@ -224,24 +230,24 @@ story that keeps the conclusion for the end -- SCQA, Sky, Rain, Umbrella
 -- is told by the members of Structure, the claim included in the last of
 them; its reasons come after it there, as they are its supporting members.
 
-| On the board                       | Gives                                                        |
-|------------------------------------+--------------------------------------------------------------|
-| logic › reasons                    | reasons that each hold it up alone                           |
-| logic › deduction                  | a major and a minor premise, together                        |
-| logic › induction                  | two cases or more, that it generalises                       |
-| breakdown › steps                  | what to do, in order: a numbered list                        |
-| breakdown › parts                  | what it is made of, in no order: a bulleted list             |
-| breakdown › What, Why, How         | what it is, why, and how                                     |
-| breakdown › Pros and cons          | what is for it, what is against it                           |
-| breakdown › Short and long term    | what holds soon, what holds later                            |
-| breakdown › Past, present, future  | what was, what is, what will be                              |
-| breakdown › 5W1H                   | who, when, where, what, why, how                             |
-| breakdown › 6W1H                   | who, whom, when, where, what, why, how                       |
-| breakdown › Interpretation, Action | what the facts mean, and what to do                          |
-| telling › PREP                     | point, reason, example, the point again                      |
-| telling › SDS                      | summary, details, the summary again                          |
-| telling › SCQA                     | situation, complication, question, answer                    |
-| telling › Sky, Rain, Umbrella      | sky, rain, umbrella: what is seen, what it means, what to do |
+| On the board                                  | Gives                                                        |
+|-----------------------------------------------+--------------------------------------------------------------|
+| logic › reasons                               | reasons that each hold it up alone                           |
+| logic › deduction                             | a major and a minor premise, together                        |
+| logic › induction                             | two cases or more, that it generalises                       |
+| breakdown › steps                             | what to do, in order: a numbered list                        |
+| breakdown › parts                             | what it is made of, in no order: a bulleted list             |
+| breakdown › What, Why, How                    | what it is, why, and how                                     |
+| breakdown › Pros and cons                     | what is for it, what is against it                           |
+| breakdown › Short and long term               | what holds soon, what holds later                            |
+| breakdown › Past, present, future             | what was, what is, what will be                              |
+| breakdown › 5W1H                              | who, when, where, what, why, how                             |
+| breakdown › 6W1H                              | who, whom, when, where, what, why, how                       |
+| breakdown › Situation, Interpretation, Action | the facts as they are, what they mean, and what to do        |
+| telling › PREP                                | point, reason, example, the point again                      |
+| telling › SDS                                 | summary, details, the summary again                          |
+| telling › SCQA                                | situation, complication, question, answer                    |
+| telling › Sky, Rain, Umbrella                 | sky, rain, umbrella: what is seen, what it means, what to do |
 
 Sky, Rain, Umbrella is fact, interpretation, action: the sky is clouding
 over; it will rain, then; take an umbrella.  It is a way of thinking as
@@ -338,8 +344,7 @@ Every part reads items so, Brief and Structure among them:
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 ,#+attr_truss:
-- sky :: Where we are
-  [[truss-include:m2]]
+- sky :: [[truss-include:m2]]
 - rain :: Why change
 - umbrella :: [[truss-include:m1]]
 #+end_src
@@ -517,24 +522,25 @@ shows what it reads.
 
 ** What is left to do
 
-Thirteen checks, each found where the problem is:
+Fifteen checks, each found where the problem is:
 
-| Check           | Found at                   | What it finds                                                                                                                           |
-|-----------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
-| Missing roles   | the apex member            | a role its pattern asks for that none of its supporting members plays                                                                   |
-| No role         | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                 |
-| No pattern      | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                        |
-| No relation     | the member with no pattern | has members right under it, and no pattern saying what they are to it -- the parts and Structure as any member                          |
-| Out of order    | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
-| No grounds      | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
-| Weak grounds    | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
-| Hidden grounds  | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~ |
-| Grounds set low | the apex member            | its supporting members, two or more, all stand on the same member, and it does not: it is to stand on that member, once                 |
-| Mixed sources   | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
-| Said again      | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])        |
-| Not a heading   | the claim                  | a heading of its own in Message that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])             |
-| Broken links    | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
-| Words to write  | the member                 | is in the output document with the words it was given: its part's name, or the name of a role it plays                                  |
+| Check                | Found at                   | What it finds                                                                                                                           |
+|----------------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
+| Missing roles        | the apex member            | a role its pattern asks for that none of its supporting members plays                                                                   |
+| No role              | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                 |
+| No pattern           | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                        |
+| No relation          | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the parts and Structure as any   |
+| Out of order         | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
+| No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
+| Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
+| Hidden grounds       | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~ |
+| Grounds set low      | the apex member            | its supporting members, two or more, all stand on the same member, and it does not: it is to stand on that member, once                 |
+| Mixed sources        | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
+| Sources in Situation | the source, or the fact    | a source a claim stands on that Situation leaves out, one it includes that no claim stands on, a fact it includes in place of its source |
+| Said again           | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])        |
+| Not a heading        | the claim                  | a heading of its own in Message that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])             |
+| Broken links         | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
+| Words to write       | the member                 | is in the output document with the words it was given: its part's name, or the name of a role it plays                                  |
 
 They say what is so; what to do about it is written in the file.
 
@@ -621,14 +627,14 @@ The guide's drawer left out:
 - response :: Agree to try fortnightly reviews next quarter
 - constraints :: One page
 
-,* Reviews run long, and the same items come back
+,* Subject
 :PROPERTIES:
 :TRUSS_PART: subject
-:CUSTOM_ID: m1
 :TRUSS_BREAKDOWN: parts
 :END:
 ,** The calendar this quarter
 :PROPERTIES:
+:CUSTOM_ID: m8
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
@@ -638,6 +644,7 @@ The guide's drawer left out:
   # [[https://calendar.example.com/export][calendar export]]
 ,** The agendas, weeks 1-12
 :PROPERTIES:
+:CUSTOM_ID: m9
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
@@ -647,8 +654,17 @@ The guide's drawer left out:
 ,* Message
 :PROPERTIES:
 :TRUSS_PART: message
-:TRUSS_BREAKDOWN: interpretation-action
+:TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
+,** Reviews run long, and the same items come back
+:PROPERTIES:
+:CUSTOM_ID: m1
+:TRUSS_BREAKDOWN_ROLE: situation
+:TRUSS_BREAKDOWN: parts
+:END:
+,#+attr_truss:
+- [[truss-include:m8]]
+- [[truss-include:m9]]
 ,** The weekly review costs the team more time than it gives back
 :PROPERTIES:
 :CUSTOM_ID: m5
@@ -710,8 +726,11 @@ We assume most items need more than a week to change.
 
 Subject holds the facts, a truss for each source, and nothing else: what
 they mean is said in Message, a claim each, standing on them by pointing
-links.  Its words, like Interpretation's and Action's, are the output
-document's headings, since Structure includes each as a heading.  /Half
+links.  Message tells them first, in its Situation, which includes each
+source's truss whole: the reader is told what the calendar and the
+agendas say before what is made of them.  The words of Situation,
+Interpretation and Action are the output document's headings, since
+Structure includes each as a heading.  /Half
 the items repeat/ is one simple truss in one heading: the claim, its
 reasons as items.  /Items need a week to move/ is a heading only because
 it is tagged.  Subject and Message are compound trusses, built of
@@ -904,7 +923,11 @@ This is the board of the file above, every line open:
        ⏚ source ············· agendas, weeks 1-12
 
  Message  what the output document says
- ▲ (breakdown › Interpretation, Action)
+ ▲ (breakdown › Situation, Interpretation, Action)
+   Situation ················ Reviews run long, and the same items come back
+   △ (breakdown › parts)
+   ├ Part ·········· ↪Subject - The calendar this quarter
+   └ Part ·········· ↪Subject - The agendas, weeks 1-12
    Interpretation ··········· The weekly review costs the team more time than i…
    ▲ (breakdown › parts)
    ├ Part ··················· The review takes longer than it is given
@@ -928,7 +951,7 @@ This is the board of the file above, every line open:
 
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ············· ↪Subject Reviews run long, and the same items come back
+ ├ Sky ············· ↪Message Reviews run long, and the same items come back
  ├ Rain ············ ↪Message The weekly review costs the team more time than i…
  └ Umbrella ········ ↪Message Hold the review every other week
 #+end_example
@@ -958,19 +981,19 @@ beside the logic each sentence rests on:
  ▲ (breakdown › parts)
 
  Message  what the output document says
- ▲ (breakdown › Interpretation, Action)
+ ▲ (breakdown › Situation, Interpretation, Action)
  ...
  Structure  the output document's outline
  △ (telling › Sky, Rain, Umbrella)
- ├ Sky ············· ↪Subject Reviews run long, and the same items come back
- │ ▲ (breakdown › parts)
- │ ├ Part ··················· The calendar this quarter
+ ├ Sky ············· ↪Message Reviews run long, and the same items come back
+ │ △ (breakdown › parts)
+ │ ├ Part ·········· ↪Subject - The calendar this quarter
  │ │ △ (breakdown › parts)
  │ │ ├ Part ·············· +1 - Eight of twelve reviews ran past the hour
  │ │ │   ⏚ source ··········· calendar export
  │ │ └ Part ·············· +1 - The longest ran forty minutes over
  │ │     ⏚ source ··········· calendar export
- │ └ Part ··················· The agendas, weeks 1-12
+ │ └ Part ·········· ↪Subject - The agendas, weeks 1-12
  │   △ (breakdown › parts)
  │   └ Part ·············· +1 - Six of twelve items each week come back from th…
  │       ⏚ source ··········· agendas, weeks 1-12
@@ -996,9 +1019,10 @@ beside the logic each sentence rests on:
 #+end_example
 
 A member whose words are an include link alone -- Sky, Rain, Umbrella
-here, or a reason ~*** [[truss-include:m7]]~ -- is the member it
-includes, so its line stands for both, and what that member brings
-follows it, with no line of its own.  Sky brings the facts first, so
+here, a part of Situation, or a reason ~*** [[truss-include:m7]]~ -- is
+the member it includes, so its line stands for both, and what that
+member brings follows it, with no line of its own.  Sky brings the
+facts first, each source whole, so
 there they are drawn in full, each the original with one ghost, =+1=,
 and the reasons' facts are ghosts, one line each, =◌Sky=: their
 sources are with the original, under Sky.  m6, a part of m5, is a ghost
@@ -1149,7 +1173,7 @@ down Structure.
 
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Grounds
-set low/, /Mixed sources/, /Said again/, /Not a heading/, /Missing roles/, /No role/, /No
+set low/, /Mixed sources/, /Sources in Situation/, /Said again/, /Not a heading/, /Missing roles/, /No role/, /No
 pattern/, /No relation/, /Out of order/, /Words to write/ (see
 [[*What is left to do]]) -- each thing listed in the part it is found in,
 and ~RET~ on it goes there.  The mouse on the name of a check says what it

@@ -623,12 +623,12 @@ As the shot shows.
                                   (buffer-string))))))))
 
 (ert-deftest org-truss-test-render-new-file ()
-  "A new file is an output document as it stands: the facts, what they
-mean and what to do, each a heading in that order, its words those of the
-member Structure includes there.  A compound truss's headings are
+  "A new file is an output document as it stands: the facts told, what
+they mean and what to do, each a heading in that order, its words those
+of the member Structure includes there.  A compound truss's headings are
 headings, a simple truss's items a list."
   (should (string-match-p
-           (concat "^\\* Subject\n\n\\*\\* Part\n\n- Part\n\n"
+           (concat "^\\* Situation\n\n- Part\n\n"
                    "\\* Interpretation\n\n\\*\\* Part\n\n- Reason\n\n"
                    "\\* Action\n\n1\\. Step\n")
            (org-truss-test--render (org-truss-skeleton "T")))))
