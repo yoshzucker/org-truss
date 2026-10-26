@@ -192,6 +192,32 @@ is written.  SUPPORTS, if given, are those of them to write."
                                                   level (length items))))))
           (t (org-truss--supports-list member supports)))))
 
+(defun org-truss-support-form (apex support &optional in-list)
+  "Return how the output document writes SUPPORT, a supporting member of APEX.
+\(LISTED . OPENING): LISTED non-nil when it is an item of a list, nil
+when a heading; OPENING what its words open with, as
+`org-truss--supports-text' writes it -- an item's bullet or number and
+the role it plays, a heading's number and role.  IN-LIST when APEX is
+itself an item of a list, where all under it is a list.  Nil for one
+tagged :noexport:, which it leaves out.  Headings below the deepest
+level, which it writes as a list, are not told apart."
+  (unless (org-truss-noexport-p support)
+    (let* ((supports (seq-remove #'org-truss-noexport-p (org-truss-member-supports apex)))
+           (form (org-truss-list-form apex))
+           (compound (eq (org-truss-truss-shape apex) 'compound))
+           (listed-p (lambda (s) (or in-list (and form (or (not compound) (org-truss-item-p s))))))
+           (items (seq-filter listed-p supports))
+           (listed (funcall listed-p support)))
+      (cons listed
+            (if listed
+                (let ((marker (org-truss--list-marker apex support (1+ (seq-position items support)))))
+                  (concat (car marker) (cdr marker)))
+              (concat (if (eq form 'numbered)
+                          (format "%d. " (+ (length items)
+                                            (1+ (seq-position (seq-remove listed-p supports) support))))
+                        "")
+                      (org-truss--role-opening apex support)))))))
+
 (defun org-truss--supports-headings (apex supports level &optional before)
   "Return SUPPORTS, supporting members of APEX, as headings one level below LEVEL.
 Each opened with the role it plays, as `org-truss--role-opening' gives

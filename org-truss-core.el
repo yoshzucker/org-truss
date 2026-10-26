@@ -1568,6 +1568,25 @@ member; see `org-truss-hidden-grounds'."
                   (t (org-truss-member-words ground)))
             org-truss-hidden-grounds-text)))
 
+(defun org-truss-grounds-set-low (apex)
+  "Return the IDs every supporting member of APEX stands on and APEX does not.
+Asked of an apex member with two supporting members or more: a member
+each of them stands on holds up APEX, not each of them, and APEX is to
+stand on it instead, once.  See `org-truss-member-grounds'."
+  (let ((supports (org-truss-member-supports apex))
+        (own (org-truss-member-grounds apex)))
+    (and (cdr supports)
+         (seq-remove (lambda (id) (member id own))
+                     (seq-reduce (lambda (shared support)
+                                   (seq-intersection shared (org-truss-member-grounds support)))
+                                 (cdr supports)
+                                 (org-truss-member-grounds (car supports)))))))
+
+(defun org-truss-grounds-set-low-text (entry)
+  "Return what the board and the report say of ENTRY, (APEX . ID).
+See `org-truss-grounds-set-low'."
+  (format "every supporting member stands on [[%s]]" (org-truss--pointing-target (cdr entry))))
+
 (defun org-truss-placeholder-p (member)
   "Non-nil when MEMBER's words are those it was given, to be written over.
 A part's name, for a part; for any member, the name of a role it plays,
@@ -1626,6 +1645,9 @@ member whose pattern asks, at the member that lacks, at the link.
                  MEMBER, one the output document tells, stands on that
                  it leaves out: GROUND is an ID or the supporting member;
                  see `org-truss-hidden-grounds'
+:low-grounds     (APEX . ID) for each member every supporting member of
+                 APEX stands on and APEX does not; see
+                 `org-truss-grounds-set-low'
 :placeholders    members the output document tells whose words are still
                  those they were given; see `org-truss-placeholder-p'
 :mixed-sources   (MEMBER . SOURCES) for apex members whose truss brings
@@ -1664,6 +1686,7 @@ member whose pattern asks, at the member that lacks, at the link.
           :weak-grounds (funcall each (lambda (m) (org-truss-weak-grounds model m)))
           :hidden-grounds (and told
                                (funcall each (lambda (m) (org-truss-hidden-grounds model m)) told))
+          :low-grounds (funcall each #'org-truss-grounds-set-low)
           :placeholders (seq-filter #'org-truss-placeholder-p told)
           :mixed-sources (delq nil (mapcar (lambda (m)
                                              (let ((sources (org-truss-mixed-sources m)))
@@ -1702,6 +1725,8 @@ member whose pattern asks, at the member that lacks, at the link.
      . "members a member stands on, by a link in its text, that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
     ("Hidden grounds"
      . "members the output document tells that stand on a member it leaves out, tagged :noexport: or under one -- by a link, or as the apex member of a TRUSS_LOGIC truss whose reason it is: the reader is given what it says and not what it stands on; take the tag off, or stand on another")
+    ("Grounds set low"
+     . "apex members whose supporting members, two or more, all stand on the same member, by a pointing or an include link, while the apex member does not: that member holds up the apex member, not each supporting member; point to it once, from the apex member's text, and take the links out of the supporting members' text")
     ("Mixed sources"
      . "trusses that bring sources together where they keep to one, so each can be checked against its source: a parts truss whose end members link to more than one, or a TRUSS_LOGIC truss whose members do -- one taken by org-moor counts once, wherever in it the links point; bring facts of different sources together by pointing to the members that hold them")
     ("Said again"
@@ -1843,6 +1868,9 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
            (cons "Hidden grounds"
                  (mapcar (lambda (h) (funcall member-line (car h) (org-truss-hidden-ground-text h)))
                          (plist-get checks :hidden-grounds)))
+           (cons "Grounds set low"
+                 (mapcar (lambda (e) (funcall member-line (car e) (org-truss-grounds-set-low-text e)))
+                         (plist-get checks :low-grounds)))
            (cons "Mixed sources"
                  (mapcar (lambda (m) (funcall member-line (car m)
                                               (format "points into %s" (string-join (cdr m) ", "))))

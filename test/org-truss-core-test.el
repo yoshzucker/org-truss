@@ -1013,6 +1013,40 @@ tell is not asked."
     (org-truss-test--with (replace-regexp-in-string "^\\*\\* \\[\\[truss-include:check\\]\\]\n" "" text)
       (should-not (plist-get (org-truss-checks (org-truss-read)) :hidden-grounds)))))
 
+(ert-deftest org-truss-test-grounds-set-low ()
+  "An apex member whose supporting members, two or more, all stand on the
+same member, while it does not, has its grounds set low: it is to stand
+on that member, once.  One that stands on it, or a supporting member
+that does not, is not listed."
+  (let ((text "* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** The claim
+:PROPERTIES:
+:CUSTOM_ID: claim
+:END:
+** Move to fortnightly
+:PROPERTIES:
+:TRUSS_BREAKDOWN: steps
+:END:
+*** Ask the leads
+[[#claim]]
+*** Change the calendar
+# [[#claim]]
+"))
+    (org-truss-test--with text
+      (let ((model (org-truss-read)))
+        (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
+                               (plist-get (org-truss-checks model) :low-grounds))
+                       '(("Move to fortnightly" . "claim"))))
+        (should (string-match-p "^Grounds set low -- .*\n.*: Move to fortnightly -- every supporting member stands on \\[\\[#claim\\]\\]"
+                                (org-truss-check-report model)))))
+    (org-truss-test--with (replace-regexp-in-string "^\\(:TRUSS_BREAKDOWN: steps\n:END:\n\\)" "\\1[[#claim]]\n" text)
+      (should-not (plist-get (org-truss-checks (org-truss-read)) :low-grounds)))
+    (org-truss-test--with (replace-regexp-in-string "^# \\[\\[#claim\\]\\]\n" "" text)
+      (should-not (plist-get (org-truss-checks (org-truss-read)) :low-grounds)))))
+
 (ert-deftest org-truss-test-hidden-reasons ()
   "The apex member of a logic truss the output document tells stands on its
 reasons: one tagged :noexport: is hidden grounds, as a link to one is."

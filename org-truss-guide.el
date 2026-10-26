@@ -55,7 +55,7 @@ Words
   simple truss    a truss whose supporting members are all end members.
                   △ on the board
   compound truss  a truss with an apex member among its supporting members.
-                  ⟁ on the board
+                  ▲ on the board
   ID              the name a member is pointed to by: a heading's
                   CUSTOM_ID (m7), or ~<<m7>>~ in an item's first line
   pointing link   ~[[#m7]]~ (~[[m7]]~ for an item).  Points to m7 as grounds
@@ -78,8 +78,8 @@ The four parts (told apart by TRUSS_PART; filled from the top)
   - Subject: parts, a truss for each source.  Facts only
   - Message: interpretation-action.  Interpretation is parts, a claim
     each, its reasons under it (TRUSS_LOGIC: reasons) pointing to the
-    facts.  Action is steps; a step points to the claim it follows from,
-    and has a TRUSS_LOGIC of its own only for reasons besides
+    facts.  Action is steps, and points to the claim it follows from; a
+    step has a TRUSS_LOGIC of its own only for reasons of its own
   - Structure: sky-rain-umbrella, its headings ~[[truss-include:m1]]~
     (Subject), m2 (Interpretation) and m3 (Action), each that member
     there: its words are the output document's heading
@@ -117,6 +117,18 @@ Writing
   An item's first line is its words, the lines under it its text; a list
   marked #+attr_truss inside it holds its supporting members
 
+Logic
+  Choose an apex member's TRUSS_LOGIC by taking one supporting member out
+  - reasons: the other supporting members still hold the apex member up.
+    Each reason is a deduction whose major premise goes without saying
+  - deduction: the apex member no longer follows.  The major and the minor
+    premise hold it up only together; write both
+  - induction: the supporting members are cases of one kind, two or more,
+    and the apex member generalises them
+  Grounds are reasons.  When two grounds hold a member up only together,
+  they are no grounds: make the member the apex member of a TRUSS_LOGIC:
+  deduction, its major and minor premise its supporting members
+
 Grounds
   In a TRUSS_LOGIC truss, each supporting member has grounds.  Grounds are,
   in its text
@@ -128,6 +140,10 @@ Grounds
     grounds
   - a member tagged :assumption:.  Tag so a member that stands on what has
     no file: an agreement, a talk
+  A member pointed to or included as grounds is a reason the member stands
+  on, as a supporting member playing reason in a TRUSS_LOGIC: reasons
+  truss is.  Why it holds the member up, its major premise, goes without
+  saying: choose grounds for which it does
   A member pointed to as grounds has grounds too, or needs none
   A member in the output document stands on what is in it too: not on a
   member tagged :noexport:, or under one
@@ -142,6 +158,9 @@ Claims
     convince of it
   - a claim that says a fact or another claim again.  Of two claims
     standing on the same grounds, one says the other again
+  Point to grounds from the highest member they hold up: when every
+  supporting member of an apex member stands on the same member, the apex
+  member stands on it instead, once
   Make a claim a heading only when two or more members use it, by a
   pointing or an include link, and it stands on two or more grounds.
   Including a member it is under uses it too.  One used in one place is
@@ -212,7 +231,7 @@ M-x org-truss-export で、OUT/ に書き出す。
   トラス      型を持つ部材（頂点部材）と、そのすぐ下の部材（支持部材）
   末端部材    型を持たない部材。下に何も持たない
   単純トラス  支持部材がすべて末端部材のトラス。盤面の △
-  複合トラス  支持部材に頂点部材を含むトラス。盤面の ⟁
+  複合トラス  支持部材に頂点部材を含むトラス。盤面の ▲
   ID          部材を指すための名前。見出しなら CUSTOM_ID（m7）、項目なら
               1行目の ~<<m7>>~
   指すリンク  ~[[#m7]]~ （項目なら ~[[m7]]~ ）。m7 を根拠として指す
@@ -232,8 +251,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   - Subject：parts。資料ごとにトラスを一つ作る。事実だけを書く
   - Message：interpretation-action。Interpretation は parts で、主張を
     一つずつ書き、その下に理由（TRUSS_LOGIC: reasons）を置いて事実を指す。
-    Action は steps で、手順はそれが従う主張を指す。それ以外の理由がある
-    手順にだけ、TRUSS_LOGIC を付ける
+    Action は steps で、それが従う主張は Action が指す。その手順だけの
+    理由がある手順にだけ、TRUSS_LOGIC を付ける
   - Structure：sky-rain-umbrella。見出しは ~[[truss-include:m1]]~
     （Subject）、m2（Interpretation）、m3（Action）で、それぞれその部材
     そのものになる。その言葉が出力文書の見出しになる
@@ -267,6 +286,18 @@ M-x org-truss-export で、OUT/ に書き出す。
   1行目が言葉、その下が本文。中に #+attr_truss の箇条書きがあれば、それ
   がその項目の支持部材になる
 
+論理
+  頂点部材の TRUSS_LOGIC は、支持部材を一つ抜いてみて選ぶ
+  - reasons：残りの支持部材が、まだ頂点部材を支える。理由はそれぞれ、
+    大前提を言わずに済ませた演繹である
+  - deduction：頂点部材が導けなくなる。大前提と小前提は、揃って初めて
+    頂点部材を支える。両方を書く
+  - induction：支持部材は同じ種類の事例で、2つ以上。頂点部材はそれらを
+    一般化する
+  根拠は理由である。2つの根拠が揃って初めて部材を支えるなら、それは根拠
+  ではない。その部材を TRUSS_LOGIC: deduction の頂点部材にし、大前提と
+  小前提をその支持部材にする
+
 根拠
   TRUSS_LOGIC のトラスでは、支持部材がそれぞれ根拠を持つ。根拠になるのは、
   本文の
@@ -277,6 +308,10 @@ M-x org-truss-export で、OUT/ に書き出す。
   - TRUSS_LOGIC のトラスの頂点部材。その支持部材が根拠になる
   - :assumption: を付けた部材。ファイルのないもの（合意、口頭の話）に立つ
     部材には、これを付ける
+  根拠として指したり展開したりした部材は、その部材が立つ理由である。
+  TRUSS_LOGIC: reasons のトラスで reason を担う支持部材と同じ。それが
+  なぜ部材を支えるか（大前提）は、言わずに済ませている。言わずに済む
+  根拠を選ぶ
   根拠として指した部材も、根拠を持つか、根拠がなくてよい部材であること
   出力文書に出る部材は、出力文書に出るものに立つ。:noexport: を付けた部材
   や、その下の部材には立たない
@@ -290,6 +325,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   - 事実を直に指せば納得できる主張とその事実のあいだに挟まれる別の主張
   - 事実や別の主張を言い直す主張。同じ根拠の組に立つ主張が二つあれば、
     一方はもう一方の言い直し
+  根拠は、それが支える一番上の部材から指す。頂点部材の支持部材がすべて
+  同じ部材に立つなら、代わりに頂点部材が一度だけそれに立つ
   主張を見出しにするのは、2か所以上から（指すリンクか展開リンクで）使わ
   れ、2つ以上の根拠に立つときだけ。主張の上の部材を展開すれば、その主張
   も使ったことになる。1か所でしか使わない主張は、使う部材の本文に、理由
@@ -389,10 +426,10 @@ to the facts in Subject.  Its words are the output document's heading."
      "事実がここで何を意味するか。主張を一つずつ書き、その下に理由を置いて、
 Subject の事実を指す。この言葉が出力文書の見出しになる。")
     ((message action)
-     "What to do, step by step.  A step points to the claim it follows from;
-one with reasons besides has a TRUSS_LOGIC of its own."
-     "何をするか。手順を一つずつ書き、それが従う主張を指す。それ以外の理由が
-ある手順にだけ、TRUSS_LOGIC を付ける。")
+     "What to do, step by step.  It points to the claim it follows from, once;
+a step with reasons of its own has a TRUSS_LOGIC of its own."
+     "何をするか。手順を一つずつ書き、それが従う主張はここで一度だけ指す。
+その手順だけの理由がある手順にだけ、TRUSS_LOGIC を付ける。")
     (structure
      "The output document's outline: the members it carries, by include
 links."

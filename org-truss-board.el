@@ -38,6 +38,10 @@ fit and its text under it, with what is under it shown.  A line with
 nothing under it is folded or open alike.  A line not here is open,
 or folded as `org-truss-board-fold-limit' says.")
 
+(defvar-local org-truss--focused nil
+  "The member this board is focused on, a marker where it is written, or nil.
+See `org-truss-board-focus'.")
+
 (defvar-local org-truss--drawn-width nil
   "Width of the window the board was drawn for.")
 
@@ -108,7 +112,7 @@ Filled by org-truss-moor.el; empty without org-moor.")
            org-truss-board-pattern org-truss-board-roles)
     (see org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
          org-truss-board-cycle org-truss-board-cycle-all org-truss-board-fold
-         org-truss-board-same
+         org-truss-board-focus org-truss-board-same
          org-truss-board-order org-truss-board-guide org-truss-board-view
          org-truss-board-export org-truss-board-redraw org-truss-board-save))
   "The board's commands, by what they work on, as its foot lists them.
@@ -178,6 +182,7 @@ command acts on the file as it is, and a key pressed once is enough."
     (setq org-truss--drawn-width (and window (window-body-width window)))
     (erase-buffer)
     (insert (let ((org-truss--folding org-truss--folds)
+                  (org-truss--focus (and org-truss--focused (marker-position org-truss--focused)))
                   (org-truss--order org-truss--board-order)
                   (org-truss--images (display-images-p (and window (window-frame window)))))
               (org-truss-board-text model nil org-truss--drawn-width))
@@ -203,8 +208,9 @@ command acts on the file as it is, and a key pressed once is enough."
 (defvar org-truss-board-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'org-truss-board-visit)
-    (define-key map (kbd "o") #'org-truss-board-visit-other-window)
+    (define-key map (kbd "o") #'org-truss-board-order)
     (define-key map (kbd "TAB") #'org-truss-board-cycle)
+    (define-key map (kbd "c") #'org-truss-board-focus)
     (define-key map (kbd "<backtab>") #'org-truss-board-cycle-all)
     (define-key map (kbd "m") 'org-truss-board-moor-map)
     (define-key map (kbd "x") #'org-truss-board-export)
@@ -511,9 +517,8 @@ Its text is shown, and the blocks in it open: a member is gone to so its
 text can be read, and a comment block and the quotation are part of that
 text, though `org-hide-block-startup' folds them.  The headings under it
 are left as they were.  CENTER leaves a mark where point was in the file
-and puts the member mid-window.  On a line where the member above is
-used, that is the member that includes it or stands on it."
-  (let ((item (org-truss--want (org-truss--item) 'member 'broken 'part 'use)))
+and puts the member mid-window."
+  (let ((item (org-truss--want (org-truss--item) 'member 'broken 'part)))
     (funcall display org-truss--source)
     (widen)
     (when center (push-mark))
@@ -570,27 +575,70 @@ Where it is written or where it is linked to."
 
 (defun org-truss--written-p (item)
   "Non-nil when ITEM is the line of a member where it is written.
-In its part's tree, the member itself, not linked to."
+In its part's tree, the member itself, not included."
   (and (org-truss--head-p item)
-       (not (plist-get item :link)) (not (plist-get item :ground))
+       (not (plist-get item :link))
        (memq (car (plist-get item :key)) '(member structure))))
 
 (defun org-truss--link-p (item)
-  "Non-nil when ITEM is the line of a link to a member: an include, a ground."
-  (and (org-truss--head-p item)
-       (or (plist-get item :link) (plist-get item :ground))))
+  "Non-nil when ITEM is the line of a member a link brings where it is.
+An include link includes it, or a member drawn above stands on it."
+  (and (org-truss--head-p item) (or (plist-get item :link) (plist-get item :ground))))
 
-(defun org-truss--lines-naming (pos)
-  "Return (START . ITEM) for each line of the board naming the member at POS."
+(defun org-truss--lines-where (test)
+  "Return (START . ITEM) for each line of the board whose ITEM passes TEST."
   (save-excursion
     (goto-char (point-min))
     (let (found)
       (while (not (eobp))
         (let ((item (get-text-property (point) 'org-truss-item)))
-          (when (eql (org-truss--member-pos item) pos)
+          (when (and item (funcall test item))
             (push (cons (point) item) found)))
         (forward-line 1))
       (nreverse found))))
+
+(defun org-truss--lines-naming (pos)
+  "Return (START . ITEM) for each line of the board naming the member at POS.
+A line whose words are an include link alone names the member it
+includes too, when it stands for it; see `org-truss--absorbed-lines'."
+  (org-truss--lines-where (lambda (item) (or (eql (org-truss--member-pos item) pos)
+                                             (eql (plist-get item :alone) pos)))))
+
+(defun org-truss--lines-using (pos)
+  "Return (START . ITEM) for each member's line that links to the member at POS.
+Standing on it or including it, as its :names say."
+  (org-truss--lines-where (lambda (item) (and (org-truss--head-p item)
+                                              (memq pos (plist-get item :names))))))
+
+(defun org-truss--home-line (pos)
+  "Return (START . ITEM) for the line the member at POS is drawn in full, or nil.
+Where it is written; drawn as included, where it is written no more, the
+first line Structure's links bring it to, `org-truss--chained'."
+  (let ((heads (seq-filter (lambda (line) (org-truss--head-p (cdr line)))
+                           (org-truss--lines-naming pos))))
+    (or (seq-find (lambda (line) (org-truss--written-p (cdr line))) heads)
+        (and (eq org-truss--board-order 'included)
+             (seq-find (lambda (line) (or (eql (plist-get (cdr line) :alone) pos)
+                                          (memq (car (plist-get (cdr line) :key)) '(link ground))))
+                       heads)))))
+
+(defun org-truss--lines-linked (item)
+  "Return (START . ITEM) for each line linked to the member of ITEM, in order.
+Those that stand on it or include it, those including it or standing on
+it, but ITEM's own, and where each member it stands on or includes is
+drawn in full: a link from it or to it, one step either way."
+  (let ((pos (org-truss--member-pos item))
+        (key (plist-get item :key))
+        (names (plist-get item :names)))
+    (and pos
+         (seq-uniq
+          (sort (append (org-truss--lines-using pos)
+                        (seq-filter (lambda (line) (and (org-truss--link-p (cdr line))
+                                                        (not (equal (plist-get (cdr line) :key) key))))
+                                    (org-truss--lines-naming pos))
+                        (delq nil (mapcar #'org-truss--home-line names)))
+                (lambda (a b) (< (car a) (car b))))
+          (lambda (a b) (= (car a) (car b)))))))
 
 (defun org-truss--open-folds-over (pos)
   "Unfold every folded line of the board that hides the member at POS.
@@ -611,44 +659,53 @@ Return non-nil when one was."
     (when opened (org-truss-board-redraw))
     opened))
 
-(defvar-local org-truss--last-link nil
-  "The key of the link `org-truss-board-same' last went from to a member.")
+(defvar-local org-truss--same-from nil
+  "The key of the line whose links `org-truss-board-same' goes round.")
 
 (defun org-truss-board-same ()
-  "Go to the same member: where it is written, or where it is linked to.
-On a line that links to a member -- an include link, or a ground -- or
-that shows it anywhere else, go to where it is written, #m9, unfolding
-what hides it.  There, go to the next line that links to it, after the
-one come from, and round again."
+  "Go round the lines linked to the member at point, or to where it is drawn.
+Where it is drawn in full -- where it is written, or drawn as included
+the first line a link brings it to -- go to the first line linked to it,
+one step either way: one standing on it or including it, or where a
+member it stands on or includes is drawn in full; see
+`org-truss--lines-linked'.  Pressed again there, go to the next of them,
+and round again.  On a line that shows a member anywhere else, as an
+include link includes it, go to where it is drawn in full, unfolding
+what hides it."
   (interactive)
   (let* ((item (org-truss--item))
          (pos (or (org-truss--member-pos item) (user-error "No member on this line")))
-         (lines (org-truss--lines-naming pos))
-         (written (seq-find (lambda (line) (org-truss--written-p (cdr line))) lines)))
-    (if (and written (= (car written) (line-beginning-position)))
-        (let* ((links (seq-filter (lambda (line) (org-truss--link-p (cdr line))) lines))
-               (last (seq-position links org-truss--last-link
-                                   (lambda (line key) (equal (plist-get (cdr line) :key) key))))
-               (next (if last (mod (1+ last) (max 1 (length links))) 0))
-               (link (nth next links)))
-          (unless link
-            (user-error "Nothing links to %s" (plist-get item :words)))
-          (setq org-truss--last-link (plist-get (cdr link) :key))
-          (goto-char (car link))
-          (message "Link %d of %d" (1+ next) (length links)))
-      (when (org-truss--link-p item)
-        (setq org-truss--last-link (plist-get item :key)))
+         (here (line-beginning-position))
+         (from (and (eq last-command this-command) org-truss--same-from
+                    (car (org-truss--lines-where
+                          (lambda (other) (equal (plist-get other :key) org-truss--same-from))))))
+         (round (and from (org-truss--lines-linked (cdr from))))
+         (at (seq-position round here (lambda (line start) (= (car line) start))))
+         (written (org-truss--home-line pos)))
+    (cond
+     (at
+      (let ((next (mod (1+ at) (length round))))
+        (goto-char (car (nth next round)))
+        (message "Link %d of %d" (1+ next) (length round))))
+     ((and written (= (car written) here))
+      (let ((links (or (org-truss--lines-linked item)
+                       (user-error "Nothing links to or from %s" (plist-get item :words)))))
+        (setq org-truss--same-from (plist-get item :key))
+        (goto-char (car (car links)))
+        (message "Link 1 of %d" (length links))))
+     (t
       (unless (or written (not (org-truss--open-folds-over pos)))
-        (setq written (seq-find (lambda (line) (org-truss--written-p (cdr line)))
-                                (org-truss--lines-naming pos))))
+        (setq written (org-truss--home-line pos)))
       (goto-char (car (or written (user-error "%s is not written on the board"
-                                              (plist-get item :words))))))))
+                                              (plist-get item :words)))))))))
 
 ;;;; Lines lit with the line at point
 
 (defun org-truss--light-same ()
   "Light the lines naming the member on the line at point, but that line.
-Nothing is done while point stays on the line they were lit for."
+Where else it is shown, and the lines linked to it one step either way;
+see `org-truss--lines-linked'.  Nothing is done while point stays on the
+line they were lit for."
   (let ((item (org-truss--item)))
     (unless (and item (eq item org-truss--same-item))
       (setq org-truss--same-item item)
@@ -657,13 +714,64 @@ Nothing is done while point stays on the line they were lit for."
       (let ((pos (org-truss--member-pos item))
             (here (line-beginning-position)))
         (when pos
-          (dolist (line (org-truss--lines-naming pos))
+          (dolist (line (seq-uniq (append (org-truss--lines-naming pos)
+                                          (org-truss--lines-linked item))
+                                  (lambda (a b) (= (car a) (car b)))))
             (unless (= (car line) here)
               (let ((overlay (make-overlay (car line)
                                            (save-excursion (goto-char (car line))
                                                            (min (point-max) (1+ (line-end-position)))))))
                 (overlay-put overlay 'face 'org-truss-same)
                 (push overlay org-truss--same-overlays)))))))))
+
+;;;; Focused on one member and its links
+
+(defun org-truss-board-focus (&optional off)
+  "Focus the board on the member at point and the members linked to it.
+Those it stands on or includes, and those standing on it or including
+it: one step either way.  Each of them, where it is written, is drawn
+whole, the lines above it open, and every other line folded; a line in
+the thin column before the words joins them to it, an arrow into each
+line that stands on what it is joined to.  The board stays so while
+point moves; \\[org-truss-board-cycle] folds and opens as ever.  Pressed
+on another member, the focus moves there; on the member focused on, or
+with a prefix argument OFF, the joining line goes, and the lines stay as
+they are."
+  (interactive "P")
+  (let* ((item (org-truss--item))
+         (pos (org-truss--member-pos item)))
+    (cond
+     ((or off (and pos org-truss--focused (= pos (marker-position org-truss--focused))))
+      (setq org-truss--focused nil)
+      (org-truss-board-redraw)
+      (message "Focus off"))
+     ((null pos) (user-error "No member on this line"))
+     (t
+      (let* ((model (org-truss-read org-truss--source))
+             (member (org-truss-member-at model pos))
+             (joined (and member (let ((org-truss--uses (org-truss--member-uses model)))
+                                   (append (org-truss--linked-to model member)
+                                           (org-truss--users member)))))
+             (wanted (cons pos (mapcar #'org-truss-member-pos joined))))
+        (unless joined
+          (user-error "Nothing links to or from %s" (plist-get item :words)))
+        (setq org-truss--focused (with-current-buffer org-truss--source (copy-marker pos)))
+        (org-truss--show-all 'open)
+        (let ((ends (delq nil (mapcar (lambda (p) (plist-get (cdr (org-truss--home-line p)) :fold))
+                                      wanted))))
+          (dolist (i (org-truss--drawn-folds))
+            (let ((key (plist-get i :fold)))
+              (org-truss--set-folds
+               (list key)
+               (cond ((member key ends) 'whole)
+                     ((seq-some (lambda (end) (org-truss--key-under-p end key)) ends) 'open)
+                     (t 'folded))))))
+        (org-truss-board-redraw)
+        (let ((home (org-truss--home-line pos)))
+          (when home (goto-char (car home))))
+        (message "%d linked; %s here again to leave"
+                 (length (seq-uniq joined))
+                 (substitute-command-keys "\\[org-truss-board-focus]")))))))
 
 ;;;; Members opened where written, or where included
 
@@ -688,14 +796,17 @@ As included, in Structure; as written, where it is written."
 (defun org-truss-board-order ()
   "Open the members Structure includes where they are included, or where written.
 As written, the board's first way, a member is opened where it is
-written -- with every member under it, where it is used and what it
-stands on -- and Structure has it on one line, so the outline reads down
+written -- with every member under it and the sources it stands on --
+and Structure has it on one line, so the outline reads down
 the middle.  As included, it is opened under the member of Structure that
-includes it instead, with all of that, so the output document reads down
-Structure beside the logic it rests on, and where it is written it is one
-line.  What was folded or unfolded by hand starts again; point stays on
-the member it was on, where it is opened now.  The mode line says which
-way the board is drawn."
+includes it instead, with all of that and the members it stands on, each
+in turn, so the output document reads down Structure beside the logic it
+rests on, down to the facts and their sources.  What Structure brings so
+is left out where it is written, and what is left there is used nowhere;
+one brought twice is one line the second time, folded; see
+`org-truss--order'.  What was folded or unfolded by hand starts again;
+point stays on the member it was on, where it is opened now.  The mode
+line says which way the board is drawn."
   (interactive)
   (let ((pos (org-truss--member-pos (org-truss--item))))
     (setq org-truss--board-order (if (eq org-truss--board-order 'included) 'written 'included)
@@ -975,43 +1086,34 @@ what stood on it can be seen.  A member of Structure is taken out by
 Pointed to by its ID, # [[#m3]], on a comment line of its own after the
 member's text, which the reader is not shown; one is given to it when it
 has none.  Its grounds now are offered first, and choosing one takes it
-away.  On a ground's own line, the one marked ⏚, take it away from the
-member standing on it without asking.  A link among other words is
-edited there, with the words."
+away.  A link among other words is edited there, with the words."
   (interactive)
   (let* ((item (org-truss--want (org-truss--item) 'member))
          (model (org-truss-read org-truss--source))
          (away (lambda (pos id)
                  (unless (org-truss-remove-ground pos id)
                    (user-error "This ground is linked among other words; %s edits it there"
-                               (substitute-command-keys "\\[org-truss-board-edit]"))))))
-    (if (plist-get item :standing)
-        (let* ((standing (org-truss-member-at model (plist-get item :standing)))
-               (ground (plist-get item :ground)))
-          (org-truss--editing
-            (funcall away (org-truss-member-pos standing) ground))
-          (message "%s is no longer a ground of %s" (or (plist-get item :words) ground)
-                   (org-truss-member-words standing)))
-      (let* ((member (org-truss-member-at model (plist-get item :pos)))
-             (grounds (org-truss-member-grounds member))
-             (inside (org-truss--subtree member))
-             (others (seq-remove (lambda (m) (memq m inside))
-                                 (append (org-truss-contents model)
-                                         (org-truss-members-in model 'structure))))
-             (current (seq-filter (lambda (m) (member (org-truss-member-id m) grounds)) others))
-             (path (lambda (m) (org-truss--any-path model m)))
-             (choices (mapcar (lambda (m) (cons (funcall path m) m))
-                              (append current (seq-remove (lambda (m) (memq m current)) others))))
-             (ground (org-truss--read-choice
-                      "Ground: " choices
-                      (mapcar (lambda (m) (cons (funcall path m) "a ground now; choose to take it away"))
-                              current))))
-        (org-truss--editing
-          (let ((at (copy-marker (plist-get item :pos))))
-            (if (memq ground current)
-                (funcall away at (org-truss-member-id ground))
-              (org-truss-add-ground at (org-truss-ensure-id (org-truss-member-pos ground))))
-            (set-marker at nil)))))))
+                               (substitute-command-keys "\\[org-truss-board-edit]")))))
+         (member (org-truss-member-at model (plist-get item :pos)))
+         (grounds (org-truss-member-grounds member))
+         (inside (org-truss--subtree member))
+         (others (seq-remove (lambda (m) (memq m inside))
+                             (append (org-truss-contents model)
+                                     (org-truss-members-in model 'structure))))
+         (current (seq-filter (lambda (m) (member (org-truss-member-id m) grounds)) others))
+         (path (lambda (m) (org-truss--any-path model m)))
+         (choices (mapcar (lambda (m) (cons (funcall path m) m))
+                          (append current (seq-remove (lambda (m) (memq m current)) others))))
+         (ground (org-truss--read-choice
+                  "Ground: " choices
+                  (mapcar (lambda (m) (cons (funcall path m) "a ground now; choose to take it away"))
+                          current))))
+    (org-truss--editing
+      (let ((at (copy-marker (plist-get item :pos))))
+        (if (memq ground current)
+            (funcall away at (org-truss-member-id ground))
+          (org-truss-add-ground at (org-truss-ensure-id (org-truss-member-pos ground))))
+        (set-marker at nil)))))
 
 (defun org-truss-board-unwrap ()
   "Take away the headings under the member of Structure at point.
@@ -1133,8 +1235,8 @@ drawn under."
         ((and (eq (car key) 'structure) (eq (car above) 'structure))
          (let ((path (cadr key)) (up (cadr above)))
            (and (> (length path) (length up)) (equal (seq-take path (length up)) up))))
-        ((eq (car key) 'link)
-         (let ((holder (if (memq (car-safe (cadr key)) '(member link structure))
+        ((memq (car key) '(link ground))
+         (let ((holder (if (memq (car-safe (cadr key)) '(member link structure ground))
                            (cadr key)
                          (list 'structure (cadr key)))))
            (or (equal holder above) (org-truss--key-under-p holder above))))))
@@ -1185,7 +1287,7 @@ to show its words whole and its text, with what is right under it, each
 of those folded; pressed again, everything under it is shown so too;
 again, it folds.  On a line with nothing under it, its words and text are
 shown whole, or it is one line again.  On a line a member brings below
-it -- its text, its grounds, where it is used -- the member's line
+it -- its text, its sources -- the member's line
 cycles.  A folded line says how many it hides.  With a prefix argument
 ALL, as \\[universal-argument] TAB in Org, the whole board cycles instead;
 see `org-truss-board-cycle-all'."
@@ -1269,7 +1371,7 @@ the file, and \\[org-dock-abort] lets it go, leaving the heading as it was.
 Back on the board, it draws again.  On a member written as an item of a
 list, the heading whose text holds it, at the item."
   (interactive)
-  (let* ((pos (plist-get (org-truss--want (org-truss--item) 'member 'broken 'part 'use)
+  (let* ((pos (plist-get (org-truss--want (org-truss--item) 'member 'broken 'part)
                          :pos))
          (holder (org-truss--item-holder pos)))
     (if holder
@@ -1610,7 +1712,7 @@ other member, in the file, with every member under it."
         (unless (org-truss-shift-include (plist-get item :holder) (plist-get item :link) delta)
           (user-error "Nothing to move past"))))
      ((and (eq (plist-get item :type) 'member)
-           (not (plist-get item :gap)) (not (plist-get item :standing)))
+           (not (plist-get item :gap)))
       (org-truss--editing
         (goto-char (plist-get item :pos))
         (condition-case nil
