@@ -1156,7 +1156,7 @@ it.  The member's own line counts the members standing on it."
 leaves the rest to be called by name."
   (org-truss-test--with-board org-truss-test--cycle-file
     (let ((text (buffer-string)))
-      (should (string-match-p "^see +RET visit  TAB cycle  <backtab> cycle-all  c focus  o order  \\? guide" text))
+      (should (string-match-p "^see +RET visit  TAB cycle  <backtab> cycle-all  o order  \\? guide" text))
       (should (string-match-p "^write +m source$" text))
       (should-not (string-match-p "^place" text))
       (should-not (string-match-p " new " text)))))
@@ -2387,33 +2387,6 @@ full and the lines standing on it."
     (org-truss-test--goto-line-with "^ Title")
     (org-truss--light-same)
     (should-not org-truss--same-overlays)))
-
-(ert-deftest org-truss-test-board-focuses-on-a-member ()
-  "c on a member draws it and the members linked to it one step either way
-whole, where each is written, and folds the rest; a line in the thin
-column joins them, an arrow into each line that stands on what it is
-joined to.  The focus stays while point moves; c on the member again
-takes the line away."
-  (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "member[ ·]+#half")
-    (org-truss-board-focus)
-    (should (looking-at "   member[ ·]+#half ┝━▶ Half the items repeat$"))
-    (let ((text (buffer-string)))
-      (should (string-match-p "#long ┌── Reviews run long\n +│   Reviews ran past the hour" text))
-      (should (string-match-p "#diff ├── Agenda diff$" text))
-      (should (string-match-p "#move ├─▶ Move to fortnightly\n +△ (logic › deduction) +│   Hold the review" text))
-      (should (string-match-p "├ Rain[ ·]+└─▶ Rain\n │   • included ▸5" text))
-      (should (string-match-p "Reason \\[no grounds\\] ▸2" text))
-      (should (string-match-p "└ Umbrella ▸2" text)))
-    (org-truss-test--goto-line-with "#move")
-    (org-truss-board-redraw)
-    (should (string-match-p "#half ┝━▶" (buffer-string)))
-    (org-truss-test--goto-line-with "member[ ·]+#half")
-    (org-truss-board-focus)
-    (should-not (string-match-p "[┌├└┝]─\\|━" (buffer-string)))
-    (should (string-match-p "#half +↥2 Half the items repeat" (buffer-string)))
-    (org-truss-test--goto-line-with "member[ ·]+Lone remark")
-    (should-error (org-truss-board-focus) :type 'user-error)))
 
 (ert-deftest org-truss-test-board-of-one-heading ()
   "In an Org file that is no truss file, the board is of the heading at

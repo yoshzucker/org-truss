@@ -49,14 +49,9 @@ The tree of Structure keeps the default face, so the two trees read apart
 where they meet."
   :group 'org-truss)
 
-(defface org-truss-focus '((t :inherit font-lock-function-name-face))
-  "Face for the lines that join the member the board is focused on to its links."
-  :group 'org-truss)
-
 ;; Every line has two columns.  The left is what the board says the line
-;; is, in its own words.  Between them a thin column says how a member is
-;; linked: how many use it, or, focused on one member, the lines that join
-;; it to its links.  The middle, from one column shared by every line,
+;; is, in its own words.  Between them a thin column says how many use a
+;; member, where two or more do.  The middle, from one column shared by every line,
 ;; is the file's words -- a member's words, the title -- with its links
 ;; read as the reader reads them; the heading is the reader's words, and
 ;; its text is all the reader is shown but its comments, so the file's
@@ -224,10 +219,6 @@ Its words, then, are the line above's; see `org-truss--absorbed-lines'.")
 (defvar org-truss--shown nil
   "While Structure is drawn as included, the members drawn in it so far.
 A hash table.  One drawn again starts folded.")
-
-(defvar org-truss--focus nil
-  "The position of the member the board being drawn is focused on, or nil.
-See `org-truss--lanes'.")
 
 ;;;; Drawing
 
@@ -651,8 +642,8 @@ See `org-truss-board-marks'."
   "Return the members MEMBER of MODEL stands on that it cannot, or nil.
 Drawn after its words, after the mark of a ground: the ID of each that
 no member has, or that has no grounds itself, ⏚m7, in the face of what
-wants doing.  The members it stands on that hold are not named: focused
-on, `org-truss--lanes', the board joins it to them."
+wants doing.  The members it stands on that hold are not named: drawn as
+included, `org-truss--order', they are drawn below it."
   (let ((trouble (delq nil (mapcar (lambda (id)
                                      (let ((ground (org-truss-member-by-id model id)))
                                        (and (not (and ground (org-truss-holds-p ground)))
@@ -682,70 +673,23 @@ and wants checking before it is trusted, since all of them stand on it."
                     (seq-uniq (append (org-truss-member-grounds member)
                                       (org-truss--included member))))))
 
-(defun org-truss--lane-text (role top bottom)
-  "Return the thin column of a line where the lines of a focus join or pass.
-ROLE is what the line's member is to the member focused on: `focus' it
-itself, `ground' one it stands on or includes, `user' one standing on it
-or including it, `focus-used' itself when it stands on nothing; nil, a
-line the join passes.  TOP and BOTTOM say the line is the first or the
-last joined.  The arrow points into the line that stands on what it is
-joined to."
-  (propertize
-   (if (null role)
-       "│  "
-     (let ((heavy (memq role '(focus focus-used))))
-       (concat (cond (top (if heavy "┍" "┌"))
-                     (bottom (if heavy "┕" "└"))
-                     (t (if heavy "┝" "├")))
-               (if heavy "━" "─")
-               (cond ((memq role '(focus user)) "▶")
-                     (heavy "━")
-                     (t "─")))))
-   'face 'org-truss-focus))
-
-(defun org-truss--lanes (model lines)
-  "Return what the thin column of each of LINES of MODEL's board says.
-A list as long as LINES, each a string or nil.  Focused on a member,
-`org-truss--focus', a line runs down the column, joining the member's own
-line to the line of each member it stands on or includes and of each
-that stands on it or includes it, where each is written; see
-`org-truss--lane-text'.  Else each member's line says how many use it,
-when two or more do; see `org-truss--used-text'."
-  (let* ((focus (and org-truss--focus (org-truss-member-at model org-truss--focus)))
-         (to (and focus (org-truss--linked-to model focus)))
-         (from (and focus (org-truss--users focus)))
-         (role (lambda (line)
-                 (let ((m (plist-get line :member)))
-                   (cond ((null m) nil)
-                         ((eq m focus) (if to 'focus 'focus-used))
-                         ((memq m from) 'user)
-                         ((memq m to) 'ground)))))
-         (joined (and focus (or to from)
-                      (seq-filter (lambda (i) (funcall role (nth i lines)))
-                                  (number-sequence 0 (1- (length lines)))))))
-    (cond
-     ((cdr joined)
-      (let ((top (car joined)) (bottom (car (last joined))))
-        (seq-map-indexed (lambda (line i)
-                           (and (<= top i bottom)
-                                (org-truss--lane-text (funcall role line) (= i top) (= i bottom))))
-                         lines)))
-     (focus (make-list (length lines) nil))
-     (t (mapcar (lambda (line)
-                  (let ((m (plist-get line :member)))
-                    (and m (org-truss--used-text m))))
-                lines)))))
+(defun org-truss--lanes (lines)
+  "Return what the thin column of each of LINES says, a string or nil.
+A member's line where it is written says how many use it, when two or
+more do; see `org-truss--used-text'."
+  (mapcar (lambda (line)
+            (let ((m (plist-get line :member)))
+              (and m (org-truss--used-text m))))
+          lines))
 
 (defun org-truss--lane-room (model)
   "Return the width the thin column takes on MODEL's board, a space after it.
 0 when it says nothing; see `org-truss--lanes'."
-  (if (and org-truss--focus (org-truss-member-at model org-truss--focus))
-      4
-    (let ((widest (seq-reduce (lambda (widest m)
-                                (let ((text (org-truss--used-text m)))
-                                  (if text (max widest (string-width text)) widest)))
-                              (org-truss-model-members model) 0)))
-      (if (> widest 0) (1+ widest) 0))))
+  (let ((widest (seq-reduce (lambda (widest m)
+                              (let ((text (org-truss--used-text m)))
+                                (if text (max widest (string-width text)) widest)))
+                            (org-truss-model-members model) 0)))
+    (if (> widest 0) (1+ widest) 0)))
 
 (defun org-truss--linked-positions (model member &optional including)
   "Return the positions of the members MEMBER of MODEL stands on.
@@ -820,9 +764,9 @@ The words it quotes, each quotation, and below them the sources its text
 links to, each once, as the words are read from the source; a link among
 them that points to nothing said not to be found.  Each keeps the links
 to sources it opens, as :links: a source's own, and a quotation's, or
-else the first the text cites.  The members it stands on have no line
-here: focused on, the board joins it to where they are written; see
-`org-truss--lanes'.  STEM starts each; KEY is MEMBER's line's."
+else the first the text cites.  The members it stands on are drawn
+below these as included; see `org-truss--ground-members-lines'.  STEM
+starts each; KEY is MEMBER's line's."
   (let* ((pos (org-truss-member-pos member))
          (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) member))
                                             (plist-get org-truss--checks :broken-sources))))
@@ -1601,7 +1545,7 @@ whole is broken to fit; see `org-truss-board-middle-width'."
                           (org-truss--board-lines model)))))
     (mapconcat #'identity
                (cl-mapcar (lambda (line lane) (org-truss--lay-out line column lane))
-                          lines (org-truss--lanes model lines))
+                          lines (org-truss--lanes lines))
                "")))
 
 (provide 'org-truss-draw)

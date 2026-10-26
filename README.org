@@ -935,8 +935,7 @@ This is the board of the file above, every line open:
 
 Each member is drawn once, where it is written.  What links it to the
 others -- the members it stands on, those standing on it or including
-it -- is drawn when the board is focused on it; see [[*Focus on one
-member]].
+it -- is drawn when the board opens them where Structure includes them.
 
 /order/, ~o~, opens the members include links include where they are included
 instead: under the member of Structure whose link includes them, with
@@ -1025,8 +1024,8 @@ by its ID as the file names it: =#m9= where it is written, and =[[#m9]]=
 where an include link includes it.  So what Structure
 includes can be found where it is written, and a member under one a link
 calls, which is not called itself, has none.  Between the left and the
-words runs a thin column, which says how a member is linked; see
-[[*Marks]] and [[*Focus on one member]].  After it, from one
+words runs a thin column, which says how many use a member; see
+[[*Marks]].  After it, from one
 column the same on every line, are the file's own words -- members'
 words, the title -- with dots leading to them, and links read as the
 reader reads them: a member whose words are an include link alone reads
@@ -1085,8 +1084,8 @@ written, and its line says little of its links:
 stand or fall with it: check it against its sources before trusting
 what is built on it.  A member used once has none, and so does one not
 used at all.  The members a member stands on that hold are not named:
-focused on it, the board draws a line to each; see [[*Focus on one
-member]].  With point on a line, the lines linked to it light up, one
+opened as included, the board draws them below it; see /order/.  With
+point on a line, the lines linked to it light up, one
 step either way: where each member it stands on is written, and each
 line standing on it or including it.  /same/ goes to them in turn.  An
 include link written
@@ -1217,53 +1216,6 @@ file written in another language the two sides read apart at a glance.
 What ~?~ says of a part or a role is in ~org-truss-language~, as the
 guide is.
 
-** Focus on one member
-
-A member is drawn once, where it is written, so what it stands on and
-what stands on it are drawn elsewhere: a reason in Message stands on a
-fact in Subject, and Structure includes the reason.  ~c~ (/focus/) on a
-member draws them together.  The member and each member linked to it,
-one step either way -- those it stands on or includes, those standing
-on it or including it -- are drawn whole where each is written, the
-lines above them open, and every other line folded.  A line runs down
-the thin column joining them, heavy at the member focused on, with an
-arrow into each line that stands on what it is joined to.  This is the
-board of the example focused on m7, the action:
-
-#+begin_example
- Message  what the output document says
- ▲ (breakdown › Interpretation, Action)
-   Interpretation ····· #m5     The weekly review costs the team more time than…
-   ▲ (breakdown › parts)
-   ├ Part ▸2 ··············     - The review takes longer than it is given
-   └ Part ············· #m6 ┌── - Half the items repeat
-     △ (logic › reasons)    │   Half of each agenda repeats the week before.
-     │                      │   # Robin keeps raising the same items.  Not
-     │                      │   # something to put in writing.
-     ├ Reason ············· │   - Half of each agenda is what was open the week…
-     ├ Reason [no grounds]  │   - Nothing urgent waits for the review
-     └ Reason [assumed] ··· │   - Items need a week to move
-   Action ············· #m7 ┝━▶ Hold the review every other week
-   △ (breakdown › steps)    │
-   ├ Step ················· │   1. Cancel every second review in the calendar
-   └ Step ················· │   2. Carry what is still open to the next one
- ...
- Structure  the output doc… │
- △ (telling › Sky, Rain, U… │
- ├ Sky ··········· →Subject │   Reviews run long, and the same items come back
- ├ Rain ·········· →Message │   The weekly review costs the team more time than…
- └ Umbrella ······ →Message └─▶ Hold the review every other week
-#+end_example
-
-m7 stands on m6, so the arrow points into m7; Umbrella includes m7, so
-it points into Umbrella.  The line is in the face ~org-truss-focus~.
-Read down the joined lines, a member is checked
-against what it stands on, and what is built on it against it.  The
-focus stays while point moves, so the board does not move under it;
-~TAB~ folds and opens as ever.  ~c~ on another member moves the focus
-there; on the member focused on, or with a prefix argument, the line
-goes and the lines stay as they are.
-
 ** Commands
 
 The board is read-only.  Its commands change the truss file and draw the
@@ -1326,7 +1278,6 @@ in the same four lines.
 |         | cycle              | ~TAB~     | fold it, show it whole with what is right under it, or all under it          | same                                               |
 |         | cycle-all          | ~C-u TAB~ | fold every line, open every one, or show every one whole; ~S-TAB~ too        | same                                               |
 |         | fold               |           | fold what is under it, or unfold it                                          | same                                               |
-|         | focus              | ~c~       | draw it with the members linked to it, joined; again, the line goes          | same                                               |
 |         | same               |           | go to where it is written, or there, to a call                               | same                                               |
 |         | order              | ~o~       | open the members included where included, or where written                   | same                                               |
 |         | guide              | ~?~       | say what it is for, in the echo area                                         | same                                               |
@@ -1386,8 +1337,9 @@ where it is not opened, as /order/ says, since it is drawn in full where
 it is.
 
 A link is drawn as what it is to its member.  In a reason every link to a
-member is grounds, as any ground is: /focus/ joins the reason to it.
-None is drawn there besides as a member included.  A reason whose words
+member is grounds, as any ground is: opened as included, it is drawn
+under the reason, =• reason= or =⏚ reason=.  None is drawn there
+besides as a member included.  A reason whose words
 are the link, ~*** [[truss-include:m7]]~, is drawn as written, its role
 and m7's words.  Where m7 is written, the thin column counts the members
 built on it, =↥2=, when there are two or more.  In a member that is no

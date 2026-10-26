@@ -38,10 +38,6 @@ fit and its text under it, with what is under it shown.  A line with
 nothing under it is folded or open alike.  A line not here is open,
 or folded as `org-truss-board-fold-limit' says.")
 
-(defvar-local org-truss--focused nil
-  "The member this board is focused on, a marker where it is written, or nil.
-See `org-truss-board-focus'.")
-
 (defvar-local org-truss--drawn-width nil
   "Width of the window the board was drawn for.")
 
@@ -112,7 +108,7 @@ Filled by org-truss-moor.el; empty without org-moor.")
            org-truss-board-pattern org-truss-board-roles)
     (see org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
          org-truss-board-cycle org-truss-board-cycle-all org-truss-board-fold
-         org-truss-board-focus org-truss-board-same
+         org-truss-board-same
          org-truss-board-order org-truss-board-guide org-truss-board-view
          org-truss-board-export org-truss-board-redraw org-truss-board-save))
   "The board's commands, by what they work on, as its foot lists them.
@@ -182,7 +178,6 @@ command acts on the file as it is, and a key pressed once is enough."
     (setq org-truss--drawn-width (and window (window-body-width window)))
     (erase-buffer)
     (insert (let ((org-truss--folding org-truss--folds)
-                  (org-truss--focus (and org-truss--focused (marker-position org-truss--focused)))
                   (org-truss--order org-truss--board-order)
                   (org-truss--images (display-images-p (and window (window-frame window)))))
               (org-truss-board-text model nil org-truss--drawn-width))
@@ -210,7 +205,6 @@ command acts on the file as it is, and a key pressed once is enough."
     (define-key map (kbd "RET") #'org-truss-board-visit)
     (define-key map (kbd "o") #'org-truss-board-order)
     (define-key map (kbd "TAB") #'org-truss-board-cycle)
-    (define-key map (kbd "c") #'org-truss-board-focus)
     (define-key map (kbd "<backtab>") #'org-truss-board-cycle-all)
     (define-key map (kbd "m") 'org-truss-board-moor-map)
     (define-key map (kbd "x") #'org-truss-board-export)
@@ -723,55 +717,6 @@ line they were lit for."
                                                            (min (point-max) (1+ (line-end-position)))))))
                 (overlay-put overlay 'face 'org-truss-same)
                 (push overlay org-truss--same-overlays)))))))))
-
-;;;; Focused on one member and its links
-
-(defun org-truss-board-focus (&optional off)
-  "Focus the board on the member at point and the members linked to it.
-Those it stands on or includes, and those standing on it or including
-it: one step either way.  Each of them, where it is written, is drawn
-whole, the lines above it open, and every other line folded; a line in
-the thin column before the words joins them to it, an arrow into each
-line that stands on what it is joined to.  The board stays so while
-point moves; \\[org-truss-board-cycle] folds and opens as ever.  Pressed
-on another member, the focus moves there; on the member focused on, or
-with a prefix argument OFF, the joining line goes, and the lines stay as
-they are."
-  (interactive "P")
-  (let* ((item (org-truss--item))
-         (pos (org-truss--member-pos item)))
-    (cond
-     ((or off (and pos org-truss--focused (= pos (marker-position org-truss--focused))))
-      (setq org-truss--focused nil)
-      (org-truss-board-redraw)
-      (message "Focus off"))
-     ((null pos) (user-error "No member on this line"))
-     (t
-      (let* ((model (org-truss-read org-truss--source))
-             (member (org-truss-member-at model pos))
-             (joined (and member (let ((org-truss--uses (org-truss--member-uses model)))
-                                   (append (org-truss--linked-to model member)
-                                           (org-truss--users member)))))
-             (wanted (cons pos (mapcar #'org-truss-member-pos joined))))
-        (unless joined
-          (user-error "Nothing links to or from %s" (plist-get item :words)))
-        (setq org-truss--focused (with-current-buffer org-truss--source (copy-marker pos)))
-        (org-truss--show-all 'open)
-        (let ((ends (delq nil (mapcar (lambda (p) (plist-get (cdr (org-truss--home-line p)) :fold))
-                                      wanted))))
-          (dolist (i (org-truss--drawn-folds))
-            (let ((key (plist-get i :fold)))
-              (org-truss--set-folds
-               (list key)
-               (cond ((member key ends) 'whole)
-                     ((seq-some (lambda (end) (org-truss--key-under-p end key)) ends) 'open)
-                     (t 'folded))))))
-        (org-truss-board-redraw)
-        (let ((home (org-truss--home-line pos)))
-          (when home (goto-char (car home))))
-        (message "%d linked; %s here again to leave"
-                 (length (seq-uniq joined))
-                 (substitute-command-keys "\\[org-truss-board-focus]")))))))
 
 ;;;; Members opened where written, or where included
 
