@@ -1079,7 +1079,7 @@ written, and its line says little of its links:
 | Mark    | Where                                         | Says                                                                    |
 |---------+-----------------------------------------------+-------------------------------------------------------------------------|
 | =⏚m7=   | after a member's words                        | it stands on m7, which no member is, or which has no grounds itself     |
-| =×2=    | the thin column, as included, drawn in full   | two members of the chain stand on it or include it                      |
+| =×2=    | the thin column, as included, drawn in full   | the chain draws it in two places                                        |
 | =↑Sky=  | the thin column, as included, drawn again     | drawn in full above, under Sky; here one line, folded                   |
 
 Opened as included (/order/), the board draws what Structure stands on
@@ -1089,15 +1089,16 @@ follows from, one fact two reasons stand on.  Those are the logic's own
 shape, not faults -- what is said twice is caught by /Said again/ and
 /Grounds set low/ -- so the second time it is one line, folded, and
 the thin column says where it was read in full, =↑Sky=.  Where it is
-drawn in full, the column counts the members of the chain that use it,
-=×2=: they all stand or fall with it, so it is checked against its
-sources first.  The members a member stands on that hold are not named
-as written: opened as included, the board draws them below it.  With
-point on a line, the lines linked to it light up, one
-step either way: where each member it stands on is written, and each
-line standing on it or including it.  /same/ goes to them in turn.  An
-include link written
-besides a member's words has a line of its own under the member:
+drawn in full, the column counts the places the chain draws it, =×2=:
+each member standing on it or including it, and the member it is under
+when the chain has that one.  All of them stand or fall with it, so it
+is checked against its sources first.  The members a member stands on
+that hold are not named as written: opened as included, the board draws
+them below it.  With point on a line, the lines linked to it light up,
+one step either way: where each member it stands on is drawn in full,
+and each line standing on it or including it.  /same/ goes to them in
+turn.  An include link written besides a member's words has a line of
+its own under the member:
 =• included=, naming the member it includes by its ID, =[[#m12]]=.  A
 member of Structure whose words are an include link alone is that
 member, and has no such line.  A member whose
@@ -1315,12 +1316,14 @@ go.  On the /Structure/ line, it writes the output document's opening.
 
 /same/ goes round the lines linked to a member, one step either way.
 On a line including it, =[[#m9]]=, or showing it under a member a link
-includes, it goes to where it is written, =#m9=, unfolding what hides
-it.  There, it goes to the first line linked to it -- where a member it
-stands on is written, a line standing on it or including it -- and
-pressed again, to the next, and round, saying which of how many it is.
-The line at point is lit, and so are the other lines naming the member
-on it -- where it is written, where it is included -- and the lines
+includes, it goes to where it is drawn in full, unfolding what hides it:
+where it is written, =#m9=, or, opened as included, the first line the
+chain brings it to.  There, it goes to the first line linked to it --
+where a member it stands on is drawn in full, a line standing on it or
+including it -- and pressed again, to the next, and round, saying which
+of how many it is.  The line at point is lit, and so are the other
+lines naming the member on it -- where it is written, where it is
+included -- and the lines
 linked to it, in the face ~org-truss-same~; set
 ~org-truss-board-highlight~ to nil for neither.
 
@@ -1599,6 +1602,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =•=                        | marks the board says a link with              |
+| ~org-truss-board-truss-marks~  | =△= =▲=                        | marks of a simple and a compound truss        |
 | ~org-truss-board-quote-marks~  | =✓= =✗= =?=                    | marks of a quotation found, not, unchecked    |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |
 |                                |                                | the same member or linked to it               |
