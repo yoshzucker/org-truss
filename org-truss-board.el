@@ -388,7 +388,9 @@ while a command was asking something."
 (defconst org-truss--item-commands
   '(org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
     org-truss-board-edit org-truss-board-same org-truss-board-assume
-    org-truss-board-pattern)
+    org-truss-board-pattern org-truss-board-roles
+    org-truss-board-take-url org-truss-board-take-file org-truss-board-take-clipboard
+    org-truss-board-keep-copy org-truss-board-link-source)
   "The board's commands that take a member written as an item of a list.")
 
 (defun org-truss--want (item &rest types)
@@ -1065,9 +1067,21 @@ no supporting member plays yet are offered first."
     (unless (and apex (org-truss-apex-p apex))
       (user-error "The member above has no pattern to play a role in"))
     (let ((roles (org-truss--read-roles apex (org-truss-member-roles member))))
-      (org-truss--editing
-        (pcase-dolist (`(,kind . ,role) roles)
-          (org-truss-set-role pos kind role))))))
+      (if (not (org-truss-item-p member))
+          (org-truss--editing
+            (pcase-dolist (`(,kind . ,role) roles)
+              (org-truss-set-role pos kind role)))
+        ;; An item names one role, before ::; one of a pattern of one
+        ;; role it plays unnamed.
+        (let ((named (seq-filter (lambda (r)
+                                   (and (cdr r)
+                                        (cdr (org-truss-pattern-roles
+                                              (org-truss-member-pattern apex (car r))))))
+                                 roles)))
+          (when (cdr named)
+            (user-error "An item names one role before ::; write it as a heading to play two"))
+          (org-truss--editing
+            (org-truss-set-item-role pos (cdar named))))))))
 
 (defun org-truss-board-say ()
   "Write the text the reader is shown under the member at point.

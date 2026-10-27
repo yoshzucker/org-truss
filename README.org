@@ -373,7 +373,8 @@ Every part reads items so, Brief and Structure among them:
 On the board, /edit/ on an item takes out the heading whose text holds
 it, at the item; /pattern/ on an item names the pattern in the
 ~#+attr_truss~ right in it, and puts in its list an item for each role
-the pattern asks for; /assume/ tags it.  The other commands that change
+the pattern asks for; /roles/ writes its role before ~::~, one an item
+can name; /assume/ tags it; ~m~ takes a source for it.  The other commands that change
 a heading say so on an item instead, which is written by hand there.
 
 ** Grounds
@@ -1430,7 +1431,8 @@ working by ~org-truss-batch-check~ is told of it.
 
 ~m~, with org-moor, takes a source for the member as org-moor takes one,
 into the truss file's ~sources/~, and writes the link to it on a line of
-its own after the member's text, the reader's citation too: ~m w~ a page
+its own after the member's text -- for an item, at the end of its first
+line, before its tags -- the reader's citation too: ~m w~ a page
 or a file on the web, its copy fetched in the background
 (~org-moor-take-url~); ~m f~ a file (~org-moor-take-file~); ~m c~ the
 clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file

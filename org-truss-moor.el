@@ -41,6 +41,7 @@
 (defvar org-truss-moor-missing-function)
 (defvar org-truss-moor-export-function)
 (defvar org-truss-moor-text-function)
+(defvar evil-local-mode)
 
 (defun org-truss-moor-sources (file)
   "Return the sources directory of FILE when it is a truss file, else nil."
@@ -58,18 +59,44 @@ title; the members under it name the place, p. 12."
 
 (add-hook 'org-moor-place-alone-functions #'org-truss-moor-place-alone-p)
 
+(defun org-truss-moor--words-end (pos)
+  "Return where the words of the item at POS end, before its tags."
+  (save-excursion
+    (goto-char pos)
+    (let ((line (buffer-substring-no-properties (point) (line-end-position))))
+      (+ (point) (length (string-trim-right (car (org-item-tags-split line))))))))
+
+(defun org-truss-moor--at-item (pos thunk)
+  "Call THUNK with point after the words of the item at POS and a space.
+A link THUNK writes there ends the item's first line, before its tags,
+as a source's place is cited; the space goes again when it writes none."
+  (let ((at (copy-marker (org-truss-moor--words-end pos))))
+    (goto-char at)
+    (insert " ")
+    (let ((after (point-marker)))
+      (unwind-protect
+          (let ((evil-local-mode nil))
+            (funcall thunk))
+        (unless (save-excursion (goto-char after) (looking-at-p "\\[\\["))
+          (save-excursion (goto-char at) (when (looking-at " ") (delete-char 1))))
+        (set-marker after nil)
+        (set-marker at nil)))))
+
 (defun org-truss-moor--at-heading (command)
   "Call COMMAND, an org-moor command, at the member of the board's line.
 As if typed there: it reads what it reads, takes the source into the
 truss file's sources, and writes the link on a line of its own after the
-member's text."
+member's text; for an item, at the end of its first line."
   (let ((item (org-truss--want (org-truss--item) 'member)))
     (org-truss--fresh)
     (with-current-buffer org-truss--source
       (save-excursion
-        (goto-char (plist-get item :pos))
-        (let ((current-prefix-arg nil))
-          (call-interactively command))))
+        (let ((pos (plist-get item :pos))
+              (current-prefix-arg nil))
+          (goto-char pos)
+          (if (org-at-heading-p)
+              (call-interactively command)
+            (org-truss-moor--at-item pos (lambda () (call-interactively command)))))))
     (org-truss-board-redraw)))
 
 (defun org-truss-board-take-url ()
@@ -112,9 +139,13 @@ On a line of its own after the member's text."
                               (sort records (lambda (a b) (string> (or (plist-get a :taken) "")
                                                                    (or (plist-get b :taken) ""))))))
                (record (cdr (assoc (completing-read "Source: " table nil t) table)))
-               (at (copy-marker (plist-get item :pos))))
-          (set-marker (org-moor-insert-link-line at nil (org-moor-link record)) nil)
-          (set-marker at nil))))
+               (pos (plist-get item :pos)))
+          (if (org-with-point-at pos (org-at-heading-p))
+              (let ((at (copy-marker pos)))
+                (set-marker (org-moor-insert-link-line at nil (org-moor-link record)) nil)
+                (set-marker at nil))
+            (save-excursion
+              (org-truss-moor--at-item pos (lambda () (insert (org-moor-link record)))))))))
     (org-truss-board-redraw)))
 
 (defun org-truss-moor--open (origin how)

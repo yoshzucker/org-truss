@@ -87,6 +87,49 @@ heading, after its text: grounds.  m l links one taken before."
             (should (string-search (concat "** Lone remark\n" (org-moor-link record) "\n")
                                    (buffer-string)))))))))
 
+(ert-deftest org-truss-test-board-takes-a-source-for-an-item ()
+  "m on an item takes a source as on a heading, and writes the link at the
+end of the item's first line, before its tags; m l links one so."
+  (org-truss-test--in-directory
+      (list (cons "truss.org" "#+title: T
+* Message
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Why
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+#+attr_truss:
+- Some items are urgent :draft:
+  They cannot wait.
+- Most items can wait
+")
+            (cons "read/minutes.txt" "We agreed.\n"))
+    (let* ((source (find-file-noselect (expand-file-name "truss.org" dir)))
+           (org-truss-language 'en)
+           (org-moor-move-directories nil))
+      (with-temp-buffer
+        (org-truss-board-mode)
+        (setq org-truss--source source)
+        (org-truss-board-redraw)
+        (org-truss-test--goto-line-with "Some items are urgent")
+        (cl-letf (((symbol-function 'read-file-name)
+                   (lambda (&rest _) (expand-file-name "read/minutes.txt" dir)))
+                  ((symbol-function 'read-string) (lambda (&rest _) "Minutes")))
+          (let ((this-command 'org-truss-board-take-file))
+            (org-truss-board-take-file)))
+        (let ((link (org-moor-link (car (org-moor-sources-in (expand-file-name "sources/" dir))))))
+          (with-current-buffer source
+            (should (string-search (concat "- Some items are urgent " link " :draft:\n  They cannot wait.\n")
+                                   (buffer-string))))
+          (org-truss-test--goto-line-with "Most items can wait")
+          (cl-letf (((symbol-function 'completing-read) (lambda (&rest _) "Minutes")))
+            (let ((this-command 'org-truss-board-link-source))
+              (org-truss-board-link-source)))
+          (with-current-buffer source
+            (should (string-search (concat "- Most items can wait " link "\n") (buffer-string)))))))))
+
 (ert-deftest org-truss-test-board-opens-a-source ()
   "m o on the board follows the link of a source's line, the one a
 quotation quotes, or one the heading's own text has, asked for; m O opens

@@ -1036,6 +1036,34 @@ in a list there an item for each role it asks for."
                                     "- It is quick :assumption:\n")
                             (with-current-buffer source (buffer-string))))))
 
+(ert-deftest org-truss-test-board-sets-an-item-role ()
+  "roles on an item writes the role before ::, in place of the one there;
+a term naming no role stays its words."
+  (org-truss-test--with-board "* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Should we?
+:PROPERTIES:
+:TRUSS_BREAKDOWN: pros-cons
+:END:
+#+attr_truss:
+- pros :: It is cheap
+- It is quick :draft:
+"
+    (org-truss-test--goto-line-with "It is quick")
+    (cl-letf (((symbol-function 'completing-read)
+               (lambda (_prompt table &rest _) (seq-find (lambda (c) (string-prefix-p "Con" c)) table))))
+      (let ((this-command 'org-truss-board-roles))
+        (org-truss-board-roles)))
+    (should (string-match-p "^- cons :: It is quick :draft:$" (with-current-buffer source (buffer-string))))
+    (org-truss-test--goto-line-with "It is cheap")
+    (cl-letf (((symbol-function 'completing-read)
+               (lambda (_prompt table &rest _) (seq-find (lambda (c) (string-prefix-p "Con" c)) table))))
+      (let ((this-command 'org-truss-board-roles))
+        (org-truss-board-roles)))
+    (should (string-match-p "^- cons :: It is cheap$" (with-current-buffer source (buffer-string))))))
+
 (ert-deftest org-truss-test-board-marks-sections-outside-the-pattern ()
   "A section playing no role of its parent's pattern is marked."
   (org-truss-test--with-board org-truss-test--file

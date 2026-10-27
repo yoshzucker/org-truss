@@ -264,6 +264,24 @@ With ROLE nil, it plays none there."
       (org-entry-put pos (org-truss-role-property kind) (symbol-name role))
     (org-entry-delete pos (org-truss-role-property kind))))
 
+(defun org-truss-set-item-role (pos role)
+  "Make the item at POS play ROLE, its term before ::, or none with nil.
+A term naming no role is its words, and stays."
+  (save-excursion
+    (goto-char pos)
+    (when (looking-at org-list-full-item-re)
+      (let ((term (match-string-no-properties 4))
+            (roles (mapcar #'car (org-truss-pattern-roles-all))))
+        (cond ((and term (memq (org-truss--intern term) roles))
+               (goto-char (match-beginning 4))
+               (looking-at "[^\n]*?[ \t]+::[ \t]*")
+               (delete-region (point) (match-end 0)))
+              (t (goto-char (match-end 0))
+                 (skip-chars-backward " \t")
+                 (skip-chars-forward " \t")))
+        (when role
+          (insert (symbol-name role) " :: "))))))
+
 (defun org-truss-set-pattern (pos kind pattern)
   "Give the heading at POS PATTERN of KIND.
 KIND is `logic', `breakdown' or `telling'; see `org-truss-patterns'.  With

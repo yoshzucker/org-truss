@@ -330,6 +330,12 @@ the words of a member added for it."
   "Return what the board calls the pattern ID."
   (or (plist-get (org-truss-pattern id) :name) (symbol-name id)))
 
+(defun org-truss-pattern-roles-all ()
+  "Return the roles of every pattern, each once, as (ROLE . FLAGS)."
+  (seq-uniq (mapcan (lambda (p) (copy-sequence (org-truss-pattern-roles (car p))))
+                    org-truss-patterns)
+            (lambda (a b) (eq (car a) (car b)))))
+
 (defun org-truss-pattern-roles (id)
   "Return the roles of the pattern ID, in order, each (ROLE . FLAGS).
 FLAGS are what `org-truss-patterns' says a role asks for."
