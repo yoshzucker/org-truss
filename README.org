@@ -350,8 +350,8 @@ We would meet half as often.
   ~- [[truss-include:m7]]~ of a member of Structure among it.
 - A target in its first line, ~<<m21>>~, is its ID, as one in a
   heading's words is the heading's: ~[[m21]]~ points to it, and
-  ~[[truss-include:m21]]~ includes it.  /include/ gives a member one,
-  before its words.
+  ~[[truss-include:m21]]~ includes it.  /new/ gives a member it writes
+  one, before its words.
 - ~TRUSS_AS~ on a heading, or ~:as~ in ~#+attr_truss~, ~headings~ or
   ~list~, says how the output document writes the supporting members of
   that one truss, where what it is would write them the other way.
@@ -854,8 +854,9 @@ the output document says so where it stops.
 ** Pointing to a member
 
 Both links point to a member by its ID: ~m7~ is the heading or the item
-with ~<<m7>>~ in its words, before them, as /include/ writes it.  The ID goes with the words, so a heading made an item, or an item a
-heading, keeps it, and nothing pointing to it changes.  A heading with
+with ~<<m7>>~ in its words, before them.  The ID goes with the words,
+so a heading made an item, or an item a heading, keeps it, and nothing
+pointing to it changes.  A heading with
 ~:CUSTOM_ID: m7~ is m7 as well, and a link may be written ~[[#m7]]~: in a
 truss file, with org-truss loaded, ~C-c C-o~ follows ~[[m7]]~, ~[[#m7]]~
 and ~[[truss-include:m7]]~ to m7 however its ID is written, where Org
@@ -869,14 +870,11 @@ each rewording would break what pointed to it; pointing by ID, a member
 can be reworded anywhere -- in the file by hand, or by a model editing
 the file -- and nothing breaks.
 
-A member is given an ID only once something points to it: /include/
-including it, /new/ writing it in Structure; one pointed to by hand is
-given one by hand, ~<<m7>>~ before its words.
-An ID is ~m~ and the next number free in the file, counted from the first
-heading; one you write yourself is kept.  Two members with one ID, and a
-link that points to no member, are reported as /Broken links/, at each in
-the part it is in.  /include/ on a broken link includes a member where it
-stands.
+A member is given an ID once something points to it: written by hand,
+~<<m7>>~ before its words, or by /new/ writing it in Structure.  An ID
+is ~m~ and the next number free in the file, counted from the first
+heading.  Two members with one ID, and a link that points to no member,
+are reported as /Broken links/, at each in the part it is in.
 
 A link written by words, ~[[*words]]~ or ~[[truss-include:*words]]~ --
 with Org's completion, say -- names no ID and shows as broken.
@@ -1159,7 +1157,7 @@ is under.  ~org-truss-board-marks~ sets the marks of a link, and
 ~org-truss-board-where-marks~ those before the words.  A role a member's
 pattern asks for and it lacks -- /Minor premise —/ -- follows what it holds, with the
 pattern that asks when the member has more than one.  /new/ on it writes
-a member playing it; in Structure, /new-in-structure/ does.
+a member playing it.
 
 The other marks of the board are not links:
 
@@ -1293,36 +1291,25 @@ made while a command is asking something makes the command stop and draw
 again rather than act on positions that have moved.
 
 The board's commands fall into four groups, by what they work on.
-/Write/ works on the members themselves, in the file.  /Include/ works on
-the include links: a member of Structure includes the members it carries,
-and the members do not move.  /Shape/ works on Structure's outline, on
-what Structure says itself, and on the patterns of any member.  /See/
-moves about the board and the output document.  Each is named here by
-what follows ~org-truss-board-~ in its name -- /include/ is
-~org-truss-board-include~.  Few have a key of their own: those that move
-through the board and read it, ~m~ for a source, ~x~ for the output
-document, ~?~ for what a line is for.  The rest are called by name, ~M-x
-org-truss-board-include~, or bound where you want them, in
-~org-truss-board-mode-map~.  The foot of the board lists those with a key,
-in the same four lines.
+/Write/ works on the members themselves, in the file.  /Shape/ works on
+the patterns of a member and the roles it plays.  /See/ moves about the
+board and the output document.  Each is named here by what follows
+~org-truss-board-~ in its name -- /pattern/ is ~org-truss-board-pattern~.
+Few have a key of their own: those that move through the board and read
+it, ~m~ for a source, ~x~ for the output document, ~?~ for what a line is
+for.  The rest are called by name, ~M-x org-truss-board-pattern~, or
+bound where you want them, in ~org-truss-board-mode-map~.  The foot of
+the board lists those with a key, in the same three lines.  Writing,
+moving, rewording and deleting members, include links and grounds is
+done in the file, by hand or with Org's own commands.
 
 | Group   | Command            | Key       | On a member of Structure                                                     | On any other member                                |
 |---------+--------------------+-----------+------------------------------------------------------------------------------+----------------------------------------------------|
 | write   | new                |           | write a new member, included in it                                           | write a member under it, last                      |
 |         | edit               |           | edit its heading alone, beside the board                                     | same                                               |
-|         | rename             |           | reword it                                                                    | same                                               |
 |         | moor-map           | ~m~       | take a source for it, or link one taken before (with org-moor)               | same                                               |
-|         | ground             |           | make a member its grounds, or not                                            | same                                               |
 |         | assume             |           | tag it an assumption, or take the tag off                                    | same                                               |
-|         | refile             |           | refile it, last under another member of Structure                            | refile it, last under a part or another member     |
-|         | delete             |           |                                                                              | delete it from the file, after asking              |
-| include | include            |           | include a member in it, by an include link                                   | same                                               |
-|         | take-out           |           | take it out, handing what it includes up                                     | take it out of where it is included; it stays      |
-|         | up, down           |           | move it among its siblings                                                   | move it among its siblings; included, among the links there |
-| shape   | new-in-structure   |           | add a member under it; on a missing role, playing it, where the pattern lists it |                                                |
-|         | say                |           | write its text                                                               | write the text it is written out with              |
-|         | unwrap             |           | take the members under it away, keeping their include links                  |                                                    |
-|         | pattern            |           | apply a pattern of any kind, or take one off                                 | same                                               |
+| shape   | pattern            |           | apply a pattern of any kind, or take one off                                 | same                                               |
 |         | roles              |           | set the roles it plays in the patterns of the member above                   | same                                               |
 | see     | visit              | ~RET~     | go to it                                                                     | same                                               |
 |         | visit-other-window |           | go to it in the other window                                                 | same                                               |
@@ -1337,24 +1324,6 @@ in the same four lines.
 |         | export             | ~x~       | write the output document                                                    |                                                    |
 |         | redraw             | ~g~       | draw again                                                                   |                                                    |
 |         | save               | ~C-x C-s~ | save the truss file                                                          |                                                    |
-
-/include/ on any member -- of Structure, of another part, a part --
-writes in it an include link to the member chosen, ~- [[truss-include:m7]]~:
-those included nowhere offered first.  A member can be included in as
-many places as want it, and is included in each; /take-out/ takes it out
-of one.  On a broken link, /include/ includes the member chosen where the
-link stands, in its place: the way to mend one.  /take-out/ loses nothing
-written: on a member an include link includes, the link goes and the
-member stays in the file, whatever member the link is in; a member of
-Structure taken out hands what it includes up, asking before its own text
-is lost.  A member is deleted in the file, by hand: a link to it is
-left, a broken link on the board, so what stood on it shows.
-
-/say/ writes the text the reader is told under a member: it opens the
-heading beside the board as /edit/ opens one, at an empty line made
-before the first include link -- a member of Structure's text -- or after
-its text when it has none; the line goes again when the heading is let
-go.  On the /Structure/ line, it writes the output document's opening.
 
 /same/ goes round the lines linked to a member, one step either way.
 On a line including it, =[[m9]]=, or showing it under a member a link
@@ -1484,19 +1453,11 @@ patterns: the one a pattern has alone -- a reason under reasons, a step
 under steps -- without asking, and else the one asked for, those no
 member plays yet first.  It goes where the patterns list the roles it
 plays: before the first member there that plays one listed after its own,
-or else last -- as /pattern/ puts in what a pattern asks for, and
-/new-in-structure/ a member of Structure.
+or else last -- as /pattern/ puts in what a pattern asks for.
 
-A member is moved in the file, by hand or by Org's ~C-c C-w~: links
-point to it by its ID, which goes with it, so Structure still includes
-it wherever it goes.  /up/ and /down/ move a member among its siblings
-in the file, and a member an include link includes among the
-links there: what the file has in an order the telling pattern does not
-want, listed /Out of order/, is put right from the board.  /include/
-offers members by their path -- from their part, through the members
-above them, cut short, to their own words, with a step's number or the
-roles they play: /Message › Check before every … › As follows › step 2:
-Read the checker/.
+A member is moved in the file, by hand or by Org's ~C-c C-w~ and
+~M-<up>~: links point to it by its ID, which goes with it, so Structure
+still includes it wherever it goes.
 
 Applying a telling pattern to a member of Structure that already has
 members under it puts each, as it is, in the place of the new member
@@ -1504,10 +1465,7 @@ whose role it plays; the pattern adds members, named in
 ~org-truss-language~, only for the places none plays.  So switching
 patterns changes the order and the marks, never a member's words.  A
 member in none of the places is kept after the rest, and the board marks
-it =[no role]=.  /include/, /roles/ and /take-out/ sort it out.  /unwrap/
-and /take-out/ ask before discarding text.  /unwrap/ takes the member's
-patterns off too, of every kind, since what they asked for was asked of
-the members it takes away.
+it =[no role]=; /roles/, or the file, sorts it out.
 
 * The output document
 

@@ -138,53 +138,6 @@ stay on it."
   (mapcan (lambda (c) (cons c (org-truss--snapshot-descendants c)))
           (plist-get snapshot :children)))
 
-(defun org-truss--snapshot-has-writing-p (snapshot)
-  "Non-nil when SNAPSHOT holds text, besides the lines of its include links."
-  (not (string-blank-p (plist-get snapshot :all))))
-
-(defun org-truss-unwrap (pos &optional force)
-  "Take away the headings under the member at POS, keeping their include links.
-Every include link below moves up onto the member, in order.  Its
-patterns go too, of every kind: what they asked for was asked of the
-headings below, and there are none left to fill it.  When a heading
-below has text of its own, which would be lost, nothing happens unless
-FORCE, and the words of those headings are returned instead."
-  (let* ((snapshot (org-truss--snapshot pos))
-         (below (org-truss--snapshot-descendants snapshot))
-         (lost (seq-filter #'org-truss--snapshot-has-writing-p below)))
-    (if (and lost (not force))
-        (mapcar (lambda (s) (plist-get s :heading)) lost)
-      (setq snapshot (plist-put snapshot :include-lines
-                                (seq-uniq (append (plist-get snapshot :include-lines)
-                                                  (mapcan (lambda (s) (copy-sequence (plist-get s :include-lines)))
-                                                          below)))))
-      (setq snapshot (plist-put snapshot :children nil))
-      (dolist (property (mapcar #'cdr org-truss-pattern-properties))
-        (setq snapshot (plist-put snapshot :props
-                                  (org-truss--set-prop (plist-get snapshot :props) property nil))))
-      (org-truss--replace-subtree pos (org-truss--serialize snapshot (org-truss--level pos)))
-      nil)))
-
-(defun org-truss-dissolve (pos parent &optional force)
-  "Remove the member at POS, moving every include link in it onto PARENT.
-PARENT is the position of the member above.  Like `org-truss-unwrap', when
-text would be lost nothing happens unless FORCE, and the words of the
-headings holding it are returned."
-  (let* ((snapshot (org-truss--snapshot pos))
-         (all (cons snapshot (org-truss--snapshot-descendants snapshot)))
-         (lost (seq-filter #'org-truss--snapshot-has-writing-p all)))
-    (if (and lost (not force))
-        (mapcar (lambda (s) (plist-get s :heading)) lost)
-      (let ((ids (mapcan (lambda (s) (copy-sequence (plist-get s :include-lines))) all))
-            (parent (copy-marker parent)))
-        (save-excursion
-          (goto-char pos)
-          (delete-region pos (progn (org-end-of-subtree t t) (point))))
-        (dolist (id ids)
-          (org-truss-add-include parent id))
-        (set-marker parent nil)
-        nil))))
-
 ;;;; Links and properties
 
 (defun org-truss--add-line (pos line)
@@ -211,46 +164,6 @@ words, alone."
   (let ((at (or (org-truss--include-line pos id) (org-truss--include-at pos id))))
     (when at
       (delete-region (car at) (cdr at))
-      t)))
-
-(defun org-truss-replace-include (pos old new)
-  "Make the include link of OLD in the text at POS include NEW, where it stands.
-Return non-nil when there was such a link."
-  (let ((at (org-truss--include-at pos old))
-        (case-fold-search nil))
-    (when at
-      (save-excursion
-        (goto-char (car at))
-        (re-search-forward (concat (regexp-quote org-truss-include-type) ":" (regexp-quote old) "\\]")
-                           (cdr at))
-        (replace-match (concat org-truss-include-type ":" new "]") t t))
-      t)))
-
-(defun org-truss-move-include (from id to)
-  "Move the include link of ID from the heading at FROM to the one at TO."
-  (let ((to (copy-marker to)))
-    (when (org-truss-remove-include from id)
-      (org-truss-add-include to id))
-    (set-marker to nil)))
-
-(defun org-truss-shift-include (pos id delta)
-  "Move the line including ID in the text at POS by DELTA such lines.
-DELTA is -1 or 1."
-  (let* ((lines (plist-get (org-truss--text-at pos) :include-lines))
-         (i (seq-position lines id))
-         (j (and i (+ i delta))))
-    (when (and j (<= 0 j) (< j (length lines)))
-      (let ((a (org-truss--include-line pos (nth (min i j) lines)))
-            (b (org-truss--include-line pos (nth (max i j) lines))))
-        (save-excursion
-          (let ((text-a (buffer-substring (car a) (cdr a)))
-                (text-b (buffer-substring (car b) (cdr b))))
-            (goto-char (car b))
-            (delete-region (car b) (cdr b))
-            (insert text-a)
-            (goto-char (car a))
-            (delete-region (car a) (cdr a))
-            (insert text-b))))
       t)))
 
 (defun org-truss--role-props (roles)
@@ -341,13 +254,6 @@ written; see `org-truss--one-role-p'.  Return a marker at it."
         (insert (make-string (1+ (org-truss--level parent)) ?*) " " words "\n"
                 (org-truss--drawer written) (or text "") "\n")
         at))))
-
-(defun org-truss-add-member (parent words &optional roles)
-  "Write a member of WORDS under the heading at PARENT, playing ROLES.
-ROLES are (KIND . ROLE), the roles it plays in the patterns of PARENT; it
-goes where they list them, as `org-truss-add-heading' puts it, or else
-last.  Return a marker at the new heading."
-  (org-truss-add-heading parent words (org-truss--role-props roles)))
 
 (defun org-truss-add-role-member (pos kind role)
   "Put under the heading at POS a member for ROLE of its pattern of KIND.
@@ -444,19 +350,6 @@ before its words."
               (insert " "))
             (insert "<<" id ">>"))
           id))))
-
-(defun org-truss-lead-line (pos)
-  "Return where a lead is written in the text of the heading at POS, or nil.
-Before the first line holding an include link alone, on an empty line
-written for it: what is written there opens what the member includes.
-Nil when no line holds one."
-  (save-excursion
-    (let ((bounds (org-truss--text-bounds pos)))
-      (goto-char (car bounds))
-      (when (re-search-forward org-truss--include-line-re (cdr bounds) t)
-        (goto-char (line-beginning-position))
-        (insert "\n")
-        (1- (point))))))
 
 ;;;; The pattern of a member written as an item
 

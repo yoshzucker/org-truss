@@ -2347,36 +2347,8 @@ property of the pattern's kind."
                (buffer-string)))
       (should-not (org-truss-gaps (org-truss-test--m (org-truss-read) "Move to fortnightly"))))))
 
-(ert-deftest org-truss-test-unwrap ()
-  "Unwrapping refuses to lose writing unless forced, and keeps every link.
-The section's patterns go, of every kind, since what they asked was asked
-of the sections taken away."
-  (org-truss-test--with (replace-regexp-in-string "^- \\[\\[truss-include:half\\]\\]$"
-                                                  "Why it drags.\n- [[truss-include:half]]"
-                                                  org-truss-test--file)
-    (let ((root (org-truss--part-pos "structure")))
-      (should (equal (org-truss-unwrap root) '("Rain")))
-      (should (= 3 (length (org-truss-member-supports
-                            (org-truss-model-structure (org-truss-read))))))
-      (org-truss-set-pattern root 'breakdown '5w1h)
-      (should (null (org-truss-unwrap root t)))
-      (let ((section (org-truss-model-structure (org-truss-read))))
-        (should (null (org-truss-member-supports section)))
-        (should (null (org-truss-member-patterns section)))
-        (should (equal (org-truss-member-includes section)
-                       '("long" "half" "move" "none")))))))
-
-(ert-deftest org-truss-test-dissolve ()
-  "A dissolved section hands its links to the section above."
-  (org-truss-test--with org-truss-test--file
-    (should (null (org-truss-dissolve (org-truss-test--heading-pos "Sky")
-                                      (org-truss--part-pos "structure"))))
-    (let ((root (org-truss-model-structure (org-truss-read))))
-      (should (equal (org-truss-test--section-labels root) '("Rain" "Umbrella")))
-      (should (equal (org-truss-member-includes root) '("long"))))))
-
 (ert-deftest org-truss-test-links ()
-  "Include links are added after the last one, moved, reordered and removed."
+  "Include links are added after the last one, and removed."
   (org-truss-test--with org-truss-test--file
     (let ((links-of (lambda (words)
                       (plist-get (org-truss--text-at (org-truss-test--heading-pos words)) :include-lines))))
@@ -2384,32 +2356,8 @@ of the sections taken away."
       (should (equal (funcall links-of "Sky") '("long" "aside")))
       (should (string-match-p "^- \\[\\[truss-include:long\\]\\]\n- \\[\\[truss-include:aside\\]\\]$"
                               (buffer-string)))
-      (org-truss-shift-include (org-truss-test--heading-pos "Sky") "aside" -1)
-      (should (equal (funcall links-of "Sky") '("aside" "long")))
-      (org-truss-move-include (org-truss-test--heading-pos "Sky") "aside"
-                           (org-truss-test--heading-pos "Rain"))
-      (should (equal (funcall links-of "Sky") '("long")))
-      (should (equal (funcall links-of "Rain") '("half" "aside")))
-      (org-truss-remove-include (org-truss-test--heading-pos "Rain") "aside")
-      (should (equal (funcall links-of "Rain") '("half"))))))
-
-(ert-deftest org-truss-test-lead-line ()
-  "A lead is written before the first line that tells a member, on an empty
-line made for it, and is told before the members; with no such line there
-is no place for one."
-  (org-truss-test--with org-truss-test--file
-    (let ((section (lambda (words)
-                     (seq-find (lambda (s) (equal (org-truss-member-words s) words))
-                               (org-truss-members-in (org-truss-read) 'structure)))))
-      (goto-char (org-truss-lead-line (org-truss-test--heading-pos "Sky")))
-      (should (looking-at "\n- \\[\\[truss-include:long"))
-      (insert "Where we are.")
-      (should (equal (org-truss-member-body (funcall section "Sky"))
-                     "Where we are.\n- [[truss-include:long]]"))
-      (should (string-match-p
-               ":TRUSS_TELLING_ROLE: sky\n:END:\nWhere we are\\.\n- \\[\\[truss-include:long"
-               (buffer-string)))
-      (should-not (org-truss-lead-line (org-truss-test--heading-pos "Lone remark"))))))
+      (org-truss-remove-include (org-truss-test--heading-pos "Sky") "aside")
+      (should (equal (funcall links-of "Sky") '("long"))))))
 
 (ert-deftest org-truss-test-add-include-to-an-empty-member ()
   "An include link added to a heading with nothing but a drawer goes under
@@ -2431,15 +2379,6 @@ the drawer."
                  (car (org-truss-member-supports (org-truss-model-structure (org-truss-read))))
                  'telling)
                 'ask))))
-
-(ert-deftest org-truss-test-add-member ()
-  "A new member goes last under the member above, with its roles."
-  (org-truss-test--with org-truss-test--file
-    (set-marker (org-truss-add-member (org-truss--part-pos "structure") "Ask" '((telling . ask))) nil)
-    (let* ((root (org-truss-model-structure (org-truss-read)))
-           (last (car (last (org-truss-member-supports root)))))
-      (should (equal (org-truss-member-words last) "Ask"))
-      (should (equal (org-truss-member-roles last) '((telling . ask)))))))
 
 (ert-deftest org-truss-test-set-role ()
   "A heading's role in one kind of pattern is set, or taken off, apart from

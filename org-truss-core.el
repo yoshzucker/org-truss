@@ -447,14 +447,6 @@ For `org-open-link-functions': Org follows [[#m7]] to a CUSTOM_ID and
       (setq from (match-end 0)))
     (nreverse ids)))
 
-(defun org-truss--include-links-in (text)
-  "Return TEXT's include links, as written, in order."
-  (let ((from 0) links)
-    (while (and text (string-match org-truss--include-re text from))
-      (push (match-string 0 text) links)
-      (setq from (match-end 0)))
-    (nreverse links)))
-
 (defun org-truss--points-in (text)
   "Return the IDs TEXT's pointing links point to, in order.
 Not those of its include links; see `org-truss--includes-in'."
@@ -719,10 +711,6 @@ the words are the words."
   (let ((title (org-get-heading t t t t)))
     (and (string-match org-truss--target-re title)
          (substring-no-properties (match-string 1 title)))))
-
-(defun org-truss--words-at (pos)
-  "Return the words of the heading at POS: its text without tags or keyword."
-  (org-with-point-at pos (org-truss--heading-words)))
 
 (defun org-truss--intern (value)
   "Return VALUE as a symbol, or nil when it is empty."
