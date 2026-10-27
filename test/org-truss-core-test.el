@@ -2096,6 +2096,59 @@ to m7, however its ID is written."
         (should (equal (buffer-substring (line-beginning-position) (line-end-position))
                        (cdr link)))))))
 
+(defun org-truss-test--toggle (text from to command)
+  "Return TEXT, after a Message part, once COMMAND is called on it.
+On the lines from the one holding FROM to the one holding TO, or on
+that one line; or the error it says."
+  (let ((head "* M\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n")
+        (org-adapt-indentation nil)
+        (org-tags-column 0))
+    (org-truss-test--with (concat head text)
+      (transient-mark-mode 1)
+      (search-forward from)
+      (forward-line 0)
+      (when to
+        (push-mark (point) t t)
+        (search-forward to)
+        (end-of-line))
+      (condition-case err
+          (progn (call-interactively command)
+                 (substring (buffer-string) (length head)))
+        (user-error (error-message-string err))))))
+
+(ert-deftest org-truss-test-toggle-carries-what-a-member-is ()
+  "C-c * and C-c - carry a member's role, ID and patterns between an
+item and a heading, and its tags; where Org would put one under another,
+they do nothing and say why."
+  (unwind-protect
+      (progn
+        (org-item-tags-mode 1)
+        (should (equal (org-truss-test--toggle
+                        "** P\n#+attr_truss: :logic deduction\n- major :: <<m1>>Big\n- minor :: Small :assumption:\n"
+                        "- minor" nil #'org-toggle-heading)
+                       "** P\n#+attr_truss: :logic deduction\n- major :: <<m1>>Big\n*** Small :assumption:\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: minor\n:END:\n"))
+        (should (string-prefix-p "Org would put the items after it under it"
+                                 (org-truss-test--toggle
+                                  "** P\n#+attr_truss: :logic deduction\n- major :: Big\n- minor :: Small\n"
+                                  "- major" nil #'org-toggle-heading)))
+        (let ((headings (org-truss-test--toggle
+                         "** P\n#+attr_truss: :logic reasons\n- A\n  #+attr_truss: :logic reasons :as list\n  - A1\n  - A2\n- B\n"
+                         "- A" "- B" #'org-toggle-heading)))
+          (should (equal headings
+                         "** P\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n*** A\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:TRUSS_AS: list\n:END:\n**** A1\n**** A2\n*** B\n"))
+          ;; And back.
+          (should (equal (org-truss-test--toggle headings "*** A" "*** B" #'org-toggle-item)
+                         "** P\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n#+attr_truss:\n- A\n  #+attr_truss: :logic reasons :as list\n  - A1\n  - A2\n- B\n")))
+        (should (equal (org-truss-test--toggle
+                        "** P\n:PROPERTIES:\n:TRUSS_LOGIC: deduction\n:END:\n*** <<m3>>Big\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: major\n:END:\ntext\n*** Small :assumption:\n:PROPERTIES:\n:CUSTOM_ID: m4\n:TRUSS_LOGIC_ROLE: minor\n:END:\n"
+                        "*** <<m3>>Big" "*** Small" #'org-toggle-item)
+                       "** P\n:PROPERTIES:\n:TRUSS_LOGIC: deduction\n:END:\n#+attr_truss:\n- major :: <<m3>>Big\n  text\n- minor :: <<m4>>Small :assumption:\n"))
+        (should (string-prefix-p "Org would put it in the text of the heading before it"
+                                 (org-truss-test--toggle
+                                  "** P\n:PROPERTIES:\n:TRUSS_LOGIC: deduction\n:END:\n*** Big\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: major\n:END:\n*** Small\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: minor\n:END:\n"
+                                  "*** Small" nil #'org-toggle-item))))
+    (org-item-tags-mode -1)))
+
 (ert-deftest org-truss-test-ensure-id ()
   "A member is given m and the next free number, once, as <<m5>> before
 its words, a heading's as an item's; one it has stays, a CUSTOM_ID too."

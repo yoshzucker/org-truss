@@ -103,6 +103,8 @@ Writing
   source, a claim and its reasons)
   An item takes tags as a heading does, at the end of its first line:
   ~- It is quick :assumption:~
+  C-c * makes items headings, C-c - headings items: in a truss file they
+  carry roles, IDs, patterns and tags
 
   For a heading, the pattern goes in a property, TRUSS_LOGIC and the rest,
   and the role in the property of the same name with _ROLE after it
@@ -296,6 +298,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   めるトラス（一つの資料の事実、一つの主張とその理由）は、同じ見出しに置く
   項目にも、見出しと同じくタグを付けられる。1行目の終わりに書く：
   ~- 速く済む :assumption:~
+  C-c * で項目を見出しに、C-c - で見出しを項目にできる。truss ファイル
+  では、役・ID・型・タグも一緒に移る
 
   見出しでは、型を TRUSS_LOGIC などのプロパティに、役をその名前に _ROLE
   を付けたプロパティ（TRUSS_LOGIC_ROLE: reason など）に書く

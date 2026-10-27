@@ -304,6 +304,15 @@ An item takes tags as a heading does, at the end of its first line,
 ~org-item-tags-mode~ on, ~C-c C-q~ there sets them, and ~C-c -~ and ~C-c
 *~ keep them between a heading and an item.
 
+Org's ~C-c *~ makes items headings, and ~C-c -~ headings items.  In a
+truss file they carry what makes each a member: the role it plays,
+before ~::~ or in a ~_ROLE~ property; the patterns and ~:as~ of its
+truss, in ~#+attr_truss~ or in properties; its ID, ~<<m7>>~, with its
+words, a ~CUSTOM_ID~ made one.  Where Org would put a member under
+another -- the items after the one made a heading, a heading made an
+item in the text of the heading before it -- they do nothing, and say
+so: make the rest headings too, or start from the first heading.
+
 For a heading, the pattern goes in a property, ~TRUSS_LOGIC~ and the
 rest, and the role in the property of the same name with ~_ROLE~ after
 it.  For an item, the pattern goes in ~#+attr_truss~ before the list, and
