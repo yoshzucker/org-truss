@@ -2477,29 +2477,6 @@ its others."
       (should (equal (org-truss-member-roles (org-truss-test--m (org-truss-read) "As follows"))
                      '((telling . body)))))))
 
-(ert-deftest org-truss-test-rename ()
-  "Renaming a member changes its heading alone: links and grounds point to it
-by its id, and still find it.  A label another member has is refused."
-  (org-truss-test--with org-truss-test--file
-    (let ((before (buffer-string)))
-      (org-truss-rename (org-truss-test--heading-pos "Half the items repeat") "Agendas repeat")
-      (should (equal (buffer-string)
-                     (replace-regexp-in-string "^\\*\\* Half the items repeat$" "** Agendas repeat"
-                                               before))))
-    (let ((model (org-truss-read)))
-      (should (equal (org-truss-member-words (org-truss-member-by-id model "half")) "Agendas repeat"))
-      (should (equal (org-truss-member-grounds (org-truss-test--m model "Move to fortnightly"))
-                     '("half"))))
-    (org-truss-rename (org-truss-test--heading-pos "Agendas repeat") "Agendas repeat")
-    (should-error (org-truss-rename (org-truss-test--heading-pos "Agendas repeat") "Lone remark")
-                  :type 'user-error)))
-
-(ert-deftest org-truss-test-rename-keeps-tags ()
-  "A tagged member keeps its tags when relabelled."
-  (org-truss-test--with org-truss-test--file
-    (org-truss-rename (org-truss-test--heading-pos "Items need a week to move") "Items are slow")
-    (should (org-truss-assumption-p (org-truss-test--m (org-truss-read) "Items are slow")))))
-
 ;;;; A new file
 
 (ert-deftest org-truss-test-guides-read-as-text ()

@@ -1519,34 +1519,6 @@ grounds has them then, and the board says so."
     (org-truss-board-assume)
     (should (string-match-p "Major premise \\[no grounds\\][ ·]+A meeting" (buffer-string)))))
 
-(ert-deftest org-truss-test-board-files-a-member ()
-  "f moves a member, with what is nested under it, last under a part or
-another member.  Links still find it."
-  (org-truss-test--with-board org-truss-test--conditions-file
-    (org-truss-test--goto-member "No budget this year")
-    (org-truss-test--answering '("Message")
-      (org-truss-board-refile))
-    (should (equal (org-truss-test--parent-label source "No budget this year") '("Message" . 2)))
-    (should (equal (plist-get (org-truss--item) :words) "No budget this year"))
-    (should-not (string-match-p "broken link" (buffer-string)))
-    (org-truss-test--goto-member "Check with a breathalyser")
-    (org-truss-test--answering '("Subject › Future: Constraints")
-      (org-truss-board-refile))
-    (should (equal (org-truss-test--parent-label source "Check with a breathalyser")
-                   '("Constraints" . 3))))
-  (org-truss-test--with-board org-truss-test--file
-    (let ((model (org-truss-read source)))
-      (should-not (assoc "Message › Half the items repeat › Agenda diff"
-                         (org-truss--file-choices
-                          model (org-truss-member-by-words model "Half the items repeat")))))
-    (org-truss-test--goto-member "Half the items repeat")
-    (org-truss-test--answering '("Message › Lone remark")
-      (org-truss-board-refile))
-    (should (equal (org-truss-test--parent-label source "Half the items repeat")
-                   '("Lone remark" . 3)))
-    (should (equal (org-truss-test--parent-label source "Who decides what is urgent")
-                   '("Some items are urgent" . 5)))))
-
 (ert-deftest org-truss-test-board-draws-includes ()
   "A member's links that tell members are drawn under it, as a section's
 are, each one line where it is not opened; one drawn inside what it tells
@@ -1635,16 +1607,7 @@ written under it."
                      "Message › Check before every … › As follows › step 2: Read the checker"))
       (should (equal (org-truss--member-path
                       model (org-truss-member-by-words model "Someone to check"))
-                     "Message › What a check needs › Part: Someone to check"))))
-  (org-truss-test--with org-truss-test--conditions-file
-    (let* ((model (org-truss-read))
-           (names (mapcar #'car (org-truss--file-choices
-                                 model (org-truss-member-by-words model "Check with a breathalyser")))))
-      (should (equal (seq-drop names (seq-position names "Subject › Future: Constraints"))
-                     '("Subject › Future: Constraints"
-                       "Subject › Constraints › No budget this year"
-                       "Subject › Constraints › The schedule is fixed"
-                       "Message"))))))
+                     "Message › What a check needs › Part: Someone to check")))))
 
 (ert-deftest org-truss-test-board-offers-patterns-by-family ()
   "p offers every heading every logic, breakdown and telling pattern; one
@@ -1853,15 +1816,6 @@ it from the board."
                          (org-get-heading t t t t))
                        "Reviews run long"))))))
 
-(ert-deftest org-truss-test-board-renames-a-section ()
-  "R rewrites a section's heading too."
-  (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-member "Sky")
-    (org-truss-test--answering '("How reviews run now")
-      (org-truss-board-rename))
-    (should (equal (car (org-truss-test--structure-labels source)) "How reviews run now"))
-    (should (string-match-p (concat "├ Sky[ ·]+" org-truss-test--gap "How reviews run now") (buffer-string)))))
-
 (ert-deftest org-truss-test-board-edits-one-entry ()
   "e takes the line's heading out with what is under it, the headings under
 it folded to their lines; the heading stays as it is in the file until the
@@ -1909,8 +1863,8 @@ that would change a heading say so instead."
         (should (string-match-p "├ Reason · Cons \\[no grounds\\][ ·]+- Cons: Items wait longer" text))
         (should (string-match-p "│ ├ Step[ ·]+1\\. Ask the leads$" text)))
       (org-truss-test--goto-line-with "Reason · Pros")
-      (let ((this-command 'org-truss-board-delete))
-        (should-error (org-truss-board-delete) :type 'user-error))
+      (let ((this-command 'org-truss-board-say))
+        (should-error (org-truss-board-say) :type 'user-error))
       (should (string-match-p "Less time in meetings" (with-current-buffer source (buffer-string))))
       (save-window-excursion
         (let ((this-command 'org-truss-board-edit))
@@ -1933,8 +1887,8 @@ would change a heading say so on a section written so."
         (should (equal (org-truss-test--id-at "member[ ·]+We move") "<<m1>>"))
         (should (string-match-p "├ Sky[ ·]+Where we are" text)))
       (org-truss-test--goto-line-with "├ Sky")
-      (let ((this-command 'org-truss-board-delete))
-        (should-error (org-truss-board-delete) :type 'user-error))
+      (let ((this-command 'org-truss-board-say))
+        (should-error (org-truss-board-say) :type 'user-error))
       (should (string-match-p "- sky :: Where we are" (with-current-buffer source (buffer-string)))))))
 
 (ert-deftest org-truss-test-board-catches-up ()
@@ -2076,38 +2030,15 @@ else it is placed, it stays."
       (should (equal (org-truss-member-includes (nth 2 (org-truss-member-supports root)))
                      '("move" "m1" "long" "last"))))))
 
-(ert-deftest org-truss-test-board-takes-out-and-deletes ()
-  "d takes a member out of the structure and leaves it in the file; D deletes
-it from the file, with what is under it and what placed it, leaving the
-grounds that named it to show as broken."
+(ert-deftest org-truss-test-board-takes-out ()
+  "d takes a member out of the structure and leaves it in the file."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-structure-member "Reviews run long")
     (org-truss-board-take-out)
     (let ((model (org-truss-read source)))
       (should (org-truss-member-by-words model "Reviews run long"))
       (should (null (org-truss-member-includes
-                     (car (org-truss-member-supports (org-truss-model-structure model)))))))
-    (org-truss-test--goto-member "Half the items repeat")
-    (org-truss-test--answering '(nil)
-      (org-truss-board-delete))
-    (should (org-truss-member-by-words (org-truss-read source) "Half the items repeat"))
-    (org-truss-test--goto-member "Half the items repeat")
-    (org-truss-test--answering '(t)
-      (org-truss-board-delete))
-    (let ((model (org-truss-read source)))
-      (should-not (org-truss-member-by-words model "Half the items repeat"))
-      (should-not (org-truss-member-by-words model "Agenda diff"))
-      (should (null (org-truss-member-includes
-                     (nth 1 (org-truss-member-supports (org-truss-model-structure model))))))
-      (should (equal (org-truss-member-grounds (org-truss-member-by-words model "Move to fortnightly"))
-                     '("half"))))
-    (should (string-match-p "Move to fortnightly  ⏚half$" (buffer-string)))
-    (goto-char (point-min))
-    (search-forward "⏚half")
-    (should (eq (get-text-property (1- (point)) 'face) 'org-truss-attention))
-    (should (string-match-p (concat "^ Broken links\n +member[ ·]+" org-truss-test--gap
-                                    "Move to fortnightly +\\[\\[half\\]\\] not found$")
-                            (buffer-string)))))
+                     (car (org-truss-member-supports (org-truss-model-structure model)))))))))
 
 (ert-deftest org-truss-test-board-grounds ()
   "b makes another member a ground, or no longer one, and the member's line
@@ -2226,19 +2157,6 @@ telling pattern does not want is put right from the board."
                    '("Reviews are weekly" "Half the items repeat" "Should we keep meeting weekly"
                      "Robin agrees")))
     (should-not (string-match-p "Out of order" (buffer-string)))))
-
-(ert-deftest org-truss-test-board-refiles-a-section ()
-  "f moves a section, with what is under it, last under another section; it
-cannot go under itself, and the structure stays where it is."
-  (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-member "Sky")
-    (org-truss-test--answering '("Structure › Umbrella › Umbrella")
-      (org-truss-board-refile))
-    (should (equal (org-truss-test--structure-labels source) '("Rain" "Umbrella")))
-    (should (equal (org-truss-test--parent-label source "Sky") '("Umbrella" . 3)))
-    (should (string-match-p (concat "• included[ ·]+" org-truss-test--gap "Reviews run long") (buffer-string)))
-    (org-truss-test--goto-line-with "^ Structure ")
-    (should-error (org-truss-board-refile) :type 'user-error)))
 
 (ert-deftest org-truss-test-board-draws-the-parts-in-order ()
   "The subject, the members and the structure each take a part of the board,

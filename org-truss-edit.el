@@ -457,32 +457,6 @@ before its words."
             (insert "<<" id ">>"))
           id))))
 
-(defun org-truss-delete-member (pos)
-  "Delete the member at POS, a heading, with everything under it.
-Every line that includes it, or a member under it, [[truss-include:m7]]
-on a line of its own, goes too, wherever it is.  A pointing link to one
-is left, and so is an include link among other words, so the board shows
-as broken what stood on it or included it.  Return the words deleted."
-  (let* ((end (save-excursion (goto-char pos) (org-end-of-subtree t t) (point)))
-         (words nil)
-         (ids nil))
-    (save-excursion
-      (goto-char pos)
-      (while (and (< (point) end) (re-search-forward org-heading-regexp end t))
-        (let ((at (line-beginning-position)))
-          (push (org-truss--words-at at) words)
-          (let ((id (org-entry-get at "CUSTOM_ID")))
-            (when id (push (string-trim id) ids))))))
-    (delete-region pos end)
-    (when ids
-      (org-with-wide-buffer
-       (goto-char (point-min))
-       (while (re-search-forward org-truss--include-line-re nil t)
-         (when (member (org-truss--link-id (match-string-no-properties 1)) ids)
-           (delete-region (line-beginning-position)
-                          (min (point-max) (1+ (line-end-position))))))))
-    (nreverse words)))
-
 (defun org-truss-lead-line (pos)
   "Return where a lead is written in the text of the heading at POS, or nil.
 Before the first line holding an include link alone, on an empty line
@@ -495,45 +469,6 @@ Nil when no line holds one."
         (goto-char (line-beginning-position))
         (insert "\n")
         (1- (point))))))
-
-(defun org-truss-refile (pos parent)
-  "Move the heading at POS, with everything under it, to the end of PARENT.
-PARENT is the position of another heading, outside the subtree at POS.
-Its headings take the levels of their new place.  Links point to a member
-by its ID, which goes with it, so they still find it.  Return a marker at
-its heading."
-  (let* ((end (save-excursion (goto-char pos) (org-end-of-subtree t t) (point)))
-         (parent (copy-marker parent))
-         (delta (- (1+ (org-truss--level parent)) (org-truss--level pos)))
-         (text (buffer-substring-no-properties pos end)))
-    (when (and (<= pos parent) (< parent end))
-      (set-marker parent nil)
-      (user-error "A heading cannot go under itself"))
-    (unless (string-suffix-p "\n" text)
-      (setq text (concat text "\n")))
-    (setq text (replace-regexp-in-string
-                "^\\(\\*+\\)\\([ \t]\\)"
-                (lambda (m) (concat (make-string (+ (length (match-string 1 m)) delta) ?*)
-                                    (match-string 2 m)))
-                text t t))
-    (delete-region pos end)
-    (save-excursion
-      (goto-char parent)
-      (org-end-of-subtree t t)
-      (unless (bolp) (insert "\n"))
-      (let ((at (point-marker)))
-        (insert text)
-        (set-marker parent nil)
-        at))))
-
-(defun org-truss-rename (pos new)
-  "Give the member at POS, a heading, the words NEW.
-Links point to it by its ID, so nothing else changes.  Words another
-member Structure can include has are refused: a statement is written once."
-  (let ((other (org-truss-member-by-words (org-truss-read) new)))
-    (when (and other (/= (org-truss-member-pos other) pos))
-      (user-error "A member already says %s" new)))
-  (org-with-point-at pos (org-edit-headline new)))
 
 ;;;; A heading made an item, an item a heading
 

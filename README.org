@@ -371,9 +371,8 @@ Every part reads items so, Brief and Structure among them:
 #+end_src
 
 On the board, /edit/ on an item takes out the heading whose text holds
-it, at the item; the commands that change a heading -- /rename/, /refile/,
-/delete/, /pattern/ and the rest -- say so on an item instead, which is
-written by hand there.
+it, at the item; the commands that change a heading -- /pattern/ and the
+rest -- say so on an item instead, which is written by hand there.
 
 ** Grounds
 
@@ -866,8 +865,8 @@ stays within the file: unlike ~:ID:~, it is not entered in
 A member's words are what it asserts, and they get reworded as the
 argument and the output document take shape.  Were links to name words,
 each rewording would break what pointed to it; pointing by ID, a member
-can be reworded anywhere -- on the board with /rename/, in the file by
-hand, or by a model editing the file -- and nothing breaks.
+can be reworded anywhere -- in the file by hand, or by a model editing
+the file -- and nothing breaks.
 
 A member is given an ID only once something points to it: /include/
 including it, /ground/ making it grounds, /new/ writing it in Structure.
@@ -1346,9 +1345,8 @@ link stands, in its place: the way to mend one.  /take-out/ loses nothing
 written: on a member an include link includes, the link goes and the
 member stays in the file, whatever member the link is in; a member of
 Structure taken out hands what it includes up, asking before its own text
-is lost.  To be rid of a member, /delete/ deletes it, with what is under
-it and the include links to it; a pointing link to it is left, a broken
-link on the board, so what stood on it shows.
+is lost.  A member is deleted in the file, by hand: a link to it is
+left, a broken link on the board, so what stood on it shows.
 
 /say/ writes the text the reader is told under a member: it opens the
 heading beside the board as /edit/ opens one, at an empty line made
@@ -1488,19 +1486,16 @@ plays: before the first member there that plays one listed after its own,
 or else last -- as /pattern/ puts in what a pattern asks for, and
 /new-in-structure/ a member of Structure.
 
-/refile/ refiles a member, as Org's ~C-c C-w~ does: it moves it, with what
-is under it, last under another -- a member under Brief, Subject, Message,
-or another member; a member of Structure under another, or Structure.
-Links point to a member by its ID, which goes with it, so Structure still
-includes it wherever it goes.  /up/ and /down/ move a member among its
-siblings in the file, and a member an include link includes among the
+A member is moved in the file, by hand or by Org's ~C-c C-w~: links
+point to it by its ID, which goes with it, so Structure still includes
+it wherever it goes.  /up/ and /down/ move a member among its siblings
+in the file, and a member an include link includes among the
 links there: what the file has in an order the telling pattern does not
-want, listed /Out of order/, is put right from the board.  The places are
-offered in the order of the file, and a member by its path -- from its
-part, through the members above it, cut short, to its own words, with a
-step's number or the roles it plays: /Message › Check before every … › As
-follows › step 2: Read the checker/.  /include/ offers members the same
-way.
+want, listed /Out of order/, is put right from the board.  /include/
+offers members by their path -- from their part, through the members
+above them, cut short, to their own words, with a step's number or the
+roles they play: /Message › Check before every … › As follows › step 2:
+Read the checker/.
 
 Applying a telling pattern to a member of Structure that already has
 members under it puts each, as it is, in the place of the new member

@@ -99,9 +99,8 @@ shows -- in the face `org-truss-same'."
 Filled by org-truss-moor.el; empty without org-moor.")
 
 (defconst org-truss--board-commands
-  '((write org-truss-board-new org-truss-board-edit org-truss-board-rename
-           org-truss-board-moor-map org-truss-board-ground org-truss-board-assume
-           org-truss-board-refile org-truss-board-delete)
+  '((write org-truss-board-new org-truss-board-edit
+           org-truss-board-moor-map org-truss-board-ground org-truss-board-assume)
     (include org-truss-board-include org-truss-board-take-out
              org-truss-board-up org-truss-board-down)
     (shape org-truss-board-new-in-structure org-truss-board-say org-truss-board-unwrap
@@ -1019,24 +1018,7 @@ asking before its own text is lost."
             (with-current-buffer org-truss--source
               (org-truss-dissolve (plist-get item :pos) parent t))))
         (org-truss-board-redraw)))
-     (t (user-error "This member is not included; %s deletes it"
-                    (substitute-command-keys "\\[org-truss-board-delete]"))))))
-
-(defun org-truss-board-delete ()
-  "Delete the member at point from the file, with every member under it.
-After asking.  What included it, or a member under it, goes too.  A
-pointing link that names one is left, and shows as a broken link, so
-what stood on it can be seen.  A member of Structure is taken out by
-\\[org-truss-board-take-out] instead."
-  (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member))
-         (model (org-truss-read org-truss--source))
-         (member (org-truss--content-at model item))
-         (under (1- (length (org-truss--subtree member)))))
-    (when (y-or-n-p (format "Delete %s%s? " (org-truss-member-words member)
-                            (if (> under 0) (format " and the %d under it" under) "")))
-      (org-truss--editing
-        (org-truss-delete-member (plist-get item :pos))))))
+     (t (user-error "This member is not included; delete it in the file")))))
 
 (defun org-truss-board-ground ()
   "Make a member a ground of the member at point, or no longer one.
@@ -1103,19 +1085,6 @@ no supporting member plays yet are offered first."
       (org-truss--editing
         (pcase-dolist (`(,kind . ,role) roles)
           (org-truss-set-role pos kind role))))))
-
-(defun org-truss-board-rename ()
-  "Rewrite the words of the member at point.
-Links point to a member by its ID, so they go on finding it."
-  (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member))
-         (new (string-trim (read-string "New words: " (plist-get item :words)))))
-    (when (string-empty-p new)
-      (user-error "A member's words cannot be empty"))
-    (org-truss--editing
-      (if (plist-get item :structure)
-          (org-with-point-at (plist-get item :pos) (org-edit-headline new))
-        (org-truss-rename (plist-get item :pos) new)))))
 
 (defun org-truss-board-say ()
   "Write the text the reader is shown under the member at point.
@@ -1613,49 +1582,6 @@ An assumption is taken as given: as a reason, it needs no grounds."
     (org-truss--editing
       (setq on (org-truss-toggle-assumption (plist-get item :pos))))
     (message "%s %s" (plist-get item :words) (if on "is an assumption" "is no assumption"))))
-
-(defun org-truss--file-choices (model member)
-  "Return (NAME . POS) for every place in MODEL MEMBER can be moved under.
-Brief, Subject, Message, and every member Structure can include not
-under MEMBER, in the order of the file.  A part is named for itself, a
-member by its path, `org-truss--member-path'."
-  (let* ((inside (org-truss--subtree member))
-         (places (append
-                  (mapcar (lambda (part) (cons (org-truss-member-pos part)
-                                               (capitalize (symbol-name (org-truss-member-part part)))))
-                          (delq nil (list (org-truss-model-brief model) (org-truss-model-subject model)
-                                          (org-truss-model-message model))))
-                  (mapcar (lambda (m) (cons (org-truss-member-pos m) (org-truss--member-path model m)))
-                          (seq-remove (lambda (m) (memq m inside)) (org-truss-contents model)))))
-         out)
-    (dolist (place (sort places (lambda (a b) (< (car a) (car b)))))
-      (let ((name (cdr place)))
-        (push (cons (if (assoc name out) (format "%s <%d>" name (car place)) name) (car place))
-              out)))
-    (nreverse out)))
-
-(defun org-truss-board-refile ()
-  "Move the member at point, with every member under it, somewhere else, last.
-A member of Brief, Subject or Message under one of those parts or another
-member of them; a member of Structure under Structure or another of its
-members.  Links point to a member by its ID, so they go on finding it
-wherever it goes."
-  (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member))
-         (model (org-truss-read org-truss--source))
-         (member (org-truss-member-at model (plist-get item :pos)))
-         (in-structure (org-truss-in-structure-p member))
-         (choices (if in-structure
-                      (let ((inside (mapcar #'org-truss-member-pos (org-truss--subtree member))))
-                        (seq-remove (lambda (choice) (memq (cdr choice) inside))
-                                    (org-truss--structure-choices model)))
-                    (org-truss--file-choices model member)))
-         (to (org-truss--read-choice "Move under: " choices)))
-    (org-truss--editing
-      (let ((to (copy-marker to)))
-        (set-marker (org-truss-refile (plist-get item :pos) to) nil)
-        (set-marker to nil)))
-    (org-truss--goto-words (org-truss-member-words member) in-structure)))
 
 (defun org-truss--shift (delta)
   "Move the line at point DELTA places among its siblings.
