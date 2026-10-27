@@ -633,11 +633,10 @@ headings, a simple truss's items a list."
                    "\\* Action\n\n1\\. Step\n")
            (org-truss-test--render (org-truss-skeleton "T")))))
 
-(ert-deftest org-truss-test-render-compound-as-written ()
-  "A compound truss of a listing pattern is written as the file is: its
-supporting members written as items a list, those written as headings
-headings after it, numbered on where it is numbered.  Under a heading of
-a simple truss, a heading is an item."
+(ert-deftest org-truss-test-render-compound-as-headings ()
+  "A compound truss's supporting members are headings, numbered where its
+pattern numbers them, however the file writes them; a simple truss's of
+a listing pattern a list, a heading among them too."
   (let ((text (org-truss-test--render "#+title: T
 * Message
 :PROPERTIES:
@@ -675,15 +674,66 @@ a simple truss, a heading is an item."
 ** [[truss-include:m2]]
 ")))
     (should (string-match-p
-             (concat "^\\* Do it\n\n1\\. Book a room\n\n\\*\\* 2\\. Ask them\n\n"
+             (concat "^\\* Do it\n\n\\*\\* 1\\. Book a room\n\n\\*\\* 2\\. Ask them\n\n"
                      "1\\. Write\n2\\. Send\n\n\\* Why\n\n- It is cheap\n")
              text))))
+
+(ert-deftest org-truss-test-render-as ()
+  "TRUSS_AS, or :as in #+attr_truss, says how one truss's supporting
+members are written: headings for a simple truss, a list for a compound
+one.  In a list they stay a list, and the check says so."
+  (let ((file "#+title: T
+* Message
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Why
+:PROPERTIES:
+:CUSTOM_ID: m1
+:TRUSS_LOGIC: reasons
+:TRUSS_AS: headings
+:END:
+#+attr_truss:
+- It is cheap :assumption:
+- It is quick :assumption:
+** Do it
+:PROPERTIES:
+:CUSTOM_ID: m2
+:TRUSS_BREAKDOWN: steps
+:END:
+#+attr_truss: :as list
+1. Ask them
+   #+attr_truss: :breakdown steps :as headings
+   1. Write
+   2. Send
+2. Book a room
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+** [[truss-include:m1]]
+** [[truss-include:m2]]
+"))
+    (should (string-match-p
+             (concat "^\\* Why\n\n\\*\\* It is cheap\n\n\\*\\* It is quick\n\n"
+                     "\\* Do it\n\n1\\. Ask them\n\n   1\\. Write\n   2\\. Send\n2\\. Book a room\n")
+             (org-truss-test--render file)))
+    (with-temp-buffer
+      (org-mode)
+      (insert file)
+      (let ((model (org-truss-read)))
+        (should (equal (mapcar #'org-truss-member-words
+                               (plist-get (org-truss-checks model) :listed-headings))
+                       '("Ask them")))
+        (should (string-match-p "^Headings in a list -- .*\n.*:[0-9]+: Ask them -- TRUSS_AS headings, written as a list$"
+                                (org-truss-check-report model)))))))
 
 (ert-deftest org-truss-test-render-include-alone-is-the-member ()
   "A heading that is an include link alone is the member it includes: one
 including an apex member makes its truss compound, and it is a heading,
 the apex member's own supporting members under it as its pattern lists
-them.  Written as an item, it is an item, and all under it a list."
+them.  Written as an item, it is the same: the output document follows
+what the truss is, not how it is written."
   (let ((file "#+title: T
 * Subject
 :PROPERTIES:
@@ -715,7 +765,7 @@ them.  Written as an item, it is an item, and all under it a list."
 "))
     (should (string-match-p "^\\* Where we are\n\n\\*\\* The minutes\n\n- Eight of twelve ran over\n"
                             (org-truss-test--render file)))
-    (should (string-match-p "^\\* Where we are\n\n- The minutes\n\n  - Eight of twelve ran over\n"
+    (should (string-match-p "^\\* Where we are\n\n\\*\\* The minutes\n\n- Eight of twelve ran over\n"
                             (org-truss-test--render
                              (replace-regexp-in-string
                               "^\\*\\*\\* \\[\\[truss-include:m1\\]\\]$" "#+attr_truss:\n- [[truss-include:m1]]"

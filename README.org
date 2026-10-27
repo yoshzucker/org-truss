@@ -5,7 +5,9 @@ Build an argument of members joined into trusses, and make an output
 document of it, in Org.
 
 It needs [[https://github.com/yoshzucker/org-dock][org-dock]], which takes a
-heading out to be written in, and works with
+heading out to be written in, and
+[[https://github.com/yoshzucker/org-item-tags][org-item-tags]], which gives an
+item of a list tags as a heading has, and works with
 [[https://github.com/yoshzucker/org-moor][org-moor]], for the sources read,
 when it is there.
 
@@ -281,27 +283,26 @@ breakdown from ~org-truss-roles~, a framework of telling -- and
 ** Writing members
 
 A member is a heading, or an item of a list marked ~#+attr_truss~ in a
-member's text.  Two rules say which:
+member's text, as you choose.  What a member is -- an apex member, an
+assumption -- does not decide it, and the output document is written by
+what each truss is, not by how it is written (see [[*The output
+document]]): an item can become a heading, or a heading an item, and
+nothing else has to.  Org sets two limits:
 
-1. One heading is one simple truss: its apex member is the heading, its
-   end members the items of a list in its text.
-   - Except: an end member tagged ~:assumption:~ or ~:noexport:~ is a
-     heading under it (only a heading takes tags), after the end members
-     written as items.
-2. A compound truss is built of headings: each supporting member is a
-   heading under it, its end members too.  One that is an include link
-   alone, ~*** [[truss-include:m7]]~, is m7 there, an apex member when m7
-   is one.
-   - Except: when its text goes on after or between the trusses in it,
-     nest lists in the items instead, all of them -- Org has no text of a
-     heading after the headings under it.
-   - Except: a ~TRUSS_TELLING~ truss's supporting members are headings
-     of the output document however they are written, so they can be
-     items, ~- sky :: [[truss-include:m1]]~, if that reads lighter.
+- A heading has no text after the headings under it: a member whose text
+  goes on after or between the trusses in it holds them as items, in
+  nested lists.
+- Under one member, the items come before the headings.
 
-Where the two leave it open, keep in one heading a truss checked at once
--- the facts of one source, a claim and its reasons -- and make a heading
-of a member pointed to from several places, to be found easily.
+Make a heading of a member pointed to from several places, to be found
+easily, and keep in one heading a truss checked at once -- the facts of
+one source, a claim and its reasons.
+
+An item takes tags as a heading does, at the end of its first line,
+~- It is quick :assumption:~, read by
+[[https://github.com/yoshzucker/org-item-tags][org-item-tags]]; with
+~org-item-tags-mode~ on, ~C-c C-q~ there sets them, and ~C-c -~ and ~C-c
+*~ keep them between a heading and an item.
 
 For a heading, the pattern goes in a property, ~TRUSS_LOGIC~ and the
 rest, and the role in the property of the same name with ~_ROLE~ after
@@ -341,6 +342,9 @@ We would meet half as often.
 - A target in its first line, ~<<m21>>~, is its ID: ~[[m21]]~ points to
   it, and ~[[truss-include:m21]]~ includes it.  /include/ and /ground/
   give an item one, as they give a heading a ~CUSTOM_ID~.
+- ~TRUSS_AS~ on a heading, or ~:as~ in ~#+attr_truss~, ~headings~ or
+  ~list~, says how the output document writes the supporting members of
+  that one truss, where what it is would write them the other way.
 
 Every part reads items so, Brief and Structure among them:
 
@@ -537,7 +541,7 @@ Seventeen checks, each found where the problem is:
 | No role              | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                 |
 | No pattern           | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                        |
 | No relation          | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the parts and Structure as any   |
-| Items and headings   | the apex member            | of a compound truss its pattern lists, its supporting members written some as items, some as headings: write them all one way           |
+| Headings in a list   | the apex member            | its ~TRUSS_AS~ says headings, and the output document writes its supporting members as a list all the same: in a list, or below the sixth level|
 | Out of order         | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
 | No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
 | Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
@@ -1174,9 +1178,10 @@ sources and members, and its gaps, so the output document can be read
 down Structure.
 
 Each part is followed by what is left to do in it, check by check --
-/Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Grounds
-set low/, /Mixed sources/, /Sources in Situation/, /Said again/, /Not a heading/, /Missing roles/, /No role/, /No
-pattern/, /No relation/, /Items and headings/, /Out of order/, /Words to write/ (see
+/Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Quotes
+not found/, /Grounds set low/, /Mixed sources/, /Sources in Situation/,
+/Said again/, /Not a heading/, /Missing roles/, /No role/, /No pattern/,
+/No relation/, /Headings in a list/, /Out of order/, /Words to write/ (see
 [[*What is left to do]]) -- each thing listed in the part it is found in,
 and ~RET~ on it goes there.  The mouse on the name of a check says what it
 finds.
@@ -1530,31 +1535,33 @@ Structure is in it, and the trusses and members its include links reach.
   in.  Once a list, what is under it stays a list.  Below the sixth level,
   Markdown's last, what is under a heading is a list.  A pointing link,
   ~[[#m7]]~, is written as its description, or m7's words.
-- The supporting members of a ~TRUSS_LOGIC~ or ~TRUSS_BREAKDOWN~ truss are
-  a list, the apex member a heading still: so a heading of the output
-  document is a claim, and the list below it what holds it up.  Steps are
-  numbered, the rest bulleted, and where the pattern names its roles each
-  opens with its own, /Who:/, /Pros:/.  What is under a supporting member
-  goes inside its item, as a list again.  The supporting members of a
-  ~TRUSS_TELLING~ truss are headings: a telling says only the order.
-- A compound truss is written as the file writes it (see [[*Writing
-  members]]): its supporting members written as items are a list, and
-  those written as headings, after it, are headings a level down, numbered
-  on in a numbered list, /2. Ask them/, and opened with their role as an
-  item is.  So a simple truss is a list under its heading, and a compound
-  truss headings over theirs; no level is worked out from below.  A
-  supporting member that is an include link alone is the member it
-  includes here too: a heading including the facts of a source,
-  ~*** [[truss-include:m20]]~, makes its truss compound, and is a
-  heading, the facts a list under it.  Written some as items and some as headings, the
-  supporting members of one truss would not read as side by side; /Items
-  and headings/ finds them.
+- The supporting members of a truss are written as what the truss is
+  says, never as the file writes them, items or headings:
+
+  | The truss                                       | Its supporting members        |
+  |-------------------------------------------------+-------------------------------|
+  | simple, of a ~TRUSS_LOGIC~ or ~TRUSS_BREAKDOWN~ | a list, under the apex member |
+  | compound                                        | headings, a level down        |
+  | of a ~TRUSS_TELLING~ alone, or of no pattern    | headings: a telling says only the order |
+
+  So a heading of the output document is a claim, and the list below it
+  what holds it up; where what holds it up are claims with reasons of
+  their own, each is a heading, its list below it.  Steps are numbered,
+  the rest bulleted, and where the pattern names its roles each opens
+  with its own, /Who:/, /Pros:/ -- an item and a heading alike, /2. Ask
+  them/.  A supporting member that is an include link alone is the
+  member it includes here too: one including the facts of a source,
+  ~[[truss-include:m20]]~, makes its truss compound, and is a heading,
+  the facts a list under it.  ~TRUSS_AS~, or ~:as~ in ~#+attr_truss~,
+  writes one truss's the other way (see [[*Writing members]]).
+- Once a list, what is under it stays a list, and so below the sixth
+  level: a truss there that ~TRUSS_AS~ says to write as headings is a list
+  all the same, and /Headings in a list/ finds it.
 - A member written as an item stands where its list stands in its apex
   member's text: text after the list follows it, and the members written
   as headings come last, on the last list when no text follows it.  Where
-  they would be headings of the output
-  document, text after them makes them a list: Org has no text of a
-  heading after the headings under it.
+  they would be headings of the output document, text after them makes
+  them a list: Org has no text of a heading after the headings under it.
 - An include link to no member is written as /(broken link: …)/, and one
   that would include without end as /(included without end: …)/, where it
   will be seen.
@@ -1653,11 +1660,11 @@ file reads the same to everyone.
 * Batch
 
 #+begin_src sh
-emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-check  truss.org
-emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-board  truss.org
-emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-export truss.org
-emacs --batch -L . -L ../org-dock -l org-truss -f org-truss-batch-guide
-emacs --batch -L . -L ../org-dock -L ../org-moor -l org-truss -l org-moor \
+emacs --batch -L . -L ../org-dock -L ../org-item-tags -l org-truss -f org-truss-batch-check  truss.org
+emacs --batch -L . -L ../org-dock -L ../org-item-tags -l org-truss -f org-truss-batch-board  truss.org
+emacs --batch -L . -L ../org-dock -L ../org-item-tags -l org-truss -f org-truss-batch-export truss.org
+emacs --batch -L . -L ../org-dock -L ../org-item-tags -l org-truss -f org-truss-batch-guide
+emacs --batch -L . -L ../org-dock -L ../org-item-tags -L ../org-moor -l org-truss -l org-moor \
       -f org-truss-batch-take truss.org FILE-OR-URL [TITLE]
 #+end_src
 
@@ -1666,9 +1673,9 @@ under the name of each check that finds something and what it finds, a
 line for each thing, ~truss.org:42: …~.  Anything that edits the file
 without the board -- you by hand, or a model working in the file -- can
 run it to see what it broke or left undone.  The guide at the head of a
-truss file gives this line, with the directories org-truss and org-dock
-are loaded from, and org-moor, when it is there, so that ~moor:~ links are
-checked too.
+truss file gives this line, with the directories org-truss, org-dock and
+org-item-tags are loaded from, and org-moor, when it is there, so that
+~moor:~ links are checked too.
 
 Any other Org file is checked as the board of one heading reads it: each
 apex member with none above it.  A copy taken out by org-dock is checked
@@ -1695,7 +1702,7 @@ when org-moor is there.
 * Tests
 
 #+begin_src sh
-emacs --batch -Q -L . -L ../org-dock -L ../org-moor -L test \
+emacs --batch -Q -L . -L ../org-dock -L ../org-moor -L ../org-item-tags -L test \
       -l test/org-truss-core-test.el -l test/org-truss-export-test.el \
       -l test/org-truss-board-test.el -l test/org-truss-moor-test.el \
       -f ert-run-tests-batch-and-exit

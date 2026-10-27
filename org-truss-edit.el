@@ -399,11 +399,10 @@ returned then."
       t)))
 
 (defun org-truss-toggle-assumption (pos)
-  "Tag the heading at POS :assumption:, or take the tag off.  Return non-nil if on."
+  "Tag the member at POS :assumption:, or take the tag off.  Return non-nil if on.
+A heading's tags, or those at the end of an item's first line."
   (org-with-point-at pos
-    (let ((on (not (member org-truss-assumption-tag (org-get-tags nil t)))))
-      (org-toggle-tag org-truss-assumption-tag (if on 'on 'off))
-      on)))
+    (org-item-tags-toggle org-truss-assumption-tag)))
 
 (defconst org-truss--id-re
   "^[ \t]*:CUSTOM_ID:[ \t]+m\\([0-9]+\\)[ \t]*$\\|<<m\\([0-9]+\\)>>"

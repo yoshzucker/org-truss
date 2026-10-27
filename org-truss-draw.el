@@ -1439,8 +1439,8 @@ finds it, as `org-truss-check-descriptions' names them."
             model "No relation" (funcall in (mapcar #'list (plist-get checks :no-relation)))
             (lambda (_) org-truss-no-relation-text))
            (org-truss--check-group
-            model "Items and headings" (funcall in (plist-get checks :split))
-            #'org-truss-split-text)
+            model "Headings in a list" (funcall in (mapcar #'list (plist-get checks :listed-headings)))
+            (lambda (_) org-truss-listed-headings-text))
            (org-truss--check-group
             model "Out of order" (funcall in (plist-get checks :out-of-order))
             (lambda (e) (format "below %s" (org-truss-member-words (cdr e)))))

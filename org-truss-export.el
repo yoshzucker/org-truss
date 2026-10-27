@@ -20,12 +20,13 @@
 ;; text and its supporting members.  In text it is m7's words, in the
 ;; sentence, and what follows them comes after the paragraph or the list
 ;; item, as a list one level in.
-;; Once a list, what is under it stays a list; so too the supporting
-;; members of a logic or breakdown truss, and below the deepest level of
-;; headings -- but for a compound truss's written as headings, which are
-;; headings, so the output document is in the shape the file is written
-;; in: a simple truss a list, a compound truss headings.  A member tagged :noexport: is left out, with what is under
-;; it.  The result is an Org file; pandoc, when there is one, turns it into
+;; Once a list, what is under it stays a list, and so below the deepest
+;; level of headings.  Elsewhere the supporting members of a truss are
+;; written as what the truss is says, not as they are written in the file:
+;; a list for a simple logic or breakdown truss, headings for a compound
+;; one and for a telling; TRUSS_AS, or :as in #+attr_truss, says otherwise
+;; for one truss.  A member tagged :noexport: is left out, with what is
+;; under it.  The result is an Org file; pandoc, when there is one, turns it into
 ;; Markdown.
 
 ;;; Code:
@@ -55,6 +56,10 @@ do to Chinese, Japanese and Korean text."
 
 (defvar org-truss--model nil
   "The model an output document is written from, or a board drawn from, meanwhile.")
+
+(defvar org-truss--listed-headings nil
+  "While members whose TRUSS_AS headings is not kept are looked for, a box.
+Its car holds those found; see `org-truss-listed-headings'.")
 
 (defvar org-truss--writing nil
   "The members being written, each including the next: one among them
@@ -150,47 +155,62 @@ each is written where the list is, between the pieces of the body; see
          (list (and (org-truss--present-p (car output)) (org-truss--written (cdr output)))
                (org-truss--supports-text member level)))
       (let ((supports (org-truss-member-supports member))
+            (before 0)
             written)
         (while pieces
           (pcase-let ((`(,text . ,n) (pop pieces)))
             (push (org-truss--written text) written)
             (when n
               ;; The last list with no text after it takes the members
-              ;; written as headings too, which follow its items: one
-              ;; list, numbered on.
+              ;; written as headings too, which follow its items: written
+              ;; together, numbered on.
               (when (and (not (seq-some #'car pieces)) (not (seq-some #'cdr pieces)))
                 (setq n (length supports)))
               ;; Org has no text of a heading after the headings under
               ;; it: what text follows is written after a list.
               (push (org-truss--supports-text member (and (not (seq-some #'car pieces)) level)
-                                              (seq-take supports n))
+                                              (seq-take supports n) before)
                     written)
-              (setq supports (nthcdr n supports)))))
+              (setq before (+ before (min n (length supports)))
+                    supports (nthcdr n supports)))))
         (when supports
-          (push (org-truss--supports-text member level supports) written))
+          (push (org-truss--supports-text member level supports before) written))
         (org-truss--join (nreverse written))))))
 
-(defun org-truss--supports-text (member level &optional supports)
+(defun org-truss--supports-text (member level &optional supports before)
   "Return MEMBER's supporting members as Org text, one tagged :noexport: left out.
-Each a heading one level below LEVEL; as a list instead when LEVEL is
-nil, MEMBER being written in a list, or when it is the deepest level.
-Where a pattern of MEMBER lists them -- see `org-truss-list-form' -- a
-list, but for a compound truss's: there those written as items are a
-list, and those written as headings, after them, headings, as the file
-is written.  SUPPORTS, if given, are those of them to write."
+As `org-truss-supports-shape' says: headings one level below LEVEL, or a
+list.  A list all the same when LEVEL is nil, MEMBER being written in a
+list, or when it is the deepest level.  SUPPORTS, if given, are those of
+them to write, BEFORE of them written already, which headings are
+numbered after."
   (let ((supports (seq-remove #'org-truss-noexport-p
                               (or supports (org-truss-member-supports member)))))
     (cond ((or (null level) (>= level org-truss--deepest-level))
+           (when (and org-truss--listed-headings supports
+                      (eq (org-truss-member-as member) 'headings))
+             (push member (car org-truss--listed-headings)))
            (org-truss--supports-list member supports))
-          ((not (org-truss-list-form member))
-           (org-truss--supports-headings member supports level))
-          ((eq (org-truss-truss-shape org-truss--model member) 'compound)
-           (let ((items (seq-filter #'org-truss-item-p supports)))
-             (org-truss--join
-              (list (org-truss--supports-list member items)
-                    (org-truss--supports-headings member (seq-remove #'org-truss-item-p supports)
-                                                  level (length items))))))
+          ((eq (org-truss-supports-shape org-truss--model member) 'headings)
+           (org-truss--supports-headings member supports level before))
           (t (org-truss--supports-list member supports)))))
+
+(defun org-truss--listed-for-text (apex)
+  "Return the supporting members of APEX written in a list as text follows them.
+Each (SUPPORT . N), N its number in that list.  Org has no text of a
+heading after the headings under it; see `org-truss--after-words'."
+  (let ((pieces (org-truss-member-pieces apex))
+        (supports (org-truss-member-supports apex))
+        found)
+    (while pieces
+      (pcase-let ((`(,_text . ,n) (pop pieces)))
+        (when n
+          (when (seq-some #'car pieces)
+            (let ((i 0))
+              (dolist (s (seq-remove #'org-truss-noexport-p (seq-take supports n)))
+                (push (cons s (setq i (1+ i))) found))))
+          (setq supports (nthcdr n supports)))))
+    found))
 
 (defun org-truss-support-form (apex support &optional in-list)
   "Return how the output document writes SUPPORT, a supporting member of APEX.
@@ -203,19 +223,15 @@ tagged :noexport:, which it leaves out.  Headings below the deepest
 level, which it writes as a list, are not told apart."
   (unless (org-truss-noexport-p support)
     (let* ((supports (seq-remove #'org-truss-noexport-p (org-truss-member-supports apex)))
-           (form (org-truss-list-form apex))
-           (compound (eq (org-truss-truss-shape org-truss--model apex) 'compound))
-           (listed-p (lambda (s) (or in-list (and form (or (not compound) (org-truss-item-p s))))))
-           (items (seq-filter listed-p supports))
-           (listed (funcall listed-p support)))
+           (n (1+ (seq-position supports support)))
+           (cut (assq support (org-truss--listed-for-text apex)))
+           (listed (or in-list cut
+                       (eq (org-truss-supports-shape org-truss--model apex) 'list))))
       (cons listed
             (if listed
-                (let ((marker (org-truss--list-marker apex support (1+ (seq-position items support)))))
+                (let ((marker (org-truss--list-marker apex support (if cut (cdr cut) n))))
                   (concat (car marker) (cdr marker)))
-              (concat (if (eq form 'numbered)
-                          (format "%d. " (+ (length items)
-                                            (1+ (seq-position (seq-remove listed-p supports) support))))
-                        "")
+              (concat (if (eq (org-truss-list-form apex) 'numbered) (format "%d. " n) "")
                       (org-truss--role-opening apex support)))))))
 
 (defun org-truss--supports-headings (apex supports level &optional before)
@@ -379,6 +395,17 @@ for a list item.  Nil is \"\"."
                  (push line block))))
       (finish))
     (string-join (nreverse out) "\n")))
+
+(defun org-truss-listed-headings (model)
+  "Return the members of MODEL whose TRUSS_AS headings is not kept.
+Those whose supporting members the output document writes as a list all
+the same, in a list or below the deepest level; see
+`org-truss--supports-text'."
+  (let ((org-truss--listed-headings (list nil)))
+    (org-truss-render-document model)
+    (seq-uniq (nreverse (car org-truss--listed-headings)))))
+
+(setq org-truss-listed-headings-function #'org-truss-listed-headings)
 
 (defun org-truss-render-document (model)
   "Return the output document MODEL describes, as Org text.

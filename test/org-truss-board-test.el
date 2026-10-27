@@ -618,7 +618,9 @@ which is drawn where it is written."
 - [[truss-include:src]]
 "
     (let ((text (buffer-string)))
-      (should (string-match-p "^   └ Part[ ·]+↪Subject - The minutes$" text))
+      ;; A truss including an apex member is compound: its supporting
+      ;; members are headings of the output document, written as items.
+      (should (string-match-p "^   └ Part[ ·]+↪Subject The minutes$" text))
       (should-not (string-match-p "• included" text))
       (should (= (how-many "The minutes" (point-min) (point-max)) 2)))))
 

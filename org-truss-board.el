@@ -388,7 +388,7 @@ while a command was asking something."
 
 (defconst org-truss--item-commands
   '(org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
-    org-truss-board-edit org-truss-board-same)
+    org-truss-board-edit org-truss-board-same org-truss-board-assume)
   "The board's commands that take a member written as an item of a list.")
 
 (defun org-truss--want (item &rest types)
@@ -1367,9 +1367,9 @@ With org-moor when it is loaded, so that its links are checked too."
          (dir-of (lambda (library)
                    (shell-quote-argument
                     (directory-file-name (file-name-directory (locate-library library))) t))))
-    (format "%s --batch -L %s -L %s%s -l org-truss%s -f org-truss-batch-check %s"
+    (format "%s --batch -L %s -L %s -L %s%s -l org-truss%s -f org-truss-batch-check %s"
             (shell-quote-argument (expand-file-name invocation-name invocation-directory) t)
-            (funcall dir-of "org-truss") (funcall dir-of "org-dock")
+            (funcall dir-of "org-truss") (funcall dir-of "org-dock") (funcall dir-of "org-item-tags")
             (if moor (concat " -L " (funcall dir-of "org-moor")) "")
             (if moor " -l org-moor" "")
             (shell-quote-argument file t))))

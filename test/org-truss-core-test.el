@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 
-;; emacs --batch -Q -L . -L ../org-dock -l test/org-truss-core-test.el -f ert-run-tests-batch-and-exit
+;; emacs --batch -Q -L . -L ../org-dock -L ../org-item-tags -l test/org-truss-core-test.el -f ert-run-tests-batch-and-exit
 
 ;;; Code:
 
@@ -1461,51 +1461,33 @@ facts of different sources are brought together by pointing to them."
       (should (string-match-p ":[0-9]+: Nothing urgent waits -- used in 1 place, on 1 ground$"
                               (org-truss-check-report model))))))
 
-(ert-deftest org-truss-test-checks-items-and-headings ()
-  "A compound truss whose pattern lists its supporting members, written
-some as items and some as headings, is found; a simple truss's are one
-list whatever the file does, and so are not."
+(ert-deftest org-truss-test-item-tags ()
+  "Tags at the end of an item's first line are its tags, not its words:
+an item tagged :assumption: needs no grounds, as a heading does."
   (org-truss-test--with "#+title: T
 * Message
 :PROPERTIES:
 :TRUSS_PART: message
 :END:
-** Do it
-:PROPERTIES:
-:TRUSS_BREAKDOWN: steps
-:END:
-#+attr_truss:
-1. Book a room
-*** Ask them
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: step
-:TRUSS_BREAKDOWN: steps
-:END:
-#+attr_truss:
-1. Write
-2. Send
 ** Why
 :PROPERTIES:
 :TRUSS_LOGIC: reasons
 :END:
 #+attr_truss:
-- It is cheap
-  # [[#m9]]
-*** It is quick                                                :assumption:
-:PROPERTIES:
-:TRUSS_LOGIC_ROLE: reason
-:END:
+- <<m3>>It is cheap :assumption:
+- It is quick
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure
 :END:
 "
-    (let ((model (org-truss-read)))
-      (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
-                             (plist-get (org-truss-checks model) :split))
-                     '(("Do it" 1 . 1))))
-      (should (string-match-p "^Items and headings -- .*\n.*:[0-9]+: Do it -- written as 1 item and 1 heading$"
-                              (org-truss-check-report model))))))
+    (let* ((model (org-truss-read))
+           (cheap (org-truss-test--m model "It is cheap")))
+      (should (equal (org-truss-member-id cheap) "m3"))
+      (should (equal (org-truss-member-tags cheap) '("assumption")))
+      (should (org-truss-assumption-p cheap))
+      (should (equal (mapcar #'org-truss-member-words (plist-get (org-truss-checks model) :no-grounds))
+                     '("It is quick"))))))
 
 (ert-deftest org-truss-test-checks-claims-used-by-including-above ()
   (org-truss-test--with (replace-regexp-in-string

@@ -90,24 +90,18 @@ The four parts (told apart by TRUSS_PART; filled from the top)
   Brief and Message, is for, ? on its line of the board says
 
 Writing
-  1  One heading is one simple truss: its apex member is the heading, its
-     end members the items of a list in its text.
-     - Except: an end member tagged :assumption: or :noexport: is a heading
-       under it (only a heading takes tags), after the end members written
-       as items
-  2  A compound truss is built of headings: each supporting member is a
-     heading under it, its end members too.  One that is an include link
-     alone is the member it includes: an apex member there, when that is
-     one.
-     - Except: when its text goes on after or between the trusses in it,
-       nest lists in the items instead, all of them -- Org has no text of
-       a heading after the headings under it
-     - Except: a TRUSS_TELLING truss's supporting members are headings of
-       the output document however they are written, so write them as
-       items, if you like: ~- sky :: [[truss-include:m1]]~
-  Where 1 and 2 leave it open, keep in one heading a truss checked at once
-  -- the facts of one source, a claim and its reasons -- and make a heading
-  of a member pointed to from several places, to be found easily
+  A member is a heading, or an item of a list marked #+attr_truss, as you
+  choose: the output document is written by what each truss is, not by
+  how it is written.  Org sets two limits
+  - a heading has no text after the headings under it: a member whose
+    text goes on after or between the trusses in it holds them as items,
+    in nested lists
+  - under one member, the items come before the headings
+  Make a heading of a member pointed to from several places, to be found
+  easily; keep in one heading a truss checked at once (the facts of one
+  source, a claim and its reasons)
+  An item takes tags as a heading does, at the end of its first line:
+  ~- It is quick :assumption:~
 
   For a heading, the pattern goes in a property, TRUSS_LOGIC and the rest,
   and the role in the property of the same name with _ROLE after it
@@ -124,6 +118,8 @@ Writing
   what is under it plays it, and a heading there needs no properties.
   An item's first line is its words, the lines under it its text; a list
   marked #+attr_truss inside it holds its supporting members
+  TRUSS_AS on a heading, or :as in #+attr_truss (headings or list), says
+  how the output document writes the supporting members of that one truss
 
 Logic
   Choose an apex member's TRUSS_LOGIC by taking one supporting member out
@@ -213,14 +209,13 @@ Quotes
 In the output document
   Only Structure, and the trusses and members its include links reach
   - a member is its words (a heading, an item's first line), then its text
-  - supporting members are a list in a TRUSS_LOGIC or TRUSS_BREAKDOWN
-    truss (numbered for steps), headings in a TRUSS_TELLING truss.  Where
-    the pattern names its roles, each opens with its role (\"Pros: \")
-  - in a compound truss, the supporting members written as headings are
-    headings, and those written as items a list: the output document is
-    in the shape of the file, written by 1 and 2.  Written some one way
-    and some the other, they would not read as side by side; the check
-    Items and headings finds them
+  - supporting members are written by what the truss is, never by how the
+    file writes them: a list in a simple TRUSS_LOGIC or TRUSS_BREAKDOWN
+    truss (numbered for steps); headings in a compound truss and in a
+    TRUSS_TELLING truss.  Where the pattern names its roles, each opens
+    with its role (\"Pros: \").  TRUSS_AS says otherwise for one truss
+  - once a list, all under it stays a list: TRUSS_AS headings there is
+    not kept, and the check Headings in a list finds it
   - a member written as an item stands where its list stands
   - a pointing link is m7's words (its description, if it has one); a
     moor: link, where the source came from.  The first link to a source,
@@ -230,7 +225,7 @@ In the output document
 
 After editing, check (what is left to do, by line).  When you edited a
 copy you were handed, check the copy in place of FILE
-  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
+  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
 #TAKE"
     "\
 この truss.org から出力文書を一つ作る。盤面（M-x org-truss-board）の x か
@@ -289,22 +284,16 @@ M-x org-truss-export で、OUT/ に書き出す。
   は、盤面のその行の ? が言う
 
 書き方
-  1  見出し一つを単純トラス一つにする。頂点部材を見出しに書き、末端部材
-     は本文の箇条書きに書く。
-     - 例外として、:assumption: か :noexport: を付ける末端部材は子の見出し
-       にする（タグは見出しにしか付かない）。項目の末端部材より後に並ぶ
-  2  複合トラスは見出しで組む。支持部材は末端部材も含めて、それぞれ子の
-     見出しにする。展開リンクだけの部材は展開先の部材そのものなので、
-     展開先が頂点部材なら、そこでも頂点部材になる
-     - 例外として、中のトラスの後ろや間に本文を続けるときは、すべて項目
-       にして箇条書きを入れ子にする（子の見出しの後ろには、親の本文を書
-       けない）
-     - 例外として、TRUSS_TELLING のトラスの支持部材は、どう書いても出力
-       文書では見出しになるので、項目で書いてもよい（
-       ~- sky :: [[truss-include:m1]]~ ）
-  1 と 2 で決まらないときは、一度に確かめるトラス（一つの資料の事実、一つ
-  の主張とその理由）を同じ見出しに置く。いくつかの場所から指される部材は、
-  見出しにすると探しやすい
+  部材は見出しでも、#+attr_truss を付けた箇条書きの項目でもよい。どちらに
+  するかは自由。出力文書は、書き方ではなく、それぞれのトラスが何であるか
+  で書かれる。Org による制約が2つある
+  - 子の見出しの後ろには、親の本文を書けない。中のトラスの後ろや間に本文
+    を続ける部材では、中のトラスを項目にして、箇条書きを入れ子にする
+  - 同じ部材の下では、項目を見出しより前に置く
+  いくつかの場所から指される部材は、見出しにすると探しやすい。一度に確か
+  めるトラス（一つの資料の事実、一つの主張とその理由）は、同じ見出しに置く
+  項目にも、見出しと同じくタグを付けられる。1行目の終わりに書く：
+  ~- 速く済む :assumption:~
 
   見出しでは、型を TRUSS_LOGIC などのプロパティに、役をその名前に _ROLE
   を付けたプロパティ（TRUSS_LOGIC_ROLE: reason など）に書く
@@ -319,6 +308,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   がその役を担うので、見出しにもプロパティは要らない。項目の
   1行目が言葉、その下が本文。中に #+attr_truss の箇条書きがあれば、それ
   がその項目の支持部材になる
+  見出しの TRUSS_AS、または #+attr_truss の :as（headings か list）は、
+  そのトラス一つについて、支持部材を出力文書でどう書くかを決める
 
 論理
   頂点部材の TRUSS_LOGIC は、支持部材を一つ抜いてみて選ぶ
@@ -400,12 +391,13 @@ M-x org-truss-export で、OUT/ に書き出す。
 出力文書に出るもの
   Structure と、そこから展開リンクでたどれるトラスや部材だけが出る
   - 部材は、言葉（見出し、項目なら1行目）のあとに本文が続く
-  - 支持部材は、TRUSS_LOGIC と TRUSS_BREAKDOWN のトラスなら箇条書き
-    （steps は番号付き）、TRUSS_TELLING のトラスなら見出しで出る。役の
-    名前を出す型では、役の名前から始まる（pros なら「メリット：」）
-  - 複合トラスでは、見出しに書いた支持部材は見出しで、項目に書いた支持
-    部材は箇条書きで出る。書き方の 1 と 2 で書いた形のまま出る。両方が
-    混ざると並んだ部材に読めないので、Items and headings の検査で見つかる
+  - 支持部材は、ファイルでの書き方ではなく、トラスが何であるかで出る。
+    単純トラスの TRUSS_LOGIC と TRUSS_BREAKDOWN なら箇条書き（steps は
+    番号付き）、複合トラスと TRUSS_TELLING のトラスなら見出し。役の名前
+    を出す型では、役の名前から始まる（pros なら「メリット：」）。
+    TRUSS_AS で、トラス一つについて変えられる
+  - 一度箇条書きになると、その下はすべて箇条書きになる。そこでの
+    TRUSS_AS の headings は効かず、Headings in a list の検査で見つかる
   - 項目の部材は、箇条書きのあった場所に出る
   - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料の
     取り込み元になる。場所だけで名指した、その資料への最初のリンクには、
@@ -415,14 +407,15 @@ M-x org-truss-export で、OUT/ に書き出す。
 
 編集したら確かめる（残りの作業を行番号付きで出す。渡された写しを編集した
 ときは、FILE の代わりにその写しを確かめる）
-  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
+  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
 #TAKE")
   "The guide of a truss file, in English and Japanese.
 It holds the rules of the file, the same for whoever edits it -- a person,
 or a model working in the file: the words, the four parts, how members
 and trusses are written, grounds, claims, sources, what is in the output
 document, and what goes in the directories beside it.  ORG-TRUSS-DIR and
-ORG-DOCK-DIR stand for where org-truss and org-dock are loaded from, FILE
+ORG-DOCK-DIR and ORG-ITEM-TAGS-DIR stand for where org-truss, org-dock
+and org-item-tags are loaded from, FILE
 for `org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the
 directories beside the file; #MOOR and a line #TAKE, for what org-moor
 adds when it is there.  See `org-truss-guide'.")
@@ -431,11 +424,11 @@ adds when it is there.  See `org-truss-guide'.")
   '("
 
 A file or a page read, taken into SOURCES/ with a link printed to cite it
-  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE PATH-OR-URL [TITLE]"
+  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE PATH-OR-URL [TITLE]"
     "
 
 読んだファイルやページを SOURCES/ に取り込み、引くためのリンクを出す
-  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE パスかURL [題]")
+  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE パスかURL [題]")
   "How an agent takes a source, at the end of the guide.
 Written there when org-moor is there to take it with.")
 
@@ -518,6 +511,7 @@ directories beside it are named as they are set here."
     (pcase-dolist (`(,placeholder . ,value)
                    `(("ORG-TRUSS-DIR" . ,(funcall dir-of "org-truss"))
                      ("ORG-DOCK-DIR" . ,(funcall dir-of "org-dock"))
+                     ("ORG-ITEM-TAGS-DIR" . ,(funcall dir-of "org-item-tags"))
                      ("ORG-MOOR-DIR" . ,(funcall dir-of "org-moor"))
                      ("FILE" . ,org-truss-file-name)
                      ("SOURCES/" . ,(file-name-as-directory org-truss-sources-directory))

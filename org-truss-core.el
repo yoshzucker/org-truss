@@ -42,6 +42,7 @@
 
 (require 'org)
 (require 'org-element)
+(require 'org-item-tags)
 (require 'org-attach)
 (require 'files-x)
 (require 'cl-lib)
@@ -714,13 +715,14 @@ One for each kind of pattern whose role property it has."
 POS is where it is written, WORDS its words: a heading's text without tags
 or keyword, an item's first line.  LEVEL is its level, a heading's or that
 of the heading it would be.  ID is its CUSTOM_ID, or an item's <<ID>>, and
-TAGS a heading's tags.  PART is the part it is in: `brief', `subject',
+TAGS its tags, a heading's or those at the end of an item's first line.  PART is the part it is in: `brief', `subject',
 `message' or `structure'; IS-PART is non-nil for the four members with
 TRUSS_PART themselves.
 
 LOGIC, BREAKDOWN and TELLING are its patterns, one of each kind: with any,
 it is the apex member of a truss, and SUPPORTS, the members right under it,
-are its supporting members.  ROLES are the roles it plays in the patterns
+are its supporting members.  AS is `headings' or `list' when TRUSS_AS, or
+:as in #+attr_truss, says how the output document writes them; else nil.  ROLES are the roles it plays in the patterns
 of the member above, as (KIND . ROLE).
 
 POINTS are the IDs its pointing links point to, and INCLUDES those its
@@ -735,7 +737,7 @@ whose text it is written.  PIECES is nil but where its text holds lists
 of its supporting members: then its body as they cut it, (TEXT . N) for
 the text before a list and the number of its items, and (TEXT) for the
 text after the last; see `org-truss--body-pieces'."
-  pos id words level tags part is-part roles logic breakdown telling
+  pos id words level tags part is-part roles logic breakdown telling as
   points includes source-links cited quoted body notes supports holder pieces)
 
 (cl-defstruct (org-truss-model (:constructor org-truss--make-model)
@@ -766,6 +768,7 @@ PARSED is the parse of its text."
             :logic (org-truss--pattern-here 'logic)
             :breakdown (org-truss--pattern-here 'breakdown)
             :telling (org-truss--pattern-here 'telling)
+            :as (org-truss--as (org-entry-get nil "TRUSS_AS"))
             :points (org-truss--points-in all)
             :includes (append (org-truss--includes-in (org-truss--heading-words))
                               (plist-get parsed :includes))
@@ -804,6 +807,22 @@ PARSED is the parse of its text."
                         (let ((value (plist-get plist (intern (format ":%s" kind)))))
                           (and value (cons kind (org-truss--intern (format "%s" value))))))
                       org-truss-pattern-kinds))))
+
+(defun org-truss--as (value)
+  "Return VALUE, TRUSS_AS or :as, as `headings' or `list', or nil."
+  (let ((value (org-truss--intern (and value (format "%s" value)))))
+    (and (memq value '(headings list)) value)))
+
+(defun org-truss--lists-as (lists)
+  "Return what the first of LISTS whose #+attr_truss names :as says, or nil."
+  (seq-some (lambda (list)
+              (let ((plist (condition-case nil
+                               (car (read-from-string
+                                     (concat "(" (string-join (org-element-property :attr_truss list) " ")
+                                             ")")))
+                             (error nil))))
+                (org-truss--as (plist-get plist :as))))
+            lists))
 
 (defun org-truss--item-lists-in (container)
   "Return the lists right in CONTAINER, an Org element, that #+attr_truss marks."
@@ -885,7 +904,11 @@ are those of the member it supports, (KIND . PATTERN)."
          ;; Its words are its first line, as a heading's are; the lines
          ;; after are its text.
          (rest (if para (save-excursion (goto-char begin) (min end (line-beginning-position 2))) begin))
-         (words (if para (string-trim-right (buffer-substring-no-properties begin rest)) ""))
+         (line (org-item-tags-split
+                (if para (string-trim-right (buffer-substring-no-properties begin rest)) "")))
+         ;; Tags at the end of its first line are its tags, as a
+         ;; heading's; its words are what is before them.
+         (words (string-trim-right (car line)))
          (term (let ((tag (org-element-property :tag item)))
                  (and tag (string-trim (substring-no-properties (org-element-interpret-data tag))))))
          (role (and term (org-truss--intern term)))
@@ -907,10 +930,12 @@ are those of the member it supports, (KIND . PATTERN)."
      :id (and (string-match "<<\\([^<>\n]+\\)>>" words) (match-string 1 words))
      :words (string-trim (replace-regexp-in-string "<<[^<>\n]*>>[ \t]*" "" words))
      :level level
+     :tags (cdr line)
      :roles roles
      :logic (alist-get 'logic own-patterns)
      :breakdown (alist-get 'breakdown own-patterns)
      :telling (alist-get 'telling own-patterns)
+     :as (org-truss--lists-as lists)
      :points (org-truss--points-in all)
      :includes (append (org-truss--includes-in words) (plist-get parsed :includes))
      :source-links (org-truss--source-links-in all)
@@ -955,6 +980,8 @@ there is played without the role written."
          (body (org-truss--body-pieces (plist-get fields :body) lists)))
     (setq fields (plist-put (plist-put fields :body (car body)) :pieces (cdr body)))
     (setq fields (plist-put fields :roles (org-truss--heading-roles (plist-get fields :roles) patterns)))
+    (unless (plist-get fields :as)
+      (setq fields (plist-put fields :as (org-truss--lists-as lists))))
     (dolist (p (org-truss--lists-patterns lists))
       (let ((key (intern (format ":%s" (car p)))))
         (unless (plist-get fields key)
@@ -1241,27 +1268,24 @@ the first of its patterns that has one."
   (seq-some (lambda (id) (plist-get (org-truss-pattern id) :list))
             (org-truss-member-patterns member)))
 
-(defun org-truss-split-supports (model member)
-  "Return (ITEMS . HEADINGS) when MEMBER's supporting members are written apart.
-How many of them are written as items, how many as headings, one tagged
-:noexport: left out, where MEMBER of MODEL is the apex of a compound
-truss whose pattern lists them: the output document writes them as the
-file does, a list and headings a level down, and the reader does not
-see they stand side by side.  Nil where they are written alike, or are
-written alike whatever the file does."
-  (when (and (org-truss-list-form member)
-             (eq (org-truss-truss-shape model member) 'compound))
-    (let* ((supports (seq-remove #'org-truss-noexport-p (org-truss-member-supports member)))
-           (items (seq-count #'org-truss-item-p supports))
-           (headings (- (length supports) items)))
-      (and (> items 0) (> headings 0) (cons items headings)))))
+(defun org-truss-supports-shape (model member)
+  "Return how the output document writes MEMBER's supporting members.
+`headings' or `list', as TRUSS_AS or :as says; else by what MEMBER of
+MODEL is, never by how they are written: headings where no pattern lists
+them -- a telling, a member with no pattern -- or where they hold up
+trusses of their own, MEMBER being the apex of a compound truss; a list
+where its pattern lists them and they are end members.  Where it is
+written, what is in a list stays one; see `org-truss--supports-text'."
+  (or (org-truss-member-as member)
+      (if (and (org-truss-list-form member)
+               (not (eq (org-truss-truss-shape model member) 'compound)))
+          'list
+        'headings)))
 
-(defun org-truss-split-text (entry)
-  "Return what the board and the report say of ENTRY, (MEMBER ITEMS . HEADINGS)."
-  (let ((items (cadr entry))
-        (headings (cddr entry)))
-    (format "written as %d item%s and %d heading%s"
-            items (if (= items 1) "" "s") headings (if (= headings 1) "" "s"))))
+(defvar org-truss-listed-headings-function nil
+  "Function returning the members of a model whose TRUSS_AS headings is not kept.
+Called with the model; see `org-truss-listed-headings'.  Set by
+org-truss-export.el, which writes the output document they are found in.")
 
 (defun org-truss-labelling-role (member support)
   "Return the role SUPPORT plays in a pattern of MEMBER that labels it, or nil.
@@ -1876,9 +1900,9 @@ member whose pattern asks, at the member that lacks, at the link.
 :no-relation     members with members right under them and no pattern,
                  or members included in their text; see
                  `org-truss-no-relation-p'
-:split           (MEMBER ITEMS . HEADINGS) for apex members whose
-                 supporting members are written apart, some as items, some
-                 as headings; see `org-truss-split-supports'
+:listed-headings members whose TRUSS_AS headings the output document
+                 does not keep, writing them in a list; see
+                 `org-truss-listed-headings-function'
 :out-of-order    (SUPPORT . ABOVE) for supporting members the file has
                  below one the telling pattern tells after them
 :no-grounds      members that must have grounds and have none; see
@@ -1932,10 +1956,8 @@ member whose pattern asks, at the member that lacks, at the link.
                                         (org-truss-no-pattern m)))
                               members)
           :no-relation (seq-filter #'org-truss-no-relation-p members)
-          :split (delq nil (mapcar (lambda (m)
-                                     (let ((split (org-truss-split-supports model m)))
-                                       (and split (cons m split))))
-                                   members))
+          :listed-headings (and org-truss-listed-headings-function
+                                (funcall org-truss-listed-headings-function model))
           :out-of-order (mapcan #'org-truss-out-of-order members)
           :no-grounds (seq-filter (lambda (m) (org-truss-missing-grounds model m)) members)
           :weak-grounds (funcall each (lambda (m) (org-truss-weak-grounds model m)))
@@ -2003,8 +2025,8 @@ member whose pattern asks, at the member that lacks, at the link.
      . "members that play a role, in TRUSS_LOGIC_ROLE, TRUSS_BREAKDOWN_ROLE or TRUSS_TELLING_ROLE or before ::, while the member right above has no pattern of that kind: give it the pattern the role belongs to, or take the role off")
     ("No relation"
      . "members with members right under them and no pattern, or with include links in their text: nothing says what those are to them, so whether they hold together cannot be checked; give them a TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING, in a property or in the list's #+attr_truss, its items then members of it")
-    ("Items and headings"
-     . "apex members of a compound truss whose pattern lists them, with supporting members written some as items of a list, some as headings: the output document writes them so, a list and headings a level down, and the reader does not see they stand side by side; write them all as items, nesting lists, or all as headings -- an include link alone can be either, - [[truss-include:m7]] or *** [[truss-include:m7]]")
+    ("Headings in a list"
+     . "members whose TRUSS_AS, or :as in #+attr_truss, says headings, and whose supporting members the output document writes as a list all the same: what is in a list stays one, as below the sixth level, and text a member goes on with after them makes them a list, Org having no text of a heading after the headings under it; take TRUSS_AS off, or write what is above it as headings")
     ("Out of order"
      . "supporting members the file has below one that the TRUSS_TELLING of their apex member tells after them; the output document follows the file, so move them there")
     ("Words to write"
@@ -2016,6 +2038,10 @@ In the order the report prints them.")
   "no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:"
   "What the board and the report say of a member with no grounds, and how
 it comes to hold.")
+
+(defconst org-truss-listed-headings-text
+  "TRUSS_AS headings, written as a list"
+  "What the board and the report say of a member whose TRUSS_AS is not kept.")
 
 (defconst org-truss-placeholder-text
   "the words it was given, which reach the reader"
@@ -2205,9 +2231,9 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
            (cons "No relation"
                  (mapcar (lambda (m) (funcall member-line m org-truss-no-relation-text))
                          (plist-get checks :no-relation)))
-           (cons "Items and headings"
-                 (mapcar (lambda (e) (funcall member-line (car e) (org-truss-split-text e)))
-                         (plist-get checks :split)))
+           (cons "Headings in a list"
+                 (mapcar (lambda (m) (funcall member-line m org-truss-listed-headings-text))
+                         (plist-get checks :listed-headings)))
            (cons "Out of order"
                  (mapcar (lambda (o)
                            (funcall member-line (car o)

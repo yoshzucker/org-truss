@@ -4,7 +4,7 @@
 
 ;; Author: yoshzucker
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "29.1") (org "9.6") (org-dock "0.1"))
+;; Package-Requires: ((emacs "29.1") (org "9.7") (org-dock "0.1") (org-item-tags "0.1"))
 ;; Keywords: outlines, wp
 ;; URL: https://github.com/yoshzucker/org-truss
 
