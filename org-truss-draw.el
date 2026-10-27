@@ -361,22 +361,6 @@ its ID, if the line has one."
                           'org-truss-item (plist-get line :item)))
     (if why (propertize out 'help-echo why) out)))
 
-(defun org-truss--one-line (text)
-  "Return TEXT with its lines joined, as a filled paragraph reads.
-Between two wide characters a line break is dropped; elsewhere it is a space."
-  (let ((lines (split-string (string-trim text) "[ \t]*\n[ \t]*")))
-    (seq-reduce (lambda (acc line)
-                  (if (string-empty-p acc)
-                      line
-                    (concat acc
-                            (if (and (> (char-width (aref acc (1- (length acc)))) 1)
-                                     (not (string-empty-p line))
-                                     (> (char-width (aref line 0)) 1))
-                                ""
-                              " ")
-                            line)))
-                lines "")))
-
 (defun org-truss--role-names (member)
   "Return the roles MEMBER plays in the patterns above, as the board names them.
 Joined, in the order of their kinds; nil when it plays none."
@@ -1420,8 +1404,7 @@ finds it, as `org-truss-check-descriptions' names them."
             #'org-truss-hidden-ground-text)
            (org-truss--check-group
             model "Quotes not found" (funcall in (plist-get checks :quotes-not-found))
-            (lambda (e) (format "“%s” is not in its source"
-                                (truncate-string-to-width (org-truss--one-line (cdr e)) 30 nil nil "…"))))
+            #'org-truss-quote-not-found-text)
            (org-truss--check-group
             model "Grounds set low" (funcall in (plist-get checks :low-grounds))
             #'org-truss-grounds-set-low-text)

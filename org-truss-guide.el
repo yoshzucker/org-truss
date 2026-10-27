@@ -207,6 +207,8 @@ Quotes
   Where no words can be quoted (counted from data, read from a figure, what
   the source does not say), quote nothing: write in the text how the fact
   was found from the source
+  The check report lists a quote not found in its source (Quotes not
+  found): a word changed is not found
 
 In the output document
   Only Structure, and the trusses and members its include links reach
@@ -392,6 +394,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   確かめる
   引用できる言葉がないとき（データから数えた、図から読んだ、資料に書かれて
   いないこと）は、引用しない。その事実を資料からどう得たかを本文に書く
+  資料に見つからない引用は、検査の報告に出る（Quotes not found）。言葉が
+  一つ違っても見つからない
 
 出力文書に出るもの
   Structure と、そこから展開リンクでたどれるトラスや部材だけが出る

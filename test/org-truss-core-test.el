@@ -1054,9 +1054,8 @@ a word changed is not found.  A source whose text cannot surely be read
                   'found)))))
 
 (ert-deftest org-truss-test-quotes-not-found ()
-  "A quote not in its source is listed for the board, not yet in the
-report: how surely quotes are found is still tried on real files.  A
-quote under a member linking nowhere is looked for in the source the
+  "A quote not in its source is listed, on the board and in the report.
+A quote under a member linking nowhere is looked for in the source the
 member above names."
   (org-truss-test--in-directory
       '(("sources/rule.txt" . "Teams review designs and code twice a month.\n")
@@ -1065,7 +1064,8 @@ member above names."
       (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
                              (plist-get (org-truss-checks model) :quotes-not-found))
                      '(("Reviews are twice a month" . "Teams review designs twice a month."))))
-      (should-not (string-match-p "Quotes not found" (org-truss-check-report model))))))
+      (should (string-match-p "^Quotes not found -- .*\ntruss.org:7: Reviews are twice a month -- “Teams review designs twice a …” is not in its source$"
+                              (org-truss-check-report model))))))
 
 (ert-deftest org-truss-test-grounds-set-low ()
   "An apex member whose supporting members, two or more, all stand on the

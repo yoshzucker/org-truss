@@ -1894,9 +1894,7 @@ member whose pattern asks, at the member that lacks, at the link.
                  `org-truss-grounds-set-low'
 :quotes-not-found (MEMBER . QUOTE) for each quote not in the source it is
                  from, where that source's text can be read; see
-                 `org-truss-quotes-not-found'.  The board lists them; the
-                 report does not yet, while how surely they are found is
-                 tried on real files
+                 `org-truss-quotes-not-found'
 :placeholders    members the output document tells whose words are still
                  those they were given; see `org-truss-placeholder-p'
 :mixed-sources   (MEMBER . SOURCES) for apex members whose truss brings
@@ -2040,6 +2038,27 @@ it comes to hold.")
     (format "used in %d place%s, on %d ground%s"
             users (if (= users 1) "" "s") grounds (if (= grounds 1) "" "s"))))
 
+(defun org-truss--one-line (text)
+  "Return TEXT with its lines joined, as a filled paragraph reads.
+Between two wide characters a line break is dropped; elsewhere it is a space."
+  (let ((lines (split-string (string-trim text) "[ \t]*\n[ \t]*")))
+    (seq-reduce (lambda (acc line)
+                  (if (string-empty-p acc)
+                      line
+                    (concat acc
+                            (if (and (> (char-width (aref acc (1- (length acc)))) 1)
+                                     (not (string-empty-p line))
+                                     (> (char-width (aref line 0)) 1))
+                                ""
+                              " ")
+                            line)))
+                lines "")))
+
+(defun org-truss-quote-not-found-text (entry)
+  "Return what the board and the report say of ENTRY, (MEMBER . QUOTE)."
+  (format "“%s” is not in its source"
+          (truncate-string-to-width (org-truss--one-line (cdr entry)) 30 nil nil "…")))
+
 (defun org-truss-check-about (name)
   "Return what the check NAME finds, or nil."
   (cdr (assoc name org-truss-check-descriptions)))
@@ -2130,6 +2149,9 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
            (cons "Hidden grounds"
                  (mapcar (lambda (h) (funcall member-line (car h) (org-truss-hidden-ground-text h)))
                          (plist-get checks :hidden-grounds)))
+           (cons "Quotes not found"
+                 (mapcar (lambda (e) (funcall member-line (car e) (org-truss-quote-not-found-text e)))
+                         (plist-get checks :quotes-not-found)))
            (cons "Grounds set low"
                  (mapcar (lambda (e) (funcall member-line (car e) (org-truss-grounds-set-low-text e)))
                          (plist-get checks :low-grounds)))

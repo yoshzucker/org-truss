@@ -529,7 +529,7 @@ shows what it reads.
 
 ** What is left to do
 
-Sixteen checks, each found where the problem is:
+Seventeen checks, each found where the problem is:
 
 | Check                | Found at                   | What it finds                                                                                                                           |
 |----------------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -542,6 +542,7 @@ Sixteen checks, each found where the problem is:
 | No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
 | Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
 | Hidden grounds       | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~ |
+| Quotes not found     | the member that quotes     | a ~#+begin_quote~ whose words are not in the source it is from, where that source's text can surely be read                              |
 | Grounds set low      | the apex member            | its supporting members, two or more, all stand on the same member, and it does not: it is to stand on that member, once                 |
 | Mixed sources        | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
 | Sources in Situation | the source, or the fact    | a source a claim stands on that Situation leaves out, one it includes that no claim stands on, a fact it includes in place of its source |
@@ -1410,9 +1411,9 @@ which:
 | =✗=  | not found: listed under /Quotes not found/, below the part               |
 | =?=  | not looked for: the source's text cannot surely be read, or none linked |
 
-~org-truss-board-quote-marks~ sets them.  /Quotes not found/ is the
-board's alone for now: the report (see [[*What is left to do]]) does not
-list it, while how surely quotations are found is tried on real files.
+~org-truss-board-quote-marks~ sets them.  /Quotes not found/ is a
+check of the report too (see [[*What is left to do]]), so an agent
+working by ~org-truss-batch-check~ is told of it.
 
 ~m~, with org-moor, takes a source for the member as org-moor takes one,
 into the truss file's ~sources/~, and writes the link to it on a line of
