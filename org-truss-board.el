@@ -387,7 +387,8 @@ while a command was asking something."
 
 (defconst org-truss--item-commands
   '(org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
-    org-truss-board-edit org-truss-board-same org-truss-board-assume)
+    org-truss-board-edit org-truss-board-same org-truss-board-assume
+    org-truss-board-pattern)
   "The board's commands that take a member written as an item of a list.")
 
 (defun org-truss--want (item &rest types)
@@ -808,20 +809,36 @@ Return the pattern's id, or (none . KIND); see `org-truss--pattern-choices'."
      (mapcar (lambda (c) (cons (car c) (org-truss--pattern-about (cdr c)))) choices))))
 
 (defun org-truss--apply-pattern (pos id in-structure)
-  "Give the heading at POS in this buffer the pattern ID, and its roles.
+  "Give the member at POS in this buffer the pattern ID, and its roles.
+A heading, in its properties; an item, in #+attr_truss right in it.
 ID is as `org-truss--read-pattern' returns it; IN-STRUCTURE is non-nil
 when the member is Structure's.  What the pattern asks for and is not
 there is put in, a member for each role, where the pattern lists it, to
 be written over.  A telling pattern on a member of Structure takes the
 headings under it into its roles first."
-  (if (eq (car-safe id) 'none)
-      (org-truss-set-pattern pos (cdr id) nil)
-    (let ((kind (plist-get (org-truss-pattern id) :kind)))
-      (if (and in-structure (eq kind 'telling))
-          (org-truss-apply-telling pos id)
-        (org-truss-set-pattern pos kind id))
-      (org-truss-add-role-members pos (seq-filter (lambda (gap) (eq (car gap) kind))
-                                                  (org-truss-gaps (org-truss-member-at (org-truss-read) pos)))))))
+  (let ((item (save-excursion (goto-char pos) (not (org-at-heading-p)))))
+    (if (eq (car-safe id) 'none)
+        (if item
+            (org-truss-set-item-pattern pos (cdr id) nil)
+          (org-truss-set-pattern pos (cdr id) nil))
+      (let ((kind (plist-get (org-truss-pattern id) :kind)))
+        (cond ((and in-structure (eq kind 'telling) item)
+               (user-error "A telling of Structure takes a heading"))
+              ((and in-structure (eq kind 'telling))
+               (org-truss-apply-telling pos id))
+              (item (org-truss-set-item-pattern pos kind id))
+              (t (org-truss-set-pattern pos kind id)))
+        (let* ((member (org-truss-member-at (org-truss-read) pos))
+               ;; An item with no list yet is read without the pattern
+               ;; its line names: asked of it with none under it.
+               (member (if (org-truss-member-pattern member kind)
+                           member
+                         (apply #'org-truss--make-member (list (intern (format ":%s" kind)) id))))
+               (gaps (seq-filter (lambda (gap) (eq (car gap) kind))
+                                 (org-truss-gaps member))))
+          (if item
+              (org-truss-add-role-items pos gaps)
+            (org-truss-add-role-members pos gaps)))))))
 
 (defun org-truss-board-pattern ()
   "Give the member at point a pattern: a part, or any member.

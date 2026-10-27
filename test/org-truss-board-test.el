@@ -1009,6 +1009,33 @@ not before closing punctuation."
     (should (equal (get-text-property (point) 'help-echo)
                    "Plays no role of telling › SCQA; M-x org-truss-board-roles gives it one"))))
 
+(ert-deftest org-truss-test-board-applies-a-pattern-to-an-item ()
+  "p on an item names the pattern in #+attr_truss right in it, and puts
+in a list there an item for each role it asks for."
+  (org-truss-test--with-board "* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** Why
+:PROPERTIES:
+:TRUSS_LOGIC: reasons
+:END:
+#+attr_truss:
+- It is cheap
+  We checked.
+- It is quick :assumption:
+"
+    (org-truss-test--goto-line-with "It is cheap")
+    (let ((this-command 'org-truss-board-pattern))
+      (org-truss-test--answering '("logic › deduction")
+        (org-truss-board-pattern)))
+    (should (string-match-p (concat "^- It is cheap\n  We checked\\.\n"
+                                    "  #\\+attr_truss: :logic deduction\n"
+                                    "  - major :: Major premise\n"
+                                    "  - minor :: Minor premise\n"
+                                    "- It is quick :assumption:\n")
+                            (with-current-buffer source (buffer-string))))))
+
 (ert-deftest org-truss-test-board-marks-sections-outside-the-pattern ()
   "A section playing no role of its parent's pattern is marked."
   (org-truss-test--with-board org-truss-test--file

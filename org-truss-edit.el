@@ -470,6 +470,115 @@ Nil when no line holds one."
         (insert "\n")
         (1- (point))))))
 
+;;;; The pattern of a member written as an item
+
+;; An item's patterns are named in #+attr_truss before the list of its
+;; supporting members, inside it; the members a pattern asks for are
+;; items of that list.
+
+(defun org-truss--item-column (pos)
+  "Return the column the text of the item at POS starts at."
+  (save-excursion
+    (goto-char pos)
+    (looking-at "[ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t]+")
+    (- (match-end 0) (match-beginning 0))))
+
+(defun org-truss--item-end (pos)
+  "Return where the item at POS ends, what is under it included."
+  (save-excursion
+    (goto-char pos)
+    (let ((struct (org-list-struct)))
+      (org-list-get-item-end pos struct))))
+
+(defun org-truss--item-attr (pos)
+  "Return where the #+attr_truss right in the item at POS is, or nil."
+  (let ((column (org-truss--item-column pos))
+        (end (org-truss--item-end pos)))
+    (save-excursion
+      (goto-char pos)
+      (forward-line)
+      (catch 'found
+        (while (re-search-forward "^\\([ \t]*\\)#\\+attr_truss:" end t)
+          (when (= (length (match-string 1)) column)
+            (throw 'found (line-beginning-position))))
+        nil))))
+
+(defun org-truss--attr-plist (pos)
+  "Return what the #+attr_truss line at POS says, as a plist."
+  (save-excursion
+    (goto-char pos)
+    (looking-at "[ \t]*#\\+attr_truss:\\(.*\\)$")
+    (condition-case nil (car (read-from-string (concat "(" (match-string 1) ")")))
+      (error nil))))
+
+(defun org-truss-set-item-pattern (pos kind pattern)
+  "Give the item at POS PATTERN of KIND, in the #+attr_truss right in it.
+With PATTERN nil it has none of that kind.  An item with no list of its
+own is given the line, at its end, for the list to follow."
+  (let* ((attr (org-truss--item-attr pos))
+         (plist (and attr (org-truss--attr-plist attr)))
+         (patterns (delq nil (mapcar (lambda (k)
+                                       (let ((value (if (eq k kind)
+                                                        pattern
+                                                      (plist-get plist (intern (format ":%s" k))))))
+                                         (and value (cons k value))))
+                                     org-truss-pattern-kinds)))
+         (line (concat (make-string (org-truss--item-column pos) ?\s)
+                       (org-truss--attr-line patterns (plist-get plist :as)))))
+    (save-excursion
+      (if attr
+          (progn (goto-char attr)
+                 (delete-region attr (line-end-position))
+                 (insert line))
+        (when pattern
+          (goto-char (org-truss--item-end pos))
+          (skip-chars-backward " \t\n")
+          (end-of-line)
+          (insert "\n" line))))))
+
+(defun org-truss-add-role-items (pos gaps)
+  "Put in the list of the item at POS an item for each role GAPS names.
+GAPS are (KIND ROLE . SHORT-BY), as `org-truss-gaps' gives them.  Each
+is written after the items there, its words the role's in
+`org-truss-language', its role before :: where its pattern has more than
+one.  Return the number made."
+  (let ((attr (org-truss--item-attr pos))
+        (column (org-truss--item-column pos))
+        (n 0))
+    (when attr
+      (let* ((plist (org-truss--attr-plist attr))
+             (numbered nil)
+             (count 0)
+             (at (save-excursion
+                   (goto-char attr)
+                   (forward-line)
+                   ;; Past the list's items and what is under them.
+                   (let ((end (org-truss--item-end pos)))
+                     (while (and (< (point) end)
+                                 (or (looking-at "[ \t]*$")
+                                     (>= (current-indentation) column)))
+                       (when (and (= (current-indentation) column)
+                                  (looking-at "[ \t]*\\(?:[-+]\\|\\([0-9]+\\)[.)]\\)[ \t]"))
+                         (setq count (1+ count)
+                               numbered (or numbered (match-beginning 1))))
+                       (forward-line))
+                     (skip-chars-backward " \t\n")
+                     (if (bobp) (point) (progn (end-of-line) (point)))))))
+        (pcase-dolist (`(,kind ,role . ,short) gaps)
+          (let* ((pattern (org-truss--intern (format "%s" (plist-get plist (intern (format ":%s" kind))))))
+                 (many (cdr (org-truss-pattern-roles pattern)))
+                 (numbered (or numbered (eq (plist-get (org-truss-pattern pattern) :list) 'numbered))))
+            (dotimes (_ short)
+              (setq n (1+ n) count (1+ count))
+              (save-excursion
+                (goto-char at)
+                (insert "\n" (make-string column ?\s)
+                        (if numbered (format "%d. " count) "- ")
+                        (if many (format "%s :: " role) "")
+                        (org-truss-role-label role))
+                (setq at (point))))))))
+    n))
+
 ;;;; A heading made an item, an item a heading
 
 ;; Org's own C-c * and C-c - turn items into headings and back.  In a truss

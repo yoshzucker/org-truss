@@ -371,8 +371,10 @@ Every part reads items so, Brief and Structure among them:
 #+end_src
 
 On the board, /edit/ on an item takes out the heading whose text holds
-it, at the item; the commands that change a heading -- /pattern/ and the
-rest -- say so on an item instead, which is written by hand there.
+it, at the item; /pattern/ on an item names the pattern in the
+~#+attr_truss~ right in it, and puts in its list an item for each role
+the pattern asks for; /assume/ tags it.  The other commands that change
+a heading say so on an item instead, which is written by hand there.
 
 ** Grounds
 
