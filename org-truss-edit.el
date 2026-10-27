@@ -354,12 +354,10 @@ be expected to make by hand; this makes them.  Return the number made."
 
 (defun org-truss-add-ground (pos id)
   "Make the member ID a ground of the heading at POS.
-A pointing link to it, # [[#ID]], or # [[ID]] for an item, on a comment
-line of its own after the heading's last line of text, where the reader
-does not see it; see `org-truss-ensure-id'."
-  (org-truss--add-line pos (format "# [[%s]]" (if (org-truss--item-id-p id)
-                                                  id
-                                                (org-truss--pointing-target id)))))
+A pointing link to it, # [[ID]], on a comment line of its own after the
+heading's last line of text, where the reader does not see it; see
+`org-truss-ensure-id'."
+  (org-truss--add-line pos (format "# [[%s]]" (org-truss--pointing-target id))))
 
 (defun org-truss--goto-first-heading ()
   "Go to the first heading of the buffer, past the guide before it.
@@ -368,20 +366,13 @@ The guide's examples, <<m21>> among them, are no member's."
   (unless (org-at-heading-p)
     (outline-next-heading)))
 
-(defun org-truss--item-id-p (id)
-  "Non-nil when ID is an item's, <<ID>> on an item's first line, in the buffer."
-  (org-with-wide-buffer
-   (org-truss--goto-first-heading)
-   (re-search-forward (format "^[ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t].*<<%s>>" (regexp-quote id))
-                      nil t)))
-
 (defun org-truss--pointing-line (pos id)
   "Return (BEG . END) of the line pointing to ID in the text at POS, or nil.
 A line holding nothing but the pointing link, [[#ID]] or [[ID]], as a
 list item or not, as a comment or not."
   (let* ((bounds (org-truss--text-bounds pos))
-         (re (format "^[ \t]*\\(?:#[ \t]+\\)?\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[\\(?:%s\\|%s\\)\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
-                     (regexp-quote (org-truss--pointing-target id)) (regexp-quote id))))
+         (re (format "^[ \t]*\\(?:#[ \t]+\\)?\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[#?%s\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
+                     (regexp-quote id))))
     (save-excursion
       (goto-char (car bounds))
       (when (re-search-forward re (cdr bounds) t)
@@ -421,10 +412,11 @@ or an item's <<m7>>.")
 
 (defun org-truss-ensure-id (pos)
   "Return the ID of the member at POS, giving it one when it has none.
-A new one is m and the next number free in the file.  A heading's is its
-CUSTOM_ID, written first in its property drawer, where the eye finds it;
-an item's is <<m7>>, written where its words start.  Links point to a
-member by it, so its words can be rewritten freely."
+A new one is m and the next number free in the file, written <<m7>>
+where its words start, a heading's as an item's, so it goes with them
+when one is made the other; a heading's CUSTOM_ID, when it has one, is
+its ID too.  Links point to a member by it, so its words can be
+rewritten freely."
   (if (save-excursion (goto-char pos) (not (org-at-heading-p)))
       (org-truss--ensure-item-id pos)
     (org-truss--ensure-heading-id pos)))
@@ -446,19 +438,24 @@ member by it, so its words can be rewritten freely."
           id)))))
 
 (defun org-truss--ensure-heading-id (pos)
-  "Return the CUSTOM_ID of the heading at POS, giving it one when it has none."
-  (let ((id (org-entry-get pos "CUSTOM_ID")))
-    (if (and id (not (string-blank-p id)))
-        (string-trim id)
-      (let ((id (org-truss--next-id)))
-        (org-with-point-at pos
-          (let ((drawer (org-get-property-block)))
-            (if drawer
-                (save-excursion
-                  (goto-char (car drawer))
-                  (insert ":CUSTOM_ID: " id "\n"))
-              (org-entry-put nil "CUSTOM_ID" id))))
-        id))))
+  "Return the ID of the heading at POS, giving it one when it has none.
+<<m7>> in its words, or its CUSTOM_ID; a new one is written <<m7>>,
+before its words."
+  (let ((id (or (org-with-point-at pos (org-truss--heading-target))
+                (let ((custom (org-entry-get pos "CUSTOM_ID")))
+                  (and custom (not (string-blank-p custom)) (string-trim custom))))))
+    (or id
+        (let ((id (org-truss--next-id)))
+          (org-with-point-at pos
+            (let ((case-fold-search nil))
+              (looking-at org-complex-heading-regexp))
+            ;; After the stars, the keyword and the priority, where the
+            ;; words start.
+            (goto-char (or (match-beginning 4) (line-end-position)))
+            (when (and (null (match-beginning 4)) (not (eq (char-before) ?\s)))
+              (insert " "))
+            (insert "<<" id ">>"))
+          id))))
 
 (defun org-truss-delete-member (pos)
   "Delete the member at POS, a heading, with everything under it.

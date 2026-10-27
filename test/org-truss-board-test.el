@@ -267,7 +267,8 @@ them, and is listed under the part."
                           (org-truss-model-structure (org-truss-read source)))))
                    '("budget" "m1")))
     (should (equal (with-current-buffer source
-                     (org-entry-get (org-truss-test--heading-pos "The schedule is fixed") "CUSTOM_ID"))
+                     (org-with-point-at (org-truss-test--heading-pos "The schedule is fixed")
+                       (org-truss--heading-target)))
                    "m1"))))
 
 (ert-deftest org-truss-test-board-parts-take-patterns ()
@@ -588,7 +589,7 @@ member is written it is counted as used."
       (let ((text (buffer-string)))
         (should (string-match-p "├ Rain[ ·]+↪Message Interpretation\n └ Umbrella" text))
         (should (string-match-p "^   Interpretation[ ·]+Interpretation$" text))
-        (should (equal (org-truss-test--id-at "^   Interpretation[ ·]+Interpretation$") "#m2"))
+        (should (equal (org-truss-test--id-at "^   Interpretation[ ·]+Interpretation$") "<<m2>>"))
         (should-not (string-match-p "\\[\\[truss-include:m2\\]\\]" text))))))
 
 (ert-deftest org-truss-test-board-part-that-includes ()
@@ -714,8 +715,8 @@ It runs over: [[truss-include:over]]
                                         "   └ Reason[ ·]+- It repeats\n"
                                         "       ⏚ reason[ ·]+" org-truss-test--marks "Repeats\n")
                                 text))
-        (should (equal (org-truss-test--id-at "• reason[ ·]+") "[[#over]]"))
-        (should (equal (org-truss-test--id-at "⏚ reason[ ·]+") "[[#rep]]"))))))
+        (should (equal (org-truss-test--id-at "• reason[ ·]+") "[[over]]"))
+        (should (equal (org-truss-test--id-at "⏚ reason[ ·]+") "[[rep]]"))))))
 
 (ert-deftest org-truss-test-board-quotes-as-grounds ()
   "Each quotation is a ground of its own, drawn above the sources, and is
@@ -1496,7 +1497,7 @@ listed under its check, at the member that points to it."
       (should (eq (get-text-property (1- (match-beginning 1)) 'face text) 'org-truss-dim))
       (should (eq (get-text-property (match-beginning 1) 'face text) 'org-truss-attention))
       (should (string-match-p "⏚ source \\[not found\\][ ·]+the memo" text))
-      (should (string-match-p "^ Weak grounds\n   member[ ·]+Unused aside +\\[\\[#lone\\]\\] has no grounds$" text))
+      (should (string-match-p "^ Weak grounds\n   member[ ·]+Unused aside +\\[\\[lone\\]\\] has no grounds$" text))
       (should (string-match-p "^ Broken links\n   member[ ·]+Unused aside +\\[\\[file:nowhere\\.pdf\\]\\[the memo\\]\\] not found$" text)))))
 
 (ert-deftest org-truss-test-board-lists-claims-said-again-and-not-headings ()
@@ -1504,7 +1505,7 @@ listed under its check, at the member that points to it."
 under their checks, after Message."
   (org-truss-test--with-board org-truss-test--claims-file
     (let ((text (buffer-string)))
-      (should (string-match-p "^ Said again\n   Part[ ·]+The weekly review does not get through …  stands on \\[\\[#f1\\]\\] \\[\\[#f2\\]\\], as It drags on does\n   Part[ ·]+It drags on +stands on" text))
+      (should (string-match-p "^ Said again\n   Part[ ·]+The weekly review does not get through …  stands on \\[\\[f1\\]\\] \\[\\[f2\\]\\], as It drags on does\n   Part[ ·]+It drags on +stands on" text))
       (should (string-match-p "^ Not a heading\n   Part[ ·]+It drags on +used in 0 places, on 2 grounds\n   Part[ ·]+Nothing urgent waits +used in 1 place, on 1 ground$" text)))))
 
 (ert-deftest org-truss-test-board-assumptions ()
@@ -1903,7 +1904,7 @@ that would change a heading say so instead."
         (should (string-match-p (concat "├ Reason · Pros[ ·]+" org-truss-test--gap "Pros: Less time in meetings"
                                         org-truss-test--links "$")
                                 text))
-        (should (equal (org-truss-test--id-at "^   member[ ·]+We move") "#m1"))
+        (should (equal (org-truss-test--id-at "^   member[ ·]+We move") "<<m1>>"))
         (should (equal (org-truss-test--id-at "├ Reason · Pros") "<<m21>>"))
         (should (string-match-p "├ Reason · Cons \\[no grounds\\][ ·]+- Cons: Items wait longer" text))
         (should (string-match-p "│ ├ Step[ ·]+1\\. Ask the leads$" text)))
@@ -2105,7 +2106,7 @@ grounds that named it to show as broken."
     (search-forward "⏚half")
     (should (eq (get-text-property (1- (point)) 'face) 'org-truss-attention))
     (should (string-match-p (concat "^ Broken links\n +member[ ·]+" org-truss-test--gap
-                                    "Move to fortnightly +\\[\\[#half\\]\\] not found$")
+                                    "Move to fortnightly +\\[\\[half\\]\\] not found$")
                             (buffer-string)))))
 
 (ert-deftest org-truss-test-board-grounds ()
@@ -2125,7 +2126,7 @@ names one it cannot stand on."
         (org-truss-board-ground))
       (should (equal (funcall grounds) '("half" "aside" "m1")))
       (should (with-current-buffer source
-                (string-match-p "^Hold the review every other week\\.\n# \\[\\[#aside\\]\\]\n# \\[\\[#m1\\]\\]\n"
+                (string-match-p "^Hold the review every other week\\.\n# \\[\\[aside\\]\\]\n# \\[\\[m1\\]\\]\n"
                                 (buffer-string))))
       (org-truss-test--goto-member "Move to fortnightly")
       (org-truss-test--answering '("Message › Lone remark")
@@ -2139,7 +2140,7 @@ names one it cannot stand on."
         (org-truss-board-ground))
       (should (null (funcall grounds)))
       (should-not (with-current-buffer source
-                    (string-match-p "^# \\[\\[#\\(?:half\\|aside\\|m1\\)\\]\\]$" (buffer-string)))))))
+                    (string-match-p "^# \\[\\[\\(?:half\\|aside\\|m1\\)\\]\\]$" (buffer-string)))))))
 
 (ert-deftest org-truss-test-board-unwrap-asks-before-losing ()
   "u asks before discarding text, and does nothing when told no."
@@ -2410,9 +2411,9 @@ dots run up to the words, which start in the same column all the same."
   (org-truss-test--with-board org-truss-test--file
     (let ((text (buffer-string)))
       (should (string-match-p "^   member ·+ Half the items repeat$" text))
-      (should (equal (org-truss-test--id-at "^   member ·+ Half the items repeat$") "#half"))
+      (should (equal (org-truss-test--id-at "^   member ·+ Half the items repeat$") "<<half>>"))
       (should (string-match-p "^ │   • included ▸5 ·+ - Half the items repeat$" text))
-      (should (equal (org-truss-test--id-at "^ │   • included ▸5 ·+ - Half") "[[#half]]"))
+      (should (equal (org-truss-test--id-at "^ │   • included ▸5 ·+ - Half") "[[half]]"))
       (should (string-match-p "^   member ·+ Lone remark$" text))
       (should-not (org-truss-test--id-at "^   member ·+ Lone remark$"))
       (should (= (org-truss-test--column-of "^   member ·+ Half" "Half the items repeat")
@@ -2637,7 +2638,7 @@ as they are."
           (save-buffer)
           (let ((report (org-truss-check-copy buffer-file-name (org-dock-copy-origin buffer-file-name))))
             (should (string-match-p (concat "^" (regexp-quote buffer-file-name) ":1: Base -- lacks") report))
-            (should (string-match-p (concat "^" (regexp-quote file) ":15: A fact -- \\[\\[#m1\\]\\] not found") report))
+            (should (string-match-p (concat "^" (regexp-quote file) ":15: A fact -- \\[\\[m1\\]\\] not found") report))
             (should-not (string-match-p "Bare reason" report)))
           (org-truss-test--let-go))))))
 

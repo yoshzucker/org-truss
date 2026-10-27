@@ -325,7 +325,7 @@ its description.")
 WORDS is TEXT as the output document writes it: each include link,
 [[truss-include:m7]], as m7's words -- its description, when it has one,
 the lines after its first indented COLUMN columns, where the words of
-TEXT begin -- and each pointing link, [[#m7]], as its words.
+TEXT begin -- and each pointing link, [[m7]], as its words.
 AFTER is what follows the words of the members it includes, in order, as
 Org text: their supporting members as headings below LEVEL, or as a list
 when LEVEL is nil or the one included has no words."

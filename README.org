@@ -65,8 +65,8 @@ words, and the board, the checks and this README use them alone.
 | end member      | a member with no pattern; it has nothing under it                                                            |
 | simple truss    | a truss whose supporting members are all end members; =△= on the board                                      |
 | compound truss  | a truss with an apex member among its supporting members; =▲= on the board                                  |
-| ID              | the name a member is pointed to by: a heading's ~CUSTOM_ID~ (~m7~), or ~<<m7>>~ in an item's first line      |
-| pointing link   | ~[[#m7]]~ (~[[m7]]~ for an item): points to m7 as grounds                                                    |
+| ID              | the name a member is pointed to by: ~<<m7>>~ in its words, a heading's or an item's; a ~CUSTOM_ID~ too      |
+| pointing link   | ~[[m7]]~, or ~[[#m7]]~: points to m7 as grounds                                                             |
 | include link    | ~[[truss-include:m7]]~: includes m7 there in the output document, the whole truss when m7 is an apex member  |
 | output document | what the file is written out as, in ~out/~                                                                   |
 
@@ -314,7 +314,7 @@ the role before ~::~:
 We would meet half as often.
 ,#+attr_truss: :logic reasons :breakdown pros-cons
 - pros :: <<m21>>Less time in meetings
-  # [[#m2]]
+  # [[m2]]
   An hour a fortnight back.
 - cons :: Items wait longer
   ,#+attr_truss: :breakdown steps
@@ -339,9 +339,10 @@ We would meet half as often.
   it are its text, a comment left out; a list marked so inside it holds
   its supporting members.  A list not marked stays text, the include links
   ~- [[truss-include:m7]]~ of a member of Structure among it.
-- A target in its first line, ~<<m21>>~, is its ID: ~[[m21]]~ points to
-  it, and ~[[truss-include:m21]]~ includes it.  /include/ and /ground/
-  give an item one, as they give a heading a ~CUSTOM_ID~.
+- A target in its first line, ~<<m21>>~, is its ID, as one in a
+  heading's words is the heading's: ~[[m21]]~ points to it, and
+  ~[[truss-include:m21]]~ includes it.  /include/ and /ground/ give a
+  member one, before its words.
 - ~TRUSS_AS~ on a heading, or ~:as~ in ~#+attr_truss~, ~headings~ or
   ~list~, says how the output document writes the supporting members of
   that one truss, where what it is would write them the other way.
@@ -370,7 +371,7 @@ written by hand there.
 In a ~TRUSS_LOGIC~ truss, each supporting member has grounds.  Grounds
 are, in its text:
 
-| a pointing link or an include link | to a member, ~[[#m3]]~, ~[[truss-include:m3]]~                  |
+| a pointing link or an include link | to a member, ~[[m3]]~, ~[[truss-include:m3]]~                   |
 | a link to a source                 | a ~moor:~, ~file:~ or URL link                                  |
 | a quote                            | ~#+begin_quote~, the source's own words                         |
 
@@ -399,7 +400,7 @@ output document:
 | a source                           | a link to where it came from                     | nothing                                  |
 | a quote, ~#+begin_quote~           | the quotation                                    | nothing                                  |
 
-Grounds on a comment line, ~# [[#m3]]~, as /ground/ on the board writes
+Grounds on a comment line, ~# [[m3]]~, as /ground/ on the board writes
 them, are the file's alone; in the text, they are the output document's
 citation too -- a pointing link as m7's words, a ~moor:~ link as a link to
 where its source came from (see [[*The output document]]).  So a source is
@@ -421,7 +422,7 @@ A member pointed to as grounds has grounds too, or needs none:
 
 | Pointed to          | Holds when                                                               |
 |---------------------+--------------------------------------------------------------------------|
-| a member, ~[[#m3]]~ | it has grounds, a ~TRUSS_LOGIC~, or the tag ~:assumption:~                |
+| a member, ~[[m3]]~  | it has grounds, a ~TRUSS_LOGIC~, or the tag ~:assumption:~               |
 | a source, ~moor:~   | the truss file's ~sources/~ holds it                                     |
 | a file, ~file:~     | it is there                                                              |
 | a URL               | not checked: nothing in the file can tell                                |
@@ -645,9 +646,8 @@ The guide's drawer left out:
 :TRUSS_PART: subject
 :TRUSS_BREAKDOWN: parts
 :END:
-,** The calendar this quarter
+,** <<m8>>The calendar this quarter
 :PROPERTIES:
-:CUSTOM_ID: m8
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
@@ -655,9 +655,8 @@ The guide's drawer left out:
   # [[https://calendar.example.com/export][calendar export]]
 - <<m3>>The longest ran forty minutes over
   # [[https://calendar.example.com/export][calendar export]]
-,** The agendas, weeks 1-12
+,** <<m9>>The agendas, weeks 1-12
 :PROPERTIES:
-:CUSTOM_ID: m9
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
@@ -669,18 +668,16 @@ The guide's drawer left out:
 :TRUSS_PART: message
 :TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
-,** Reviews run long, and the same items come back
+,** <<m1>>Reviews run long, and the same items come back
 :PROPERTIES:
-:CUSTOM_ID: m1
 :TRUSS_BREAKDOWN_ROLE: situation
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
 - [[truss-include:m8]]
 - [[truss-include:m9]]
-,** The weekly review costs the team more time than it gives back
+,** <<m5>>The weekly review costs the team more time than it gives back
 :PROPERTIES:
-:CUSTOM_ID: m5
 :TRUSS_BREAKDOWN_ROLE: interpretation
 :TRUSS_BREAKDOWN: parts
 :END:
@@ -693,9 +690,8 @@ The guide's drawer left out:
   # [[m2]]
 - It can run forty minutes over
   # [[m3]]
-,*** Half the items repeat
+,*** <<m6>>Half the items repeat
 :PROPERTIES:
-:CUSTOM_ID: m6
 :TRUSS_LOGIC: reasons
 :END:
 Half of each agenda repeats the week before.
@@ -704,16 +700,15 @@ Half of each agenda repeats the week before.
 - Half of each agenda is what was open the week before
   # [[m4]]
 - Nothing urgent waits for the review
-,**** Items need a week to move                                 :assumption:
-We assume most items need more than a week to change.
+- Items need a week to move :assumption:
+  We assume most items need more than a week to change.
 
-,** Hold the review every other week
+,** <<m7>>Hold the review every other week
 :PROPERTIES:
-:CUSTOM_ID: m7
 :TRUSS_BREAKDOWN_ROLE: action
 :TRUSS_BREAKDOWN: steps
 :END:
-# [[#m6]]
+# [[m6]]
 ,#+attr_truss:
 1. Cancel every second review in the calendar
 2. Carry what is still open to the next one
@@ -826,7 +821,7 @@ kind of member it points to.
 
 | Link                   | What it does                                                                           |
 |------------------------+----------------------------------------------------------------------------------------|
-| ~[[#m7]]~              | a pointing link: points to m7 as grounds, in a member's text                           |
+| ~[[m7]]~               | a pointing link: points to m7 as grounds, in a member's text                           |
 | ~[[truss-include:m7]]~ | an include link: includes m7 there, with what is under it, in the output document      |
 
 An include link can stand in any member -- a member of Structure, or one
@@ -847,12 +842,16 @@ the output document says so where it stops.
 
 ** Pointing to a member
 
-Both links point to a member by its ID: ~m7~ is the heading with
-~:CUSTOM_ID: m7~, or the item with ~<<m7>>~ in its first line, pointed to
-with ~[[m7]]~.  Org resolves ~[[#m7]]~ within the file alone -- ~C-c C-o~
-follows it, in the text or in a property -- and, unlike ~:ID:~, it is not
-entered in ~org-id-locations~, nor made a node by org-roam; with org-truss
-loaded, ~C-c C-o~ follows ~[[truss-include:m7]]~ the same way.
+Both links point to a member by its ID: ~m7~ is the heading or the item
+with ~<<m7>>~ in its words, before them, as /include/ and /ground/ write
+it.  The ID goes with the words, so a heading made an item, or an item a
+heading, keeps it, and nothing pointing to it changes.  A heading with
+~:CUSTOM_ID: m7~ is m7 as well, and a link may be written ~[[#m7]]~: in a
+truss file, with org-truss loaded, ~C-c C-o~ follows ~[[m7]]~, ~[[#m7]]~
+and ~[[truss-include:m7]]~ to m7 however its ID is written, where Org
+alone takes ~[[#m7]]~ to a ~CUSTOM_ID~ and ~[[m7]]~ to a ~<<m7>>~.  An ID
+stays within the file: unlike ~:ID:~, it is not entered in
+~org-id-locations~, nor made a node by org-roam.
 
 A member's words are what it asserts, and they get reworded as the
 argument and the output document take shape.  Were links to name words,
@@ -1052,7 +1051,7 @@ plays a role the member above has no pattern for, =[assumed]= for an
 assumption, =[noexport]= for one tagged ~:noexport:~, =[no grounds]= for
 a reason that must have grounds and has none.  Dots lead from the left
 to the words, and the mouse on them names the member by its ID as the
-file names it: =#m9= where it is written, and =[[#m9]]= where an include
+file names it: =<<m9>>= where it is written, and =[[m9]]= where an include
 link includes it; a member under one a link calls, which is not called
 itself, has none.  Where the dots end, just before the words, a line may
 have marks saying where else the member is: the part the member its
@@ -1101,7 +1100,7 @@ includes it.
 ** Marks
 
 There are two kinds of link.  A pointing link is written by the member
-that stands on it, ~[[#m12]]~, in its text: logic, never written out but
+that stands on it, ~[[m12]]~, in its text: logic, never written out but
 as words.  An include link, ~[[truss-include:m12]]~, is written by the
 member that includes it, a member of Structure or another: what the
 reader is shown, and where.  A member is drawn once, where it is
@@ -1132,7 +1131,7 @@ and each line standing on it or including it.  /same/ goes to them in
 turn.  An include link written besides a member's words has a line of
 its own under the member:
 =• included=, the mouse on its dots naming the member it includes by its
-ID, =[[#m12]]=.  A member of Structure whose words are an include link
+ID, =[[m12]]=.  A member of Structure whose words are an include link
 alone is that member, and has no such line.  A member whose words hold
 a link, ~*** [[truss-include:m7]]~, reads as m7's words, so the part m7
 is written in is said just before them: =↪Subject=, =↪Message=,
@@ -1143,7 +1142,7 @@ its text, and below them =⏚ source= each source it links to, with
 the source, so the source is furthest down.  A quotation, and a line of
 its text holding nothing but such a link, is not drawn again in its
 text, and a link in a sentence there is drawn as it is written,
-=[[#m3]]= or =[[moor:6f1c::12][Manual p. 12]]=.  The mouse on any mark
+=[[m3]]= or =[[moor:6f1c::12][Manual p. 12]]=.  The mouse on any mark
 says what it means, and ~RET~ on a source's line goes to the member it
 is under.  ~org-truss-board-marks~ sets the marks of a link, and
 ~org-truss-board-where-marks~ those before the words.  A role a member's
@@ -1155,8 +1154,8 @@ The other marks of the board are not links:
 
 | Mark                | Where                   | Says                                                                                 |
 |---------------------+-------------------------+--------------------------------------------------------------------------------------|
-| =#m9=               | the mouse on the dots   | the member, where it is written                                                      |
-| =[[#m9]]=           | the mouse on the dots   | the member, where an include link includes it                                        |
+| =<<m9>>=            | the mouse on the dots   | the member, where it is written                                                      |
+| =[[m9]]=            | the mouse on the dots   | the member, where an include link includes it                                        |
 | =[no role]=         | after the role          | plays no role of its apex member's patterns                                          |
 | =[no pattern]=      | after the role          | plays a role, but the member above has no pattern of its kind                        |
 | =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
@@ -1348,9 +1347,9 @@ its text when it has none; the line goes again when the heading is let
 go.  On the /Structure/ line, it writes the output document's opening.
 
 /same/ goes round the lines linked to a member, one step either way.
-On a line including it, =[[#m9]]=, or showing it under a member a link
+On a line including it, =[[m9]]=, or showing it under a member a link
 includes, it goes to where it is drawn in full, unfolding what hides it:
-where it is written, =#m9=, or, opened as included, the first line the
+where it is written, =<<m9>>=, or, opened as included, the first line the
 chain brings it to.  There, it goes to the first line linked to it --
 where a member it stands on is drawn in full, a line standing on it or
 including it -- and pressed again, to the next, and round, saying which
@@ -1439,7 +1438,7 @@ source org-moor took is followed as it is, with either.  A link put on a
 comment line, ~# [[moor:...]]~, is the file's alone.
 
 /ground/ makes a member something it stands on, a pointing link to it on
-a comment line of its own after the member's text, ~# [[#m3]]~, which the
+a comment line of its own after the member's text, ~# [[m3]]~, which the
 reader is not told: it offers what it stands on first, and choosing one
 takes that line away; any other is added, and given an ID when it has
 none.  One linked in the text is edited there, with /edit/.
@@ -1534,7 +1533,7 @@ Structure is in it, and the trusses and members its include links reach.
   follows the paragraph, or goes inside the list item, as a list one level
   in.  Once a list, what is under it stays a list.  Below the sixth level,
   Markdown's last, what is under a heading is a list.  A pointing link,
-  ~[[#m7]]~, is written as its description, or m7's words.
+  ~[[m7]]~, is written as its description, or m7's words.
 - The supporting members of a truss are written as what the truss is
   says, never as the file writes them, items or headings:
 
@@ -1587,29 +1586,31 @@ The file above is written out as:
 
 ,* Reviews run long, and the same items come back
 
-- The calendar this quarter
+,** The calendar this quarter
 
-  - Eight of twelve reviews ran past the hour
-  - The longest ran forty minutes over
-- The agendas, weeks 1-12
+- Eight of twelve reviews ran past the hour
+- The longest ran forty minutes over
 
-  - Six of twelve items each week come back from the week before
+,** The agendas, weeks 1-12
+
+- Six of twelve items each week come back from the week before
 
 ,* The weekly review costs the team more time than it gives back
 
-- The review takes longer than it is given
+,** The review takes longer than it is given
 
-  - Most weeks it runs past the hour
-  - It can run forty minutes over
-- Half the items repeat
+- Most weeks it runs past the hour
+- It can run forty minutes over
 
-  Half of each agenda repeats the week before.
+,** Half the items repeat
 
-  - Half of each agenda is what was open the week before
-  - Nothing urgent waits for the review
-  - Items need a week to move
+Half of each agenda repeats the week before.
 
-    We assume most items need more than a week to change.
+- Half of each agenda is what was open the week before
+- Nothing urgent waits for the review
+- Items need a week to move
+
+  We assume most items need more than a week to change.
 
 ,* Hold the review every other week
 

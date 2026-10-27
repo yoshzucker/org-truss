@@ -256,7 +256,7 @@ whole; see `org-truss--whole-lines'."
 
 (defun org-truss--parts-text (model words)
   "Return where the members the links in WORDS point to are, or nil.
-WORDS are a member's as written; a link in them, [[#m7]] or
+WORDS are a member's as written; a link in them, [[m7]] or
 [[truss-include:m7]], leaves the board's middle naming only the link, so
 the part the member it names is written in -- Brief, Subject, Message,
 Structure -- is said beside it, as near to its sources as it
@@ -274,8 +274,8 @@ is, ↪Subject; see `org-truss-board-where-marks'."
 
 (defun org-truss--with-id (line id)
   "Return LINE naming a member by ID, or LINE as it is.
-ID is how a link to the member is written, [[#m9]], or the member itself
-is pointed to, #m9; see `org-truss--id-text'.  The mouse on the dots
+ID is how a link to the member is written, [[m9]], or the member itself
+is pointed to, <<m9>>; see `org-truss--id-text'.  The mouse on the dots
 before the line's words says it."
   (if id (append line (list :id id)) line))
 
@@ -301,13 +301,9 @@ than it needs."
 (defun org-truss--id-text (member &optional id)
   "Return how the board names MEMBER by its ID, or nil.
 With ID, when the line is a link to it -- an include link, a ground --
-as [[#m9]], or [[m9]] for an item; else as anything points to it, #m9,
-or <<m9>> for an item, where it is written."
-  (let ((item (org-truss-item-p member)))
-    (cond ((and id item) (format "[[%s]]" id))
-          (id (format "[[%s]]" (org-truss--pointing-target id)))
-          ((and item (org-truss-member-id member)) (format "<<%s>>" (org-truss-member-id member)))
-          ((org-truss-member-id member) (concat "#" (org-truss-member-id member))))))
+as [[m9]]; else as it is written, <<m9>>."
+  (cond (id (format "[[%s]]" (org-truss--pointing-target id)))
+        ((org-truss-member-id member) (format "<<%s>>" (org-truss-member-id member)))))
 
 (defun org-truss--leader (width &optional help)
   "Return WIDTH columns that lead the eye from the board's words to the file's.
@@ -849,7 +845,7 @@ drawn in Structure's own tree, nor one under MEMBER, drawn there."
 (defun org-truss--ground-members-lines (model holder grounds stem key)
   "Return the lines of GROUNDS, the members of MODEL HOLDER stands on, below it.
 Each drawn as any member is, with what is under it and what it stands on
-in turn, named by the ID HOLDER links to it by, [[#m7]], and marked as a
+in turn, named by the ID HOLDER links to it by, [[m7]], and marked as a
 reason: one HOLDER includes, by an include link it stands on, as one the
 output document has there, an item of a list when the link is in its
 text; one it points to, as one the output document leaves out there.

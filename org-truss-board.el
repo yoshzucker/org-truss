@@ -1040,7 +1040,7 @@ what stood on it can be seen.  A member of Structure is taken out by
 
 (defun org-truss-board-ground ()
   "Make a member a ground of the member at point, or no longer one.
-Pointed to by its ID, # [[#m3]], on a comment line of its own after the
+Pointed to by its ID, # [[m3]], on a comment line of its own after the
 member's text, which the reader is not shown; one is given to it when it
 has none.  Its grounds now are offered first, and choosing one takes it
 away.  A link among other words is edited there, with the words."
@@ -1463,7 +1463,7 @@ from.  Each only when it has something to say."
           "  its words one sentence that states what plays the role.  Write over words\n"
           "  that are still the ones in brackets.\n"
           "- In a TRUSS_LOGIC truss, give each supporting member grounds: a\n"
-          "  #+begin_quote, or a link in its text to a member, [[#m3]], or to a\n"
+          "  #+begin_quote, or a link in its text to a member, [[m3]], or to a\n"
           "  source.  It needs none as the apex member of a TRUSS_LOGIC truss of its\n"
           "  own, or with the tag :assumption:.\n\n"))
        (when truss
@@ -1575,8 +1575,7 @@ away."
          (roles (and over (org-truss--new-roles over (plist-get item :gap))))
          ;; Included by a member of Structure, it is linked to from the start.
          (id (and includer (with-current-buffer org-truss--source (org-truss--next-id))))
-         (props (append (and id (list (cons "CUSTOM_ID" id)))
-                        (org-truss--role-props roles)))
+         (props (org-truss--role-props roles))
          (session (with-current-buffer org-truss--source
                     (list :new t :hash (buffer-hash) :modified (buffer-modified-p))))
          at)
@@ -1594,7 +1593,7 @@ away."
         (setf (alist-get fold org-truss--folds nil nil #'equal) 'open)))
     (org-truss--editing
       (let ((includer (and includer (copy-marker includer))))
-        (setq at (org-truss-add-heading parent words props))
+        (setq at (org-truss-add-heading parent (if id (format "<<%s>>%s" id words) words) props))
         (when includer
           (org-truss-add-include includer id)
           (setq session (plist-put session :undo

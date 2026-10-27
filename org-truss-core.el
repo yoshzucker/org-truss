@@ -370,15 +370,15 @@ The pattern's property with _ROLE after it: TRUSS_LOGIC_ROLE, say."
 
 (defconst org-truss--pointing-re
   "\\[\\[\\([#*][^]]+\\|[[:alnum:]_-]+\\)\\]\\(?:\\[[^]]*\\]\\)?\\]"
-  "A pointing link: [[#m7]] to a heading by its CUSTOM_ID, [[m7]] to an
-item by its <<m7>>, or [[*words]], which names no ID.  Its target is read
+  "A pointing link: [[m7]] or [[#m7]] to the member m7, however its ID is
+written, or [[*words]], which names no ID.  Its target is read
 by `org-truss--link-id'.")
 (defconst org-truss-include-type "truss-include"
   "The type of an include link.")
 
 (org-link-set-parameters
  org-truss-include-type
- :follow (lambda (path _) (org-link-open-from-string (format "[[#%s]]" path)))
+ :follow (lambda (path _) (org-link-open-from-string (format "[[%s]]" path)))
  :export (lambda (path description _backend _info) (or description path)))
 (defconst org-truss--include-re
   "\\[\\[truss-include:\\([^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]"
@@ -391,15 +391,47 @@ line edits move.")
 
 (defun org-truss--link-id (target)
   "Return the ID a pointing link's TARGET names.
-#m7 names the heading whose CUSTOM_ID is m7, and m7 the item whose first
-line holds <<m7>>: m7 either way.  A target of another form -- *words,
+m7 names the member whose words hold <<m7>>, or whose CUSTOM_ID is m7,
+and so does #m7: m7 either way.  A target of another form -- *words,
 say -- is kept whole, so it names no member and shows as a broken link."
   (if (string-prefix-p "#" target) (substring target 1) target))
 
 (defun org-truss--pointing-target (id)
-  "Return the target of a pointing link to the heading of ID, #ID.
-One kept whole by `org-truss--link-id', *words, is given back as it is."
-  (if (string-prefix-p "*" id) id (concat "#" id)))
+  "Return the target of a pointing link to the member of ID: ID itself.
+[[m7]], whether m7 is a heading or an item, its <<m7>> or its CUSTOM_ID;
+see `org-truss-open-member-link'."
+  id)
+
+(defun org-truss--member-id-pos (id)
+  "Return where the member ID is written in the buffer, or nil.
+The heading or the item whose words hold <<ID>>, or the heading whose
+CUSTOM_ID is ID."
+  (org-with-wide-buffer
+   (goto-char (point-min))
+   (let ((case-fold-search nil))
+     (or (and (re-search-forward (format "<<%s>>" (regexp-quote id)) nil t)
+              (line-beginning-position))
+         (progn (goto-char (point-min))
+                (and (re-search-forward
+                      (format "^[ \t]*:CUSTOM_ID:[ \t]+%s[ \t]*$" (regexp-quote id)) nil t)
+                     (progn (org-back-to-heading t) (point))))))))
+
+(defun org-truss-open-member-link (path)
+  "Go to the member PATH names, in a truss file, and return non-nil.
+For `org-open-link-functions': Org follows [[#m7]] to a CUSTOM_ID and
+[[m7]] to <<m7>>; in a truss file both find m7, however it is written."
+  (when (and (derived-mode-p 'org-mode)
+             (buffer-file-name)
+             (equal (file-name-nondirectory (buffer-file-name)) org-truss-file-name)
+             (string-match-p "\\`[[:alnum:]_-]+\\'" path))
+    (let ((pos (org-truss--member-id-pos path)))
+      (when pos
+        (org-mark-ring-push)
+        (goto-char pos)
+        (org-fold-show-context 'link-search)
+        t))))
+
+(add-hook 'org-open-link-functions #'org-truss-open-member-link)
 
 (defun org-truss--includes-in (text)
   "Return the IDs TEXT's include links include, in order."
@@ -663,12 +695,24 @@ to attachments as file links; nil when it has no words."
           (push (point) kids)))
       (nreverse kids))))
 
+(defconst org-truss--target-re "<<\\([^<>\n]+\\)>>[ \t]*"
+  "A target, <<m7>>, in a member's words: its ID, group 1.")
+
 (defun org-truss--heading-words ()
-  "Return the words of the heading at point: without tags or keyword, and
-without the text properties the buffer gives it.  Those are its looks in
-the file -- fontification, org-indent's prefixes -- and they are there or
-not depending on what has been shown; the words are the words."
-  (substring-no-properties (org-get-heading t t t t)))
+  "Return the words of the heading at point: without tags or keyword, its
+ID, <<m7>>, taken out, and without the text properties the buffer gives
+it.  Those are its looks in the file -- fontification, org-indent's
+prefixes -- and they are there or not depending on what has been shown;
+the words are the words."
+  (string-trim (replace-regexp-in-string
+                org-truss--target-re ""
+                (substring-no-properties (org-get-heading t t t t)))))
+
+(defun org-truss--heading-target ()
+  "Return the ID the heading at point gives in its words, <<m7>>, or nil."
+  (let ((title (org-get-heading t t t t)))
+    (and (string-match org-truss--target-re title)
+         (substring-no-properties (match-string 1 title)))))
 
 (defun org-truss--words-at (pos)
   "Return the words of the heading at POS: its text without tags or keyword."
@@ -714,7 +758,8 @@ One for each kind of pattern whose role property it has."
 #+attr_truss, and the members right under it.
 POS is where it is written, WORDS its words: a heading's text without tags
 or keyword, an item's first line.  LEVEL is its level, a heading's or that
-of the heading it would be.  ID is its CUSTOM_ID, or an item's <<ID>>, and
+of the heading it would be.  ID is the <<ID>> in its words, or a heading's
+CUSTOM_ID, and
 TAGS its tags, a heading's or those at the end of an item's first line.  PART is the part it is in: `brief', `subject',
 `message' or `structure'; IS-PART is non-nil for the four members with
 TRUSS_PART themselves.
@@ -759,8 +804,10 @@ PARSED is the parse of its text."
   (org-with-point-at pos
     (let ((all (plist-get parsed :all)))
       (list :pos pos
-            :id (let ((id (org-entry-get nil "CUSTOM_ID")))
-                  (and id (not (string-blank-p id)) (string-trim id)))
+            ;; <<m7>> in its words, as an item has it, or its CUSTOM_ID.
+            :id (or (org-truss--heading-target)
+                    (let ((id (org-entry-get nil "CUSTOM_ID")))
+                      (and id (not (string-blank-p id)) (string-trim id))))
             :words (org-truss--heading-words)
             :level (org-current-level)
             :tags (org-get-tags nil t)
@@ -1998,7 +2045,7 @@ member whose pattern asks, at the member that lacks, at the link.
 
 (defconst org-truss-check-descriptions
   '(("Broken links"
-     . "links that point to nothing: an include link, [[truss-include:id]], or a pointing link a member stands on, [[#id]], to no member -- each wants one member with that ID, and two with one are reported too; a link to a source taken by org-moor, or to a file, that is not there; and an include link that includes, with what is under it, the member back, without end")
+     . "links that point to nothing: an include link, [[truss-include:id]], or a pointing link a member stands on, [[id]], to no member -- each wants one member with that ID, and two with one are reported too; a link to a source taken by org-moor, or to a file, that is not there; and an include link that includes, with what is under it, the member back, without end")
     ("No grounds"
      . "supporting members of a TRUSS_LOGIC truss with no grounds: no #+begin_quote and no link in their text, to a member or a source; give them one, make them the apex member of a TRUSS_LOGIC truss of their own, or tag them :assumption:")
     ("Weak grounds"

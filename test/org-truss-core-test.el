@@ -530,7 +530,7 @@ From next month.
     (goto-char (point-min))
     (catch 'found
       (while (re-search-forward org-heading-regexp nil t)
-        (when (equal (org-get-heading t t t t) label)
+        (when (equal (org-truss--heading-words) label)
           (throw 'found (line-beginning-position))))
       (error "No heading %s" label))))
 
@@ -1008,7 +1008,7 @@ tell is not asked."
         (should (equal (mapcar (lambda (h) (cons (org-truss-member-words (car h)) (cdr h)))
                                (plist-get (org-truss-checks model) :hidden-grounds))
                        '(("It has gone wrong, [[#crashes]]" . "crashes"))))
-        (should (string-match-p "^Hidden grounds -- .*\n.*: It has gone wrong, \\[\\[#crashes\\]\\] -- \\[\\[#crashes\\]\\] is left out"
+        (should (string-match-p "^Hidden grounds -- .*\n.*: It has gone wrong, \\[\\[#crashes\\]\\] -- \\[\\[crashes\\]\\] is left out"
                                 (org-truss-check-report model)))))
     (org-truss-test--with (replace-regexp-in-string "^\\*\\* \\[\\[truss-include:check\\]\\]\n" "" text)
       (should-not (plist-get (org-truss-checks (org-truss-read)) :hidden-grounds)))))
@@ -1094,7 +1094,7 @@ that does not, is not listed."
         (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
                                (plist-get (org-truss-checks model) :low-grounds))
                        '(("Move to fortnightly" . "claim"))))
-        (should (string-match-p "^Grounds set low -- .*\n.*: Move to fortnightly -- every supporting member stands on \\[\\[#claim\\]\\]"
+        (should (string-match-p "^Grounds set low -- .*\n.*: Move to fortnightly -- every supporting member stands on \\[\\[claim\\]\\]"
                                 (org-truss-check-report model)))))
     (org-truss-test--with (replace-regexp-in-string "^\\(:TRUSS_BREAKDOWN: steps\n:END:\n\\)" "\\1[[#claim]]\n" text)
       (should-not (plist-get (org-truss-checks (org-truss-read)) :low-grounds)))
@@ -1146,8 +1146,8 @@ either language.  Those the output document does not tell are not asked."
                      '("Situation" "Part" "Interpretation" "Part" "Reason" "Action" "Step")))
       (should (org-truss-placeholder-p (org-truss-model-structure model)))))
   (org-truss-test--with (replace-regexp-in-string
-                         "^\\*\\* Interpretation$" "** 解釈"
-                         (replace-regexp-in-string "^\\*\\* Action$" "** Test drivers are checked"
+                         "^\\*\\* \\(<<m[0-9]+>>\\)Interpretation$" "** \\1解釈"
+                         (replace-regexp-in-string "^\\*\\* \\(<<m[0-9]+>>\\)Action$" "** \\1Test drivers are checked"
                                                    (org-truss-skeleton "T")))
     (should (equal (mapcar #'org-truss-member-words
                            (seq-filter #'org-truss-member-roles
@@ -1444,7 +1444,7 @@ facts of different sources are brought together by pointing to them."
                              said)
                      '(("The weekly review does not get through its items" ("f1" "f2") ("It drags on"))
                        ("It drags on" ("f1" "f2") ("The weekly review does not get through its items")))))
-      (should (string-match-p "^Said again -- .*\n.*:[0-9]+: The weekly review does not get through its items -- stands on \\[\\[#f1\\]\\] \\[\\[#f2\\]\\], as It drags on does$"
+      (should (string-match-p "^Said again -- .*\n.*:[0-9]+: The weekly review does not get through its items -- stands on \\[\\[f1\\]\\] \\[\\[f2\\]\\], as It drags on does$"
                               (org-truss-check-report model))))))
 
 (ert-deftest org-truss-test-checks-claims-not-a-heading ()
@@ -1603,7 +1603,7 @@ to be rewritten."
   (org-truss-test--with org-truss-test--file
     (let ((half (org-truss-test--heading-pos "Half the items repeat")))
       (org-truss-add-ground half "aside")
-      (should (string-match-p "shows\\.\n# \\[\\[#aside\\]\\]\n\\*\\*\\* Agenda diff" (buffer-string)))
+      (should (string-match-p "shows\\.\n# \\[\\[aside\\]\\]\n\\*\\*\\* Agenda diff" (buffer-string)))
       (should-not (string-match-p "aside" (or (org-truss-member-body
                                                (org-truss-test--m (org-truss-read) "Half the items repeat"))
                                               "")))
@@ -1675,8 +1675,8 @@ and gives each thing found a line of its own that compilation mode reads."
                     (org-truss-check-report (org-truss-read) "f"))))
       (should (string-match-p "^f:[0-9]+: No role -- no TRUSS_LOGIC_ROLE of logic › reasons, under Claim$"
                               report))
-      (should (string-match-p "^f:[0-9]+: Only broken -- \\[\\[#gone\\]\\] not found$" report))
-      (should (string-match-p "^f:[0-9]+: Through a bare one -- \\[\\[#bare\\]\\] has no grounds$" report))))
+      (should (string-match-p "^f:[0-9]+: Only broken -- \\[\\[gone\\]\\] not found$" report))
+      (should (string-match-p "^f:[0-9]+: Through a bare one -- \\[\\[bare\\]\\] has no grounds$" report))))
   (org-truss-test--with "* M
 :PROPERTIES:
 :TRUSS_PART: message
@@ -2052,17 +2052,52 @@ headings and items; a ground on it is written [[id]], and taken away so."
       (should (org-truss-remove-ground subject "m22"))
       (should-not (string-match-p "\\[\\[m22\\]\\]" (buffer-string))))))
 
+(ert-deftest org-truss-test-ids-either-way ()
+  "A heading's ID is <<m7>> in its words, as an item's, or its CUSTOM_ID;
+its words are without it.  In a truss file, [[m7]] and [[#m7]] both go
+to m7, however its ID is written."
+  (org-truss-test--in-directory
+      '(("truss.org" . "* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** <<m1>>A heading by target
+** A heading by property
+:PROPERTIES:
+:CUSTOM_ID: m2
+:END:
+** Text
+#+attr_truss:
+- <<m3>>An item
+[[#m1]] [[m2]] [[#m3]]
+"))
+    (with-current-buffer (find-file-noselect (expand-file-name "truss.org" dir))
+      (let ((model (org-truss-read)))
+        (should (equal (org-truss-member-words (org-truss-member-by-id model "m1")) "A heading by target"))
+        (should (equal (org-truss-member-words (org-truss-member-by-id model "m2")) "A heading by property"))
+        (should (equal (org-truss-member-words (org-truss-member-by-id model "m3")) "An item")))
+      (dolist (link '(("[[#m1]]" . "** <<m1>>A heading by target")
+                      ("[[m2]]" . "** A heading by property")
+                      ("[[#m3]]" . "- <<m3>>An item")))
+        (goto-char (point-max))
+        (search-backward (car link))
+        (forward-char 2)
+        (org-open-at-point)
+        (should (equal (buffer-substring (line-beginning-position) (line-end-position))
+                       (cdr link)))))))
+
 (ert-deftest org-truss-test-ensure-id ()
-  "A member is given m and the next free number, once; one it has stays."
+  "A member is given m and the next free number, once, as <<m5>> before
+its words, a heading's as an item's; one it has stays, a CUSTOM_ID too."
   (org-truss-test--with (concat org-truss-test--file "* X\n:PROPERTIES:\n:CUSTOM_ID: m4\n:END:\n")
     (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Lone remark")) "m5"))
     (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Lone remark")) "m5"))
     (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Reviews run long")) "long"))
     (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Agenda diff")) "diff"))
     (should (equal (org-truss-member-id (org-truss-test--m (org-truss-read) "Lone remark")) "m5"))
-    (should (string-match-p "^\\*\\* Lone remark\n:PROPERTIES:\n:CUSTOM_ID: m5\n:END:\n" (buffer-string)))
+    (should (string-match-p "^\\*\\* <<m5>>Lone remark\n" (buffer-string)))
     (should (equal (org-truss-ensure-id (org-truss-test--heading-pos "Urgent items go to chat")) "m6"))
-    (should (string-match-p (concat "Urgent items go to chat\n:PROPERTIES:\n:CUSTOM_ID: m6\n"
+    (should (string-match-p (concat "<<m6>>Urgent items go to chat\n:PROPERTIES:\n"
                                     ":TRUSS_BREAKDOWN_ROLE: part\n:END:\n")
                             (buffer-string)))))
 
@@ -2441,7 +2476,7 @@ unless it is code, ~[[#m7]]~, with a space either side."
       (org-fold-show-all)
       (font-lock-ensure)
       (let ((n 0))
-        (while (re-search-forward "\\[\\[#" nil t)
+        (while (re-search-forward "\\[\\[#?m[0-9]" nil t)
           (setq n (1+ n))
           (should-not (get-text-property (match-beginning 0) 'invisible)))
         (should (>= n 3))))))
@@ -2474,7 +2509,7 @@ directories there."
         (should (equal (hack-local-variables-prop-line) '((org-attach-id-dir . "attach/"))))
         (dolist (dir '("^  sources/ " "^  notes/ " "^  attach/ " "^  out/ "))
           (should (string-match-p dir (buffer-string))))
-        (should (equal (org-map-entries (lambda () (org-get-heading t t t t)))
+        (should (equal (org-map-entries #'org-truss--heading-words)
                        '("Brief" "Subject" "Part" "Message" "Situation" "Interpretation" "Part" "Action"
                          "Structure")))
         (should (string-match-p (if (eq org-truss-language 'ja)

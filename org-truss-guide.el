@@ -56,9 +56,10 @@ Words
                   △ on the board
   compound truss  a truss with an apex member among its supporting members.
                   ▲ on the board
-  ID              the name a member is pointed to by: a heading's
-                  CUSTOM_ID (m7), or ~<<m7>>~ in an item's first line
-  pointing link   ~[[#m7]]~ (~[[m7]]~ for an item).  Points to m7 as grounds
+  ID              the name a member is pointed to by: ~<<m7>>~ in its words,
+                  a heading's or an item's first line (a heading's
+                  CUSTOM_ID m7 is read too)
+  pointing link   ~[[m7]]~ (or ~[[#m7]]~).  Points to m7 as grounds
   include link    ~[[truss-include:m7]]~.  Includes m7 there in the output
                   document, the whole truss when m7 is an apex member.  A
                   member whose words are an include link alone is m7 itself
@@ -111,7 +112,7 @@ Writing
     #+begin_example
     #+attr_truss: :logic reasons :breakdown pros-cons
     - pros :: <<m21>>Less time in meetings
-      # [[#m2]]
+      # [[m2]]
       Text
     #+end_example
   A pattern of one role -- reasons, steps, parts -- has no role written:
@@ -151,7 +152,7 @@ Grounds
   A member pointed to as grounds has grounds too, or needs none
   A member in the output document stands on what is in it too: not on a
   member tagged :noexport:, or under one
-  Grounds on a comment line, ~# [[#m3]]~, are the file's alone; in the
+  Grounds on a comment line, ~# [[m3]]~, are the file's alone; in the
   text, they are the output document's citation too
 
 Claims
@@ -253,9 +254,9 @@ M-x org-truss-export で、OUT/ に書き出す。
   末端部材    型を持たない部材。下に何も持たない
   単純トラス  支持部材がすべて末端部材のトラス。盤面の △
   複合トラス  支持部材に頂点部材を含むトラス。盤面の ▲
-  ID          部材を指すための名前。見出しなら CUSTOM_ID（m7）、項目なら
-              1行目の ~<<m7>>~
-  指すリンク  ~[[#m7]]~ （項目なら ~[[m7]]~ ）。m7 を根拠として指す
+  ID          部材を指すための名前。言葉（見出し、項目なら1行目）の
+              ~<<m7>>~ （見出しの CUSTOM_ID の m7 も読む）
+  指すリンク  ~[[m7]]~ （ ~[[#m7]]~ でもよい）。m7 を根拠として指す
   展開リンク  ~[[truss-include:m7]]~。出力文書のその場所に m7 を展開する。
               m7 が頂点部材なら、トラスごと展開する。部材の言葉を展開
               リンクだけにすると、その部材は m7 そのものになる
@@ -301,7 +302,7 @@ M-x org-truss-export で、OUT/ に書き出す。
     #+begin_example
     #+attr_truss: :logic reasons :breakdown pros-cons
     - pros :: <<m21>>会議の時間が減る
-      # [[#m2]]
+      # [[m2]]
       本文
     #+end_example
   役が一つの型（reasons、steps、parts）では、役を書かない。下にある部材
@@ -340,7 +341,7 @@ M-x org-truss-export で、OUT/ に書き出す。
   根拠として指した部材も、根拠を持つか、根拠がなくてよい部材であること
   出力文書に出る部材は、出力文書に出るものに立つ。:noexport: を付けた部材
   や、その下の部材には立たない
-  根拠をコメント行 ~# [[#m3]]~ に書けばファイルの中だけのもの、本文に
+  根拠をコメント行 ~# [[m3]]~ に書けばファイルの中だけのもの、本文に
   書けば出力文書での出典にもなる
 
 主張
@@ -624,8 +625,7 @@ takes its ID, and is taken off."
                          (and (eq (nth 0 s) 'telling)
                               (plist-get spec :include) (= (length spec) 2))))))
          (link (lambda (name) (org-truss--include-link (or (alist-get name (cdr ids)) name))))
-         (props (append (and id (list (cons "CUSTOM_ID" (cdr id))))
-                        props
+         (props (append props
                         (mapcar (lambda (pattern)
                                   (cons (alist-get (car pattern) org-truss-pattern-properties)
                                         (symbol-name (cdr pattern))))
@@ -633,7 +633,8 @@ takes its ID, and is taken off."
     (when id
       (setcar ids (delq id (car ids))))
     (concat
-     (format "%s %s\n" (make-string level ?*)
+     (format "%s %s%s\n" (make-string level ?*)
+             (if id (format "<<%s>>" (cdr id)) "")
              (if include (funcall link include) words))
      (if props
          (format ":PROPERTIES:\n%s:END:\n"
