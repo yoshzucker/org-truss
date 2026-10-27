@@ -1433,7 +1433,7 @@ facts of different sources are brought together by pointing to them."
 - [[truss-include:m0]]
 - [[truss-include:c1]]
 "
-  "Claims: one said again, two not worth a heading of their own.")
+  "Claims: one said again, two not worth setting apart.")
 
 (ert-deftest org-truss-test-checks-claims-said-again ()
   (org-truss-test--with org-truss-test--claims-file
@@ -1447,7 +1447,7 @@ facts of different sources are brought together by pointing to them."
       (should (string-match-p "^Said again -- .*\n.*:[0-9]+: The weekly review does not get through its items -- stands on \\[\\[f1\\]\\] \\[\\[f2\\]\\], as It drags on does$"
                               (org-truss-check-report model))))))
 
-(ert-deftest org-truss-test-checks-claims-not-a-heading ()
+(ert-deftest org-truss-test-checks-claims-set-apart ()
   (org-truss-test--with org-truss-test--claims-file
     (let* ((model (org-truss-read))
            (unearned (plist-get (org-truss-checks model) :unearned)))
@@ -1459,7 +1459,17 @@ facts of different sources are brought together by pointing to them."
                      '(("It drags on" 0 2)
                        ("Nothing urgent waits" 1 1))))
       (should (string-match-p ":[0-9]+: Nothing urgent waits -- used in 1 place, on 1 ground$"
-                              (org-truss-check-report model))))))
+                              (org-truss-check-report model)))))
+  ;; Written as an item, a claim is set apart all the same.
+  (org-truss-test--with (replace-regexp-in-string
+                         "\\(:TRUSS_BREAKDOWN: parts\n:END:\n\\)\\(\\*\\*\\* The weekly\\)"
+                         "\\1#+attr_truss:\n- It drags on\n  # [[#f2]] [[#f1]]\n\\2"
+                         (replace-regexp-in-string "^\\*\\*\\* It drags on\n# .*\n" ""
+                                                   org-truss-test--claims-file))
+    (should (equal (mapcar (lambda (e) (list (org-truss-member-words (car e))
+                                             (org-truss-item-p (car e))))
+                           (plist-get (org-truss-checks (org-truss-read)) :unearned))
+                   '(("It drags on" t) ("Nothing urgent waits" nil))))))
 
 (ert-deftest org-truss-test-item-tags ()
   "Tags at the end of an item's first line are its tags, not its words:

@@ -447,18 +447,19 @@ pointed to straight, convince of it; and one that says a fact or another
 claim again.  The fact or claim is pointed to or included instead, not
 written again in other words.
 
-A claim is worth a heading when it saves more than it costs.  Standing on
-n grounds and used by k members, it is n + k links where pointing to the
-facts straight would be k × n.  So a claim is a heading when two or more
-members use it, by a pointing or an include link, and it stands on two or
-more grounds.  One used in one place is no heading but a reason, an item
-in the text of the member using it.
+A claim is worth setting apart, to be pointed to or included, when it
+saves more than it costs.  Standing on n grounds and used by k members,
+it is n + k links where pointing to the facts straight would be k × n.
+So a claim is set apart when two or more members use it, by a pointing
+or an include link, and it stands on two or more grounds.  One used in
+one place is a reason, written under the member using it, a heading or
+an item.
 
-Two checks count these (see [[*What is left to do]]).  /Not a heading/
-asks it of each claim written as a heading of its own in Message: not
-one right under the part, where its breakdown is told; not one in what
-plays /action/, a step being no claim; not a reason written as a heading
-under the member it holds up, which is where it is used already.  A
+Two checks count these (see [[*What is left to do]]).  /Set apart/ asks
+it of each claim set apart in Message, a heading or an item: not one
+right under the part, where its breakdown is told; not one in what plays
+/action/, a step being no claim; not a reason written under the member
+it holds up, which is where it is used already.  A
 member uses it by pointing to it, standing on it or including it, or by
 including a member it is under, which brings it into the output document
 -- Structure including Interpretation whole, say.  Its grounds are the
@@ -552,7 +553,7 @@ Seventeen checks, each found where the problem is:
 | Mixed sources        | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
 | Sources in Situation | the source, or the fact    | a source a claim stands on that Situation leaves out, one it includes that no claim stands on, a fact it includes in place of its source |
 | Said again           | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])        |
-| Not a heading        | the claim                  | a heading of its own in Message that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])             |
+| Set apart            | the claim                  | set apart in Message, a heading or an item, that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]]) |
 | Broken links         | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
 | Words to write       | the member                 | is in the output document with the words it was given: its part's name, or the name of a role it plays                                  |
 
@@ -951,7 +952,7 @@ This is the board of the file above, every line open:
 
  No grounds
    Reason [no grounds] ······ Nothing urgent waits for…  no grounds: a link or a quote, a TRUSS_LOGIC, or :assumption:
- Not a heading
+ Set apart
    Part ····················· The review takes longer …  used in 1 place, on 2 grounds
 
  Structure  the output document's outline
@@ -1179,7 +1180,7 @@ down Structure.
 Each part is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Quotes
 not found/, /Grounds set low/, /Mixed sources/, /Sources in Situation/,
-/Said again/, /Not a heading/, /Missing roles/, /No role/, /No pattern/,
+/Said again/, /Set apart/, /Missing roles/, /No role/, /No pattern/,
 /No relation/, /Headings in a list/, /Out of order/, /Words to write/ (see
 [[*What is left to do]]) -- each thing listed in the part it is found in,
 and ~RET~ on it goes there.  The mouse on the name of a check says what it

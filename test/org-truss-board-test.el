@@ -1501,12 +1501,12 @@ listed under its check, at the member that points to it."
       (should (string-match-p "^ Broken links\n   member[ ·]+Unused aside +\\[\\[file:nowhere\\.pdf\\]\\[the memo\\]\\] not found$" text)))))
 
 (ert-deftest org-truss-test-board-lists-claims-said-again-and-not-headings ()
-  "Message's claims said again, and those not worth a heading, are listed
+  "Message's claims said again, and those not worth setting apart, are listed
 under their checks, after Message."
   (org-truss-test--with-board org-truss-test--claims-file
     (let ((text (buffer-string)))
       (should (string-match-p "^ Said again\n   Part[ ·]+The weekly review does not get through …  stands on \\[\\[f1\\]\\] \\[\\[f2\\]\\], as It drags on does\n   Part[ ·]+It drags on +stands on" text))
-      (should (string-match-p "^ Not a heading\n   Part[ ·]+It drags on +used in 0 places, on 2 grounds\n   Part[ ·]+Nothing urgent waits +used in 1 place, on 1 ground$" text)))))
+      (should (string-match-p "^ Set apart\n   Part[ ·]+It drags on +used in 0 places, on 2 grounds\n   Part[ ·]+Nothing urgent waits +used in 1 place, on 1 ground$" text)))))
 
 (ert-deftest org-truss-test-board-assumptions ()
   "A tags a member :assumption: or takes the tag off.  A reason that lacked

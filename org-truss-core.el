@@ -1647,16 +1647,15 @@ includes, and says nothing of its own."
                       (and others (cons (car set) (cons (cdr set) (mapcar #'car others))))))
                   sets))))
 
-(defun org-truss-claim-heading-p (model member)
-  "Non-nil when MEMBER of MODEL is a claim written as a heading of its own.
-A heading in Message, but not one right under the part, where its
-breakdown is told, not one in what plays `action', and not an include
-link alone.  A reason, or the like, written as a heading under the
+(defun org-truss-claim-apart-p (model member)
+  "Non-nil when MEMBER of MODEL is a claim set apart, to be pointed to.
+A member of Message, a heading or an item alike, but not one right under
+the part, where its breakdown is told, not one in what plays `action',
+and not an include link alone.  A reason, or the like, written under the
 member it holds up is placed where it is used already."
   (let ((up (org-truss-parent model member)))
     (and (eq (org-truss-member-part member) 'message)
          (not (org-truss-member-is-part member))
-         (not (org-truss-item-p member))
          (not (org-truss-include-alone-p member))
          up (not (org-truss-member-is-part up))
          (not (and (org-truss-member-logic up) (org-truss-member-role member 'logic)))
@@ -1698,13 +1697,13 @@ member of a logic truss, its supporting members playing a role there."
                     (org-truss-member-supports member))
        0)))
 
-(defun org-truss-unearned-heading (model member)
-  "Return (USERS . GROUNDS) when MEMBER of MODEL is a claim not worth a heading.
+(defun org-truss-unearned-claim (model member)
+  "Return (USERS . GROUNDS) when MEMBER of MODEL is not worth setting apart.
 USERS are the members using it, GROUNDS how many it stands on; see
-`org-truss-claim-users' and `org-truss-claim-grounds'.  A claim is a
-heading when two or more members use it and it stands on two or more
-grounds.  Nil for a member that is no claim written as a heading."
-  (and (org-truss-claim-heading-p model member)
+`org-truss-claim-users' and `org-truss-claim-grounds'.  A claim is set
+apart when two or more members use it and it stands on two or more
+grounds.  Nil for a member that is no claim set apart."
+  (and (org-truss-claim-apart-p model member)
        (let ((users (org-truss-claim-users model member))
              (grounds (org-truss-claim-grounds member)))
          (and (or (< (length users) 2) (< grounds 2))
@@ -1975,8 +1974,8 @@ member whose pattern asks, at the member that lacks, at the link.
                  `org-truss-situation-sources'
 :said-again      (MEMBER IDS . OTHERS) for members of Message standing on
                  the same members as others; see `org-truss-said-again'
-:unearned        (MEMBER USERS . GROUNDS) for claims written as headings
-                 that are not worth one; see `org-truss-unearned-heading'
+:unearned        (MEMBER USERS . GROUNDS) for claims set apart that are
+                 not worth it; see `org-truss-unearned-claim'
 :broken-links    (MEMBER . ID) for include links to no member
 :loops           (MEMBER . ID) for include links that include MEMBER
                  back; see `org-truss-include-loops'
@@ -2021,7 +2020,7 @@ member whose pattern asks, at the member that lacks, at the link.
           :situation-sources (org-truss-situation-sources model)
           :said-again (org-truss-said-again model)
           :unearned (delq nil (mapcar (lambda (m)
-                                        (let ((unearned (org-truss-unearned-heading model m)))
+                                        (let ((unearned (org-truss-unearned-claim model m)))
                                           (and unearned (cons m unearned))))
                                       members))
           :broken-links (funcall each (lambda (m)
@@ -2062,8 +2061,8 @@ member whose pattern asks, at the member that lacks, at the link.
      . "sources Situation shows amiss: Situation, the member of Message playing situation, includes the truss of each source with a fact the claims of Message stand on, and no other, so the reader sees each such source whole before what is drawn from it; a source a claim stands on that it leaves out, one it includes that no claim stands on, and a fact it includes alone in place of its source's truss -- unless tagged :assumption: and under no source, taken as given with none to show")
     ("Said again"
      . "members of Message that stand on the same members, two or more, as another does -- by pointing links, include links, or supporting members that are include links alone: one says what the other says again; keep the one, and point to it or include it where the other was")
-    ("Not a heading"
-     . "claims written as headings of their own in Message -- not right under the part, not in Action, not reasons under the member they hold up -- that fewer than two members use, by a pointing or an include link, or that stand on fewer than two grounds: one used in one place is a reason, an item in the text of the member using it; one that only says a fact again is not written, and the fact is included; one nothing uses is not needed")
+    ("Set apart"
+     . "claims set apart in Message, as headings or items -- not right under the part, not in Action, not reasons under the member they hold up -- that fewer than two members use, by a pointing or an include link, or that stand on fewer than two grounds: one used in one place is a reason, written under the member using it, as a heading or an item; one that only says a fact again is not written, and the fact is included; one nothing uses is not needed")
     ("Missing roles"
      . "roles the TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING of an apex member asks for that none of its supporting members plays")
     ("No role"
@@ -2238,7 +2237,7 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
            (cons "Said again"
                  (mapcar (lambda (e) (funcall member-line (car e) (org-truss-said-again-text e)))
                          (plist-get checks :said-again)))
-           (cons "Not a heading"
+           (cons "Set apart"
                  (mapcar (lambda (e) (funcall member-line (car e) (org-truss-unearned-text e)))
                          (plist-get checks :unearned)))
            (cons "Missing roles"

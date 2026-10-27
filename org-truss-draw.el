@@ -1414,7 +1414,7 @@ finds it, as `org-truss-check-descriptions' names them."
             model "Said again" (funcall in (plist-get checks :said-again))
             #'org-truss-said-again-text)
            (org-truss--check-group
-            model "Not a heading" (funcall in (plist-get checks :unearned))
+            model "Set apart" (funcall in (plist-get checks :unearned))
             #'org-truss-unearned-text)
            (org-truss--check-group
             model "Missing roles" (funcall in (plist-get checks :gaps))
