@@ -374,8 +374,8 @@ On the board, /edit/ on an item takes out the heading whose text holds
 it, at the item; /pattern/ on an item names the pattern in the
 ~#+attr_truss~ right in it, and puts in its list an item for each role
 the pattern asks for; /roles/ writes its role before ~::~, one an item
-can name; /assume/ tags it; ~m~ takes a source for it.  The other commands that change
-a heading say so on an item instead, which is written by hand there.
+can name; ~m~ takes a source for it.  The other commands that change a
+heading say so on an item instead, which is written by hand there.
 
 ** Grounds
 
@@ -1308,7 +1308,6 @@ done in the file, by hand or with Org's own commands.
 | write   | new                |           | write a new member, included in it                                           | write a member under it, last                      |
 |         | edit               |           | edit its heading alone, beside the board                                     | same                                               |
 |         | moor-map           | ~m~       | take a source for it, or link one taken before (with org-moor)               | same                                               |
-|         | assume             |           | tag it an assumption, or take the tag off                                    | same                                               |
 | shape   | pattern            |           | apply a pattern of any kind, or take one off                                 | same                                               |
 |         | roles              |           | set the roles it plays in the patterns of the member above                   | same                                               |
 | see     | visit              | ~RET~     | go to it                                                                     | same                                               |
@@ -1419,9 +1418,8 @@ comment line, ~# [[moor:...]]~, is the file's alone.
 
 A member is made to stand on another by a pointing link to it written
 in its text, by hand, or on a comment line, ~# [[m3]]~, which the reader
-is not told.  /assume/ tags a member ~:assumption:~, or takes the tag
-off, on a member of Structure as on any: it has grounds as any member
-does.
+is not told.  A member is tagged ~:assumption:~ with ~C-c C-q~, on a
+heading or an item's first line alike.
 
 /pattern/ works the same on every line with a member: on the /Structure/
 line it gives the output document a pattern -- a telling pattern, Sky,

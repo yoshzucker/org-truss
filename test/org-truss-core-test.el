@@ -1605,15 +1605,6 @@ See [[file:sources/gone.pdf][gone]], and [[attachment:shot.png]].
         (let ((org-truss-moor-missing-function nil))
           (should (equal (length (plist-get (org-truss-checks (org-truss-read)) :broken-sources)) 2)))))))
 
-(ert-deftest org-truss-test-assumption-is-toggled ()
-  "A member is tagged :assumption:, or the tag is taken off."
-  (org-truss-test--with org-truss-test--file
-    (let ((pos (org-truss-test--heading-pos "Lone remark")))
-      (should (org-truss-toggle-assumption pos))
-      (should (org-truss-assumption-p (org-truss-test--m (org-truss-read) "Lone remark")))
-      (should-not (org-truss-toggle-assumption pos))
-      (should-not (org-truss-assumption-p (org-truss-test--m (org-truss-read) "Lone remark"))))))
-
 ;;;; What is left to do
 
 (ert-deftest org-truss-test-checks ()

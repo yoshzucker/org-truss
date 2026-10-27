@@ -1506,17 +1506,6 @@ under their checks, after Message."
       (should (string-match-p "^ Said again\n   Part[ ·]+The weekly review does not get through …  stands on \\[\\[f1\\]\\] \\[\\[f2\\]\\], as It drags on does\n   Part[ ·]+It drags on +stands on" text))
       (should (string-match-p "^ Set apart\n   Part[ ·]+It drags on +used in 0 places, on 2 grounds\n   Part[ ·]+Nothing urgent waits +used in 1 place, on 1 ground$" text)))))
 
-(ert-deftest org-truss-test-board-assumptions ()
-  "A tags a member :assumption: or takes the tag off.  A reason that lacked
-grounds has them then, and the board says so."
-  (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-line-with "Major premise \\[no grounds\\]")
-    (org-truss-board-assume)
-    (should (string-match-p "Major premise \\[assumed\\][ ·]+- A meeting" (buffer-string)))
-    (org-truss-test--goto-line-with "Major premise \\[assumed\\]")
-    (org-truss-board-assume)
-    (should (string-match-p "Major premise \\[no grounds\\][ ·]+A meeting" (buffer-string)))))
-
 (ert-deftest org-truss-test-board-draws-includes ()
   "A member's links that tell members are drawn under it, as a section's
 are, each one line where it is not opened; one drawn inside what it tells
@@ -1774,13 +1763,15 @@ it from the board."
             (should (buffer-live-p org-truss--source))
             (should (equal (buffer-file-name org-truss--source)
                            (expand-file-name "truss.org" dir)))
-            (org-truss-test--goto-member "Lone remark")
-            (org-truss-board-assume)
+            (with-current-buffer org-truss--source
+              (goto-char (point-max))
+              (insert "# Kept.\n"))
+            (org-truss-board-redraw)
             (should (string-match-p "^ Title  unsaved" (buffer-string)))
             (should (eq (command-remapping 'save-buffer) #'org-truss-board-save))
             (org-truss-board-save)
             (should-not (string-match-p "unsaved" (buffer-string)))
-            (should (string-match-p "Lone remark +:assumption:"
+            (should (string-match-p "^# Kept\\.$"
                                     (with-temp-buffer
                                       (insert-file-contents (expand-file-name "truss.org" dir))
                                       (buffer-string))))))))))

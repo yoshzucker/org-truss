@@ -100,7 +100,7 @@ Filled by org-truss-moor.el; empty without org-moor.")
 
 (defconst org-truss--board-commands
   '((write org-truss-board-new org-truss-board-edit
-           org-truss-board-moor-map org-truss-board-assume)
+           org-truss-board-moor-map)
     (shape org-truss-board-pattern org-truss-board-roles)
     (see org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
          org-truss-board-cycle org-truss-board-cycle-all org-truss-board-fold
@@ -384,7 +384,7 @@ while a command was asking something."
 
 (defconst org-truss--item-commands
   '(org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
-    org-truss-board-edit org-truss-board-same org-truss-board-assume
+    org-truss-board-edit org-truss-board-same
     org-truss-board-pattern org-truss-board-roles
     org-truss-board-take-url org-truss-board-take-file org-truss-board-take-clipboard
     org-truss-board-keep-copy org-truss-board-link-source)
@@ -1342,16 +1342,6 @@ away."
     (org-truss--goto-words words)
     (org-truss--edit (marker-position at) t session)
     (set-marker at nil)))
-
-(defun org-truss-board-assume ()
-  "Tag the member at point :assumption:, or take the tag off.
-An assumption is taken as given: as a reason, it needs no grounds."
-  (interactive)
-  (let ((item (org-truss--want (org-truss--item) 'member))
-        on)
-    (org-truss--editing
-      (setq on (org-truss-toggle-assumption (plist-get item :pos))))
-    (message "%s %s" (plist-get item :words) (if on "is an assumption" "is no assumption"))))
 
 (defun org-truss--fill-view (buffer model)
   "Put the output document MODEL describes into BUFFER, keeping its point."
