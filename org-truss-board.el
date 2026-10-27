@@ -100,7 +100,7 @@ Filled by org-truss-moor.el; empty without org-moor.")
 
 (defconst org-truss--board-commands
   '((write org-truss-board-new org-truss-board-edit
-           org-truss-board-moor-map org-truss-board-ground org-truss-board-assume)
+           org-truss-board-moor-map org-truss-board-assume)
     (include org-truss-board-include org-truss-board-take-out
              org-truss-board-up org-truss-board-down)
     (shape org-truss-board-new-in-structure org-truss-board-say org-truss-board-unwrap
@@ -1036,40 +1036,6 @@ asking before its own text is lost."
               (org-truss-dissolve (plist-get item :pos) parent t))))
         (org-truss-board-redraw)))
      (t (user-error "This member is not included; delete it in the file")))))
-
-(defun org-truss-board-ground ()
-  "Make a member a ground of the member at point, or no longer one.
-Pointed to by its ID, # [[m3]], on a comment line of its own after the
-member's text, which the reader is not shown; one is given to it when it
-has none.  Its grounds now are offered first, and choosing one takes it
-away.  A link among other words is edited there, with the words."
-  (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member))
-         (model (org-truss-read org-truss--source))
-         (away (lambda (pos id)
-                 (unless (org-truss-remove-ground pos id)
-                   (user-error "This ground is linked among other words; %s edits it there"
-                               (substitute-command-keys "\\[org-truss-board-edit]")))))
-         (member (org-truss-member-at model (plist-get item :pos)))
-         (grounds (org-truss-member-grounds member))
-         (inside (org-truss--subtree member))
-         (others (seq-remove (lambda (m) (memq m inside))
-                             (append (org-truss-contents model)
-                                     (org-truss-members-in model 'structure))))
-         (current (seq-filter (lambda (m) (member (org-truss-member-id m) grounds)) others))
-         (path (lambda (m) (org-truss--any-path model m)))
-         (choices (mapcar (lambda (m) (cons (funcall path m) m))
-                          (append current (seq-remove (lambda (m) (memq m current)) others))))
-         (ground (org-truss--read-choice
-                  "Ground: " choices
-                  (mapcar (lambda (m) (cons (funcall path m) "a ground now; choose to take it away"))
-                          current))))
-    (org-truss--editing
-      (let ((at (copy-marker (plist-get item :pos))))
-        (if (memq ground current)
-            (funcall away at (org-truss-member-id ground))
-          (org-truss-add-ground at (org-truss-ensure-id (org-truss-member-pos ground))))
-        (set-marker at nil)))))
 
 (defun org-truss-board-unwrap ()
   "Take away the headings under the member of Structure at point.

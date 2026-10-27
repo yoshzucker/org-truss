@@ -1605,26 +1605,9 @@ See [[file:sources/gone.pdf][gone]], and [[attachment:shot.png]].
         (let ((org-truss-moor-missing-function nil))
           (should (equal (length (plist-get (org-truss-checks (org-truss-read)) :broken-sources)) 2)))))))
 
-(ert-deftest org-truss-test-grounds-are-written ()
-  "A ground is written in the text, a link on a comment line of its own
-after the heading's last line, which the reader is not told; taking it
-away takes that line, and leaves a link among other words, for the words
-to be rewritten."
+(ert-deftest org-truss-test-assumption-is-toggled ()
+  "A member is tagged :assumption:, or the tag is taken off."
   (org-truss-test--with org-truss-test--file
-    (let ((half (org-truss-test--heading-pos "Half the items repeat")))
-      (org-truss-add-ground half "aside")
-      (should (string-match-p "shows\\.\n# \\[\\[aside\\]\\]\n\\*\\*\\* Agenda diff" (buffer-string)))
-      (should-not (string-match-p "aside" (or (org-truss-member-body
-                                               (org-truss-test--m (org-truss-read) "Half the items repeat"))
-                                              "")))
-      (should (equal (org-truss-member-grounds (org-truss-test--m (org-truss-read) "Half the items repeat"))
-                     '("long" "diff" "aside")))
-      (should (org-truss-remove-ground half "aside"))
-      (should (org-truss-remove-ground half "long"))
-      (should-not (org-truss-remove-ground half "diff"))
-      (should (equal (org-truss-member-grounds (org-truss-test--m (org-truss-read) "Half the items repeat"))
-                     '("diff" "long")))
-      (should (string-match-p "^:END:\n# Robin keeps" (buffer-string))))
     (let ((pos (org-truss-test--heading-pos "Lone remark")))
       (should (org-truss-toggle-assumption pos))
       (should (org-truss-assumption-p (org-truss-test--m (org-truss-read) "Lone remark")))
@@ -2043,24 +2026,17 @@ it includes, and a member with no pattern is no apex member."
     (let ((model (org-truss-read)))
       (should (eq (org-truss-truss-shape model (org-truss-model-subject model)) 'simple)))))
 
-(ert-deftest org-truss-test-items-take-ids-and-grounds ()
+(ert-deftest org-truss-test-items-take-ids ()
   "An item is given a target where its words start, the next id free among
-headings and items; a ground on it is written [[id]], and taken away so."
+headings and items."
   (org-truss-test--with org-truss-test--items-file
     (let ((wait (save-excursion (goto-char (point-min)) (search-forward "- cons ::")
                                 (line-beginning-position)))
-          (move (org-truss-test--heading-pos "We move to fortnightly reviews"))
-          (subject (org-truss-test--heading-pos "Six of twelve items come back")))
+          (move (org-truss-test--heading-pos "We move to fortnightly reviews")))
       (should (equal (org-truss-ensure-id wait) "m22"))
       (should (string-match-p "^- cons :: <<m22>>Items wait longer$" (buffer-string)))
       (should (equal (org-truss-ensure-id wait) "m22"))
-      (should (equal (org-truss-ensure-id move) "m1"))
-      (org-truss-add-ground subject "m22")
-      (should (string-match-p "^# \\[\\[m22\\]\\]$" (buffer-string)))
-      (should (equal (org-truss-member-grounds (org-truss-test--m (org-truss-read) "Six of twelve items come back"))
-                     '("m22")))
-      (should (org-truss-remove-ground subject "m22"))
-      (should-not (string-match-p "\\[\\[m22\\]\\]" (buffer-string))))))
+      (should (equal (org-truss-ensure-id move) "m1")))))
 
 (ert-deftest org-truss-test-ids-either-way ()
   "A heading's ID is <<m7>> in its words, as an item's, or its CUSTOM_ID;

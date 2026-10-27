@@ -350,8 +350,8 @@ We would meet half as often.
   ~- [[truss-include:m7]]~ of a member of Structure among it.
 - A target in its first line, ~<<m21>>~, is its ID, as one in a
   heading's words is the heading's: ~[[m21]]~ points to it, and
-  ~[[truss-include:m21]]~ includes it.  /include/ and /ground/ give a
-  member one, before its words.
+  ~[[truss-include:m21]]~ includes it.  /include/ gives a member one,
+  before its words.
 - ~TRUSS_AS~ on a heading, or ~:as~ in ~#+attr_truss~, ~headings~ or
   ~list~, says how the output document writes the supporting members of
   that one truss, where what it is would write them the other way.
@@ -410,8 +410,7 @@ output document:
 | a source                           | a link to where it came from                     | nothing                                  |
 | a quote, ~#+begin_quote~           | the quotation                                    | nothing                                  |
 
-Grounds on a comment line, ~# [[m3]]~, as /ground/ on the board writes
-them, are the file's alone; in the text, they are the output document's
+Grounds on a comment line, ~# [[m3]]~, are the file's alone; in the text, they are the output document's
 citation too -- a pointing link as m7's words, a ~moor:~ link as a link to
 where its source came from (see [[*The output document]]).  So a source is
 written once, where it is cited.
@@ -854,8 +853,7 @@ the output document says so where it stops.
 ** Pointing to a member
 
 Both links point to a member by its ID: ~m7~ is the heading or the item
-with ~<<m7>>~ in its words, before them, as /include/ and /ground/ write
-it.  The ID goes with the words, so a heading made an item, or an item a
+with ~<<m7>>~ in its words, before them, as /include/ writes it.  The ID goes with the words, so a heading made an item, or an item a
 heading, keeps it, and nothing pointing to it changes.  A heading with
 ~:CUSTOM_ID: m7~ is m7 as well, and a link may be written ~[[#m7]]~: in a
 truss file, with org-truss loaded, ~C-c C-o~ follows ~[[m7]]~, ~[[#m7]]~
@@ -871,7 +869,8 @@ can be reworded anywhere -- in the file by hand, or by a model editing
 the file -- and nothing breaks.
 
 A member is given an ID only once something points to it: /include/
-including it, /ground/ making it grounds, /new/ writing it in Structure.
+including it, /new/ writing it in Structure; one pointed to by hand is
+given one by hand, ~<<m7>>~ before its words.
 An ID is ~m~ and the next number free in the file, counted from the first
 heading; one you write yourself is kept.  Two members with one ID, and a
 link that points to no member, are reported as /Broken links/, at each in
@@ -1447,13 +1446,11 @@ it came from instead, the page on the web.  A link to anything but a
 source org-moor took is followed as it is, with either.  A link put on a
 comment line, ~# [[moor:...]]~, is the file's alone.
 
-/ground/ makes a member something it stands on, a pointing link to it on
-a comment line of its own after the member's text, ~# [[m3]]~, which the
-reader is not told: it offers what it stands on first, and choosing one
-takes that line away; any other is added, and given an ID when it has
-none.  One linked in the text is edited there, with /edit/.
-/assume/ tags a member ~:assumption:~, or takes the tag off.  Each works
-on a member of Structure as on any: it has grounds as any member does.
+A member is made to stand on another by a pointing link to it written
+in its text, by hand, or on a comment line, ~# [[m3]]~, which the reader
+is not told.  /assume/ tags a member ~:assumption:~, or takes the tag
+off, on a member of Structure as on any: it has grounds as any member
+does.
 
 /pattern/ works the same on every line with a member: on the /Structure/
 line it gives the output document a pattern -- a telling pattern, Sky,

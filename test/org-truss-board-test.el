@@ -2007,30 +2007,6 @@ section in a list item."
       (should (string-match-p "^- Move to fortnightly\n\n  Hold the review every other week\\.\n  - Lone remark\n  - Sky\n\n    - Reviews run long\n"
                               (org-truss-render-document model))))))
 
-(ert-deftest org-truss-test-board-links-to-sections ()
-  "A section is a heading like any other to the links that reach it: b
-offers it as a ground, and = goes from the line standing on it to where
-it is written, lit together."
-  (org-truss-test--with-board org-truss-test--file
-    (org-truss-test--goto-member "Move to fortnightly")
-    (org-truss-test--answering '("Structure › Sky › Sky")
-      (org-truss-board-ground))
-    (let ((model (org-truss-read source)))
-      (should (equal (org-truss-member-grounds (org-truss-test--m model "Move to fortnightly"))
-                     '("half" "m1")))
-      (should (equal (org-truss-member-id (car (org-truss-member-supports (org-truss-model-structure model))))
-                     "m1")))
-    ;; A section holds as any heading does: with no grounds of its own, it
-    ;; is a weak ground.
-    (should (string-match-p "member[ ·]+Move to fortnightly  ⏚m1$" (buffer-string)))
-    (org-truss-test--goto-line-with "member[ ·]+Move to fortnightly  ⏚m1$")
-    (search-forward "⏚m1")
-    (should (eq (get-text-property (1- (point)) 'face) 'org-truss-attention))
-    (cl-loop repeat 4 until (looking-at " ├ Sky") do (org-truss-board-same))
-    (should (looking-at " ├ Sky"))
-    (should (seq-some (lambda (o) (eq (overlay-get o 'face) 'org-truss-same))
-                      (overlays-in (point-min) (point-max))))))
-
 (ert-deftest org-truss-test-board-places-instead-of-a-broken-link ()
   "a on a broken link places the chosen member where the link stands; where
 else it is placed, it stays."
@@ -2066,39 +2042,6 @@ else it is placed, it stays."
       (should (org-truss-member-by-words model "Reviews run long"))
       (should (null (org-truss-member-includes
                      (car (org-truss-member-supports (org-truss-model-structure model)))))))))
-
-(ert-deftest org-truss-test-board-grounds ()
-  "b makes another member a ground, or no longer one, and the member's line
-names one it cannot stand on."
-  (org-truss-test--with-board org-truss-test--file
-    (let ((grounds (lambda () (org-truss-member-grounds
-                               (org-truss-member-by-words (org-truss-read source) "Move to fortnightly")))))
-      (org-truss-test--goto-member "Move to fortnightly")
-      (org-truss-test--answering '("Message › Unused aside")
-        (org-truss-board-ground))
-      (should (equal (funcall grounds) '("half" "aside")))
-      (should (string-match-p "member[ ·]+Move to fortnightly$" (buffer-string)))
-      ;; A member pointed to for the first time is given an id.
-      (org-truss-test--goto-member "Move to fortnightly")
-      (org-truss-test--answering '("Message › Lone remark")
-        (org-truss-board-ground))
-      (should (equal (funcall grounds) '("half" "aside" "m1")))
-      (should (with-current-buffer source
-                (string-match-p "^Hold the review every other week\\.\n# \\[\\[aside\\]\\]\n# \\[\\[m1\\]\\]\n"
-                                (buffer-string))))
-      (org-truss-test--goto-member "Move to fortnightly")
-      (org-truss-test--answering '("Message › Lone remark")
-        (org-truss-board-ground))
-      (org-truss-test--goto-member "Move to fortnightly")
-      (org-truss-test--answering '("Message › Half the items repeat")
-        (org-truss-board-ground))
-      (should (equal (funcall grounds) '("aside")))
-      (org-truss-test--goto-member "Move to fortnightly")
-      (org-truss-test--answering '("Message › Unused aside")
-        (org-truss-board-ground))
-      (should (null (funcall grounds)))
-      (should-not (with-current-buffer source
-                    (string-match-p "^# \\[\\[\\(?:half\\|aside\\|m1\\)\\]\\]$" (buffer-string)))))))
 
 (ert-deftest org-truss-test-board-unwrap-asks-before-losing ()
   "u asks before discarding text, and does nothing when told no."

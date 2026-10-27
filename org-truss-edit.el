@@ -352,42 +352,12 @@ be expected to make by hand; this makes them.  Return the number made."
         (set-marker (org-truss-add-role-member pos kind role) nil)))
     n))
 
-(defun org-truss-add-ground (pos id)
-  "Make the member ID a ground of the heading at POS.
-A pointing link to it, # [[ID]], on a comment line of its own after the
-heading's last line of text, where the reader does not see it; see
-`org-truss-ensure-id'."
-  (org-truss--add-line pos (format "# [[%s]]" (org-truss--pointing-target id))))
-
 (defun org-truss--goto-first-heading ()
   "Go to the first heading of the buffer, past the guide before it.
 The guide's examples, <<m21>> among them, are no member's."
   (goto-char (point-min))
   (unless (org-at-heading-p)
     (outline-next-heading)))
-
-(defun org-truss--pointing-line (pos id)
-  "Return (BEG . END) of the line pointing to ID in the text at POS, or nil.
-A line holding nothing but the pointing link, [[#ID]] or [[ID]], as a
-list item or not, as a comment or not."
-  (let* ((bounds (org-truss--text-bounds pos))
-         (re (format "^[ \t]*\\(?:#[ \t]+\\)?\\(?:[-+] \\|[0-9]+[.)] \\)?\\[\\[#?%s\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*$"
-                     (regexp-quote id))))
-    (save-excursion
-      (goto-char (car bounds))
-      (when (re-search-forward re (cdr bounds) t)
-        (cons (line-beginning-position)
-              (min (point-max) (1+ (line-end-position))))))))
-
-(defun org-truss-remove-ground (pos id)
-  "Stop the heading at POS standing on the member ID.
-The line that holds nothing but the pointing link to it goes.  A link
-among other words is left, for the words to be rewritten; nil is
-returned then."
-  (let ((at (org-truss--pointing-line pos id)))
-    (when at
-      (delete-region (car at) (cdr at))
-      t)))
 
 (defun org-truss-toggle-assumption (pos)
   "Tag the member at POS :assumption:, or take the tag off.  Return non-nil if on.
