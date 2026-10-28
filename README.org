@@ -390,8 +390,9 @@ These supporting members need none:
 
 - the apex member of a ~TRUSS_LOGIC~ truss: its supporting members are
   its grounds;
-- a member tagged ~:assumption:~, taken as given.  Tag so a member that
-  stands on what has no file: an agreement, a talk.
+- a member tagged ~:assumption:~, taken as given: the user decided so,
+  and only the user tags it;
+- a member tagged ~:open:~, until it is settled (see [[*Scope]]).
 
 Whether a member must have grounds comes from its role alone: not from
 the part it is written in, nor from whether anything includes it.
@@ -418,7 +419,10 @@ written once, where it is cited.
 
 Words naming what has no file -- /team agreement/, /what was said in the
 hallway/ -- are no grounds: nothing in the file can be gone back to.
-Write them in the text, and tag the member ~:assumption:~.
+What a person said is a source once it is written down: the answers as
+they were given, in a note titled by the date and the person, taken
+into ~sources/~ and quoted.  What nobody said and the user takes as
+given is tagged ~:assumption:~.
 
 An include link in a reason is grounds as well as what it includes: a
 reason is asked why it holds, and one that included m7 and did not stand
@@ -497,6 +501,39 @@ up by what is under it, a reader follows the document by its words, and
 each claim is checked on its own, against what is right under it.  Words
 fit one line, about 60 columns.
 
+** Scope
+
+What Brief asks for sets what is needed: the sources and facts reached
+from the claims of Message, following what they stand on (see
+[[*Grounds]]), are needed; what Situation, or Structure, includes of
+Subject only shows it.  So what is to be looked into, and what not, is
+told by what the document has to say, and the work stops where nothing
+needed is left open:
+
+1. Whether a source or a fact is needed is set by whether the response
+   Brief asks for needs it to be reached: those reached from the claims
+   of Message, following what they stand on, are needed.
+2. ~:open:~ tags a question or a claim not settled yet; its text says
+   where to look, or that it is unknown.
+3. From a source not ~:aside:~, the other sources it refers to are
+   followed.  Each one followed is taken, or written as one line tagged
+   ~:aside:~, so it is not looked into again.
+4. A fact is written only when a claim, or an ~:open:~ that is needed,
+   stands on it.
+5. A source ~:aside:~ has no supporting members; its text and quote may
+   be short.  The other sources it refers to are not followed.
+6. An ~:open:~ that is unknown is asked of the user.
+7. Only the user tags ~:assumption:~: what an agent would fill in from
+   what it knows stays ~:open:~, for the user to take as given or not.
+
+A member ~:open:~ needs no grounds meanwhile, and is listed: /Open/ when
+something needed stands on it, or it is in Message; /Open, not needed/
+when nothing does, not to be looked into.  /Open in the output/ finds one
+the output document tells, /Settled/ one that has grounds and keeps the
+tag.  /Unused/ finds a fact nothing needed stands on, and /Aside with
+members/ a source set aside that holds members.  A source set aside is
+told like any other when Structure includes it.
+
 ** One source at a time
 
 Write a truss to be checked against one source; the check sees to it.
@@ -545,7 +582,7 @@ shows what it reads.
 
 ** What is left to do
 
-Seventeen checks, each found where the problem is:
+Twenty-three checks, each found where the problem is:
 
 | Check                | Found at                   | What it finds                                                                                                                           |
 |----------------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -553,9 +590,15 @@ Seventeen checks, each found where the problem is:
 | No role              | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                 |
 | No pattern           | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                        |
 | No relation          | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the parts and Structure as any   |
-| Headings in a list   | the apex member            | its ~TRUSS_AS~ says headings, and the output document writes its supporting members as a list all the same: in a list, or below the sixth level|
+| Headings in a list   | the apex member            | its ~TRUSS_AS~ says headings, and its supporting members are written as a list all the same, in a list or deep                          |
 | Out of order         | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
 | No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
+| Open                 | the open member            | tagged ~:open:~, and something needed stands on it, or it is in Message: to be found out                                                |
+| Open, not needed     | the open member            | tagged ~:open:~, and nothing needed stands on it: not to be looked into                                                                 |
+| Open in the output   | the open member            | tagged ~:open:~, and the output document tells it                                                                                       |
+| Settled              | the open member            | tagged ~:open:~, and has grounds: the tag is to come off                                                                                |
+| Unused               | the fact                   | of Subject, and nothing needed stands on it (see [[*Scope]])                                                                            |
+| Aside with members   | the source                 | tagged ~:aside:~, and holds members: it is one line                                                                                     |
 | Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
 | Hidden grounds       | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~ |
 | Quotes not found     | the member that quotes     | a ~#+begin_quote~ whose words are not in the source it is from, where that source's text can surely be read                              |
@@ -1057,7 +1100,8 @@ that plays none -- and the tree that joins them.  After the role come, in
 brackets, what wants seeing to: =[no role]= for a supporting member that
 plays no role of its apex member's patterns, =[no pattern]= for one that
 plays a role the member above has no pattern for, =[assumed]= for an
-assumption, =[noexport]= for one tagged ~:noexport:~, =[no grounds]= for
+assumption, =[open]= and =[aside]= for one tagged ~:open:~ or ~:aside:~,
+=[noexport]= for one tagged ~:noexport:~, =[no grounds]= for
 a reason that must have grounds and has none.  Dots lead from the left
 to the words, and the mouse on them names the member by its ID as the
 file names it: =<<m9>>= where it is written, and =[[m9]]= where an include
@@ -1168,6 +1212,8 @@ The other marks of the board are not links:
 | =[no role]=         | after the role          | plays no role of its apex member's patterns                                          |
 | =[no pattern]=      | after the role          | plays a role, but the member above has no pattern of its kind                        |
 | =[assumed]=         | after the role          | tagged ~:assumption:~: taken as given                                                |
+| =[open]=            | after the role          | tagged ~:open:~: not settled yet                                                     |
+| =[aside]=           | after the role          | tagged ~:aside:~: set aside as not needed                                            |
 | =[noexport]=        | after the role          | tagged ~:noexport:~: the output document leaves it out                               |
 | =[no grounds]=      | after the role          | must have grounds, and has none                                                      |
 | =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |

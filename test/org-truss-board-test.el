@@ -242,6 +242,10 @@ them, and is listed under the part."
                      "   │   ⏚ source[ ·]+finance, 3 October\n"
                      "   └ member[ ·]+The schedule is fixed\n"
                      "   Past —\n\n"
+                     " Unused\n"
+                     "   member[ ·]+Nobody checks before a test  no claim stands on it\n"
+                     "   member[ ·]+No budget this year  no claim stands on it\n"
+                     "   member[ ·]+The schedule is fixed  no claim stands on it\n"
                      " Missing roles\n"
                      "   Subject +Past\n")
              (buffer-string)))
@@ -1077,13 +1081,13 @@ member folds what is nested under it.  c into a folded member unfolds it."
   (let ((org-truss-board-fold-limit 1))
     (org-truss-test--with-board org-truss-test--conditions-file
       (should (string-match-p "^   Future ▸2[ ·]+Constraints" (buffer-string)))
-      (should-not (string-match-p "member[ ·]+No budget this year" (org-truss-test--top)))
+      (should-not (string-match-p "[├└] member[ ·]+No budget this year" (org-truss-test--top)))
       (org-truss-test--goto-line-with "^   Future ▸2")
       (org-truss-board-fold)
       (should (string-match-p "^   ├ member[ ·]+No budget this year" (org-truss-test--top)))
       (org-truss-test--goto-line-with "member[ ·]+The schedule is fixed")
       (org-truss-board-fold)
-      (should-not (string-match-p "member[ ·]+The schedule is fixed" (org-truss-test--top)))
+      (should-not (string-match-p "[├└] member[ ·]+The schedule is fixed" (org-truss-test--top)))
       (should (looking-at-p "   Future ▸2"))
       (org-truss-test--creating '("Tests start at seven")
         (should (string-match-p "member[ ·]+Tests start at seven" (buffer-string)))
@@ -2131,7 +2135,7 @@ first bring it."
   "= unfolds a member that hides where the member is written."
   (let ((org-truss-board-fold-limit 1))
     (org-truss-test--with-board org-truss-test--conditions-file
-      (should-not (string-match-p "member[ ·]+No budget" (buffer-string)))
+      (should-not (string-match-p "[├└] member[ ·]+No budget" (buffer-string)))
       (org-truss-test--goto-line-with "^ Structure ")
       (org-truss-test--goto-member "No budget this year" (point))
       (org-truss-board-same)

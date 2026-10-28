@@ -381,13 +381,15 @@ member above has no pattern for."
 The roles it plays in the patterns of the member above, or `member' when
 it plays none; then [no role] when it plays none of a pattern above it,
 [no pattern] when it plays a role the member above has no pattern for,
-[assumed] when it is tagged :assumption:, [noexport] when it is tagged
-:noexport:, and [no grounds] when it must have grounds and lacks them,
+[assumed] when it is tagged :assumption:, [open] :open:, [aside]
+:aside:, [noexport] when it is tagged :noexport:, and [no grounds] when it must have grounds and lacks them,
 each in its face."
   (concat (or (org-truss--role-names member) "member")
           (if (org-truss--no-role-p member) (propertize " [no role]" 'face 'org-truss-attention) "")
           (if (org-truss--no-pattern-p member) (propertize " [no pattern]" 'face 'org-truss-attention) "")
           (if (org-truss-assumption-p member) (propertize " [assumed]" 'face 'org-truss-tentative) "")
+          (if (org-truss-open-p member) (propertize " [open]" 'face 'org-truss-tentative) "")
+          (if (org-truss-aside-p member) (propertize " [aside]" 'face 'org-truss-dim) "")
           (if (org-truss-noexport-p member) (propertize " [noexport]" 'face 'org-truss-dim) "")
           (if (org-truss-missing-grounds model member)
               (propertize " [no grounds]" 'face 'org-truss-attention)
@@ -1392,6 +1394,24 @@ finds it, as `org-truss-check-descriptions' names them."
            (org-truss--check-group
             model "No grounds" (funcall in (mapcar #'list (plist-get checks :no-grounds)))
             (lambda (_) org-truss-no-grounds-text))
+           (org-truss--check-group
+            model "Open" (funcall in (mapcar #'list (plist-get checks :open)))
+            (lambda (_) org-truss-open-text))
+           (org-truss--check-group
+            model "Open, not needed" (funcall in (mapcar #'list (plist-get checks :open-unneeded)))
+            (lambda (_) "nothing needed stands on it"))
+           (org-truss--check-group
+            model "Open in the output" (funcall in (mapcar #'list (plist-get checks :open-told)))
+            (lambda (_) "told while open"))
+           (org-truss--check-group
+            model "Settled" (funcall in (mapcar #'list (plist-get checks :settled)))
+            (lambda (_) "has grounds, tagged :open:"))
+           (org-truss--check-group
+            model "Unused" (funcall in (mapcar #'list (plist-get checks :unused)))
+            (lambda (_) "no claim stands on it"))
+           (org-truss--check-group
+            model "Aside with members" (funcall in (mapcar #'list (plist-get checks :aside-members)))
+            (lambda (_) "set aside, with members under it"))
            (org-truss--check-group
             model "Weak grounds" (funcall in (plist-get checks :weak-grounds))
             (lambda (e) (format "%s has no grounds" (funcall ids (list (cdr e))))))

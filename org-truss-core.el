@@ -301,6 +301,12 @@ headings."
 
 (defconst org-truss-assumption-tag "assumption"
   "Tag on a member taken as given: one that would need grounds needs none.")
+(defconst org-truss-open-tag "open"
+  "Tag on a member not settled yet: a claim to be checked, or what is not
+known.  It needs no grounds meanwhile, and is listed until it is settled.")
+(defconst org-truss-aside-tag "aside"
+  "Tag on a source set aside as not needed, written short, its references
+not followed.")
 (defconst org-truss-noexport-tag "noexport"
   "Tag on a member the output document leaves out, with what is under it.")
 
@@ -1166,6 +1172,14 @@ what it says."
   "Non-nil when MEMBER is tagged :assumption:, taken as given."
   (member org-truss-assumption-tag (org-truss-member-tags member)))
 
+(defun org-truss-open-p (member)
+  "Non-nil when MEMBER is tagged :open:, not settled yet."
+  (member org-truss-open-tag (org-truss-member-tags member)))
+
+(defun org-truss-aside-p (member)
+  "Non-nil when MEMBER is tagged :aside:, set aside as not needed."
+  (member org-truss-aside-tag (org-truss-member-tags member)))
+
 (defun org-truss-member-output (member)
   "Return what the output document shows of MEMBER, (WORDS . BODY), or nil.
 Its words, and its text.  Nil when it is tagged :noexport:."
@@ -1372,10 +1386,12 @@ member or a source.  What a link points to is not read here; see
 (defun org-truss-holds-p (member)
   "Non-nil when MEMBER holds: it has grounds, is the apex member of a logic
 truss, or is tagged :assumption:, taken as given.  What a member that
-must have grounds is asked, and what a member pointed to as grounds is."
+must have grounds is asked, and what a member pointed to as grounds is.
+One tagged :open: is let be meanwhile: it is listed as open instead."
   (or (org-truss-has-grounds-p member)
       (org-truss-member-logic member)
-      (org-truss-assumption-p member)))
+      (org-truss-assumption-p member)
+      (org-truss-open-p member)))
 
 (defun org-truss-needs-grounds-p (model member)
   "Non-nil when MEMBER of MODEL must have grounds.
@@ -1387,6 +1403,7 @@ is the apex member of no logic truss and is not tagged :assumption:."
          (assq (org-truss-member-role member 'logic) (org-truss-pattern-roles logic))
          (not (org-truss-member-logic member))
          (not (org-truss-assumption-p member))
+         (not (org-truss-open-p member))
          t)))
 
 (defun org-truss-missing-grounds (model member)
@@ -1830,6 +1847,49 @@ stand on it instead, once.  See `org-truss-member-grounds'."
 See `org-truss-grounds-set-low'."
   (format "every supporting member stands on [[%s]]" (org-truss--pointing-target (cdr entry))))
 
+(defun org-truss-needed (model)
+  "Return the members of MODEL what Brief asks for needs.
+Followed from the members of Message but Situation's, and those the
+output document tells outside Subject: what they stand on, by their
+grounds (see `org-truss-member-grounds'), and so on, with all under each;
+and a source with a member needed.  What Situation, or Structure,
+includes of Subject only shows it, and needs nothing."
+  (let* ((situations (seq-filter (lambda (m) (eq (org-truss-member-role m 'breakdown) 'situation))
+                                 (org-truss-members-in model 'message)))
+         (in-situation (mapcan (lambda (s) (copy-sequence (org-truss--subtree s))) situations))
+         (todo (seq-uniq
+                (append (seq-remove (lambda (m) (or (memq m in-situation) (org-truss-member-is-part m)))
+                                    (org-truss-members-in model 'message))
+                        (seq-remove (lambda (m) (memq (org-truss-member-part m) '(subject brief)))
+                                    (org-truss-told model)))))
+         (seen nil))
+    (while todo
+      (let ((m (pop todo)))
+        (unless (memq m seen)
+          (push m seen)
+          (dolist (id (org-truss-member-grounds m))
+            (let ((ground (org-truss-member-by-id model id)))
+              (when ground
+                (setq todo (append (org-truss--subtree ground) todo))))))))
+    (dolist (m (copy-sequence seen))
+      (let ((source (org-truss-source-of model m)))
+        (when (and source (not (memq source seen)))
+          (push source seen))))
+    seen))
+
+(defun org-truss-unused-facts (model needed)
+  "Return the facts of MODEL no claim stands on.
+Members under a source in Subject, not the source itself, not :open: and
+not under a source :aside:, that are not in NEEDED, the members what
+Brief asks for needs; see `org-truss-needed'."
+  (seq-filter (lambda (m)
+                (let ((source (org-truss-source-of model m)))
+                  (and source (not (eq source m))
+                       (not (org-truss-aside-p source))
+                       (not (org-truss-open-p m))
+                       (not (memq m needed)))))
+              (org-truss-members-in model 'subject)))
+
 (defun org-truss-source-of (model member)
   "Return the source MEMBER of MODEL is written under, or nil.
 The member right under Subject that MEMBER is or is under: a source's
@@ -1947,6 +2007,13 @@ member whose pattern asks, at the member that lacks, at the link.
                  below one the telling pattern tells after them
 :no-grounds      members that must have grounds and have none; see
                  `org-truss-missing-grounds'
+:open            members tagged :open: that what Brief asks for needs,
+                 or that are in Message; see `org-truss-needed'
+:open-unneeded   members tagged :open: that nothing needed stands on
+:open-told       members tagged :open: the output document tells
+:settled         members tagged :open: that have grounds
+:unused          facts no claim stands on; see `org-truss-unused-facts'
+:aside-members   members tagged :aside: with members under them'
 :weak-grounds    (MEMBER . ID) for each member MEMBER stands on that does
                  not hold; see `org-truss-weak-grounds'
 :hidden-grounds  (MEMBER . GROUND) for each member, or supporting member,
@@ -1980,6 +2047,8 @@ member whose pattern asks, at the member that lacks, at the link.
   (let* ((members (org-truss-model-members model))
          (org-truss--source-texts (or org-truss--source-texts (make-hash-table :test #'equal)))
          (told (org-truss-told model))
+         (needed (org-truss-needed model))
+         (opens (seq-filter #'org-truss-open-p members))
          (each (lambda (f &optional of)
                  (mapcan (lambda (m) (mapcar (lambda (x) (cons m x)) (funcall f m)))
                          (or of members)))))
@@ -2000,6 +2069,15 @@ member whose pattern asks, at the member that lacks, at the link.
                                 (funcall org-truss-listed-headings-function model))
           :out-of-order (mapcan #'org-truss-out-of-order members)
           :no-grounds (seq-filter (lambda (m) (org-truss-missing-grounds model m)) members)
+          :open (seq-filter (lambda (m) (or (memq m needed) (eq (org-truss-member-part m) 'message)))
+                            opens)
+          :open-unneeded (seq-remove (lambda (m) (or (memq m needed) (eq (org-truss-member-part m) 'message)))
+                                     opens)
+          :open-told (seq-filter (lambda (m) (memq m told)) opens)
+          :settled (seq-filter #'org-truss-has-grounds-p opens)
+          :unused (org-truss-unused-facts model needed)
+          :aside-members (seq-filter (lambda (m) (and (org-truss-aside-p m) (org-truss-member-supports m)))
+                                     members)
           :weak-grounds (funcall each (lambda (m) (org-truss-weak-grounds model m)))
           :hidden-grounds (and told
                                (funcall each (lambda (m) (org-truss-hidden-grounds model m)) told))
@@ -2041,6 +2119,18 @@ member whose pattern asks, at the member that lacks, at the link.
      . "links that point to nothing: an include link, [[truss-include:id]], or a pointing link a member stands on, [[id]], to no member -- each wants one member with that ID, and two with one are reported too; a link to a source taken by org-moor, or to a file, that is not there; and an include link that includes, with what is under it, the member back, without end")
     ("No grounds"
      . "supporting members of a TRUSS_LOGIC truss with no grounds: no #+begin_quote and no link in their text, to a member or a source; give them one, make them the apex member of a TRUSS_LOGIC truss of their own, or tag them :assumption:")
+    ("Open"
+     . "members tagged :open:, not settled yet, that what Brief asks for needs: to be found out, where their text says to look; settled, they take grounds, or the user takes them as given, :assumption:, or they go")
+    ("Open, not needed"
+     . "members tagged :open: that no claim needs: not to be looked into; set aside what they would be found in, :aside:, or take them away")
+    ("Open in the output"
+     . "members tagged :open: the output document tells: it gives the reader what is not settled")
+    ("Settled"
+     . "members tagged :open: that have grounds now: take the tag off")
+    ("Unused"
+     . "facts of Subject no claim stands on, by a link, followed from Message: write a claim on them, take them away, or set their source aside, :aside:, in a line")
+    ("Aside with members"
+     . "sources tagged :aside: with members under them: a source set aside is one line, with text or a quote, and its references are not followed")
     ("Weak grounds"
      . "members a member stands on, by a link in its text, that do not hold: with no grounds, no TRUSS_LOGIC and no :assumption: tag")
     ("Hidden grounds"
@@ -2082,6 +2172,10 @@ it comes to hold.")
 (defconst org-truss-listed-headings-text
   "TRUSS_AS headings, written as a list"
   "What the board and the report say of a member whose TRUSS_AS is not kept.")
+
+(defconst org-truss-open-text
+  "open: to be found out"
+  "What the board and the report say of a member tagged :open: that is needed.")
 
 (defconst org-truss-placeholder-text
   "the words it was given, which reach the reader"
@@ -2208,6 +2302,24 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
            (cons "No grounds"
                  (mapcar (lambda (m) (funcall member-line m org-truss-no-grounds-text))
                          (plist-get checks :no-grounds)))
+           (cons "Open"
+                 (mapcar (lambda (m) (funcall member-line m org-truss-open-text))
+                         (plist-get checks :open)))
+           (cons "Open, not needed"
+                 (mapcar (lambda (m) (funcall member-line m "nothing needed stands on it"))
+                         (plist-get checks :open-unneeded)))
+           (cons "Open in the output"
+                 (mapcar (lambda (m) (funcall member-line m "told while open"))
+                         (plist-get checks :open-told)))
+           (cons "Settled"
+                 (mapcar (lambda (m) (funcall member-line m "has grounds, tagged :open:"))
+                         (plist-get checks :settled)))
+           (cons "Unused"
+                 (mapcar (lambda (m) (funcall member-line m "no claim stands on it"))
+                         (plist-get checks :unused)))
+           (cons "Aside with members"
+                 (mapcar (lambda (m) (funcall member-line m "set aside, with members under it"))
+                         (plist-get checks :aside-members)))
            (cons "Weak grounds"
                  (mapcar (lambda (w) (funcall member-line (car w)
                                               (format "[[%s]] has no grounds" (org-truss--pointing-target (cdr w)))))

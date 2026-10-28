@@ -52,6 +52,8 @@ Words
   truss           a member with a pattern (its apex member) and the members
                   right under it (its supporting members)
   end member      a member with no pattern.  It has nothing under it
+  fact            a supporting member of a source's truss in Subject: what
+                  the source says, in one sentence, with a quote
   simple truss    a truss whose supporting members are all end members.
                   △ on the board
   compound truss  a truss with an apex member among its supporting members.
@@ -145,8 +147,9 @@ Grounds
   These supporting members need none
   - the apex member of a TRUSS_LOGIC truss: its supporting members are its
     grounds
-  - a member tagged :assumption:.  Tag so a member that stands on what has
-    no file: an agreement, a talk
+  - a member tagged :assumption:: the user takes it as given.  Only the
+    user tags it
+  - a member tagged :open:, until it is settled (see Scope)
   A member pointed to or included as grounds is a reason the member stands
   on, as a supporting member playing reason in a TRUSS_LOGIC: reasons
   truss is.  Why it holds the member up, its major premise, goes without
@@ -193,6 +196,24 @@ Sources
   of its supporting members, ~[[moor:ID][TITLE]]~ ; under it, a link named
   by its place alone, ~[[moor:ID::223][l. 223]]~ , ~[[moor:ID::12][p. 12]]~ ,
   at the end of an item's first line, not on a line of its own
+
+Scope
+  Whether a source or a fact is needed is set by whether the response
+  Brief asks for needs it to be reached: the sources and facts reached
+  from the claims of Message, following what they stand on, are needed
+  Tag :open: a question or a claim, and write in its text where to look,
+  or \"unknown\"
+  From a source not :aside:, follow the other sources it refers to.  Each
+  source followed is taken, or written as one line :aside:
+  Write a fact only when a claim, or an :open: that is needed, stands on
+  it
+  A source :aside: has no supporting members; its text and quote may be
+  short.  The other sources it refers to are not followed
+  Ask the user about an :open: that is \"unknown\"
+  Only the user tags :assumption:
+  What a person tells you is a source: write the answers as they were
+  given in a note titled by the date and the person, take it, and quote
+  it in the facts
 
 Quotes
   A fact of Subject is an end member: its words (a heading, an item's first
@@ -255,6 +276,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   部材        見出し一つか、#+attr_truss を付けた箇条書きの項目一つ
   トラス      型を持つ部材（頂点部材）と、そのすぐ下の部材（支持部材）
   末端部材    型を持たない部材。下に何も持たない
+  事実        Subject の資料のトラスの支持部材。その資料が言うことを
+              一文で書き、引用を付ける
   単純トラス  支持部材がすべて末端部材のトラス。盤面の △
   複合トラス  支持部材に頂点部材を含むトラス。盤面の ▲
   ID          部材を指すための名前。言葉（見出し、項目なら1行目）の
@@ -337,8 +360,9 @@ M-x org-truss-export で、OUT/ に書き出す。
   - #+begin_quote の引用
   次の支持部材は、根拠がなくてよい
   - TRUSS_LOGIC のトラスの頂点部材。その支持部材が根拠になる
-  - :assumption: を付けた部材。ファイルのないもの（合意、口頭の話）に立つ
-    部材には、これを付ける
+  - :assumption: を付けた部材。利用者が、根拠なしで受け入れると決めたも
+    の。利用者だけが付ける
+  - :open: を付けた部材。決着するまでのあいだ（調べる範囲を参照）
   根拠として指したり展開したりした部材は、その部材が立つ理由である。
   TRUSS_LOGIC: reasons のトラスで reason を担う支持部材と同じ。それが
   なぜ部材を支えるか（大前提）は、言わずに済ませている。言わずに済む
@@ -380,6 +404,20 @@ M-x org-truss-export で、OUT/ に書き出す。
   本文の、支持部材の箇条書きの前に題で ~[[moor:ID][題]]~ と書き、その下
   の部材では場所だけで ~[[moor:ID::223][l. 223]]~ 、 ~[[moor:ID::12][p. 12]]~
   と書く。項目では、改行せずに1行目の終わりに書く
+
+調べる範囲
+  資料や事実が要るかどうかは、Brief の求める反応に至るのに要るかで決まる。
+  Message の主張から、立脚しているものをたどって届く資料や事実が、要るもの
+  :open: は問いか主張に付け、本文に「どこを調べるか」か「分からない」を書く
+  :aside: でない資料から、その資料が触れている別の資料をたどる。たどった
+  資料は、取り込むか、:aside: の1行として書き残す
+  事実は、主張か要る :open: がそれに立脚するときだけ書く
+  :aside: の資料は支持部材を持たない。本文と引用は短くてよい。その資料が
+  触れている別の資料はたどらない
+  「分からない」の :open: は、利用者に聞く
+  :assumption: は利用者だけが付ける
+  人から聞いたことは資料にする。答えを聞いたとおりにメモに書き、日付と相手
+  を題にして取り込み、事実ではそれを引用する
 
 引用
   Subject の事実は末端部材で、その言葉（見出し、項目なら1行目）には事実を

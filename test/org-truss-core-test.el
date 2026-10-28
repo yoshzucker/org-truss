@@ -1471,6 +1471,87 @@ facts of different sources are brought together by pointing to them."
                            (plist-get (org-truss-checks (org-truss-read)) :unearned))
                    '(("It drags on" t) ("Nothing urgent waits" nil))))))
 
+(ert-deftest org-truss-test-open-and-aside ()
+  "What Brief asks for needs is what the claims of Message stand on, not
+what Situation shows.  :open: needs no grounds meanwhile and is listed,
+needed or not, told or settled; a fact nothing needed stands on is
+unused; a source :aside: is one line."
+  (org-truss-test--with "#+title: T
+* Subject
+:PROPERTIES:
+:TRUSS_PART: subject
+:TRUSS_BREAKDOWN: parts
+:END:
+** <<a>>Rule A
+#+attr_truss:
+- <<f1>>Reviews are twice a month
+  #+begin_quote
+  Twice a month.
+  #+end_quote
+- Records are kept
+  #+begin_quote
+  Keep records.
+  #+end_quote
+- <<f3>>What rule C says :open:
+  Look in rule C.
+- Who owns the rule :open:
+  Ask the team.
+** Rule B :aside:
+Penalties only.
+#+attr_truss:
+- A fine is set
+* Message
+:PROPERTIES:
+:TRUSS_PART: message
+:TRUSS_BREAKDOWN: situation-interpretation-action
+:END:
+** <<s>>Situation
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: situation
+:END:
+- [[truss-include:a]]
+** <<c>>Interpretation
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: interpretation
+:TRUSS_LOGIC: reasons
+:END:
+#+attr_truss:
+- Reviews are often enough
+  # [[f1]]
+- Rule C allows it
+  # [[f3]]
+- Nobody objects :open:
+  Ask the leads.
+- Settled already :open:
+  # [[f1]]
+** Action
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: action
+:TRUSS_BREAKDOWN: steps
+:END:
+#+attr_truss:
+1. Keep it
+* Structure
+:PROPERTIES:
+:TRUSS_PART: structure
+:END:
+#+attr_truss:
+- [[truss-include:c]]
+"
+    (let* ((model (org-truss-read))
+           (checks (org-truss-checks model))
+           (words (lambda (key) (mapcar #'org-truss-member-words (plist-get checks key)))))
+      (should (equal (funcall words :open)
+                     '("What rule C says" "Nobody objects" "Settled already")))
+      (should (equal (funcall words :open-unneeded) '("Who owns the rule")))
+      (should (equal (funcall words :open-told) '("Nobody objects" "Settled already")))
+      (should (equal (funcall words :settled) '("Settled already")))
+      (should (equal (funcall words :unused) '("Records are kept")))
+      (should (equal (funcall words :aside-members) '("Rule B")))
+      (should-not (plist-get checks :no-grounds))
+      (should (string-match-p "^Open -- .*\n.*: What rule C says -- open: to be found out$"
+                              (org-truss-check-report model))))))
+
 (ert-deftest org-truss-test-item-tags ()
   "Tags at the end of an item's first line are its tags, not its words:
 an item tagged :assumption: needs no grounds, as a heading does."
