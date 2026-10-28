@@ -382,8 +382,8 @@ The roles it plays in the patterns of the member above, or `member' when
 it plays none; then [no role] when it plays none of a pattern above it,
 [no pattern] when it plays a role the member above has no pattern for,
 [assumed] when it is tagged :assumption:, [open] :open:, [aside]
-:aside:, [noexport] when it is tagged :noexport:, and [no grounds] when it must have grounds and lacks them,
-each in its face."
+:aside:, [noexport] :noexport:, and [no grounds] when it must have
+grounds and lacks them, each in its face."
   (concat (or (org-truss--role-names member) "member")
           (if (org-truss--no-role-p member) (propertize " [no role]" 'face 'org-truss-attention) "")
           (if (org-truss--no-pattern-p member) (propertize " [no pattern]" 'face 'org-truss-attention) "")
