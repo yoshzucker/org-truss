@@ -35,15 +35,13 @@ The team leads.
 :PROPERTIES:
 :CUSTOM_ID: long
 :END:
-# [[https://e.x/calendar-export][calendar export]]
-Reviews ran past the hour eight times this quarter.
+Reviews ran past the hour eight times this quarter, by the [[https://e.x/calendar-export][calendar export]].
 
 ** Half the items repeat
 :PROPERTIES:
 :CUSTOM_ID: half
 :TRUSS_LOGIC: reasons
 :END:
-# [[#long]]
 # Robin keeps raising the same items; see [[#diff]].
 Half of each agenda repeats the week before, as [[#long]] shows.
 *** Agenda diff                                                  :noexport:
@@ -51,7 +49,7 @@ Half of each agenda repeats the week before, as [[#long]] shows.
 :CUSTOM_ID: diff
 :TRUSS_LOGIC_ROLE: reason
 :END:
-# [[https://e.x/agendas-weeks-1-12][agendas, weeks 1-12]]
+[[https://e.x/agendas-weeks-1-12][agendas, weeks 1-12]]
 *** Items need a week to move                                    :assumption:
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
@@ -67,7 +65,7 @@ Some items cannot wait two weeks.
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: part
 :END:
-# [[https://e.x/team-agreement][team agreement]]
+As the [[https://e.x/team-agreement][team agreement]] says.
 **** Who decides what is urgent
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: part
@@ -78,8 +76,7 @@ Some items cannot wait two weeks.
 :CUSTOM_ID: move
 :TRUSS_LOGIC: deduction
 :END:
-# [[#half]]
-Hold the review every other week.
+Hold the review every other week: [[#half]].
 *** A meeting that repeats itself can meet less
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: major
@@ -89,7 +86,7 @@ Hold the review every other week.
 :PROPERTIES:
 :CUSTOM_ID: aside
 :END:
-# [[https://e.x/hallway][hallway]]
+[[https://e.x/hallway][hallway]]
 
 ** Lone remark
 
@@ -160,7 +157,7 @@ Finance said so at the October meeting.
 :PROPERTIES:
 :CUSTOM_ID: budget
 :END:
-# [[https://e.x/finance-3-october][finance, 3 October]]
+[[https://e.x/finance-3-october][finance, 3 October]]
 *** The schedule is fixed
 
 * Message
@@ -209,26 +206,26 @@ The rules ask for a check before and after driving.
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-# [[https://e.x/rule-6][rule 6]]
+[[https://e.x/rule-6][rule 6]]
 **** The rule asks for a check after driving
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-# [[https://e.x/rule-6][rule 6]]
+[[https://e.x/rule-6][rule 6]]
 **** The check may be made by video
 :PROPERTIES:
 :TRUSS_LOGIC_ROLE: reason
 :END:
-# [[https://e.x/notice-2-2][notice 2(2)]]
+[[https://e.x/notice-2-2][notice 2(2)]]
 *** A manager is named for five cars or more
 :PROPERTIES:
 :CUSTOM_ID: five
 :END:
-# [[https://e.x/law-74-3][law 74-3]]
+[[https://e.x/law-74-3][law 74-3]]
 *** The law binds us, so we must check
 :PROPERTIES:
 :END:
-# [[#five]]
+[[#five]]
 
 * Message
 :PROPERTIES:
@@ -238,14 +235,14 @@ The rules ask for a check before and after driving.
 :PROPERTIES:
 :CUSTOM_ID: may
 :END:
-# [[#five]]
+[[#five]]
 ** Drivers are checked before and after driving
 :PROPERTIES:
 :CUSTOM_ID: checked
 :TRUSS_BREAKDOWN: steps
 :END:
-# [[#may]]
-# [[#rule]]
+[[#may]]
+[[#rule]]
 *** The driver blows into the tester
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -257,7 +254,7 @@ The rules ask for a check before and after driving.
 ** The tester reads zero when sober
 :PROPERTIES:
 :END:
-# [[https://e.x/tester-manual][tester manual]]
+[[https://e.x/tester-manual][tester manual]]
 
 * Structure
 :PROPERTIES:
@@ -288,13 +285,13 @@ the reasons of, and whose members hold steps.")
 :PROPERTIES:
 :CUSTOM_ID: law
 :END:
-# [[https://e.x/ordinance-article-9-10][ordinance, article 9-10]]
+[[https://e.x/ordinance-article-9-10][ordinance, article 9-10]]
 ** Check before every test
 :PROPERTIES:
 :CUSTOM_ID: check
 :TRUSS_BREAKDOWN: steps
 :END:
-# [[#law]]
+[[#law]]
 *** Meet the driver face to face
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -302,7 +299,7 @@ the reasons of, and whose members hold steps.")
 **** A video call counts as face to face
 :PROPERTIES:
 :END:
-# [[https://e.x/notice-2022][notice, 2022]]
+[[https://e.x/notice-2022][notice, 2022]]
 *** Note the reading                                              :noexport:
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: step
@@ -395,12 +392,12 @@ The driver breathes into the checker.
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: example
 :END:
-# [[https://e.x/incident-log][incident log]]
+[[https://e.x/incident-log][incident log]]
 *** Alcohol slows reactions
 :PROPERTIES:
 :TRUSS_TELLING_ROLE: reason
 :END:
-# [[https://e.x/textbook][textbook]]
+[[https://e.x/textbook][textbook]]
 
 * Structure
 :PROPERTIES:
@@ -1087,7 +1084,7 @@ that does not, is not listed."
 *** Ask the leads
 [[#claim]]
 *** Change the calendar
-# [[#claim]]
+[[#claim]]
 "))
     (org-truss-test--with text
       (let ((model (org-truss-read)))
@@ -1098,7 +1095,7 @@ that does not, is not listed."
                                 (org-truss-check-report model)))))
     (org-truss-test--with (replace-regexp-in-string "^\\(:TRUSS_BREAKDOWN: steps\n:END:\n\\)" "\\1[[#claim]]\n" text)
       (should-not (plist-get (org-truss-checks (org-truss-read)) :low-grounds)))
-    (org-truss-test--with (replace-regexp-in-string "^# \\[\\[#claim\\]\\]\n" "" text)
+    (org-truss-test--with (replace-regexp-in-string "^\\(\\*\\*\\* Change the calendar\n\\)\\[\\[#claim\\]\\]\n" "\\1" text)
       (should-not (plist-get (org-truss-checks (org-truss-read)) :low-grounds)))))
 
 (ert-deftest org-truss-test-hidden-reasons ()
@@ -1404,7 +1401,7 @@ facts of different sources are brought together by pointing to them."
 - [[truss-include:f1]]
 - [[truss-include:f2]]
 *** It drags on
-# [[#f2]] [[#f1]]
+[[#f2]] [[#f1]]
 *** Nothing urgent waits
 :PROPERTIES:
 :CUSTOM_ID: c2
@@ -1423,9 +1420,9 @@ facts of different sources are brought together by pointing to them."
 :PROPERTIES:
 :CUSTOM_ID: a1
 :END:
-# [[#c1]] [[#c2]]
+[[#c1]] [[#c2]]
 *** Move the calendar
-# [[#a1]]
+[[#a1]]
 * Structure
 :PROPERTIES:
 :TRUSS_PART: structure
@@ -1463,8 +1460,8 @@ facts of different sources are brought together by pointing to them."
   ;; Written as an item, a claim is set apart all the same.
   (org-truss-test--with (replace-regexp-in-string
                          "\\(:TRUSS_BREAKDOWN: parts\n:END:\n\\)\\(\\*\\*\\* The weekly\\)"
-                         "\\1#+attr_truss:\n- It drags on\n  # [[#f2]] [[#f1]]\n\\2"
-                         (replace-regexp-in-string "^\\*\\*\\* It drags on\n# .*\n" ""
+                         "\\1#+attr_truss:\n- It drags on\n  [[#f2]] [[#f1]]\n\\2"
+                         (replace-regexp-in-string "^\\*\\*\\* It drags on\n\\[\\[.*\n" ""
                                                    org-truss-test--claims-file))
     (should (equal (mapcar (lambda (e) (list (org-truss-member-words (car e))
                                              (org-truss-item-p (car e))))
@@ -1517,13 +1514,13 @@ Penalties only.
 :END:
 #+attr_truss:
 - Reviews are often enough
-  # [[f1]]
+  [[f1]]
 - Rule C allows it
-  # [[f3]]
+  [[f3]]
 - Nobody objects :open:
   Ask the leads.
 - Settled already :open:
-  # [[f1]]
+  [[f1]]
 ** Action
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: action
@@ -1709,7 +1706,7 @@ them, a broken link where it is written."
       (should-not (plist-get checks :broken-grounds))
       (should-not (plist-get checks :duplicates))))
   (org-truss-test--with (replace-regexp-in-string
-                         "^# \\[\\[#half\\]\\]$" "# [[#half]] [[#gone]]"
+                         "\\[\\[#half\\]\\]\\." "[[#half]] [[#gone]]."
                          org-truss-test--file)
     (let ((checks (org-truss-checks (org-truss-read))))
       (should (equal (mapcar (lambda (b) (cons (org-truss-member-words (car b)) (cdr b)))
@@ -1796,20 +1793,24 @@ nothing points by label."
 ;;;; Reading
 
 (ert-deftest org-truss-test-text ()
-  "A pointing link in a member's text, in a comment or in what the output
-document shows, points to a member; one in a drawer does not, nor does an
-include link.  The output document shows the text outside the comments; a
+  "A pointing link in what the output document shows points to a member;
+one in a comment, which is the file's alone, does not, nor one in a
+drawer, nor an include link.  The output document shows the text outside the comments; a
 # in a block is no comment."
   (org-truss-test--with org-truss-test--file
     (let ((parsed (org-truss--text-at (org-truss-test--heading-pos "Half the items repeat"))))
-      (should (equal (org-truss--points-in (plist-get parsed :all)) '("long" "diff" "long")))
+      (should (equal (org-truss--points-in (plist-get parsed :all)) '("diff" "long")))
+      ;; Only what the reader is told is stood on.
+      (should (equal (org-truss-member-points
+                      (org-truss-test--m (org-truss-read) "Half the items repeat"))
+                     '("long")))
       (should-not (plist-get parsed :includes))
       (should (equal (plist-get (org-truss--text-at (org-truss-test--heading-pos "Sky")) :includes)
                      '("long")))
       (should (equal (plist-get parsed :body)
                      "Half of each agenda repeats the week before, as [[#long]] shows.\n"))
       (should (equal (plist-get parsed :comments)
-                     "[[#long]]\nRobin keeps raising the same items; see [[#diff]].\n")))
+                     "Robin keeps raising the same items; see [[#diff]].\n")))
     (org-truss-test--with "* H\nTold.\n#+begin_comment\nKept, [[#a]].\n#+end_comment\n#+begin_src sh\n# told too\n#+end_src\n#\n"
       (let ((parsed (org-truss--text-at (point-min))))
         (should (equal (plist-get parsed :body) "Told.\n#+begin_src sh\n# told too\n#+end_src\n"))
@@ -1844,7 +1845,7 @@ to no member, and shows as broken."
 :PROPERTIES:
 :CUSTOM_ID: m2
 :END:
-# [[https://e.x/agendas][agendas]]
+[[https://e.x/agendas][agendas]]
 * Message
 :PROPERTIES:
 :TRUSS_PART: message
@@ -1856,8 +1857,8 @@ to no member, and shows as broken."
 We would meet half as often.
 #+attr_truss: :logic reasons :breakdown pros-cons
 - pros :: <<m21>>Less time in meetings
-  # [[#m2]]
-  An hour a fortnight back.
+  An hour a fortnight back, by [[#m2]].
+  # Ask Robin.
 - cons :: Items wait longer
   #+attr_truss: :breakdown steps
   1. Ask the leads
@@ -1898,8 +1899,8 @@ it, the members under it.  The heading's text leaves the list out."
       (should (equal (org-truss-member-words less) "Less time in meetings"))
       (should (equal (org-truss-member-roles less) '((logic . reason) (breakdown . pros))))
       (should (equal (org-truss-member-roles likes) '((logic . reason))))
-      (should (equal (org-truss-member-body less) "An hour a fortnight back."))
-      (should (equal (org-truss-member-notes less) "[[#m2]]"))
+      (should (equal (org-truss-member-body less) "An hour a fortnight back, by [[#m2]]."))
+      (should (equal (org-truss-member-notes less) "Ask Robin."))
       (should (equal (org-truss-member-grounds less) '("m2")))
       (should (equal (org-truss-member-grounds likes) '("m21")))
       (should (= (org-truss-member-holder less) (org-truss-member-pos move)))
@@ -1934,7 +1935,7 @@ it, the members under it.  The heading's text leaves the list out."
 - <<m1>>We move to fortnightly reviews
   #+attr_truss: :logic reasons
   - Reviews run long
-    # [[#m2]]
+    [[#m2]]
 ** Reviews take an hour
 :PROPERTIES:
 :CUSTOM_ID: m2
@@ -2062,7 +2063,7 @@ under no source.  A file with no Situation is asked nothing."
 :PROPERTIES:
 :TRUSS_BREAKDOWN_ROLE: interpretation
 :END:
-# [[f1]] [[f2]]
+[[f1]] [[f2]]
 "
     (let ((model (org-truss-read)))
       (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))

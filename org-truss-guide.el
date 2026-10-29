@@ -116,8 +116,7 @@ Writing
     #+begin_example
     #+attr_truss: :logic reasons :breakdown pros-cons
     - pros :: <<m21>>Less time in meetings
-      # [[m2]]
-      Text
+      Text, as [[m2]] shows
     #+end_example
   A pattern of one role -- reasons, steps, parts -- has no role written:
   what is under it plays it, and a heading there needs no properties.
@@ -157,8 +156,9 @@ Grounds
   A member pointed to as grounds has grounds too, or needs none
   A member in the output document stands on what is in it too: not on a
   member tagged :noexport:, or under one
-  Grounds on a comment line, ~# [[m3]]~, are the file's alone; in the
-  text, they are the output document's citation too
+  Write grounds in the text, which the output document shows: a link on
+  a comment line, ~# [[m3]]~, is no ground.  The reader reads a pointing
+  link as m3's words, so write it into a sentence
 
 Claims
   Write Message from its end: what Brief's response asks for first, then
@@ -330,8 +330,7 @@ M-x org-truss-export で、OUT/ に書き出す。
     #+begin_example
     #+attr_truss: :logic reasons :breakdown pros-cons
     - pros :: <<m21>>会議の時間が減る
-      # [[m2]]
-      本文
+      本文（[[m2]]）
     #+end_example
   役が一つの型（reasons、steps、parts）では、役を書かない。下にある部材
   がその役を担うので、見出しにもプロパティは要らない。項目の
@@ -370,8 +369,9 @@ M-x org-truss-export で、OUT/ に書き出す。
   根拠として指した部材も、根拠を持つか、根拠がなくてよい部材であること
   出力文書に出る部材は、出力文書に出るものに立つ。:noexport: を付けた部材
   や、その下の部材には立たない
-  根拠をコメント行 ~# [[m3]]~ に書けばファイルの中だけのもの、本文に
-  書けば出力文書での出典にもなる
+  根拠は、出力文書に出る本文に書く。コメント行 ~# [[m3]]~ のリンクは根拠
+  にならない。指すリンクは、出力文書では m3 の言葉として読まれるので、文
+  の中に書く
 
 主張
   Message は結論から書く。Brief の response が求めるものを先に書き、その

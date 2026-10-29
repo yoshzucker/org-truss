@@ -43,6 +43,16 @@ One no include link brings into it, or one tagged :noexport:.  Over the
 face its words have otherwise, so a heading keeps its level's."
   :group 'org-truss)
 
+(defface org-truss-ground '((t :inherit font-lock-keyword-face :underline t))
+  "Face for a link in a member's text to a member it stands on.
+A pointing link, [[m7]], read as the words of the member it points to."
+  :group 'org-truss)
+
+(defface org-truss-source '((t :inherit link))
+  "Face for a link in a member's text to a source: a file, a page, a moor: link.
+Read as its description, or the file's name."
+  :group 'org-truss)
+
 (defface org-truss-branch '((t :inherit org-truss-dim))
   "Face for the tree that joins an apex member to its supporting members.
 The tree of Structure keeps the default face, so the two trees read apart
@@ -50,8 +60,7 @@ where they meet."
   :group 'org-truss)
 
 ;; Every line has two columns.  The left is what the board says the line
-;; is, in its own words.  Between them a thin column says how many use a
-;; member, where two or more do.  The middle, from one column shared by every line,
+;; is, in its own words.  The middle, from one column shared by every line,
 ;; is the file's words -- a member's words, the title -- with its links
 ;; read as the reader reads them; the heading is the reader's words, and
 ;; its text is all the reader is shown but its comments, so the file's
@@ -59,9 +68,10 @@ where they meet."
 ;; have is in the face of what is outside.  What the board says about a
 ;; member's patterns goes on the line below, so the left stays narrow and
 ;; the middle stays close to the tree.  A line drawn whole has the
-;; member's text follow it in the middle: what the reader sees, then the
-;; comments, which stay in the file, dimmed; the patterns stay right under
-;; the member's line, above them.
+;; member's text follow it in the middle: what the reader sees, its links
+;; drawn as links -- to a member it stands on, to a source -- and its
+;; quotations as quoted; then the comments, which stay in the file,
+;; dimmed.  The patterns stay right under the member's line, above them.
 
 (defcustom org-truss-board-middle-width nil
   "Width of the board's middle, the file's words.
@@ -83,19 +93,17 @@ the column and no taller than this; elsewhere it is its file's name."
 (defcustom org-truss-board-marks
   '((ground . "⏚") (includes . "•"))
   "The marks the board says a link with, by what is at its other end.
-`ground', what a member stands on: on a line of its own under it, a
-source its text links to, the words it quotes or, drawn as included, a
-member it points to; and after its words, before the ID of a member it
-stands on that no member has or that has no grounds itself.
-`includes', on the line of a member the member above includes by its
-include link, [[truss-include:m7]].  One character each, as wide as a
-letter where the board is drawn, keeps the tree in line."
+`ground', after a member's words, before the ID of a member it stands on
+that no member has or that has no grounds itself.  `includes', on the
+line of a member the member above includes by its include link,
+[[truss-include:m7]].  One character each, as wide as a letter where the
+board is drawn, keeps the tree in line."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
 (defcustom org-truss-board-quote-marks
   '((found . "✓") (missing . "✗") (unchecked . "?"))
-  "The marks just before a quote's words, by what its source was found to say.
+  "The marks just before a quotation in a member's text, by what its source says.
 `found', its words are in the source; `missing', they are not, and the
 quote is listed under Quotes not found; `unchecked', the source's text
 cannot surely be read -- a PDF, a picture, a file in an unknown coding,
@@ -104,14 +112,11 @@ none linked -- and was not looked in.  See `org-truss-quote-found'."
   :group 'org-truss)
 
 (defcustom org-truss-board-where-marks
-  '((link . "↪") (original . "") (others . "+") (ghost . "◌"))
-  "The marks just before a line's words saying where else the member is.
-`link', before the part the member a line's words link to is written
-in, ↪Subject.  Where Structure is drawn as included, a member drawn in
-more than one place is drawn in full once, the original, and is one
-line, a ghost, wherever else: `original' and `others' before how many
-ghosts it has, +1; `ghost' before the member of Structure the original
-is under, ◌Sky.  See `org-truss--lane-text'."
+  '((link . "↪") (step . "›"))
+  "The marks just before a line's words saying where the member they link to is.
+`link' before where it is written: its part, then the words of each
+member above it, `step' between them, ↪Message›Interpretation.  See
+`org-truss--parts-text'."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
@@ -185,12 +190,6 @@ A link to a file by a relative path is read from it.")
 (defvar org-truss--whole nil
   "Non-nil while the lines of a member are drawn whole, with its text.")
 
-(defvar org-truss--in-structure nil
-  "Non-nil while Structure is drawn.
-There a member brings only what the output document has of it: not its
-sources, nor what its patterns still ask for.
-Elsewhere it brings all of them.")
-
 (defvar org-truss--uses nil
   "While a board is drawn, how each member is used, by the member.
 \(INCLUDERS . STANDING): the members whose include links include it, and
@@ -206,15 +205,15 @@ them and those these include in turn; see `org-truss-in-document'.")
 One among them drawn again would be drawn without end.")
 
 (defvar org-truss--order 'written
-  "Where a board opens a member Structure includes: `written' or `included'.
-As written, where it is written, with every member under it, and
-Structure has it on one line.  As included, under the Structure member
-that includes it, with all it brings where it is written -- its sources,
-its gaps -- and below its sources the members it stands on, each drawn
-so in turn: Structure, the trusses it calls, the facts they stand on, in
-one tree.  What Structure brings so is left out where it is written,
-`org-truss--chained', so what is left there is used nowhere; one drawn
-there again is one line, folded.  A line folded can be unfolded.")
+  "Where a board opens a member an include link includes: `written' or `included'.
+As written, where it is written, with every member under it, and the
+link has it on one line, folded.  As included, under the link, drawn
+just as it is where it is written, and so on down through the include
+links of what it brings: Structure and what it includes, in one tree.
+What Structure brings so is left out where it is written,
+`org-truss--chained', so what is left there is used nowhere.  The
+members a member stands on by its pointing links are not drawn under
+it in either: its text names them, as links.")
 
 (defvar org-truss--checks nil
   "What `org-truss-checks' says of the board being drawn.")
@@ -224,6 +223,11 @@ there again is one line, folded.  A line folded can be unfolded.")
 A hash table, see `org-truss--chain'.  They are drawn under Structure,
 and left out where they are written.")
 
+(defvar org-truss--opening-links nil
+  "Non-nil while what Structure includes is drawn, as included.
+Every include link opens there, the member it includes drawn below it
+as it is drawn where it is written; see `org-truss--order'.")
+
 (defvar org-truss--in-list nil
   "Non-nil while the member to be drawn is a list item in the output document.
 So is everything under it; see `org-truss-support-form'.")
@@ -231,15 +235,6 @@ So is everything under it; see `org-truss-support-form'.")
 (defvar org-truss--headless nil
   "Non-nil while the member to be drawn is drawn without its own line.
 Its words, then, are the line above's; see `org-truss--brought-lines'.")
-
-(defvar org-truss--shown nil
-  "While Structure is drawn as included, the members drawn in it so far.
-A hash table, from each to the name of the member of Structure it was
-drawn under, as `org-truss--where-label' gives it.  One drawn again
-starts folded, and says where it was drawn; see `org-truss--lane-text'.")
-
-(defvar org-truss--telling nil
-  "While Structure is drawn, the member of it being drawn, or nil.")
 
 ;;;; Drawing
 
@@ -254,23 +249,39 @@ whole; see `org-truss--whole-lines'."
         :note (and note (not (string-empty-p note)) note)
         :item item :whole org-truss--whole))
 
+(defun org-truss--path-text (model member &optional width)
+  "Return where MEMBER of MODEL is written: its part, then each member above it.
+Down to the one it is under, joined by `step' of
+`org-truss-board-where-marks', Message›Interpretation; each member's
+words cut short to WIDTH, when given."
+  (let ((step (alist-get 'step org-truss-board-where-marks))
+        (m (org-truss-parent model member))
+        names)
+    (while (and m (not (org-truss-member-is-part m)))
+      (push (let ((words (org-truss--link-text (org-truss-member-words m))))
+              (if width (truncate-string-to-width words width nil nil "…") words))
+            names)
+      (setq m (org-truss-parent model m)))
+    (string-join (cons (capitalize (symbol-name (org-truss-member-part member))) names) step)))
+
 (defun org-truss--parts-text (model words)
   "Return where the members the links in WORDS point to are, or nil.
 WORDS are a member's as written; a link in them, [[m7]] or
 [[truss-include:m7]], leaves the board's middle naming only the link, so
-the part the member it names is written in -- Brief, Subject, Message,
-Structure -- is said beside it, as near to its sources as it
-is, ↪Subject; see `org-truss-board-where-marks'."
-  (let ((parts (seq-uniq
-                (delq nil (mapcar
-                           (lambda (id)
-                             (let ((member (org-truss-member-by-id model id)))
-                               (and member (capitalize (symbol-name (org-truss-member-part member))))))
-                           (append (org-truss--includes-in words) (org-truss--points-in words)))))))
-    (and parts (propertize (concat (alist-get 'link org-truss-board-where-marks)
-                                   (string-join parts "/"))
-                           'face 'org-truss-dim
-                           'help-echo "Written in this part: the words are a link to it"))))
+where the member it names is written is said before it: its part --
+Brief, Subject, Message, Structure -- and the members it is under,
+↪Message›Interpretation; see `org-truss--path-text'.  The mouse on it
+says it whole."
+  (let ((members (seq-uniq
+                  (delq nil (mapcar (lambda (id) (org-truss-member-by-id model id))
+                                    (append (org-truss--includes-in words) (org-truss--points-in words)))))))
+    (and members
+         (propertize (concat (alist-get 'link org-truss-board-where-marks)
+                             (mapconcat (lambda (m) (org-truss--path-text model m 16)) members " "))
+                     'face 'org-truss-dim
+                     'help-echo (concat "Written in "
+                                        (mapconcat (lambda (m) (org-truss--path-text model m)) members
+                                                   ", "))))))
 
 (defun org-truss--with-id (line id)
   "Return LINE naming a member by ID, or LINE as it is.
@@ -279,24 +290,13 @@ is pointed to, <<m9>>; see `org-truss--id-text'.  The mouse on the dots
 before the line's words says it."
   (if id (append line (list :id id)) line))
 
-(defun org-truss--with-place (line place)
-  "Return LINE with PLACE among the marks before its words, or LINE as it is.
-PLACE is the part the member its words link to is written in; see
-`org-truss--parts-text'."
-  (if place (append line (list :place place)) line))
-
-(defun org-truss--with-lane (line lane)
-  "Return LINE with LANE last among the marks before its words, or LINE as it is.
-See `org-truss--lane-text' and `org-truss--quote-mark'."
-  (if lane (append line (list :lane lane)) line))
-
-(defun org-truss--marks-text (line)
-  "Return the marks LINE has just before its words, or nil.
-Where the member its words link to is written, and then its thin
-column's; no two lines' marks need line up, so each takes no more room
-than it needs."
-  (let ((marks (delq nil (list (plist-get line :place) (plist-get line :lane)))))
-    (and marks (string-join marks " "))))
+(defun org-truss--opening-text (model member marker)
+  "Return what MEMBER's words of MODEL open with on the board, or nil.
+Where the member they link to is written, see `org-truss--parts-text',
+and then MARKER, how the reader sees it begin; see
+`org-truss--words-lines'."
+  (let ((place (org-truss--parts-text model (org-truss-member-words member))))
+    (if place (concat place " " (or marker "")) marker)))
 
 (defun org-truss--id-text (member &optional id)
   "Return how the board names MEMBER by its ID, or nil.
@@ -319,12 +319,10 @@ any, what the mouse on them says."
   "Return LINE as text, with its middle starting at COLUMN.
 A middle wider than its room is cut short, the whole of it in the
 tooltip, and so is one that leaves its note no room after it, down to
-half its room; past that the window cuts the note.  The line's marks,
-`org-truss--marks-text', come right before the middle, and the dots
-from the left run up to them; the mouse on the dots names the member by
-its ID, if the line has one."
-  (let* ((marks (org-truss--marks-text line))
-         (left (plist-get line :left))
+half its room; past that the window cuts the note.  The dots from the
+left run up to the middle; the mouse on them names the member by its ID,
+if the line has one."
+  (let* ((left (plist-get line :left))
          (note (plist-get line :note))
          (room (if note
                    (max (/ org-truss--middle-width 2)
@@ -336,16 +334,13 @@ its ID, if the line has one."
                                    'help-echo middle)
                      middle)))
          (why (plist-get (plist-get line :item) :why))
-         (gap (- column (string-width left) (if marks (1+ (string-width marks)) 0)))
-         (out (if (or marks (and middle (or note (not (string-empty-p middle)))))
+         (gap (- column (string-width left)))
+         (out (if (and middle (or note (not (string-empty-p middle))))
                   (concat left
-                          (if (or (plist-get line :bare) (string-blank-p left) (null middle))
+                          (if (or (plist-get line :bare) (string-blank-p left))
                               (make-string gap ?\s)
                             (org-truss--leader gap (plist-get line :id)))
-                          (cond ((null marks) "")
-                                ((or (null middle) (string-empty-p middle)) marks)
-                                (t (concat marks " ")))
-                          (or middle ""))
+                          middle)
                 left)))
     (when note
       (setq out (concat out "  " note)))
@@ -395,25 +390,41 @@ grounds and lacks them, each in its face."
               (propertize " [no grounds]" 'face 'org-truss-attention)
             "")))
 
-(defun org-truss--link-text (text)
+(defun org-truss--link-text (text &optional marked)
   "Return TEXT with each link read as its description, or else its target.
 A link to a file without one reads as the file's name, and a pointing or
-include link as the member's words."
+include link as the member's words.  MARKED, each is drawn as a link:
+one to a member in the face of a ground, one to a source in the face of
+a source, or of what wants doing when it points to nothing; the mouse
+on it says what it links to, and RET follows it, see
+`org-truss-board-visit'."
   (replace-regexp-in-string
    "\\[\\[\\*?\\([^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
    (lambda (link)
-     (let ((target (match-string 1 link)))
-       (or (match-string 2 link)
-           (save-match-data
-             (and (string-match "\\`\\(?:file:\\|\\.\\.?/\\)\\([^:]+\\)" target)
-                  (file-name-nondirectory (org-link-unescape (match-string 1 target)))))
-           (let ((member (and org-truss--model
-                              (org-truss-member-by-id
-                               org-truss--model
-                               (org-truss--link-id (string-remove-prefix
-                                                    (concat org-truss-include-type ":") target))))))
-             (and member (org-truss-member-words member)))
-           target)))
+     (let* ((target (match-string 1 link))
+            (member (and org-truss--model
+                         (org-truss-member-by-id
+                          org-truss--model
+                          (org-truss--link-id (string-remove-prefix
+                                               (concat org-truss-include-type ":") target)))))
+            (words (or (match-string 2 link)
+                       (save-match-data
+                         (and (string-match "\\`\\(?:file:\\|\\.\\.?/\\)\\([^:]+\\)" target)
+                              (file-name-nondirectory (org-link-unescape (match-string 1 target)))))
+                       (and member (org-truss-member-words member))
+                       target)))
+       (cond ((not marked) words)
+             (member
+              (propertize words 'face 'org-truss-ground 'org-truss-link link
+                          'help-echo (format "%s: %s, written in %s" link (org-truss-member-words member)
+                                             (org-truss--path-text org-truss--model member))))
+             ((save-match-data (string-match-p (concat "\\`" org-truss--source-link-re "\\'") link))
+              (let ((broken (seq-some (lambda (b) (equal (cdr b) link))
+                                      (plist-get org-truss--checks :broken-sources))))
+                (propertize words 'face (if broken 'org-truss-attention 'org-truss-source)
+                            'org-truss-link link
+                            'help-echo (if broken (format "%s: not found" target) target))))
+             (t words))))
    text t t))
 
 (defun org-truss--picture (line)
@@ -477,10 +488,11 @@ before it goes down with it."
   "Return TEXT as lines no wider than WIDTH, as it reads.
 A paragraph of prose is joined and broken again.  A table, a block or a list
 keeps its lines; a table's are cut where they run over.  Links read as their
-descriptions, or, AS-WRITTEN, stay links, and a blank line stays between
-paragraphs.  A picture linked on a line of its own is drawn, where the
-board can show one, on the lines it takes; see `org-truss--picture-lines'."
-  (let ((read (if as-written #'identity #'org-truss--link-text))
+descriptions, drawn as links, or, AS-WRITTEN, stay as they are written,
+and a blank line stays between paragraphs.  A picture linked on a line
+of its own is drawn, where the board can show one, on the lines it
+takes; see `org-truss--picture-lines'."
+  (let ((read (if as-written #'identity (lambda (text) (org-truss--link-text text t))))
         out)
     (dolist (para (split-string (string-trim text) "\n[ \t]*\n" t))
       (when out (push "" out))
@@ -502,20 +514,21 @@ board can show one, on the lines it takes; see `org-truss--picture-lines'."
           (push line out))))
     (nreverse out)))
 
-(defun org-truss--text-lines (body comments &optional outside)
-  "Return a member's text as the lines it takes in the middle, drawn whole.
-BODY, what the reader sees, its links read as the reader reads them; then
-COMMENTS, which stay in the file, as written, each line opened with the
-# it is written with, dimmed.  Neither has what the lines below draw;
-see `org-truss--text-shown'.  OUTSIDE, the body is in the face of what is
-outside the output document, as its member's words are, and only that."
-  (let ((width org-truss--middle-width))
-    (append (let ((lines (org-truss--fill (or (org-truss--text-shown body) "") width)))
+(defun org-truss--text-lines (member &optional outside)
+  "Return MEMBER's text as the lines it takes in the middle, drawn whole.
+Its body, what the reader sees, its links read as the reader reads them
+and drawn as links, its quotations marked; see `org-truss--text-shown'.
+Then its comments, which stay in the file, as written, each line opened
+with the # it is written with, dimmed.  OUTSIDE, the body is in the face
+of what is outside the output document, as its member's words are."
+  (let ((width org-truss--middle-width)
+        (comments (org-truss-member-notes member)))
+    (append (let ((lines (org-truss--fill (or (org-truss--text-shown member) "") width)))
               (if outside (org-truss--outside lines) lines))
             (mapcar (lambda (line)
                       (propertize (if (string-empty-p line) "#" (concat "# " line))
                                   'face 'org-truss-dim))
-                    (org-truss--fill (or (org-truss--text-shown comments) "") (- width 2) t)))))
+                    (org-truss--fill (string-trim (or comments "")) (- width 2) t)))))
 
 (defun org-truss--level-face (level)
   "Return the face Org gives the words of a heading at LEVEL.
@@ -546,7 +559,8 @@ shown."
 (defun org-truss--words-lines (words &optional marker note)
   "Return WORDS as the lines they are drawn on, after MARKER if any.
 MARKER is how the reader sees the member begin, its number, bullet or
-role, dimmed; the lines after the first are indented as far, as a list
+role, dimmed, after where the member WORDS link to is written, if they
+are a link; the lines after the first are indented as far, as a list
 item's are.  One line, cut short if need be; drawn whole, as many as it
 takes to break them to the room of the middle, since the line is then
 read rather than scanned, leaving room for NOTE, if any, beside them."
@@ -561,20 +575,26 @@ read rather than scanned, leaving room for NOTE, if any, beside them."
                                    (t (make-string hang ?\s)))
                              line))))
 
-(defconst org-truss--link-line-re
-  "^[ \t]*\\(?:[-+] \\)?\\[\\[[^]\n]+\\]\\(?:\\[[^]\n]*\\]\\)?\\][ \t]*\\(?:\n\\|\\'\\)"
-  "A line holding nothing but a link, as a list item or not.")
-
-(defun org-truss--text-shown (text)
-  "Return TEXT without its quotations and the lines holding nothing but a link.
-TEXT is a member's, its comments or what the output document shows.
-Each of those is a ground, words quoted or a member or a source it stands
-on, or a member it includes, which the board draws on a line of its own,
-marked; it would be drawn twice."
-  (when text
-    (dolist (block (reverse (org-truss--quote-blocks text)))
-      (setq text (concat (substring text 0 (car block)) (substring text (cadr block)))))
-    (string-trim (replace-regexp-in-string org-truss--link-line-re "" text))))
+(defun org-truss--text-shown (member)
+  "Return what MEMBER's text shows the reader, as the board draws it.
+Each quotation a paragraph of its own, its words in quotation marks
+after the mark of what its source was found to say; see
+`org-truss--quote-mark', and the link to the source it quotes kept on
+it, which RET follows.  Without the lines holding nothing but an include
+link: the member it includes is drawn below, on a line of its own.  Nil
+when it has no text."
+  (let ((text (org-truss-member-body member)))
+    (when text
+      (dolist (block (reverse (org-truss--quote-blocks text)))
+        (let ((link (and org-truss--model (org-truss-quote-link org-truss--model member (nth 2 block))))
+              (words (concat "“" (nth 2 block) "”")))
+          (setq text (concat (substring text 0 (car block))
+                             "\n" (org-truss--quote-mark member (nth 2 block)) " "
+                             (if link (propertize words 'org-truss-link link 'help-echo link) words)
+                             "\n\n" (substring text (cadr block))))))
+      (string-trim (replace-regexp-in-string
+                    (concat (string-remove-suffix "$" org-truss--include-line-re) "\\(?:\n\\|\\'\\)")
+                    "" text)))))
 
 (defun org-truss--lines-under-words (left more text item &optional head stem)
   "Return the lines under a member's own line on the board.
@@ -635,7 +655,7 @@ ground, what a check lists."
                                      '(:bare t)))))))
 
 (defconst org-truss--mark-help
-  '((ground . "Its grounds: what this member stands on, linked in its text")
+  '((ground . "Members it stands on that do not hold: no member has the ID, or the member has no grounds")
     (includes . "Included by the member above: its include link, [[truss-include:id]], includes this member, and the output document has it here"))
   "What the mark of each kind of link says.")
 
@@ -654,8 +674,8 @@ See `org-truss-board-marks'."
   "Return the members MEMBER of MODEL stands on that it cannot, or nil.
 Drawn after its words, after the mark of a ground: the ID of each that
 no member has, or that has no grounds itself, ⏚m7, in the face of what
-wants doing.  The members it stands on that hold are not named: drawn as
-included, `org-truss--order', they are drawn below it."
+wants doing.  The members it stands on that hold are not named here:
+its text names them, drawn as links."
   (let ((trouble (delq nil (mapcar (lambda (id)
                                      (let ((ground (org-truss-member-by-id model id)))
                                        (and (not (and ground (org-truss-holds-p ground)))
@@ -665,57 +685,15 @@ included, `org-truss--order', they are drawn below it."
                                    (org-truss-member-grounds member)))))
     (and trouble (concat (org-truss--mark-only 'ground) (string-join trouble " ")))))
 
-(defun org-truss--users (member)
-  "Return the members that use MEMBER, standing on it or including it, each once.
-As `org-truss--uses' has them."
-  (let ((use (and org-truss--uses (gethash member org-truss--uses))))
-    (seq-uniq (append (car use) (cdr use)))))
-
-(defun org-truss--linked-to (model member)
-  "Return the members MEMBER of MODEL stands on or includes, each once."
-  (delq nil (mapcar (lambda (id) (org-truss-member-by-id model id))
-                    (seq-uniq (append (org-truss-member-grounds member)
-                                      (org-truss--included member))))))
-
-(defun org-truss--chain-uses (model member)
-  "Return how many places of the output document's chain draw MEMBER of MODEL.
-The members of Structure and those it brings, `org-truss--chained', that
-stand on it or include it, see `org-truss--users'; and the member it is
-under, when the chain has that one, which brings it as its own -- once,
-when that one stands on it too."
-  (let ((in-chain (lambda (m) (and m (or (org-truss-in-structure-p m)
-                                         (and org-truss--chained (gethash m org-truss--chained)))))))
-    (length (seq-uniq (seq-filter in-chain (cons (org-truss-parent model member)
-                                                 (org-truss--users member)))))))
-
-(defun org-truss--where-label (member)
-  "Return how the thin column names MEMBER of Structure, or Structure for nil.
-By the roles it plays, Sky; one that plays none, by its words cut short."
-  (cond ((null member) "Structure")
-        ((org-truss--role-names member))
-        (t (truncate-string-to-width (org-truss-member-words member) 10 nil nil "…"))))
-
-(defun org-truss--lane-text (model member before)
-  "Return what the thin column says of MEMBER of MODEL, drawn as included.
-In Structure's chain.  BEFORE, when it was drawn there before, names the
-member of Structure it was drawn in full under, ◌Sky: this is a ghost of
-it, read there, one line here.
-Else, how many ghosts it has, +1, when the chain draws it in more than
-one place: all of them stand on it, so it is checked first; see
-`org-truss--chain-uses'.  Nil when neither.  See
-`org-truss-board-where-marks'."
-  (if before
-      (propertize (concat (alist-get 'ghost org-truss-board-where-marks) before)
-                  'face 'org-truss-dim
-                  'help-echo (format "A ghost: drawn in full above, under %s" before))
-    (let ((n (org-truss--chain-uses model member)))
-      (and (> n 1)
-           (propertize (concat (alist-get 'original org-truss-board-where-marks)
-                               (alist-get 'others org-truss-board-where-marks)
-                               (number-to-string (1- n)))
-                       'face 'org-truss-dim
-                       'help-echo (format "Drawn in full here, and as a ghost in %d more places of the output document's chain"
-                                          (1- n)))))))
+(defun org-truss--line-note (model member)
+  "Return what MEMBER's line of MODEL says after its words, or nil.
+The members it stands on that it cannot, and, when it stands for the
+member it includes, those that member cannot; see
+`org-truss--grounds-note' and `org-truss--stands-for'."
+  (let ((notes (delq nil (list (org-truss--grounds-note model member)
+                               (let ((alone (cdr (org-truss--stands-for model member))))
+                                 (and alone (org-truss--grounds-note model alone)))))))
+    (and notes (string-join notes " "))))
 
 (defun org-truss--linked-positions (model member &optional including)
   "Return the positions of the members MEMBER of MODEL stands on.
@@ -737,15 +715,19 @@ Structure."
           more))
 
 (defun org-truss--outside (lines)
-  "Return LINES, a member's text, in the face of what is outside."
-  (mapcar (lambda (line) (and line (propertize line 'face 'org-truss-outside))) lines))
+  "Return LINES, a member's text, in the face of what is outside.
+Over the faces its links have."
+  (mapcar (lambda (line)
+            (and line (let ((line (copy-sequence line)))
+                        (add-face-text-property 0 (length line) 'org-truss-outside t line)
+                        line)))
+          lines))
 
 (defun org-truss--included (member)
   "Return the IDs MEMBER's include links include, each once.
-Not those it stands on, `org-truss-standing-includes': the board draws a
-link as what it is to the member, and those are its grounds."
-  (seq-difference (seq-uniq (org-truss-member-includes member))
-                  (org-truss-standing-includes member)))
+Those it stands on, `org-truss-standing-includes', among them: an
+include link is drawn as what it does, the member included there."
+  (seq-uniq (org-truss-member-includes member)))
 
 (defun org-truss--member-uses (model)
   "Return how each member of MODEL is used, as `org-truss--uses' keeps it.
@@ -775,20 +757,8 @@ carries the tree down past it to the next, unless the member is the LAST."
   (cons (concat indent (propertize (if last "└ " "├ ") 'face 'org-truss-branch))
         (concat indent (propertize (if last "  " "│ ") 'face 'org-truss-branch))))
 
-(defun org-truss--ground-line (stem key left middle item)
-  "Return a line naming what a member stands on, below it.
-STEM starts it, with the mark of a ground and LEFT; MIDDLE names it,
-dimmed under the faces its own marks have; ITEM is what it stands for,
-under KEY."
-  (append (org-truss--line (concat stem (org-truss--mark 'ground) left)
-                           (and middle (let ((middle (copy-sequence middle)))
-                                         (add-face-text-property 0 (length middle) 'org-truss-dim t middle)
-                                         middle))
-                           nil (plist-put item :key key))
-          (list :under stem)))
-
 (defun org-truss--quote-mark (member quote)
-  "Return the mark just before QUOTE of MEMBER, in the thin column.
+  "Return the mark just before QUOTE of MEMBER, where its text is drawn.
 Whether its words were found in its source, were not, or were not looked
 for; see `org-truss-board-quote-marks'."
   (let* ((file (and org-truss--model (buffer-file-name (org-truss-model-buffer org-truss--model))))
@@ -801,68 +771,6 @@ for; see `org-truss-board-quote-marks'."
                              ('missing "Not found in its source: copy its words as they are")
                              (_ "Not looked for: its source's text cannot surely be read")))))
 
-(defun org-truss--grounds-lines (member stem key)
-  "Return a line for each source MEMBER stands on, below it.
-The words it quotes, each quotation, and below them the sources its text
-links to, each once, as the words are read from the source; a link among
-them that points to nothing said not to be found.  Each keeps the links
-to sources it opens, as :links: a source's own, and a quotation's, or
-else the first the text cites.  The members it stands on are drawn
-below these as included; see `org-truss--ground-members-lines'.  STEM
-starts each; KEY is MEMBER's line's."
-  (let* ((pos (org-truss-member-pos member))
-         (missing (mapcar #'cdr (seq-filter (lambda (b) (eq (car b) member))
-                                            (plist-get org-truss--checks :broken-sources))))
-         (found-p (lambda (text) (not (seq-some (lambda (link) (string-search link text)) missing)))))
-    (append
-     (mapcar (lambda (source)
-               (org-truss--with-lane
-                (org-truss--ground-line stem (append key (list 'source (car source)))
-                                        (concat (symbol-name (car source))
-                                                (if (funcall found-p (cdr source)) ""
-                                                  (propertize " [not found]" 'face 'org-truss-attention)))
-                                        (org-truss--one-line (org-truss--link-text (cdr source)))
-                                        (list :type 'member :pos pos
-                                              :links (if (eq (car source) 'source)
-                                                         (list (cdr source))
-                                                       (or (org-truss--source-links-in (cdr source))
-                                                           (ensure-list (org-truss-member-cited member))))))
-                (and (eq (car source) 'quote) (org-truss--quote-mark member (cdr source)))))
-             (append (mapcar (lambda (words) (cons 'quote words))
-                             (org-truss-member-quoted member))
-                     (mapcar (lambda (link) (cons 'source link))
-                             (seq-uniq (org-truss-member-source-links member))))))))
-
-(defun org-truss--ground-members (model member)
-  "Return the members MEMBER of MODEL stands on that a chain draws under it.
-Each once, as its grounds name them; not one of Structure, which is
-drawn in Structure's own tree, nor one under MEMBER, drawn there."
-  (let ((under (org-truss--subtree member)))
-    (delq nil (mapcar (lambda (id)
-                        (let ((ground (org-truss-member-by-id model id)))
-                          (and ground (not (org-truss-in-structure-p ground)) (not (memq ground under))
-                               ground)))
-                      (org-truss-member-grounds member)))))
-
-(defun org-truss--ground-members-lines (model holder grounds stem key)
-  "Return the lines of GROUNDS, the members of MODEL HOLDER stands on, below it.
-Each drawn as any member is, with what is under it and what it stands on
-in turn, named by the ID HOLDER links to it by, [[m7]], and marked as a
-reason: one HOLDER includes, by an include link it stands on, as one the
-output document has there, an item of a list when the link is in its
-text; one it points to, as one the output document leaves out there.
-STEM starts each; KEY is HOLDER's line's.  See `org-truss-member-grounds'."
-  (let ((standing (org-truss-standing-includes holder))
-        (heading (org-truss--includes-in (org-truss-member-words holder))))
-    (mapcan (lambda (ground)
-              (let* ((id (org-truss-member-id ground))
-                     (included (member id standing))
-                     (org-truss--in-list (and included (or org-truss--in-list (not (member id heading))))))
-                (org-truss--member-lines model ground stem (list 'ground key id)
-                                         (and included id) (and included (org-truss-member-pos holder))
-                                         (and org-truss--in-list "- ") id)))
-            grounds)))
-
 (defun org-truss--stands-for (model member)
   "Return (ID . INCLUDED) when MEMBER of MODEL stands for the member it includes.
 When its words are an include link alone, to a member not of Structure;
@@ -872,44 +780,60 @@ else nil."
               (included (org-truss-member-by-id model id)))
          (and included (not (org-truss-in-structure-p included)) (cons id included)))))
 
-(defun org-truss--brought-count (model member)
-  "Return how many lines of members MEMBER of MODEL brings below it.
-Those under it, those it stands on and those it includes, as a member
-that stands for it counts what it hides; see `org-truss--stands-for'."
+(defun org-truss--brought-count (member)
+  "Return how many lines of members MEMBER brings below it.
+Those under it and those it includes, as a member that stands for it
+counts what it hides; see `org-truss--stands-for'."
   (+ (length (cdr (org-truss--subtree member)))
-     (length (org-truss--ground-members model member))
      (length (org-truss--included member))))
 
-(defun org-truss--brought-lines (model member indent key &optional link ground)
+(defun org-truss--written-form (model member)
+  "Return how MEMBER of MODEL opens where it is written, as the board draws it.
+\(LISTED . OPENING) as `org-truss-support-form' gives it, from the part
+down; nil for a member right under its part, which opens with nothing."
+  (let ((chain (list member))
+        (m member))
+    (while (and (setq m (org-truss-parent model m)) (not (org-truss-member-is-part m)))
+      (push m chain))
+    (let (form)
+      (while (cdr chain)
+        (setq form (org-truss-support-form (car chain) (cadr chain) (car form))
+              chain (cdr chain)))
+      form)))
+
+(defun org-truss--brought-lines (model member indent key whole)
   "Return the lines MEMBER of MODEL brings below its own, without that.
 Drawn under a member that stands for it, `org-truss--stands-for': that
-line is MEMBER's, so its own would say the same words again.  What it
-brings -- its patterns, its sources, the members it stands on and those
-under it -- follows, open.  INDENT, KEY, and LINK or GROUND, the ID it
-is linked by, are as `org-truss--member-lines' takes them."
-  (let ((org-truss--folding (cons (cons key 'open) org-truss--folding))
-        (org-truss--headless t))
-    (cdr (org-truss--member-lines model member indent key link nil nil ground))))
+line is MEMBER's, so its own would say the same words again.  What
+follows is what is drawn under its own line where it is written -- its
+patterns, its text, the members under it -- open, and its text when
+WHOLE, as the line standing for it is drawn.  INDENT and KEY are as
+`org-truss--member-lines' takes them."
+  (let ((org-truss--folding (cons (cons key (if whole 'whole 'open)) org-truss--folding))
+        (org-truss--headless t)
+        (org-truss--in-list (car (org-truss--written-form model member))))
+    (cdr (org-truss--member-lines model member indent key))))
 
 (defun org-truss--chain (model)
   "Return the members of MODEL that Structure brings, as a hash table.
-Those its include links include and those its members stand on, with
-every member under them, and so on down through what those include and
-stand on.  Drawn under Structure as included, `org-truss--order', they
-are left out where they are written; what is left there is used nowhere
-the output document reaches."
+Those its include links include, with every member under them, and so
+on down through what those include.  Drawn under Structure as included,
+`org-truss--order', they are left out where they are written; what is
+left there is not in the output document."
   (let ((chained (make-hash-table :test #'eq))
         (root (org-truss-model-structure model))
+        (included (lambda (m) (delq nil (mapcar (lambda (id) (org-truss-member-by-id model id))
+                                                (org-truss--included m)))))
         todo)
     (when root
       (dolist (m (org-truss--subtree root))
-        (setq todo (append (org-truss--linked-to model m) todo)))
+        (setq todo (append (funcall included m) todo)))
       (while todo
         (let ((m (pop todo)))
           (unless (or (gethash m chained) (org-truss-in-structure-p m))
             (dolist (under (org-truss--subtree m))
               (puthash under t chained)
-              (setq todo (append (org-truss--linked-to model under) todo)))))))
+              (setq todo (append (funcall included under) todo)))))))
     chained))
 
 (defun org-truss--chained-p (member)
@@ -951,50 +875,35 @@ it; see `org-truss-out-of-order'."
 FORM is `org-truss-support-form''s: its bullet, number or role."
   (and (cdr form) (not (string-empty-p (cdr form))) (cdr form)))
 
-(defun org-truss--seen (member)
-  "Return the name of the member of Structure MEMBER was drawn in full under.
-Nil when it was not drawn in full yet; see `org-truss--shown'."
-  (and org-truss--shown (gethash member org-truss--shown)))
-
-(defun org-truss--see (member)
-  "Record MEMBER as drawn in full under the member of Structure being drawn."
-  (when org-truss--shown
-    (puthash member (org-truss--where-label org-truss--telling) org-truss--shown)))
-
-(defun org-truss--member-lines (model member indent key
-                                      &optional link holder marker ground)
+(defun org-truss--member-lines (model member indent key &optional link holder marker)
   "Return board lines for MEMBER and every member under it.
 MEMBER is written outside Structure.  INDENT starts each line: a string,
 or a cons (LINE . UNDER) for a supporting member, LINE starting its own
 line and UNDER the lines under it, as `org-truss--branch' makes them.
 Its supporting members branch off right under it; its patterns head
-them, and its grounds go in further.  KEY identifies the line across
-redraws.  LINK, the ID of the include link that includes MEMBER, and
-HOLDER, the position of the member it is in, are set when MEMBER is
-drawn there, so the line can be moved.  GROUND, the ID a member standing
-on MEMBER links to it by, is set when MEMBER is drawn under that member;
-see `org-truss--ground-members-lines'.  MARKER is how the reader sees it
-begin: its number or bullet when its apex member's supporting members
-are a list in the output document, and the role it plays when the
-pattern labels them.  The members its own include links include are
-drawn below its grounds; one drawn under itself is drawn as one line,
-marked, since it would never end.
+them.  KEY identifies the line across redraws.  LINK, the ID of the
+include link that includes MEMBER, and HOLDER, the position of the
+member it is in, are set when MEMBER is drawn there, so the line can be
+moved.  MARKER is how the reader sees it begin: its number or bullet
+when its apex member's supporting members are a list in the output
+document, and the role it plays when the pattern labels them.  The
+members its own include links include are drawn below its text; one
+drawn under itself is drawn as one line, marked, since it would never
+end.
 
-Drawn in Structure as included, `org-truss--chained', the members it
-stands on follow its sources, each drawn so in turn, and the members
-under it written where they are not drawn there are left out where they
-are written.  One drawn there before starts folded.
+It is opened in one place, as `org-truss--order' says, and starts
+folded, to one line, in the other: where it is written, or where an
+include link includes it.  Where it is opened, the roles its patterns
+ask for and it lacks follow it.  Under Structure as included,
+`org-truss--opening-links', it is drawn as it is where it is written,
+and every include link in it opens there in turn; the members under it
+Structure brings so are left out where they are written.
 
 Its line names the members it stands on that it cannot, see
 `org-truss--grounds-note'; the mouse on its dots names it as it is
-linked, or by its ID where it is written, see `org-truss--with-id'.
-Where it is opened, as `org-truss--order'
-says, the sources it stands on follow it, and the roles its patterns ask
-for and it lacks; where it is not, it starts folded, to one line.  In Structure,
-`org-truss--in-structure', only what the output document has comes with
-it besides.  Its words and text are in the face of what is outside while
-the output document does not have it.  A member the file has below one
-its apex member's telling pattern tells after it is marked."
+linked, or by its ID where it is written, see `org-truss--with-id'.  Its
+words and text are in the face of what is outside while the output
+document does not have it."
   (let ((looping (memq member org-truss--drawing))
         (org-truss--drawing (cons member org-truss--drawing))
         (org-truss--whole (org-truss--whole-p key))
@@ -1004,118 +913,87 @@ its apex member's telling pattern tells after it is marked."
         (org-truss--in-list nil))
   (let* ((under (if (consp indent) (cdr indent) indent))
          (indent (if (consp indent) (car indent) indent))
-         (in-structure org-truss--in-structure)
+         (opening org-truss--opening-links)
          ;; What the output document does not have is drawn so.
-         (outside (or (org-truss-noexport-p member)
-                      (and (not in-structure) (not (memq member org-truss--in-document)))))
-         (note (org-truss--grounds-note model member))
-         (words (org-truss--words-lines (org-truss--member-words member outside) marker note))
-         ;; In Structure as included, what it stands on comes with it;
-         ;; drawn there before, it starts folded.
-         (chain (and in-structure (eq org-truss--order 'included)))
-         (seen (and chain (org-truss--seen member)))
-         (_ (and chain (not seen) (org-truss--see member)))
+         (outside (or (org-truss-noexport-p member) (not (memq member org-truss--in-document))))
          ;; One whose words are an include link alone is the member it
          ;; includes: its line stands for both, and no line under it
-         ;; names that member again.  In Structure as included, what that
-         ;; member brings follows it, once.
+         ;; names that member again.  Under Structure as included, what
+         ;; that member brings follows it.
          (alone (org-truss--stands-for model member))
-         (stands-for (and chain alone))
-         (stood-seen (and stands-for (org-truss--seen (cdr stands-for))))
-         (brings (and stands-for (not stood-seen)))
-         (grounds (and chain (remq (cdr stands-for) (org-truss--ground-members model member))))
-         (supports (if in-structure
+         (note (org-truss--line-note model member))
+         (words (org-truss--words-lines (org-truss--member-words member outside)
+                                        (org-truss--opening-text model member marker) note))
+         (brings (and opening alone))
+         (supports (if opening
                        (org-truss-member-supports member)
                      (seq-remove #'org-truss--chained-p (org-truss-member-supports member))))
          (includes (remove (car alone) (org-truss--included member)))
-         (nested (+ (length (mapcan #'org-truss--subtree supports)) (length includes) (length grounds)
-                    (if brings (org-truss--brought-count model (cdr stands-for)) 0)))
+         (nested (+ (length (mapcan #'org-truss--subtree supports)) (length includes)
+                    (if brings (org-truss--brought-count (cdr alone)) 0)))
          ;; It is opened in one place, by the order the board is drawn
          ;; in, and starts folded in the other: as written, where it is
          ;; written; as included, where a link includes it.  See
          ;; `org-truss--order'.
-         (elsewhere (if (eq org-truss--order 'included)
-                        (and (not link) (not in-structure)
-                             (car (and org-truss--uses (gethash member org-truss--uses))))
-                      (and link t)))
+         (elsewhere (cond (opening nil)
+                          ((eq org-truss--order 'included)
+                           (and (not link) (car (and org-truss--uses (gethash member org-truss--uses)))))
+                          (t (and link t))))
          (folded (or (and looping (> nested 0))
                      (and (> nested 0)
-                          (org-truss--folded-p key (or (and elsewhere t) seen
+                          (org-truss--folded-p key (or (and elsewhere t)
                                                        (org-truss--over-limit-p
-                                                        (+ (length supports) (length includes)
-                                                           (length grounds))))))))
+                                                        (+ (length supports) (length includes))))))))
          (shown (and (not folded) supports))
-         ;; What it brings where it is written -- its sources, its gaps --
-         ;; it brings where it is opened; not where it is one line, nor
-         ;; drawn again but whole.
-         (full (and (not folded) (not elsewhere) (or (not seen) org-truss--whole)
-                    (or (not in-structure) chain)))
+         (full (and (not folded) (not elsewhere)))
          ;; What comes between its patterns and the members branching off
-         ;; below -- its text, its grounds -- has the tree's line run past.
+         ;; below -- its text, what it includes -- has the tree's line run
+         ;; past.
          (stem (concat under (if shown (propertize "│ " 'face 'org-truss-branch) "  ")))
          (item (org-truss--member-item
-                member :link link :holder holder :ground ground :key key
-                :alone (and brings (org-truss-member-pos (cdr stands-for)))
+                member :link link :holder holder :key key
+                :alone (and brings (org-truss-member-pos (cdr alone)))
                 :names (org-truss--linked-positions model member)
                 :fold (and (not looping) key) :nested (if looping 0 nested)
                 :folded (and (> nested 0) (not looping) folded)))
          (late (org-truss--late-text member (org-truss-parent model member))))
     (cons
-     ;; Included from Structure, it is named on hover as the link does;
-     ;; where it is written, by its ID.  Under a member included there,
-     ;; it is not linked to itself, and names nothing.  Drawn in Structure
-     ;; as included, the thin column says where it was drawn before, or
-     ;; how many use it -- the member it includes, when its words are an
-     ;; include link alone.
-     (org-truss--with-lane
-      (org-truss--with-place
-       (org-truss--with-id
-        (org-truss--line
-         (concat indent
-                 ;; Included where a link stands, or stood on, it is named
-                 ;; by that: the role it plays where it is written says
-                 ;; nothing here.
-                 ;; A reason by a link: the output document has it here
-                 ;; when the link includes it, and leaves it out when it
-                 ;; points to it.
-                 (cond (ground (concat (org-truss--mark (if link 'includes 'ground)) "reason"))
-                       (link (concat (org-truss--mark 'includes) "included"))
-                       (t (org-truss--role-word model member)))
-                 (if folded (org-truss--fold-mark nested) "")
-                 (if looping (propertize " [loop]" 'face 'org-truss-attention) "")
-                 (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
-         (car words)
-         note
-         (if late (append item (list :why late)) item))
-        (and (or link ground (not in-structure))
-             (org-truss--id-text member (or ground link))))
-       (org-truss--parts-text model (org-truss-member-words member)))
-      (and chain (if stands-for
-                     (org-truss--lane-text model (cdr stands-for) stood-seen)
-                   (org-truss--lane-text model member seen))))
+     ;; Included, it is named on hover as the link does; where it is
+     ;; written, by its ID.
+     (org-truss--with-id
+      (org-truss--line
+       (concat indent
+               ;; Included where a link stands, it is named by that: the
+               ;; role it plays where it is written says nothing here.
+               (if link
+                   (concat (org-truss--mark 'includes) "included")
+                 (org-truss--role-word model member))
+               (if folded (org-truss--fold-mark nested) "")
+               (if looping (propertize " [loop]" 'face 'org-truss-attention) "")
+               (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
+       (car words)
+       note
+       (if late (append item (list :why late)) item))
+      (org-truss--id-text member link))
      (append
        (org-truss--lines-under-words
         ;; Drawn without its line, its words are the line above's, broken
         ;; there.
         under (and (not headless) (cdr words))
-        (and org-truss--whole
-             (org-truss--text-lines (org-truss-member-body member) (org-truss-member-notes member)
-                                    outside))
+        (and org-truss--whole (org-truss--text-lines member outside))
         item
         (and (org-truss-apex-p member) (not folded)
              (org-truss--line
               (concat under (propertize (org-truss--patterns-text member) 'face 'org-truss-dim))
               nil nil (org-truss--member-item member :key (append key '(pattern)))))
         stem)
-       (and full (org-truss--grounds-lines member stem key))
-       ;; What it brings, stands on and includes is where it is in the
-       ;; output document, an item when it is one.
+       ;; What it brings and includes is where it is in the output
+       ;; document, an item when it is one.
        (let ((org-truss--in-list listed))
          (append
-          (and full brings
-               (org-truss--brought-lines model (cdr stands-for) under
-                                         (list 'ground key (car stands-for)) nil (car stands-for)))
-          (and full (org-truss--ground-members-lines model member grounds stem key))
+          (and (not folded) brings
+               (org-truss--brought-lines model (cdr alone) under (list 'link key (car alone))
+                                         org-truss--whole))
           (and (not folded) (org-truss--includes-lines model member stem key (car alone)))))
        (let ((i 0))
          (mapcan (lambda (support)
@@ -1135,20 +1013,22 @@ its apex member's telling pattern tells after it is marked."
   "Return board lines for the members HOLDER of MODEL includes.
 By its include links.  HOLDER is any member, and its include links are
 drawn in the order they are written, each member as
-`org-truss--member-lines' draws it.  PATH identifies HOLDER's lines.  An
-include link HOLDER stands on is drawn as its ground instead; see
-`org-truss--included'.  The link to SKIP, an ID, is not drawn: HOLDER's
-own line stands for it; see `org-truss--brought-lines'.  A member
-included by a link in HOLDER's text opens as the output document has
-it, an item of a list, with all under it; one included on its heading's
-line, as headings, unless HOLDER is an item itself,
-`org-truss--in-list'."
+`org-truss--member-lines' draws it.  PATH identifies HOLDER's lines.  The
+link to SKIP, an ID, is not drawn: HOLDER's own line stands for it; see
+`org-truss--brought-lines'.  A member included by a link in HOLDER's
+text opens as the output document has it, an item of a list, with all
+under it; one included on its heading's line, as headings, unless HOLDER
+is an item itself, `org-truss--in-list'.  Under Structure as included,
+`org-truss--opening-links', it opens as it does where it is written."
   (mapcan (lambda (id)
             (let* ((member (org-truss-member-by-id model id))
                    (key (list 'link path id))
+                   (form (and member org-truss--opening-links (org-truss--written-form model member)))
                    (org-truss--in-list
-                    (or org-truss--in-list
-                        (not (member id (org-truss--includes-in (org-truss-member-words holder)))))))
+                    (if org-truss--opening-links
+                        (car form)
+                      (or org-truss--in-list
+                          (not (member id (org-truss--includes-in (org-truss-member-words holder))))))))
               (cond
                ((and member (org-truss-in-structure-p member))
                 ;; A member of Structure included by a link is drawn where it
@@ -1165,7 +1045,9 @@ line, as headings, unless HOLDER is an item itself,
                (member
                 (org-truss--member-lines model member indent key id
                                          (org-truss-member-pos holder)
-                                         (and org-truss--in-list "- ")))
+                                         (if org-truss--opening-links
+                                             (org-truss--opening form)
+                                           (and org-truss--in-list "- "))))
                (t
                 (list (org-truss--line
                        (concat indent (org-truss--mark 'includes)
@@ -1228,21 +1110,19 @@ starts folded, and its line says how many it hides.  One whose words
 are an include link alone is the member it includes, and names it
 without a line under it, which would be its words again: as written,
 with nothing more; as included, with what that member brings below its
-line; see `org-truss--brought-lines'."
+line, drawn as it is where it is written; see `org-truss--brought-lines'."
   (let* ((path (append path (list (org-truss-member-words member))))
          (inner (concat prefix (if last "  " "│ ")))
          (key (list 'structure path))
          (org-truss--whole (org-truss--whole-p key))
-         (org-truss--telling member)
          (included (eq org-truss--order 'included))
          (stands-for (and included (org-truss--stands-for model member)))
-         (stood-seen (and stands-for (org-truss--seen (cdr stands-for))))
-         (brings (and stands-for (not stood-seen)))
+         (brings stands-for)
          (includes (and (not (and (not included) (org-truss-include-alone-p member)))
                         (remove (car stands-for) (org-truss--included member))))
          (all (org-truss-member-supports member))
          (nested (+ (length (cdr (org-truss--subtree member))) (length includes)
-                    (if brings (org-truss--brought-count model (cdr stands-for)) 0)))
+                    (if brings (org-truss--brought-count (cdr stands-for)) 0)))
          (folded (and (> nested 0)
                       (org-truss--folded-p key (org-truss--over-limit-p
                                                 (+ (length all) (length includes))))))
@@ -1261,48 +1141,40 @@ line; see `org-truss--brought-lines'."
                                              (concat (upcase (substring text 0 1)) (substring text 1))))
                                late))
                ". "))
-         (words (org-truss-member-words member))
          ;; It opens as the output document has it: an item of a list
          ;; with its bullet, a heading with no bullet.
          (form (and parent (org-truss-support-form parent member org-truss--in-list)))
          (listed (car form))
-         (note (org-truss--grounds-note model member))
-         (lines (org-truss--words-lines (org-truss--member-words member) (org-truss--opening form) note))
+         (note (org-truss--line-note model member))
+         (lines (org-truss--words-lines (org-truss--member-words member)
+                                        (org-truss--opening-text model member (org-truss--opening form))
+                                        note))
          (item (org-truss--member-item member :key key :fold key :nested nested
                                        :alone (and brings (org-truss-member-pos (cdr stands-for)))
                                        :names (org-truss--linked-positions model member (null includes))
                                        :folded (and (> nested 0) folded))))
     (append
-     (list (org-truss--with-lane
-            (org-truss--with-place
-             (org-truss--line (concat prefix (if last "└ " "├ ")
-                                      (org-truss--role-word model member)
-                                      (if folded (org-truss--fold-mark nested) "")
-                                      (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
-                              (car lines)
-                              note
-                              (append item (and (not (string-empty-p why)) (list :why why))))
-             (org-truss--parts-text model words))
-            (and stands-for (org-truss--lane-text model (cdr stands-for) stood-seen))))
+     (list (org-truss--line (concat prefix (if last "└ " "├ ")
+                                    (org-truss--role-word model member)
+                                    (if folded (org-truss--fold-mark nested) "")
+                                    (if late (propertize " ⚠" 'face 'org-truss-attention) ""))
+                            (car lines)
+                            note
+                            (append item (and (not (string-empty-p why)) (list :why why)))))
      (org-truss--lines-under-words inner (cdr lines)
                                    (and org-truss--whole
-                                        (org-truss--text-lines (org-truss-member-body member)
-                                                               (org-truss-member-notes member)
-                                                               (org-truss-noexport-p member)))
+                                        (org-truss--text-lines member (org-truss-noexport-p member)))
                                    item
                                    (and (not folded) (org-truss--pattern-line member inner item)) stem)
-     (and (not folded) (org-truss--grounds-lines member stem (plist-get item :key)))
-     ;; What it brings, stands on and includes is where it is in the
-     ;; output document, an item when it is one.
-     (let ((org-truss--in-list listed))
+     ;; What it brings and includes is where it is in the output
+     ;; document, an item when it is one.
+     (let ((org-truss--in-list listed)
+           (org-truss--opening-links included))
        (and (not folded)
             (append
              (and brings
                   (org-truss--brought-lines model (cdr stands-for) inner
-                                            (list 'link path (car stands-for)) (car stands-for)))
-             (and included
-                  (org-truss--ground-members-lines model member (org-truss--ground-members model member)
-                                                   stem (plist-get item :key)))
+                                            (list 'link path (car stands-for)) org-truss--whole))
              (and includes (org-truss--includes-lines model member stem path (car stands-for))))))
      (let ((n (length supports)) (i 0) (org-truss--in-list listed))
        (mapcan (lambda (support)
@@ -1492,8 +1364,7 @@ plays it."
 (defun org-truss--structure-lines (model)
   "Return Structure's tree for MODEL, as the output document has it."
   (let ((root (org-truss-model-structure model))
-        (org-truss--in-structure t)
-        (org-truss--shown (make-hash-table :test #'eq)))
+        (org-truss--opening-links (eq org-truss--order 'included)))
     (if (null root)
         ;; A member read alone makes no output document, and is not missing one.
         (unless (org-truss-model-alone model)
@@ -1512,8 +1383,7 @@ plays it."
                  (org-truss--lines-under-words
                   " " nil
                   (and org-truss--whole
-                       (org-truss--text-lines (org-truss-member-body root)
-                                              (org-truss-member-notes root)))
+                       (org-truss--text-lines root))
                   item (org-truss--pattern-line root " " item) stem)))
          (org-truss--includes-lines model root stem '(root))
          (let* ((supports (org-truss-member-supports root)) (n (length supports)) (i 0))
@@ -1583,16 +1453,13 @@ its links read; see `org-truss-document-title'."
 
 (defun org-truss--column (lines)
   "Return the column the middle starts at on LINES.
-Four past the widest of the board's own words, with the marks before
-the middle, on a line that has any, so two dots lead from each to the
-middle, not to be read as the one between two roles; see
-`org-truss--marks-text'."
+Four past the widest of the board's own words on a line with a middle,
+so two dots lead from each to the middle, not to be read as the one
+between two roles."
   (+ 4 (seq-reduce (lambda (widest line)
-                     (let ((marks (org-truss--marks-text line)))
-                       (if (or marks (plist-get line :middle))
-                           (max widest (+ (string-width (plist-get line :left))
-                                          (if marks (1+ (string-width marks)) 0)))
-                         widest)))
+                     (if (plist-get line :middle)
+                         (max widest (string-width (plist-get line :left)))
+                       widest))
                    lines 0)))
 
 (defun org-truss--owner (key)

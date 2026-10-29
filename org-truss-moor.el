@@ -150,17 +150,20 @@ On a line of its own after the member's text."
 
 (defun org-truss-moor--open (origin how)
   "Open a source of the board's line, as following its link does.
-A source's line opens its own; a quotation's, a link in it or else the
-first the text cites; a member's, one its own text links to, asked for
-when several -- not those of the members under it, which the board shows
-under them.  ORIGIN opens where a source taken by org-moor came from
-rather than its copy; any other link is followed either way.  HOW is the
-prefix, as for following a link."
+On a link to a source drawn in a member's text, that one; on a quotation
+there, a link in it or else the first the text cites; elsewhere on a
+member's lines, one its own text links to, asked for when several --
+not those of the members under it, which the board shows under them.
+ORIGIN opens where a source taken by org-moor came from rather than its
+copy; any other link is followed either way.  HOW is the prefix, as for
+following a link."
   (let* ((item (org-truss--want (org-truss--item) 'member))
-         (pos (plist-get item :pos)))
+         (pos (plist-get item :pos))
+         (here (get-text-property (point) 'org-truss-link)))
     (org-truss--fresh)
     (with-current-buffer org-truss--source
-      (let* ((links (or (plist-get item :links)
+      (let* ((links (or (and here (string-match-p (concat "\\`" org-truss--source-link-re "\\'") here)
+                             (list here))
                         (seq-uniq (org-truss--source-links-in
                                    (plist-get (org-truss--text-at pos) :all)))
                         (user-error "No source here")))
@@ -183,8 +186,8 @@ prefix, as for following a link."
 
 (defun org-truss-board-open-source (&optional how)
   "Open the copy of a source of the board's line, or follow its link.
-On a source's line, its own; on a quotation's, the one it quotes; on a
-heading's, one its text links to.  HOW, the prefix, as for following a
+On a link to a source in a member's text, that one; on a quotation
+there, the one it quotes; elsewhere, one the member's text links to.  HOW, the prefix, as for following a
 link: \\[universal-argument] in Emacs, two in the program the system opens it with."
   (interactive "P")
   (org-truss-moor--open nil how))

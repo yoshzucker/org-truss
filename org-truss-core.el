@@ -802,7 +802,9 @@ one member has."
   "Return what the heading at POS says, as arguments for `org-truss--make-member'.
 PARSED is the parse of its text."
   (org-with-point-at pos
-    (let ((all (plist-get parsed :all)))
+    ;; What it stands on is what the reader is told: a link on a comment
+    ;; line is the file's alone, and no ground.
+    (let ((all (plist-get parsed :body)))
       (list :pos pos
             ;; <<m7>> in its words, as an item has it, or its CUSTOM_ID.
             :id (or (org-truss--heading-target)
@@ -965,7 +967,7 @@ are those of the member it supports, (KIND . PATTERN)."
                     (concat term " :: " words)
                   words))
          (parsed (org-truss--parse-text rest end (org-truss--list-bounds lists)))
-         (all (concat words "\n" (plist-get parsed :all)))
+         (all (concat words "\n" (plist-get parsed :body)))
          (own-patterns (org-truss--lists-patterns lists))
          (body (org-truss--body-pieces
                 (org-truss--dedent (org-with-point-at holder (org-truss--read-text parsed :body)))

@@ -21,8 +21,13 @@ comment, :noexport: and unplaced members stay behind."
   (let ((out (org-truss-test--render org-truss-test--file)))
     (should (string-match-p "^#\\+title: Fortnightly reviews$" out))
     (should (string-match-p "^- Reviews run long\n\n  Reviews ran past the hour" out))
-    (should (string-match-p "^  - Some items are urgent\n\n    Some items cannot wait two weeks\\.\n\n    - Urgent items go to chat\n    - Who decides what is urgent$" out))
-    (should-not (string-match-p "e\\.x" out))
+    (should (string-match-p (concat "^  - Some items are urgent\n\n    Some items cannot wait two weeks\\.\n\n"
+                                    "    - Urgent items go to chat\n\n"
+                                    "      As the \\[\\[https://e\\.x/team-agreement\\]\\[team agreement\\]\\] says\\.\n"
+                                    "    - Who decides what is urgent$")
+                            out))
+    ;; A source cited in a comment stays behind with it.
+    (should-not (string-match-p "e\\.x/hallway" out))
     (should-not (string-match-p "Robin" out))
     (should-not (string-match-p "Agenda diff" out))
     (should-not (string-match-p "Lone remark" out))
@@ -39,7 +44,7 @@ after the list comes after it, and the headings under the member last."
              (concat "^- We move to fortnightly reviews\n\n"
                      "  We would meet half as often\\.\n\n"
                      "  - Pros: Less time in meetings\n\n"
-                     "    An hour a fortnight back\\.\n"
+                     "    An hour a fortnight back, by Six of twelve items come back\\.\n"
                      "  - Cons: Items wait longer\n\n"
                      "    1\\. Ask the leads\n"
                      "    2\\. Ask the team\n"
@@ -85,6 +90,7 @@ its headings are: a heading each, its text and what it tells under it."
                      "\\* Why change\n\n"
                      "\\* We move to fortnightly reviews\n\n"
                      "- Reviews run long\n\n"
+                     "  Reviews take an hour\n\n"
                      "\\* Next")
              out))
     (should-not (string-match-p "attr_truss\\|<<\\|\\[\\[\\|sky ::" out))))
@@ -105,6 +111,7 @@ stays between them."
                      "- Why change\n"
                      "- We move to fortnightly reviews\n\n"
                      "  - Reviews run long\n\n"
+                     "    Reviews take an hour\n\n"
                      "So we change\\.\n\n"
                      "\\* Last\n\n"
                      "\\* Next")
@@ -114,8 +121,8 @@ stays between them."
   "A member written under a field of the subject is written where it is placed,
 and the field's own text is not."
   (let ((out (org-truss-test--render org-truss-test--conditions-file)))
-    (should (string-match-p "^\\* Constraints\n\n- No budget this year$" out))
-    (should-not (string-match-p "Finance\\|schedule" out))))
+    (should (string-match-p "^\\* Constraints\n\n- No budget this year\n\n  \\[\\[https://e\\.x/finance-3-october\\]\\[finance, 3 October\\]\\]$" out))
+    (should-not (string-match-p "Finance said\\|schedule" out))))
 
 (ert-deftest org-truss-test-render-subject-like-members ()
   "A member of the subject is written as one of the members is, where it is
@@ -123,9 +130,12 @@ placed: in the words of the link, then what is nested under it."
   (let ((out (org-truss-test--render org-truss-test--clusters-file)))
     (should (string-match-p (concat "^\\* Background\n\n- The manager checks every driver before and after driving\n\n"
                                     "  The rules ask for a check before and after driving\\.\n\n"
-                                    "  - The rule asks for a check before driving\n"
-                                    "  - The rule asks for a check after driving\n"
-                                    "  - The check may be made by video\n\n\\* What we do")
+                                    "  - The rule asks for a check before driving\n\n"
+                                    "    \\[\\[https://e\\.x/rule-6\\]\\[rule 6\\]\\]\n"
+                                    "  - The rule asks for a check after driving\n\n"
+                                    "    \\[\\[https://e\\.x/rule-6\\]\\[rule 6\\]\\]\n"
+                                    "  - The check may be made by video\n\n"
+                                    "    \\[\\[https://e\\.x/notice-2-2\\]\\[notice 2(2)\\]\\]\n\n\\* What we do")
                             out))
     (should (string-match-p "1\\. The driver blows into the tester" out))))
 
@@ -356,18 +366,20 @@ whatever its telling pattern."
     (should (string-match-p
              (concat "^\\* Do\n\n"
                      "- Check before every test\n\n"
+                     "  The law asks for a check\n\n"
                      "  1\\. Meet the driver face to face\n\n"
-                     "     - A video call counts as face to face\n"
+                     "     - A video call counts as face to face\n\n"
+                     "       \\[\\[https://e\\.x/notice-2022\\]\\[notice, 2022\\]\\]\n"
                      "  2\\. Breathe into the checker\n\n"
                      "     The driver breathes into the checker\\.\n"
                      "  3\\. Check the checker works\n")
              out))
     (should-not (string-match-p "Note the reading" out)))
   (let ((out (org-truss-test--render
-              (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps\n:END:\n# \\[\\[#law"
-                                        ":TRUSS_BREAKDOWN: steps\n:TRUSS_TELLING: scqa\n:END:\n# [[#law"
+              (replace-regexp-in-string ":TRUSS_BREAKDOWN: steps\n:END:\n\\[\\[#law"
+                                        ":TRUSS_BREAKDOWN: steps\n:TRUSS_TELLING: scqa\n:END:\n[[#law"
                                         org-truss-test--steps-file))))
-    (should (string-match-p "^- Check before every test\n\n  1\\. Meet" out))))
+    (should (string-match-p "^- Check before every test\n\n  The law asks for a check\n\n  1\\. Meet" out))))
 
 (ert-deftest org-truss-test-render-parts-and-prep ()
   "A breakdown with no reasons is a bulleted list in the order of the file,
@@ -388,8 +400,10 @@ and its point again are headings of their own, and none is written here."
                      "  - A checker that works\n"
                      "  - Someone to check\n"
                      "- Tests are safer checked\n\n"
-                     "  - A drunk driver crashed last year\n"
-                     "  - Alcohol slows reactions\n\\'")
+                     "  - A drunk driver crashed last year\n\n"
+                     "    \\[\\[https://e\\.x/incident-log\\]\\[incident log\\]\\]\n"
+                     "  - Alcohol slows reactions\n\n"
+                     "    \\[\\[https://e\\.x/textbook\\]\\[textbook\\]\\]\n\\'")
              out)))
   (let* ((org-truss-language 'ja)
          (out (org-truss-test--render

@@ -323,8 +323,7 @@ the role before ~::~:
 We would meet half as often.
 ,#+attr_truss: :logic reasons :breakdown pros-cons
 - pros :: <<m21>>Less time in meetings
-  # [[m2]]
-  An hour a fortnight back.
+  An hour a fortnight back, by [[m2]].
 - cons :: Items wait longer
   ,#+attr_truss: :breakdown steps
   1. Ask the leads
@@ -405,17 +404,19 @@ deduction, written as a truss with its major premise.  Sources and
 quotes are where the reasons end: what was found, not argued.  In the
 output document:
 
-| Ground                             | Where the link is in the text                    | On a comment line, or in a comment block |
-|------------------------------------+--------------------------------------------------+------------------------------------------|
-| a reason by an include link        | the member, there                                | no link: neither included nor grounds    |
-| a reason by a pointing link        | its words, in the sentence; the member is not    | nothing                                  |
-| a source                           | a link to where it came from                     | nothing                                  |
-| a quote, ~#+begin_quote~           | the quotation                                    | nothing                                  |
+| Ground                             | In the output document                        |
+|------------------------------------+-----------------------------------------------|
+| a reason by an include link        | the member, there                             |
+| a reason by a pointing link        | its words, in the sentence; the member is not |
+| a source                           | a link to where it came from                  |
+| a quote, ~#+begin_quote~           | the quotation                                 |
 
-Grounds on a comment line, ~# [[m3]]~, are the file's alone; in the text, they are the output document's
-citation too -- a pointing link as m7's words, a ~moor:~ link as a link to
-where its source came from (see [[*The output document]]).  So a source is
-written once, where it is cited.
+Grounds are written in the text the reader is shown, and cite there: a
+pointing link reads as m7's words, so it is written into a sentence; a
+~moor:~ link is a link to where its source came from (see [[*The output
+document]]).  So a source is written once, where it is cited.  A link
+on a comment line, ~# [[m3]]~, or in a comment block is no ground: what
+a member stands on is said where the reader sees it.
 
 Words naming what has no file -- /team agreement/, /what was said in the
 hallway/ -- are no grounds: nothing in the file can be gone back to.
@@ -706,16 +707,16 @@ The guide's drawer left out:
 :END:
 ,#+attr_truss:
 - <<m2>>Eight of twelve reviews ran past the hour
-  # [[https://calendar.example.com/export][calendar export]]
+  By the [[https://calendar.example.com/export][calendar export]].
 - <<m3>>The longest ran forty minutes over
-  # [[https://calendar.example.com/export][calendar export]]
+  By the [[https://calendar.example.com/export][calendar export]].
 ,** <<m9>>The agendas, weeks 1-12
 :PROPERTIES:
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
 - <<m4>>Six of twelve items each week come back from the week before
-  # [[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]]
+  In the [[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]].
 
 ,* Message
 :PROPERTIES:
@@ -741,9 +742,9 @@ The guide's drawer left out:
 :END:
 ,#+attr_truss:
 - Most weeks it runs past the hour
-  # [[m2]]
+  [[m2]].
 - It can run forty minutes over
-  # [[m3]]
+  [[m3]].
 ,*** <<m6>>Half the items repeat
 :PROPERTIES:
 :TRUSS_LOGIC: reasons
@@ -752,7 +753,7 @@ Half of each agenda repeats the week before.
 # Robin keeps raising the same items.  Not something to put in writing.
 ,#+attr_truss:
 - Half of each agenda is what was open the week before
-  # [[m4]]
+  [[m4]].
 - Nothing urgent waits for the review
 - Items need a week to move :assumption:
   We assume most items need more than a week to change.
@@ -762,7 +763,7 @@ Half of each agenda repeats the week before.
 :TRUSS_BREAKDOWN_ROLE: action
 :TRUSS_BREAKDOWN: steps
 :END:
-# [[m6]]
+[[m6]], so it can meet less.
 ,#+attr_truss:
 1. Cancel every second review in the calendar
 2. Carry what is still open to the next one
@@ -957,7 +958,7 @@ saves a buffer, saves it from the board, and the title line says
 This is the board of the file above, every line open:
 
 #+begin_example
- Title ······················ Fortnightly reviews
+ Title ············· Fortnightly reviews
 
  Brief  what the output document must satisfy
  △ (breakdown › Reader, Question, Response, Constraints)
@@ -971,20 +972,17 @@ This is the board of the file above, every line open:
    Part ····················· The calendar this quarter
    △ (breakdown › parts)
    ├ Part ··················· - Eight of twelve reviews ran past the hour
-   │   ⏚ source ············· calendar export
    └ Part ··················· - The longest ran forty minutes over
-       ⏚ source ············· calendar export
    Part ····················· The agendas, weeks 1-12
    △ (breakdown › parts)
    └ Part ··················· - Six of twelve items each week come back from th…
-       ⏚ source ············· agendas, weeks 1-12
 
  Message  what the output document says
  ▲ (breakdown › Situation, Interpretation, Action)
    Situation ················ Reviews run long, and the same items come back
-   △ (breakdown › parts)
-   ├ Part ·········· ↪Subject - The calendar this quarter
-   └ Part ·········· ↪Subject - The agendas, weeks 1-12
+   ▲ (breakdown › parts)
+   ├ Part ··················· ↪Subject The calendar this quarter
+   └ Part ··················· ↪Subject The agendas, weeks 1-12
    Interpretation ··········· The weekly review costs the team more time than i…
    ▲ (breakdown › parts)
    ├ Part ··················· The review takes longer than it is given
@@ -1007,31 +1005,27 @@ This is the board of the file above, every line open:
    Part ····················· The review takes longer …  used in 1 place, on 2 grounds
 
  Structure  the output document's outline
- △ (telling › Sky, Rain, Umbrella)
- ├ Sky ············· ↪Message Reviews run long, and the same items come back
- ├ Rain ············ ↪Message The weekly review costs the team more time than i…
- └ Umbrella ········ ↪Message Hold the review every other week
+ ▲ (telling › Sky, Rain, Umbrella)
+ ├ Sky ······················ ↪Message Reviews run long, and the same items com…
+ ├ Rain ····················· ↪Message The weekly review costs the team more ti…
+ └ Umbrella ················· ↪Message Hold the review every other week
 #+end_example
 
-Each member is drawn once, where it is written.  What links it to the
-others -- the members it stands on, those standing on it or including
-it -- is drawn when the board opens them where Structure includes them.
+Each member is drawn once, where it is written.  What it stands on is in
+its text, where the reader reads it: drawn whole, a member it points to
+is a link in the face of a ground, a source a link in the face of a
+source, and ~RET~ on one follows it; see [[*Marks]].
 
-/order/, ~o~, opens the members include links include where they are included
-instead: under the member of Structure whose link includes them, with
-what is under them, the sources they stand on and what their patterns
-lack.  Below its sources each member brings the members it stands on,
-each with what it stands on in turn, as reasons by a link (see
-[[*Grounds]]): =• reason= one an include link in its text includes,
-which the output document has there, and =⏚ reason= one it points to,
-which the output document leaves out there.  Structure
-calls the trusses of Message, and they the facts of Subject, in one
-tree, down to the sources.  What Structure brings so is left out where
-it is written, so what is left in Subject and Message is used nowhere
-the output document reaches.  A member brought a second time -- a fact
-two reasons stand on, a truss called twice -- is one line there,
-folded.  Structure then reads as the output document, down the page,
-beside the logic each sentence rests on:
+/order/, ~o~, opens the members include links include where they are
+included instead: under the member of Structure whose link includes
+them, each drawn just as it is where it is written -- its patterns, its
+text, the members under it, the roles it lacks -- and what its own
+include links include opened there in turn.  Nothing else comes with it:
+what a member points to stays a link in its text.  What Structure brings
+so is left out where it is written, so what is left in Subject and
+Message is not in the output document.  A member two include links
+bring is drawn under both.  Structure then reads as the output document,
+down the page:
 
 #+begin_example
  Subject  the facts found
@@ -1041,36 +1035,29 @@ beside the logic each sentence rests on:
  ▲ (breakdown › Situation, Interpretation, Action)
  ...
  Structure  the output document's outline
- △ (telling › Sky, Rain, Umbrella)
- ├ Sky ············· ↪Message Reviews run long, and the same items come back
- │ △ (breakdown › parts)
- │ ├ Part ·········· ↪Subject - The calendar this quarter
+ ▲ (telling › Sky, Rain, Umbrella)
+ ├ Sky ······················ ↪Message Reviews run long, and the same items com…
+ │ ▲ (breakdown › parts)
+ │ ├ Part ··················· ↪Subject The calendar this quarter
  │ │ △ (breakdown › parts)
- │ │ ├ Part ·············· +1 - Eight of twelve reviews ran past the hour
- │ │ │   ⏚ source ··········· calendar export
- │ │ └ Part ·············· +1 - The longest ran forty minutes over
- │ │     ⏚ source ··········· calendar export
- │ └ Part ·········· ↪Subject - The agendas, weeks 1-12
+ │ │ ├ Part ················· - Eight of twelve reviews ran past the hour
+ │ │ └ Part ················· - The longest ran forty minutes over
+ │ └ Part ··················· ↪Subject The agendas, weeks 1-12
  │   △ (breakdown › parts)
- │   └ Part ·············· +1 - Six of twelve items each week come back from th…
- │       ⏚ source ··········· agendas, weeks 1-12
- ├ Rain ············ ↪Message The weekly review costs the team more time than i…
+ │   └ Part ················· - Six of twelve items each week come back from th…
+ ├ Rain ····················· ↪Message The weekly review costs the team more ti…
  │ ▲ (breakdown › parts)
  │ ├ Part ··················· The review takes longer than it is given
  │ │ △ (logic › reasons)
  │ │ ├ Reason ··············· - Most weeks it runs past the hour
- │ │ │   ⏚ reason ······ ◌Sky Eight of twelve reviews ran past the hour
  │ │ └ Reason ··············· - It can run forty minutes over
- │ │     ⏚ reason ······ ◌Sky The longest ran forty minutes over
- │ └ Part ················ +1 Half the items repeat
+ │ └ Part ··················· Half the items repeat
  │   △ (logic › reasons)
  │   ├ Reason ··············· - Half of each agenda is what was open the week b…
- │   │   ⏚ reason ······ ◌Sky Six of twelve items each week come back from the …
  │   ├ Reason [no grounds] ·· - Nothing urgent waits for the review
  │   └ Reason [assumed] ····· - Items need a week to move
- └ Umbrella ········ ↪Message Hold the review every other week
+ └ Umbrella ················· ↪Message Hold the review every other week
    △ (breakdown › steps)
-   │ ⏚ reason ▸3 ······ ◌Rain Half the items repeat
    ├ Step ··················· 1. Cancel every second review in the calendar
    └ Step ··················· 2. Carry what is still open to the next one
 #+end_example
@@ -1078,13 +1065,8 @@ beside the logic each sentence rests on:
 A member whose words are an include link alone -- Sky, Rain, Umbrella
 here, a part of Situation, or a reason ~*** [[truss-include:m7]]~ -- is
 the member it includes, so its line stands for both, and what that
-member brings follows it, with no line of its own.  Sky brings the
-facts first, each source whole, so
-there they are drawn in full, each the original with one ghost, =+1=,
-and the reasons' facts are ghosts, one line each, =◌Sky=: their
-sources are with the original, under Sky.  m6, a part of m5, is a ghost
-where m7 stands on it, =◌Rain=.  /same/ on a ghost goes to its
-original; see [[*Marks]].
+member brings follows it, with no line of its own; drawn whole, its text
+too.
 
 /order/ again opens them where they are written.  Point stays on the
 member it was on, where it is opened now; what was folded or unfolded by
@@ -1105,15 +1087,12 @@ assumption, =[open]= and =[aside]= for one tagged ~:open:~ or ~:aside:~,
 a reason that must have grounds and has none.  Dots lead from the left
 to the words, and the mouse on them names the member by its ID as the
 file names it: =<<m9>>= where it is written, and =[[m9]]= where an include
-link includes it; a member under one a link calls, which is not called
-itself, has none.  Where the dots end, just before the words, a line may
-have marks saying where else the member is: the part the member its
-words link to is written in, =↪Subject=, and, opened as included, its
-ghosts, =+1= and =◌Sky=, or how a quotation was found, =✓=; see
-[[*Marks]].  After them, from one column the same on every line, are the
-file's own words -- members' words, the title -- and links read as the
-reader reads them: a member whose words are an include link alone reads
-as the words of the member it includes.  A heading is the reader's
+link includes it; a member under one a link brings, as where it is
+written.  From one column the same on every line come the file's own
+words -- members' words, the title -- and links read as the reader reads
+them: a member whose words are an include link alone reads as the words
+of the member it includes, after where that member is written, its part
+and the members above it, =↪Message›Interpretation=; see [[*Marks]].  A heading is the reader's
 words, and its text is what the reader is told but its comments, so the
 words are what the output document says: a member it writes as an item
 of a list opens with its bullet, =- =, or its number, =1. =, and the role
@@ -1156,52 +1135,37 @@ There are two kinds of link.  A pointing link is written by the member
 that stands on it, ~[[m12]]~, in its text: logic, never written out but
 as words.  An include link, ~[[truss-include:m12]]~, is written by the
 member that includes it, a member of Structure or another: what the
-reader is shown, and where.  A member is drawn once, where it is
-written, and its line says little of its links:
+reader is shown, and where.  A member is drawn where it is written, and
+its line says little of its links:
 
-| Mark       | Where                                    | Says                                                                    |
-|------------+------------------------------------------+-------------------------------------------------------------------------|
-| =⏚m7=      | after a member's words                   | it stands on m7, which no member is, or which has no grounds itself     |
-| =↪Subject= | before the words, which are a link alone | the member they link to is written in Subject                           |
-| =+1=       | before the words, as included, in full   | the original: the chain draws it in one more place, as a ghost          |
-| =◌Sky=     | before the words, as included, again     | a ghost: the original is above, under Sky; here one line, folded        |
+| Mark                       | Where                                    | Says                                                                |
+|----------------------------+------------------------------------------+---------------------------------------------------------------------|
+| =⏚m7=                      | after a member's words                   | it stands on m7, which no member is, or which has no grounds itself |
+| =↪Message›Interpretation= | before the words, which are a link alone | the member they link to is written in Message, under Interpretation |
 
-Opened as included (/order/), the board draws what Structure stands on
-in one tree, and a member there may come again: a fact Sky tells that a
-reason in Rain stands on, a claim Rain tells that Umbrella's action
-follows from, one fact two reasons stand on.  Those are the logic's own
-shape, not faults -- what is said twice is caught by /Said again/ and
-/Grounds set low/ -- so it is drawn in full once, the original, and
-the second time it is a ghost, one line, folded, saying under which
-member of Structure the original is, =◌Sky=.  The original counts its
-ghosts, =+1=: one for each more member standing on it or including it,
-and the member it is under when the chain has that one.  All of them
-stand or fall with it, so it is checked against its sources first.  The members a member stands on
-that hold are not named as written: opened as included, the board draws
-them below it.  With point on a line, the lines linked to it light up,
-one step either way: where each member it stands on is drawn in full,
-and each line standing on it or including it.  /same/ goes to them in
-turn.  An include link written besides a member's words has a line of
-its own under the member:
-=• included=, the mouse on its dots naming the member it includes by its
-ID, =[[m12]]=.  A member of Structure whose words are an include link
-alone is that member, and has no such line.  A member whose words hold
-a link, ~*** [[truss-include:m7]]~, reads as m7's words, so the part m7
-is written in is said just before them: =↪Subject=, =↪Message=,
-=↪Brief=, =↪Structure= -- how near to its sources what it stands on is.  The sources a member stands on are drawn
-below it, as the ground is below a building: =⏚ quote= each quotation in
-its text, and below them =⏚ source= each source it links to, with
-=[not found]= when the link points to nothing: the words are read from
-the source, so the source is furthest down.  A quotation, and a line of
-its text holding nothing but such a link, is not drawn again in its
-text, and a link in a sentence there is drawn as it is written,
-=[[m3]]= or =[[moor:6f1c::12][Manual p. 12]]=.  The mouse on any mark
-says what it means, and ~RET~ on a source's line goes to the member it
-is under.  ~org-truss-board-marks~ sets the marks of a link, and
-~org-truss-board-where-marks~ those before the words.  A role a member's
-pattern asks for and it lacks -- /Minor premise —/ -- follows what it holds, with the
-pattern that asks when the member has more than one.  /new/ on it writes
-a member playing it.
+What a member stands on is in its text, drawn whole as the reader reads
+it: a pointing link as the words of the member it points to, in the
+face of a ground; a link to a source as its words, in the face of a
+source, or of what wants doing when it points to nothing; a quotation as
+a paragraph of its own in quotation marks, after =✓= when its words were
+found in its source, =✗= when not, =?= when the source cannot be read.
+The mouse on a link says where it goes, and ~RET~ on it follows it: to
+the member, or the source; ~m o~ on a link to a source, or on a
+quotation, opens that source.  A link on a comment line is drawn as it
+is written, dimmed with the comment, and is no ground.  With point on a
+line, the lines linked to it light up, one step either way: where each
+member it stands on is drawn, and each line standing on it or including
+it.  /same/ goes to them in turn.  An include link written besides a
+member's words has a line of its own under the member: =• included=,
+the mouse on its dots naming the member it includes by its ID,
+=[[m12]]=.  A member whose words are an include link alone is that
+member, and has no such line; where it is written is said just before
+its words, its part and the members above it -- how near to its sources
+what it stands on is.  ~org-truss-board-marks~ sets the marks of a link,
+and ~org-truss-board-where-marks~ those before the words.  A role a
+member's pattern asks for and it lacks -- /Minor premise —/ -- follows
+what it holds, with the pattern that asks when the member has more than
+one.  /new/ on it writes a member playing it.
 
 The other marks of the board are not links:
 
@@ -1216,7 +1180,6 @@ The other marks of the board are not links:
 | =[aside]=           | after the role          | tagged ~:aside:~: set aside as not needed                                            |
 | =[noexport]=        | after the role          | tagged ~:noexport:~: the output document leaves it out                               |
 | =[no grounds]=      | after the role          | must have grounds, and has none                                                      |
-| =[not found]=       | after ⏚ source or cited | a link there points to nothing                                                       |
 | =(logic › reasons)= | the line below          | the patterns the member names                                                        |
 | =△=                 | before the patterns     | a simple truss: its supporting members are all end members                           |
 | =▲=                 | before the patterns     | a compound truss: an apex member among them; ~org-truss-board-truss-marks~ sets both |
@@ -1264,9 +1227,7 @@ short, since the line is now read rather than scanned, and its text
 follows them: what the reader is told, then its comments, which stay in
 the file, after the =#= they are written with and dimmed.  The words
 leave room beside their first line for a member it cannot stand on,
-=⏚m7=.  The
-lines it brings below it are broken to fit too: a quotation, a source.
-The line naming its patterns stays right under its line, on the
+=⏚m7=.  The line naming its patterns stays right under its line, on the
 left of what follows it; when it is too wide for the left it takes the
 line after the member's words, and the text starts below it.  ~TAB~
 draws a member whole as it unfolds it, as Org shows a heading's text as
@@ -1275,26 +1236,23 @@ where included, the board drawn whole is the output document, near
 enough, beside the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ············ ↪Message The weekly review costs the team more time than it
- │                            gives back
+ ├ Rain ····················· ↪Message The weekly review costs the team more
+ │                                     time than it gives back
  │ ▲ (breakdown › parts)
  │ ├ Part ··················· The review takes longer than it is given
  │ │ △ (logic › reasons)
  │ │ ├ Reason ··············· - Most weeks it runs past the hour
- │ │ │   ⏚ reason ······ ◌Sky Eight of twelve reviews ran past the hour
- │ │ │     ⏚ source ········· calendar export
+ │ │ │                        Eight of twelve reviews ran past the hour.
  │ │ └ Reason ··············· - It can run forty minutes over
- │ │     ⏚ reason ······ ◌Sky The longest ran forty minutes over
- │ │       ⏚ source ········· calendar export
- │ └ Part ················ +1 Half the items repeat
+ │ │                          The longest ran forty minutes over.
+ │ └ Part ··················· Half the items repeat
  │   △ (logic › reasons)      Half of each agenda repeats the week before.
  │   │                        # Robin keeps raising the same items.  Not
  │   │                        # something to put in writing.
  │   ├ Reason ··············· - Half of each agenda is what was open the week
  │   │                          before
- │   │   ⏚ reason ······ ◌Sky Six of twelve items each week come back from the
- │   │                        week before
- │   │     ⏚ source ········· agendas, weeks 1-12
+ │   │                        Six of twelve items each week come back from the
+ │   │                        week before.
  │   ├ Reason [no grounds] ·· - Nothing urgent waits for the review
  │   └ Reason [assumed] ····· - Items need a week to move
  │                            We assume most items need more than a week to
@@ -1403,19 +1361,17 @@ starts the board open.  A member an include link includes starts folded
 where it is not opened, as /order/ says, since it is drawn in full where
 it is.
 
-A link is drawn as what it is to its member.  In a reason every link to a
-member is grounds, as any ground is: opened as included, it is drawn
-under the reason, =• reason= or =⏚ reason=.  None is drawn there
-besides as a member included.  A reason whose words
-are the link, ~*** [[truss-include:m7]]~, is drawn as written, its role
-and m7's words.  In a member that is no
-reason the link only includes, and is drawn as =• included=.
+A link is drawn as what it does.  An include link includes, and the
+member it includes is drawn below as =• included=, in a reason as in
+any member; in a reason it is grounds too.  A pointing link is a link in
+the text, drawn there.  A reason whose words are the link, ~***
+[[truss-include:m7]]~, is drawn as written, its role and m7's words.
 
 A member keeps the words of its source with it, in a ~#+begin_quote~
 block in its own text, which is written out as the quotation it is -- in
 a comment block it stays in the file -- and gives it grounds; it may keep
-several, each drawn as a =⏚ quote= line of its own.  /edit/ on the
-member, or on a quotation's line, writes one or rewrites it.  With
+several, each drawn in its text as a quotation of its own.  /edit/ on
+the member writes one or rewrites it.  With
 org-moor, reading a source beside it -- ~org-moor-noter~ -- writes the
 quotation and the link to its page or line in one go.
 
@@ -1430,8 +1386,8 @@ or a document readable as.  A PDF, a picture, a file that does not read
 cleanly -- raw bytes, or beyond ASCII in a coding of one byte a letter,
 as a file in a coding Emacs did not guess is read -- is not looked in,
 and nothing is said of a quotation from it: one said not to be found is
-one that is not there.  Before its words the quotation's line marks
-which:
+one that is not there.  Before its words, where the member's text is
+drawn, the quotation is marked with which:
 
 | Mark | Says                                                                     |
 |------+--------------------------------------------------------------------------|
@@ -1453,18 +1409,18 @@ clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file
 has, by its title, and ~m k~ keeps a copy, from their origins, of the
 sources the member links to that have none -- those an agent took without
 being able to fetch them as you, signed in (~org-moor-keep-copy~).  ~m o~
-opens a source to check what a member says against it: on a source's own
-line, the one marked =⏚=, that source; on a quotation's, the source it
-quotes, linked in it or else the first the text cites; on a member's, one
-its own text links to, asked for when there are several.  The copy, at
+opens a source to check what a member says against it: on a link to a
+source in a member's text, that source; on a quotation there, the source
+it quotes, linked in it or else the first the text cites; elsewhere on a
+member's lines, one its own text links to, asked for when there are
+several.  The copy, at
 the page or line the link names, as following the link does; ~m O~ where
 it came from instead, the page on the web.  A link to anything but a
 source org-moor took is followed as it is, with either.  A link put on a
-comment line, ~# [[moor:...]]~, is the file's alone.
+comment line, ~# [[moor:...]]~, is the file's alone, and no ground.
 
 A member is made to stand on another by a pointing link to it written
-in its text, by hand, or on a comment line, ~# [[m3]]~, which the reader
-is not told.  A member is tagged ~:assumption:~ with ~C-c C-q~, on a
+in its text, by hand, into a sentence the reader reads.  A member is tagged ~:assumption:~ with ~C-c C-q~, on a
 heading or an item's first line alike.
 
 /pattern/ works the same on every line with a member: on the /Structure/
@@ -1652,8 +1608,8 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =•=                        | marks the board says a link with              |
-| ~org-truss-board-where-marks~  | =↪= =+= =◌=                    | marks of where else a member is, before its   |
-|                                |                                | words: its part, its ghosts                   |
+| ~org-truss-board-where-marks~  | =↪= =›=                        | marks of where the member linked to is        |
+|                                |                                | written, before the words                     |
 | ~org-truss-board-truss-marks~  | =△= =▲=                        | marks of a simple and a compound truss        |
 | ~org-truss-board-quote-marks~  | =✓= =✗= =?=                    | marks of a quotation found, not, unchecked    |
 | ~org-truss-board-highlight~    | ~t~                            | light the line at point, and the lines naming |

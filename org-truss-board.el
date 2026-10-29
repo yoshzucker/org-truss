@@ -490,22 +490,38 @@ and puts the member mid-window."
     (org-fold-region (point) (cdr (org-truss--text-bounds (point))) nil 'block)
     (when center (recenter (/ (window-height) 2)))))
 
+(defun org-truss--follow (display &optional center)
+  "Follow the link in a member's text at point, or go to the line's member.
+DISPLAY shows the truss file.  A link drawn in a member's text is
+followed as Org follows it from the file: one to a member goes to it
+there, one to a source opens the source.  Elsewhere on the line, see
+`org-truss--go'; CENTER as it takes it."
+  (let ((link (get-text-property (point) 'org-truss-link)))
+    (if (not link)
+        (org-truss--go display center)
+      (funcall display org-truss--source)
+      (widen)
+      (org-link-open-from-string link))))
+
 (defun org-truss-board-visit ()
   "Go to the line's member in the truss file, in this window.
-As RET does in the agenda: the file takes the board's window."
+As RET does in the agenda: the file takes the board's window.  On a link
+in a member's text, follow it instead: to the member it points to, or
+the source."
   (interactive)
-  (org-truss--go #'pop-to-buffer-same-window))
+  (org-truss--follow #'pop-to-buffer-same-window))
 
 (defun org-truss-board-visit-other-window ()
   "Go to the line's member in the truss file, in another window.
 As TAB does in the agenda: a window already showing the file is used, or a
-new one is made, and point goes there."
+new one is made, and point goes there.  On a link in a member's text,
+follow it instead, as `org-truss-board-visit' does."
   (interactive)
-  (org-truss--go (lambda (buffer)
-                   (pop-to-buffer buffer '((display-buffer-reuse-window
-                                            display-buffer-pop-up-window)
-                                           (reuse-indirect . buffer))))
-                 t))
+  (org-truss--follow (lambda (buffer)
+                       (pop-to-buffer buffer '((display-buffer-reuse-window
+                                                display-buffer-pop-up-window)
+                                               (reuse-indirect . buffer))))
+                     t))
 
 (defvar-local org-truss--show-window nil
   "The window `org-truss-board-show' last showed the truss file in.")
@@ -544,8 +560,8 @@ In its part's tree, the member itself, not included."
 
 (defun org-truss--link-p (item)
   "Non-nil when ITEM is the line of a member a link brings where it is.
-An include link includes it, or a member drawn above stands on it."
-  (and (org-truss--head-p item) (or (plist-get item :link) (plist-get item :ground))))
+An include link includes it there."
+  (and (org-truss--head-p item) (plist-get item :link)))
 
 (defvar org-truss--item-lines nil
   "The board's lines, as (START . ITEM), while one look over them is shared.
@@ -592,7 +608,7 @@ first line Structure's links bring it to, `org-truss--chained'."
     (or (seq-find (lambda (line) (org-truss--written-p (cdr line))) heads)
         (and (eq org-truss--board-order 'included)
              (seq-find (lambda (line) (or (eql (plist-get (cdr line) :alone) pos)
-                                          (memq (car (plist-get (cdr line) :key)) '(link ground))))
+                                          (eq (car (plist-get (cdr line) :key)) 'link)))
                        heads)))))
 
 (defun org-truss--lines-linked (item)
@@ -721,15 +737,14 @@ As included, in Structure; as written, where it is written."
 (defun org-truss-board-order ()
   "Open the members Structure includes where they are included, or where written.
 As written, the board's first way, a member is opened where it is
-written -- with every member under it and the sources it stands on --
-and Structure has it on one line, so the outline reads down
-the middle.  As included, it is opened under the member of Structure that
-includes it instead, with all of that and the members it stands on, each
-in turn, so the output document reads down Structure beside the logic it
-rests on, down to the facts and their sources.  What Structure brings so
-is left out where it is written, and what is left there is used nowhere;
-one brought twice is one line the second time, folded; see
-`org-truss--order'.  What was folded or unfolded by hand starts again;
+written, with every member under it, and Structure has it on one line,
+so the outline reads down the middle.  As included, it is opened under
+the member of Structure that includes it instead, drawn just as it is
+where it is written, and what its own include links include opened
+there in turn, so the output document reads down Structure.  What a
+member points to stays a link in its text.  What Structure brings so is
+left out where it is written, and what is left there is not in the
+output document; see `org-truss--order'.  What was folded or unfolded by hand starts again;
 point stays on the member it was on, where it is opened now.  The mode
 line says which way the board is drawn."
   (interactive)
@@ -991,8 +1006,7 @@ to show its words whole and its text, with what is right under it, each
 of those folded; pressed again, everything under it is shown so too;
 again, it folds.  On a line with nothing under it, its words and text are
 shown whole, or it is one line again.  On a line a member brings below
-it -- its text, its sources -- the member's line
-cycles.  A folded line says how many it hides.  With a prefix argument
+it -- its text, its patterns -- the member's line cycles.  A folded line says how many it hides.  With a prefix argument
 ALL, as \\[universal-argument] TAB in Org, the whole board cycles instead;
 see `org-truss-board-cycle-all'."
   (interactive "P")

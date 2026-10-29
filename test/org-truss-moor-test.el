@@ -79,7 +79,9 @@ heading, after its text: grounds.  m l links one taken before."
                                            (org-moor-link record) "\n")
                                    (buffer-string))))
           (should-not (string-match-p "Reason \\[no grounds\\][ ·]+Some items are urgent" (buffer-string)))
-          (should (string-match-p "⏚ source[ ·]+Minutes" (buffer-string)))
+          (org-truss--show-all 'whole)
+          (should (string-match-p "Some items cannot wait two weeks\\. Minutes$" (buffer-string)))
+          (org-truss--show-all 'open)
           (org-truss-test--goto-line-with "member[ ·]+Lone remark")
           (cl-letf (((symbol-function 'completing-read) (lambda (&rest _) "Minutes")))
             (org-truss-board-link-source))
@@ -131,9 +133,10 @@ end of the item's first line, before its tags; m l links one so."
             (should (string-search (concat "- Most items can wait " link "\n") (buffer-string)))))))))
 
 (ert-deftest org-truss-test-board-opens-a-source ()
-  "m o on the board follows the link of a source's line, the one a
-quotation quotes, or one the heading's own text has, asked for; m O opens
-where a source taken by org-moor came from, and follows any other link."
+  "m o on the board follows the link to a source at point in a member's
+text, the one a quotation there quotes, or, elsewhere on the member's
+lines, one its own text has, asked for; m O opens where a source taken
+by org-moor came from, and follows any other link."
   (org-truss-test--in-directory '(("truss.org" . ""))
     (let* ((truss (expand-file-name "truss.org" dir))
            (org-truss-language 'en)
@@ -149,6 +152,7 @@ where a source taken by org-moor came from, and follows any other link."
         (org-truss-board-mode)
         (setq org-truss--source (find-file-noselect truss))
         (org-truss-board-redraw)
+        (org-truss--show-all 'whole)
         (cl-letf (((symbol-function 'org-link-open)
                    (lambda (link &rest _) (push (org-element-property :raw-link link) followed)))
                   ((symbol-function 'org-moor-open-origin)
@@ -157,12 +161,15 @@ where a source taken by org-moor came from, and follows any other link."
                    (lambda (_ table &rest _)
                      (seq-find (lambda (name) (string-search "Minutes" name))
                                (all-completions "" table)))))
-          (org-truss-test--goto-line-with "⏚ source.*Minutes")
+          (org-truss-test--goto-line-with " Minutes$")
+          (search-forward "Minutes")
           (org-truss-board-open-source)
-          (org-truss-test--goto-line-with "⏚ quote")
+          (org-truss-test--goto-line-with "“The head")
+          (search-forward "head")
           (org-truss-board-open-source)
           (org-truss-board-open-origin)
-          (org-truss-test--goto-line-with "⏚ source.*Minutes")
+          (org-truss-test--goto-line-with " Minutes$")
+          (search-forward "Minutes")
           (org-truss-board-open-origin)
           (org-truss-test--goto-line-with "member[ ·]+Approval goes")
           (org-truss-board-open-source))
