@@ -22,7 +22,7 @@
 (require 'org-truss-export)
 
 (defface org-truss-outline '((t :inherit bold))
-  "Face for the words of a part, a check, and a member of Structure on the board."
+  "Face for the words of a division, a check, and a Structure member on the board."
   :group 'org-truss)
 
 (defface org-truss-dim '((t :inherit shadow))
@@ -114,9 +114,9 @@ none linked -- and was not looked in.  See `org-truss-quote-found'."
 (defcustom org-truss-board-where-marks
   '((link . "↪") (step . "›"))
   "The marks just before a line's words saying what the member they link to is.
-`link' before what it is where it is written: its part, then the role of
+`link' before what it is where it is written: its division, then the role of
 each member down to it, `step' between them, ↪Message›Interpretation›Part.
-See `org-truss--parts-text'."
+See `org-truss--where-text'."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
@@ -250,8 +250,8 @@ whole; see `org-truss--whole-lines'."
         :item item :whole org-truss--whole))
 
 (defun org-truss--path-text (model member &optional width)
-  "Return what MEMBER of MODEL is where it is written: its part, then roles.
-The role each member from the one under the part down to MEMBER plays,
+  "Return what MEMBER of MODEL is where it is written: its division, then roles.
+The role each member from the one under the division down to MEMBER plays,
 joined by `step' of `org-truss-board-where-marks',
 Message›Interpretation›Part; one above MEMBER that plays none is named
 by its words instead, cut short to WIDTH when given, and MEMBER itself
@@ -259,7 +259,7 @@ playing none is left out."
   (let ((step (alist-get 'step org-truss-board-where-marks))
         (m member)
         names)
-    (while (and m (not (org-truss-member-is-part m)))
+    (while (and m (not (org-truss-member-is-division m)))
       (let ((role (org-truss--role-names m)))
         (cond (role (push role names))
               ((not (eq m member))
@@ -267,14 +267,14 @@ playing none is left out."
                        (if width (truncate-string-to-width words width nil nil "…") words))
                      names))))
       (setq m (org-truss-parent model m)))
-    (string-join (cons (capitalize (symbol-name (org-truss-member-part member))) names) step)))
+    (string-join (cons (capitalize (symbol-name (org-truss-member-division member))) names) step)))
 
-(defun org-truss--parts-text (model words)
+(defun org-truss--where-text (model words)
   "Return where the members the links in WORDS point to are, or nil.
 WORDS are a member's as written; a link in them, [[m7]] or
 [[truss-include:m7]], leaves the board's middle naming only the link, so
 what the member it names is where it is written is said before it: its
-part -- Brief, Subject, Message, Structure -- and the roles down to it,
+division -- Brief, Subject, Message, Structure -- and the roles down to it,
 ↪Message›Interpretation›Part; see `org-truss--path-text'.  The mouse on
 it says it whole."
   (let ((members (seq-uniq
@@ -297,10 +297,10 @@ before the line's words says it."
 
 (defun org-truss--opening-text (model member marker)
   "Return what MEMBER's words of MODEL open with on the board, or nil.
-Where the member they link to is written, see `org-truss--parts-text',
+Where the member they link to is written, see `org-truss--where-text',
 and then MARKER, how the reader sees it begin; see
 `org-truss--words-lines'."
-  (let ((place (org-truss--parts-text model (org-truss-member-words member))))
+  (let ((place (org-truss--where-text model (org-truss-member-words member))))
     (if place (concat place " " (or marker "")) marker)))
 
 (defun org-truss--id-text (member &optional id)
@@ -800,11 +800,11 @@ counts what it hides; see `org-truss--stands-for'."
 
 (defun org-truss--written-form (model member)
   "Return how MEMBER of MODEL opens where it is written, as the board draws it.
-\(LISTED . OPENING) as `org-truss-support-form' gives it, from the part
-down; nil for a member right under its part, which opens with nothing."
+\(LISTED . OPENING) as `org-truss-support-form' gives it, from the division
+down; nil for a member right under its division, which opens with nothing."
   (let ((chain (list member))
         (m member))
-    (while (and (setq m (org-truss-parent model m)) (not (org-truss-member-is-part m)))
+    (while (and (setq m (org-truss-parent model m)) (not (org-truss-member-is-division m)))
       (push m chain))
     (let (form)
       (while (cdr chain)
@@ -860,7 +860,7 @@ drawn where it is written.  See `org-truss--chained'."
   "Return a line for each role MEMBER's patterns ask for and none plays.
 At INDENT; ITEM is MEMBER's line's.  On one, a new member plays that role."
   (let ((item (list :type (plist-get item :type) :pos (plist-get item :pos)
-                    :structure (plist-get item :structure) :part (plist-get item :part)
+                    :structure (plist-get item :structure) :division (plist-get item :division)
                     :key (plist-get item :key))))
     (mapcar (lambda (gap)
               (org-truss--line
@@ -1069,7 +1069,7 @@ is an item itself, `org-truss--in-list'.  Under Structure as included,
           (remove skip (org-truss--included holder))))
 
 (defun org-truss--pattern-line (member indent item)
-  "Return the line naming the patterns of MEMBER, a part or Structure's, or nil.
+  "Return the line naming the patterns of MEMBER, a division or Structure's.
 Nil when it has none.  It goes under MEMBER's own line, at INDENT.  ITEM
 is MEMBER's line's, kept under a key of its own."
   (let ((label (org-truss--patterns-text member)))
@@ -1202,21 +1202,21 @@ line, drawn as it is where it is written; see `org-truss--brought-lines'."
 (defun org-truss--check-line (model member key note)
   "Return the line naming MEMBER of MODEL under a check, keyed KEY.
 Its board word on the left, its words in the middle, NOTE, what is wrong,
-after them; RET on it goes to it.  A part is named by its part."
-  (let ((part (org-truss-member-is-part member))
+after them; RET on it goes to it.  A division is named by its name."
+  (let ((division (org-truss-member-is-division member))
         (org-truss--whole (org-truss--whole-p key)))
     (org-truss--with-id
      (org-truss--line
-      (concat "   " (if part
-                        (capitalize (symbol-name (org-truss-member-part member)))
+      (concat "   " (if division
+                        (capitalize (symbol-name (org-truss-member-division member)))
                       (org-truss--role-word model member)))
-      (and (not part) (org-truss--member-words member))
+      (and (not division) (org-truss--member-words member))
       (and note (propertize note 'face 'org-truss-attention))
-      (if part
-          (list :type 'part :pos (org-truss-member-pos member) :part (org-truss-member-part member)
+      (if division
+          (list :type 'division :pos (org-truss-member-pos member) :division (org-truss-member-division member)
                 :key key :fold key :nested 0)
         (org-truss--member-item member :key key :fold key :nested 0)))
-     (and (not part) (not (org-truss-in-structure-p member)) (org-truss--id-text member)))))
+     (and (not division) (not (org-truss-in-structure-p member)) (org-truss--id-text member)))))
 
 (defun org-truss--check-group (model name entries note)
   "Return the lines of the check NAME for ENTRIES, or nil when there are none.
@@ -1232,11 +1232,11 @@ wrong there."
                                              (funcall note entry)))
                     entries)))))
 
-(defun org-truss--check-lines (model checks part)
-  "Return the lines of what CHECKS finds in PART of MODEL, check by check.
-Each thing is listed in the part it is found in, under the check that
+(defun org-truss--check-lines (model checks division)
+  "Return the lines of what CHECKS finds in DIVISION of MODEL, check by check.
+Each thing is listed in the division it is found in, under the check that
 finds it, as `org-truss-check-descriptions' names them."
-  (let* ((in (lambda (entries) (seq-filter (lambda (e) (eq (org-truss-member-part (car e)) part))
+  (let* ((in (lambda (entries) (seq-filter (lambda (e) (eq (org-truss-member-division (car e)) division))
                                            entries)))
          (ids (lambda (ids) (mapconcat (lambda (id) (format "[[%s]]" (org-truss--pointing-target id)))
                                        ids " ")))
@@ -1348,29 +1348,30 @@ finds it, as `org-truss-check-descriptions' names them."
             (lambda (_) org-truss-placeholder-text)))))
     (and lines (cons (org-truss--line "") lines))))
 
-(defun org-truss--part-line (name gloss item)
-  "Return the line that opens the part NAME on the board.
-GLOSS says what is done there."
-  (org-truss--line (concat " " (propertize name 'face 'org-truss-outline)
-                           (propertize (concat "  " gloss) 'face 'org-truss-dim))
-                   nil nil item))
+(defun org-truss--division-line (name division gloss item)
+  "Return the line that opens the division NAME on the board.
+The words of DIVISION, its heading, after it as a member's are, if
+DIVISION is given; GLOSS, saying what is done there, as the line's help."
+  (org-truss--line (concat " " (propertize name 'face 'org-truss-outline))
+                   (and division (org-truss--member-words division))
+                   nil (append item (list :why gloss))))
 
-(defun org-truss--part-lines (model part gloss)
-  "Return the lines of PART of MODEL on the board: Brief, Subject or Message.
+(defun org-truss--division-lines (model division gloss)
+  "Return the lines of DIVISION of MODEL on the board: Brief, Subject or Message.
 Its own line, with GLOSS, saying what is done there; the patterns it
 names; its supporting members, each drawn as any member is; and a line
 for each role its patterns ask for and none plays, on which a new member
 plays it."
-  (let* ((name (org-truss-member-part part))
-         (item (list :type 'part :pos (org-truss-member-pos part)
-                     :key (list 'part name) :part name)))
+  (let* ((name (org-truss-member-division division))
+         (item (list :type 'division :pos (org-truss-member-pos division)
+                     :key (list 'division name) :division name)))
     (append
-     (list (org-truss--part-line (capitalize (symbol-name name)) gloss item))
-     (delq nil (list (org-truss--pattern-line part " " item)))
+     (list (org-truss--division-line (capitalize (symbol-name name)) division gloss item))
+     (delq nil (list (org-truss--pattern-line division " " item)))
      (mapcan (lambda (m)
                (org-truss--member-lines model m "   " (list 'member (org-truss-member-words m))))
-             (seq-remove #'org-truss--chained-p (org-truss-member-supports part)))
-     (org-truss--gap-lines part "   " item))))
+             (seq-remove #'org-truss--chained-p (org-truss-member-supports division)))
+     (org-truss--gap-lines division "   " item))))
 
 (defun org-truss--structure-lines (model)
   "Return Structure's tree for MODEL, as the output document has it."
@@ -1379,18 +1380,18 @@ plays it."
     (if (null root)
         ;; A member read alone makes no output document, and is not missing one.
         (unless (org-truss-model-alone model)
-          (list (org-truss--line (propertize " (no Structure part)" 'face 'org-truss-attention))))
-      (let ((item (list :type 'part :pos (org-truss-member-pos root) :part 'structure
-                        :key '(part structure)))
+          (list (org-truss--line (propertize " (no Structure division)" 'face 'org-truss-attention))))
+      (let ((item (list :type 'division :pos (org-truss-member-pos root) :division 'structure
+                        :key '(division structure)))
             (stem (if (org-truss-member-supports root) " │ " "   ")))
-        ;; Structure's words name the part, as the other parts' do, and are
-        ;; not in the output document; the board's word stands for them.
+        ;; Structure's words name the division, as the other divisions' do,
+        ;; and are not in the output document.
         (append
          ;; Its text is the output document's opening, drawn whole as a
          ;; member's is.
          (let ((org-truss--whole (org-truss--whole-p (plist-get item :key))))
-           (cons (org-truss--part-line "Structure" "the output document's outline"
-                                       (append item (list :fold (plist-get item :key) :nested 0)))
+           (cons (org-truss--division-line "Structure" root "the output document's outline"
+                                           (append item (list :fold (plist-get item :key) :nested 0)))
                  (org-truss--lines-under-words
                   " " nil
                   (and org-truss--whole
@@ -1407,24 +1408,24 @@ plays it."
 (defun org-truss--message-lines (model checks)
   "Return Message on the board for MODEL, then what is left to do there.
 Drawn as Brief and Subject are.  On the board of one heading of a file
-that is no truss file, that member, as a part of its own."
+that is no truss file, that member, as a division of its own."
   (let ((alone (org-truss-model-alone model))
         (message (org-truss-model-message model)))
     (append
      (cond (alone
             (cons (org-truss--line "")
-                  (cons (org-truss--part-line "Heading" "one heading, read as a member of Message"
-                                              (list :type 'part :pos (org-truss-member-pos alone)
-                                                    :part 'message :key '(part message)))
+                  (cons (org-truss--division-line "Heading" nil "one heading, read as a member of Message"
+                                                  (list :type 'division :pos (org-truss-member-pos alone)
+                                                        :division 'message :key '(division message)))
                         (org-truss--member-lines model alone "   "
                                                  (list 'member (org-truss-member-words alone))))))
            (message
-            (cons (org-truss--line "") (org-truss--part-lines model message "what the output document says"))))
+            (cons (org-truss--line "") (org-truss--division-lines model message "what the output document says"))))
      (org-truss--check-lines model checks 'message))))
 
 (defun org-truss--board-lines (model)
   "Return the board for MODEL as a list of lines.
-Under the title come the four parts, in the order the work is done in:
+Under the title come the four divisions, in the order the work is done in:
 Brief, what the output document must satisfy; Subject, the facts found;
 Message, what the output document says; Structure, its outline.  Each is
 followed by what is left to do there.  What all of it is drawn from --
@@ -1437,11 +1438,11 @@ followed by what is left to do there.  What all of it is drawn from --
     (append (org-truss--head-lines model)
             (and brief
                  (append (list (org-truss--line ""))
-                         (org-truss--part-lines model brief "what the output document must satisfy")
+                         (org-truss--division-lines model brief "what the output document must satisfy")
                          (org-truss--check-lines model checks 'brief)))
             (and subject
                  (append (list (org-truss--line ""))
-                         (org-truss--part-lines model subject "the facts found")
+                         (org-truss--division-lines model subject "the facts found")
                          (org-truss--check-lines model checks 'subject)))
             (org-truss--message-lines model checks)
             (list (org-truss--line ""))
@@ -1460,7 +1461,7 @@ its links read; see `org-truss-document-title'."
                               ""))
            (propertize (org-truss--link-text (or title "")) 'face 'org-truss-outline)
            nil
-           (and pos (list :type 'part :pos pos :key '(part title)))))))
+           (and pos (list :type 'division :pos pos :key '(division title)))))))
 
 (defun org-truss--column (lines)
   "Return the column the middle starts at on LINES.

@@ -11,7 +11,7 @@
 
 ;;; Commentary:
 
-;; The board draws the four parts, each member with its trusses, and
+;; The board draws the four divisions, each member with its trusses, and
 ;; Structure with the members it includes, and under each what is left
 ;; undone.  It is read-only: its commands change the truss file and draw
 ;; the board again.  Writing happens in the file; RET goes there.  How it
@@ -429,7 +429,7 @@ commands of `org-truss--item-commands' take it, or a link one holds; see
 (defun org-truss--in-structure-item-p (item)
   "Non-nil when ITEM is the line of Structure or of one of its members."
   (or (plist-get item :structure)
-      (and (eq (plist-get item :type) 'part) (eq (plist-get item :part) 'structure))))
+      (and (eq (plist-get item :type) 'division) (eq (plist-get item :division) 'structure))))
 
 (defun org-truss--item-holder (pos)
   "Return where the heading is whose text holds the item at POS, or nil.
@@ -501,7 +501,7 @@ text can be read, and a comment block and the quotation are part of that
 text, though `org-hide-block-startup' folds them.  The headings under it
 are left as they were.  CENTER leaves a mark where point was in the file
 and puts the member mid-window."
-  (let ((item (org-truss--want (org-truss--item) 'member 'broken 'part)))
+  (let ((item (org-truss--want (org-truss--item) 'member 'broken 'division)))
     (funcall display org-truss--source)
     (widen)
     (when center (push-mark))
@@ -574,7 +574,7 @@ Where it is written or where it is linked to."
 
 (defun org-truss--written-p (item)
   "Non-nil when ITEM is the line of a member where it is written.
-In its part's tree, the member itself, not included."
+In its division's tree, the member itself, not included."
   (and (org-truss--head-p item)
        (not (plist-get item :link))
        (memq (car (plist-get item :key)) '(member structure))))
@@ -845,7 +845,7 @@ headings under it into its roles first."
             (org-truss-add-role-members pos gaps)))))))
 
 (defun org-truss-board-pattern ()
-  "Give the member at point a pattern: a part, or any member.
+  "Give the member at point a pattern: a division, or any member.
 A logic says its supporting members are its reasons; a breakdown, its
 parts; a telling pattern, how they are told.  What the pattern asks for
 and is not there is put in, a member for each role, to be written over:
@@ -854,7 +854,7 @@ A telling pattern on a member of Structure takes the headings under it
 into its roles first.  `org-truss-apply-pattern' does the same from the
 file."
   (interactive)
-  (let* ((item (org-truss--want (org-truss--item) 'member 'part))
+  (let* ((item (org-truss--want (org-truss--item) 'member 'division))
          (pos (plist-get item :pos))
          (member (or (org-truss-member-at (org-truss-read org-truss--source) pos)
                      (user-error "Nothing to give a pattern to here")))
@@ -1066,7 +1066,7 @@ see `org-truss-board-cycle-all'."
 (defun org-truss-board-cycle-all ()
   "Cycle the whole board: folded, every line open, every line whole.
 As S-TAB does in Org, in three steps: overview, every member folded down
-to the parts; contents, every member open on one line; and everything,
+to the divisions; contents, every member open on one line; and everything,
 every line whole with its text."
   (interactive)
   (org-truss--reading-once
@@ -1116,7 +1116,7 @@ the file, and \\[org-dock-abort] lets it go, leaving the heading as it was.
 Back on the board, it draws again.  On a member written as an item of a
 list, the heading whose text holds it, at the item."
   (interactive)
-  (let* ((pos (plist-get (org-truss--want (org-truss--item) 'member 'broken 'part)
+  (let* ((pos (plist-get (org-truss--want (org-truss--item) 'member 'broken 'division)
                          :pos))
          (holder (org-truss--item-holder pos)))
     (if holder
@@ -1325,7 +1325,7 @@ One Structure can include, or with STRUCTURE, a member of Structure."
   "Write a new member, and open it beside the board to be written.
 It goes last under what the line at point is:
 
-- a member, or a part -- Brief, Subject, Message;
+- a member, or a division -- Brief, Subject, Message;
 - a missing role of one, playing that role;
 - a member of Structure: last under Message, included by it;
 - anything else: last under Message.
@@ -1339,17 +1339,17 @@ away."
     (user-error "A member of Structure plays this; write it in the file"))
   (let* ((item (org-truss--item))
          (model (org-truss-read org-truss--source))
-         (message (with-current-buffer org-truss--source (org-truss--part-pos "message")))
+         (message (with-current-buffer org-truss--source (org-truss--division-pos "message")))
          (in-structure (org-truss--in-structure-item-p item))
          (over (and (not in-structure)
-                    (memq (plist-get item :type) '(member part))
+                    (memq (plist-get item :type) '(member division))
                     (let ((m (org-truss-member-at model (plist-get item :pos))))
-                      (and m (or (not (org-truss-member-is-part m))
-                                 (memq (org-truss-member-part m) '(brief subject message)))
+                      (and m (or (not (org-truss-member-is-division m))
+                                 (memq (org-truss-member-division m) '(brief subject message)))
                            m))))
          (parent (cond (over (org-truss-member-pos over))
                        (message)
-                       (t (user-error "No Message part to write it in"))))
+                       (t (user-error "No Message division to write it in"))))
          (includer (and in-structure (plist-get item :pos)))
          (words (string-trim (read-string "New member: ")))
          (roles (and over (org-truss--new-roles over (plist-get item :gap))))
@@ -1365,7 +1365,7 @@ away."
       (user-error "A member already says %s" words))
     ;; What it is written under is unfolded, so the board can go to it.
     ;; A missing role's line is keyed under its member's, by (gap KIND ROLE).
-    (let ((fold (and over (not (org-truss-member-is-part over))
+    (let ((fold (and over (not (org-truss-member-is-division over))
                      (if (plist-get item :gap)
                          (butlast (plist-get item :key) 3)
                        (plist-get item :key)))))
@@ -1419,7 +1419,7 @@ it is shown, the board keeps it current."
 
 (defun org-truss-board-guide ()
   "Say in the echo area what the member of the line at point is for.
-A part's guide, or that of a role of Brief's or Subject's breakdown --
+A division's guide, or that of a role of Brief's or Subject's breakdown --
 on the member playing it, or on the line of the role missing -- and for
 any other member its patterns and the roles it plays.  The rules of the
 file are its guide, in the drawer at its head."
@@ -1428,8 +1428,8 @@ file are its guide, in the drawer at its head."
          (model (org-truss-read org-truss--source))
          (member (and (plist-get item :pos) (org-truss-member-at model (plist-get item :pos))))
          (gap (plist-get item :gap))
-         (text (cond ((and member gap (org-truss-member-is-part member))
-                      (org-truss-part-guide (org-truss-member-part member) (cdr gap)))
+         (text (cond ((and member gap (org-truss-member-is-division member))
+                      (org-truss-division-guide (org-truss-member-division member) (cdr gap)))
                      (member (org-truss-guide-of model member)))))
     (message "%s" (or text "Nothing is said of this line; the file's rules are in the guide at its head"))))
 

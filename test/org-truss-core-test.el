@@ -15,7 +15,7 @@
 
 * Brief
 :PROPERTIES:
-:TRUSS_PART: brief
+:TRUSS_DIVISION: brief
 :TRUSS_BREAKDOWN: reader-question-response-constraints
 :END:
 ** Reader
@@ -29,7 +29,7 @@ The team leads.
 
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Reviews run long
 :PROPERTIES:
@@ -92,7 +92,7 @@ Hold the review every other week: [[#half]].
 
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 ** Sky
@@ -121,7 +121,7 @@ and a structure with a broken link.")
 
 * Brief
 :PROPERTIES:
-:TRUSS_PART: brief
+:TRUSS_DIVISION: brief
 :TRUSS_BREAKDOWN: reader-question-response-constraints
 :END:
 ** Reader
@@ -140,7 +140,7 @@ The safety board.
 
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Issue
@@ -162,13 +162,13 @@ Finance said so at the October meeting.
 
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Check with a breathalyser
 
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Constraints
 - [[truss-include:budget]]
@@ -179,12 +179,12 @@ Finance said so at the October meeting.
 
 * Brief
 :PROPERTIES:
-:TRUSS_PART: brief
+:TRUSS_DIVISION: brief
 :END:
 
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Premises
@@ -229,7 +229,7 @@ The rules ask for a check before and after driving.
 
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** The rule may apply to us
 :PROPERTIES:
@@ -258,7 +258,7 @@ The rules ask for a check before and after driving.
 
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_TELLING: scqa
 :END:
 ** Background
@@ -279,7 +279,7 @@ the reasons of, and whose members hold steps.")
 
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** The law asks for a check
 :PROPERTIES:
@@ -324,7 +324,7 @@ The driver breathes into the checker.
 
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Do
 :PROPERTIES:
@@ -338,7 +338,7 @@ The driver breathes into the checker.
 
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Check before every test
 :PROPERTIES:
@@ -401,7 +401,7 @@ The driver breathes into the checker.
 
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Do
 - [[truss-include:check]]
@@ -413,7 +413,7 @@ The driver breathes into the checker.
 (defconst org-truss-test--unfinished-file "#+title: T
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Move to fortnightly
 :PROPERTIES:
@@ -432,7 +432,7 @@ The driver breathes into the checker.
 ** Example
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 ** Rain
@@ -455,7 +455,7 @@ Meet every other week.
 
 (defconst org-truss-test--telling-text "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
@@ -478,7 +478,7 @@ From next month.
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 - [[truss-include:move]]
@@ -578,7 +578,7 @@ below one the pattern tells after it is out of order."
   "A role a pattern wants more of is short by as many as are missing."
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** General
 :PROPERTIES:
@@ -608,7 +608,7 @@ Two roles in one pattern's property are none of its roles."
                        ("Notes for later" telling "Structure"))))))
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Told as SDS
 :PROPERTIES:
@@ -645,7 +645,7 @@ under another reason, which takes parts.  The report names the patterns
 the role belongs to."
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Claim
 :PROPERTIES:
@@ -680,7 +680,7 @@ down, a place is filled for that heading, not this one.  Roles are named
 in the file's language."
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
@@ -692,7 +692,7 @@ in the file's language."
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_TELLING: scqa
 :END:
 ** Now
@@ -768,7 +768,7 @@ place is not judged."
 
 (defconst org-truss-test--grounds-file "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Claim
 :PROPERTIES:
@@ -962,7 +962,7 @@ tagged :noexport:, or under one -- has hidden grounds.  One it does not
 tell is not asked."
   (let ((text "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** The manual
 :PROPERTIES:
@@ -982,7 +982,7 @@ tell is not asked."
 :END:
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Check before every test
 :PROPERTIES:
@@ -994,7 +994,7 @@ tell is not asked."
 - It has gone wrong, [[#crashes]]
 * T
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:check]]
 "))
@@ -1056,7 +1056,7 @@ A quote under a member linking nowhere is looked for in the source the
 member above names."
   (org-truss-test--in-directory
       '(("sources/rule.txt" . "Teams review designs and code twice a month.\n")
-        ("truss.org" . "* S\n:PROPERTIES:\n:TRUSS_PART: subject\n:END:\n** The rule\n[[file:sources/rule.txt][rule]]\n*** Reviews are twice a month\n#+begin_quote\nTeams review designs twice a month.\n#+end_quote\n*** Reviews are kept\n#+begin_quote\nTeams review designs and code\n#+end_quote\n"))
+        ("truss.org" . "* S\n:PROPERTIES:\n:TRUSS_DIVISION: subject\n:END:\n** The rule\n[[file:sources/rule.txt][rule]]\n*** Reviews are twice a month\n#+begin_quote\nTeams review designs twice a month.\n#+end_quote\n*** Reviews are kept\n#+begin_quote\nTeams review designs and code\n#+end_quote\n"))
     (let ((model (org-truss-read (find-file-noselect (expand-file-name "truss.org" dir)))))
       (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
                              (plist-get (org-truss-checks model) :quotes-not-found))
@@ -1071,7 +1071,7 @@ on that member, once.  One that stands on it, or a supporting member
 that does not, is not listed."
   (let ((text "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** The claim
 :PROPERTIES:
@@ -1103,7 +1103,7 @@ that does not, is not listed."
 reasons: one tagged :noexport: is hidden grounds, as a link to one is."
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Half the items repeat
 :PROPERTIES:
@@ -1120,7 +1120,7 @@ reasons: one tagged :noexport: is hidden grounds, as a link to one is."
 :END:
 * T
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:half]]
 "
@@ -1135,7 +1135,7 @@ reasons: one tagged :noexport: is hidden grounds, as a link to one is."
 
 (ert-deftest org-truss-test-placeholders ()
   "The words a new file gives its members reach the reader, through
-Structure, until they are written over: a part's name, or a role's in
+Structure, until they are written over: a division's name, or a role's in
 either language.  Those the output document does not tell are not asked."
   (org-truss-test--with (org-truss-skeleton "T")
     (let ((model (org-truss-read)))
@@ -1159,7 +1159,7 @@ a member does: a reason stands on what it tells, an item listing a member
 too."
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Claim
 :PROPERTIES:
@@ -1192,7 +1192,7 @@ As [[#gone]] says.
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_LOGIC: reasons
 :END:
 ** Why
@@ -1230,7 +1230,7 @@ stands on it: it has grounds, weak when the member does not hold.  Under
 a breakdown, or in a section's text, such a link tells and is no ground."
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Claim
 :PROPERTIES:
@@ -1282,7 +1282,7 @@ under it is one source of its own; links to members are no sources, so
 facts of different sources are brought together by pointing to them."
   (org-truss-test--with "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** Form
 :PROPERTIES:
@@ -1328,7 +1328,7 @@ facts of different sources are brought together by pointing to them."
 [[file:notes/memo.org::4]]
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Shares
 :PROPERTIES:
@@ -1364,7 +1364,7 @@ facts of different sources are brought together by pointing to them."
 
 (defconst org-truss-test--claims-file "* Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: parts
 :END:
 ** Minutes
@@ -1385,7 +1385,7 @@ facts of different sources are brought together by pointing to them."
 :END:
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
 ** Interpretation
@@ -1425,7 +1425,7 @@ facts of different sources are brought together by pointing to them."
 [[#a1]]
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 - [[truss-include:m0]]
 - [[truss-include:c1]]
@@ -1476,7 +1476,7 @@ unused; a source :aside: is one line."
   (org-truss-test--with "#+title: T
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: parts
 :END:
 ** <<a>>Rule A
@@ -1499,7 +1499,7 @@ Penalties only.
 - A fine is set
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
 ** <<s>>Situation
@@ -1530,7 +1530,7 @@ Penalties only.
 1. Keep it
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 #+attr_truss:
 - [[truss-include:c]]
@@ -1555,7 +1555,7 @@ an item tagged :assumption: needs no grounds, as a heading does."
   (org-truss-test--with "#+title: T
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Why
 :PROPERTIES:
@@ -1566,7 +1566,7 @@ an item tagged :assumption: needs no grounds, as a heading does."
 - It is quick
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 "
     (let* ((model (org-truss-read))
@@ -1594,7 +1594,7 @@ an item tagged :assumption: needs no grounds, as a heading does."
 
 (defconst org-truss-test--includes-file "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Move to fortnightly
 :PROPERTIES:
@@ -1616,7 +1616,7 @@ We move, as [[truss-include:long]] shows.
 ** Not told
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 - [[truss-include:move]]
@@ -1654,7 +1654,7 @@ web is not looked for.  Each that points to nothing is a broken link."
       (with-temp-file file
         (insert "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Cites what is there
 :PROPERTIES:
@@ -1741,7 +1741,7 @@ and gives each thing found a line of its own that compilation mode reads."
       (should (string-match-p "^f:[0-9]+: Through a bare one -- \\[\\[bare\\]\\] has no grounds$" report))))
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 "
     (should (equal (org-truss-check-report (org-truss-read) "f") "Nothing is left to do.\n"))))
@@ -1761,7 +1761,7 @@ apart, members or sections alike; two with one label are not, since
 nothing points by label."
   (org-truss-test--with "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** One
 :PROPERTIES:
@@ -1775,7 +1775,7 @@ nothing points by label."
 ** Same
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Three
 :PROPERTIES:
@@ -1839,7 +1839,7 @@ to no member, and shows as broken."
 (defconst org-truss-test--items-file "#+title: T
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** Six of twelve items come back
 :PROPERTIES:
@@ -1848,7 +1848,7 @@ to no member, and shows as broken."
 [[https://e.x/agendas][agendas]]
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
@@ -1869,7 +1869,7 @@ After the list.
 *** A heading under it too
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 - [[truss-include:m1]]
@@ -1917,10 +1917,10 @@ it, the members under it.  The heading's text leaves the list out."
         (should (equal (mapcar (lambda (hit) (org-truss-member-words (car hit))) (plist-get checks :no-role))
                        '("人 :: Robin likes it, as [[m21]] says" "A heading under it too")))))))
 
-(defconst org-truss-test--part-items-file "#+title: T
+(defconst org-truss-test--division-items-file "#+title: T
 * Brief
 :PROPERTIES:
-:TRUSS_PART: brief
+:TRUSS_DIVISION: brief
 :END:
 #+attr_truss: :breakdown reader-question-response-constraints
 - reader :: The team leads
@@ -1929,7 +1929,7 @@ it, the members under it.  The heading's text leaves the list out."
 - constraints :: One page
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 #+attr_truss:
 - <<m1>>We move to fortnightly reviews
@@ -1942,7 +1942,7 @@ it, the members under it.  The heading's text leaves the list out."
 :END:
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 We propose a change.
@@ -1960,7 +1960,7 @@ We propose a change.
 written in that part, and in the text of a section, sections: the part's
 or section's patterns, the roles the items play, before the headings
 under it.  A section's other lists stay its text."
-  (org-truss-test--with org-truss-test--part-items-file
+  (org-truss-test--with org-truss-test--division-items-file
     (let* ((model (org-truss-read))
            (brief (org-truss-model-brief model))
            (root (org-truss-model-structure model))
@@ -1970,11 +1970,11 @@ under it.  A section's other lists stay its text."
       (should (equal (mapcar #'org-truss-member-roles (org-truss-member-supports brief))
                      '(((breakdown . reader)) ((breakdown . question))
                        ((breakdown . response)) ((breakdown . constraints)))))
-      (should (eq (org-truss-member-part (car (org-truss-member-supports brief))) 'brief))
+      (should (eq (org-truss-member-division (car (org-truss-member-supports brief))) 'brief))
       (should-not (org-truss-gaps brief))
       (should (equal (org-truss-test--labels (org-truss-message-supports model))
                      '("We move to fortnightly reviews" "Reviews take an hour")))
-      (should (eq (org-truss-member-part move) 'message))
+      (should (eq (org-truss-member-division move) 'message))
       (should (= (org-truss-member-level move) 2))
       (should (eq (org-truss-member-logic move) 'reasons))
       (should (equal (mapcar #'org-truss-member-words (org-truss-member-supports root))
@@ -1994,7 +1994,7 @@ them, and is found, a part as any member; so is one that includes
 members in its text, Where we are, saying nothing of what they are to
 it.  One with a pattern in its property or in its list's #+attr_truss,
 its items members of it, is not."
-  (org-truss-test--with org-truss-test--part-items-file
+  (org-truss-test--with org-truss-test--division-items-file
     (let ((model (org-truss-read)))
       (should (equal (mapcar #'org-truss-member-words (plist-get (org-truss-checks model) :no-relation))
                      '("Message" "Where we are")))
@@ -2004,7 +2004,7 @@ its items members of it, is not."
                          "  - \\[\\[truss-include:m2\\]\\]" "  #+attr_truss: :breakdown parts\n  - [[truss-include:m2]]"
                          (replace-regexp-in-string
                           "#\\+attr_truss:\n- <<m1>>" "#+attr_truss: :breakdown parts\n- part :: <<m1>>"
-                          org-truss-test--part-items-file t t)
+                          org-truss-test--division-items-file t t)
                          t t)
     (should-not (plist-get (org-truss-checks (org-truss-read)) :no-relation))))
 
@@ -2016,7 +2016,7 @@ it includes alone in place of its source -- but one taken as given and
 under no source.  A file with no Situation is asked nothing."
   (org-truss-test--with "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: parts
 :END:
 ** Minutes
@@ -2042,7 +2042,7 @@ under no source.  A file with no Situation is asked nothing."
 - <<f3>>Reviews are weekly
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
 ** Where we are
@@ -2087,7 +2087,7 @@ it includes, and a member with no pattern is no apex member."
                   'compound))
       (should (eq (org-truss-truss-shape model (org-truss-test--m model "Items wait longer")) 'simple))
       (should-not (org-truss-truss-shape model (org-truss-test--m model "Six of twelve items come back")))))
-  (org-truss-test--with org-truss-test--part-items-file
+  (org-truss-test--with org-truss-test--division-items-file
     (let* ((model (org-truss-read))
            (umbrella (car (last (butlast (org-truss-member-supports (org-truss-model-structure model)))))))
       (should (eq (org-truss-truss-shape model (org-truss-model-brief model)) 'simple))
@@ -2118,7 +2118,7 @@ to m7, however its ID is written."
   (org-truss-test--in-directory
       '(("truss.org" . "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** <<m1>>A heading by target
 ** A heading by property
@@ -2149,7 +2149,7 @@ to m7, however its ID is written."
   "Return TEXT, after a Message part, once COMMAND is called on it.
 On the lines from the one holding FROM to the one holding TO, or on
 that one line; or the error it says."
-  (let ((head "* M\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n")
+  (let ((head "* M\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n")
         (org-adapt-indentation nil)
         (org-tags-column 0))
     (org-truss-test--with (concat head text)
@@ -2248,7 +2248,7 @@ plays is a missing role."
                      (list (cons (org-truss-model-brief model) '((breakdown constraints . 1)))
                            (cons subject '((breakdown past . 1))))))
       (should (eq (org-truss-member-at model (org-truss-member-pos subject)) subject))
-      (should (eq (org-truss-member-part (org-truss-test--m model "No budget this year")) 'subject))
+      (should (eq (org-truss-member-division (org-truss-test--m model "No budget this year")) 'subject))
       (should (equal (org-truss-test--labels (org-truss-in-document model)) '("No budget this year")))
       (should (equal (org-truss-test--labels (org-truss-contents model))
                      '("Reader" "Their question" "Response wanted" "Issue"
@@ -2262,8 +2262,8 @@ is written changes nothing of how it is read."
   (org-truss-test--with org-truss-test--clusters-file
     (let* ((model (org-truss-read))
            (head (org-truss-test--m model "The manager checks every driver before and after driving")))
-      (should (eq (org-truss-member-part head) 'subject))
-      (should (eq (org-truss-member-part (org-truss-test--m model "The rule may apply to us")) 'message))
+      (should (eq (org-truss-member-division head) 'subject))
+      (should (eq (org-truss-member-division (org-truss-test--m model "The rule may apply to us")) 'message))
       (should (eq (org-truss-member-logic head) 'reasons))
       (should (org-truss-needs-grounds-p model (org-truss-test--m model "The check may be made by video")))
       (should-not (org-truss-needs-grounds-p model (org-truss-test--m model "The manager reads it")))
@@ -2308,7 +2308,7 @@ changed.  Where the heading has nothing attached, the link stays."
 #+title: T
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** A claim
 :PROPERTIES:
@@ -2343,7 +2343,7 @@ and what plays no role stays at the end."
                          ":TRUSS_TELLING_ROLE: umbrella" ":TRUSS_TELLING_ROLE: answer"
                          (replace-regexp-in-string ":TRUSS_TELLING_ROLE: sky" ":TRUSS_TELLING_ROLE: situation"
                                                    org-truss-test--file))
-    (org-truss-apply-telling (org-truss--part-pos "structure") 'scqa)
+    (org-truss-apply-telling (org-truss--division-pos "structure") 'scqa)
     (let* ((model (org-truss-read))
            (root (org-truss-model-structure model))
            (by-label (lambda (l) (seq-find (lambda (s) (equal (org-truss-member-words s) l))
@@ -2366,7 +2366,7 @@ and what plays no role stays at the end."
   "Two sections filling the same place both take it, in order."
   (org-truss-test--with "* S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 :PROPERTIES:
@@ -2377,7 +2377,7 @@ and what plays no role stays at the end."
 :TRUSS_TELLING_ROLE: sky
 :END:
 "
-    (org-truss-apply-telling (org-truss--part-pos "structure") 'sky-rain-umbrella)
+    (org-truss-apply-telling (org-truss--division-pos "structure") 'sky-rain-umbrella)
     (let ((sections (org-truss-member-supports (org-truss-model-structure (org-truss-read)))))
       (should (equal (mapcar #'org-truss-member-words sections)
                      '("Now" "Then" "Rain" "Umbrella")))
@@ -2388,7 +2388,7 @@ and what plays no role stays at the end."
   "A section that takes a new one's place brings its own sections and pattern."
   (org-truss-test--with "* S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Umbrella
 :PROPERTIES:
@@ -2401,7 +2401,7 @@ and what plays no role stays at the end."
 :END:
 - [[truss-include:inner]]
 "
-    (org-truss-apply-telling (org-truss--part-pos "structure") 'scqa)
+    (org-truss-apply-telling (org-truss--division-pos "structure") 'scqa)
     (let* ((root (org-truss-model-structure (org-truss-read)))
            (answer (nth 3 (org-truss-member-supports root))))
       (should (equal (org-truss-member-words answer) "Umbrella"))
@@ -2437,7 +2437,7 @@ property of the pattern's kind."
 the drawer."
   (org-truss-test--with "* S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Empty
 :PROPERTIES:
@@ -2474,7 +2474,7 @@ the guide sits in a drawer at the head of the file, and Org reads such a
 line for what it looks like: with `org-hide-block-startup', a line opening
 with #+begin_ and no block stops org-mode starting at all.  Nor does a
 line of what a part or a role is for."
-  (dolist (entry org-truss--part-guides)
+  (dolist (entry org-truss--division-guides)
     (dolist (text (cdr entry))
       (dolist (line (split-string text "\n"))
         (should-not (string-match-p "\\`[ \t]*\\(?:#\\+\\|\\*+ \\|:[[:alnum:]_-]+:[ \t]*\\'\\)"
@@ -2518,7 +2518,7 @@ copied, not read."
         (should (<= (string-width line) 80))))))
 
 (ert-deftest org-truss-test-skeleton ()
-  "A new file has its parts and members for their roles, their words in
+  "A new file has its divisions and members for their roles, their words in
 English whatever the language: facts in Subject; in Message, the facts
 told, what they mean and what to do; and Structure telling those in that
 order, each item that member there.  End members are items, and so are
@@ -2594,8 +2594,8 @@ directories there."
 headings there, under any heading, with no guide of its own: the board
 says what it is for."
   (org-truss-test--with org-truss-test--conditions-file
-    (set-marker (org-truss-add-role-member (org-truss--part-pos "brief") 'breakdown 'constraints) nil)
-    (set-marker (org-truss-add-role-member (org-truss--part-pos "subject") 'breakdown 'past) nil)
+    (set-marker (org-truss-add-role-member (org-truss--division-pos "brief") 'breakdown 'constraints) nil)
+    (set-marker (org-truss-add-role-member (org-truss--division-pos "subject") 'breakdown 'past) nil)
     (let ((model (org-truss-read)))
       (should (equal (mapcar #'org-truss-member-words (org-truss-member-supports (org-truss-model-brief model)))
                      '("Reader" "Their question" "Response wanted" "Constraints")))
@@ -2624,7 +2624,7 @@ Notes before the parts.
 
 * 与件
 :PROPERTIES:
-:TRUSS_PART: brief
+:TRUSS_DIVISION: brief
 :TRUSS_BREAKDOWN: reader-question-response-constraints
 :END:
 :GUIDE:
@@ -2649,14 +2649,14 @@ My own.
 
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 :GUIDE:
 Old message.
 :END:
 ** A member
 :GUIDE:
-Not a part's.
+Not a division's.
 :END:
 "
       (org-truss-refresh-guides-in-buffer)
@@ -2672,12 +2672,12 @@ Not a part's.
                                 text))
         (should (string-match-p ":TRUSS_BREAKDOWN_ROLE: reader\n:END:\nThe board\\." text))
         (should (string-match-p ":TRUSS_BREAKDOWN_ROLE: mine\n:END:\n:GUIDE:\nMy own\\." text))
-        (should (string-match-p ":GUIDE:\nNot a part's\\.\n:END:" text))
+        (should (string-match-p ":GUIDE:\nNot a division's\\.\n:END:" text))
         (org-truss-refresh-guides-in-buffer)
         (should (equal (buffer-string) text))))))
 
 (ert-deftest org-truss-test-guide-of ()
-  "What a line is for: a part's guide, a role's of Brief's or Subject's
+  "What a line is for: a division's guide, a role's of Brief's or Subject's
 breakdown on the member playing it, and for any other member its patterns
 and the roles it plays."
   (let ((org-truss-language 'en))

@@ -17,7 +17,7 @@
   "A member whose text cites a source with a moor: link has grounds; a link
 under a member nested in it gives the member none."
   (org-truss-test--with
-      (concat "* Subject\n:PROPERTIES:\n:TRUSS_PART: subject\n:END:\n"
+      (concat "* Subject\n:PROPERTIES:\n:TRUSS_DIVISION: subject\n:END:\n"
               "** Premises\n"
               "*** Approval goes to the head first\n"
               "#+begin_quote\nThe head approves before finance.\n#+end_quote\n"
@@ -96,7 +96,7 @@ end of the item's first line, before its tags; m l links one so."
       (list (cons "truss.org" "#+title: T
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Why
 :PROPERTIES:
@@ -142,7 +142,7 @@ by org-moor came from, and follows any other link."
            (org-truss-language 'en)
            followed origins)
       (with-temp-file truss
-        (insert "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
+        (insert "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
                 "** Approval goes to the head first\n"
                 "#+begin_quote\nThe head approves before finance.\n"
                 "[[moor:6f1c::12][Manual p. 12]]\n#+end_quote\n"
@@ -202,7 +202,7 @@ though it is kept elsewhere."
            (link (org-moor-link (org-moor-take-file-to (expand-file-name "manual.txt" dir)
                                                        (org-moor-sources file) "Manual"))))
       (with-temp-file file
-        (insert "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
+        (insert "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
                 "** Claim\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
                 "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n" link "\n"))
       (with-current-buffer (find-file-noselect file)

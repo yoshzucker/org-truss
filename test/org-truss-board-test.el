@@ -201,7 +201,7 @@ are named in `org-truss-language'."
 
 (ert-deftest org-truss-test-board-says-what-a-line-is-for ()
   "? says in the echo area what the member at point is for: a role of
-Brief's breakdown, on its member and on its line missing, and a part."
+Brief's breakdown, on its member and on its line missing, and a division."
   (let ((org-truss-language 'en)
         said)
     (cl-letf (((symbol-function 'message) (lambda (_ &rest args) (setq said (car args)))))
@@ -222,10 +222,11 @@ Brief's breakdown, on its member and on its line missing, and a part."
   "Under the title come the brief and the subject, each with its breakdown
 and the members right under it, its fields, drawn as any member is, by the
 roles they play.  A role the breakdown asks for and no field plays follows
-them, and is listed under the part."
+them, and is listed under the division.  A division's line has its
+heading's words after it, as a member's has."
   (org-truss-test--with-board org-truss-test--conditions-file
     (should (string-match-p
-             (concat "^ Brief  .*\n"
+             (concat "^ Brief[ ·]+Brief\n"
                      " △ (breakdown › Reader, Question, Response, Constraints)\n"
                      "   Reader[ ·]+Reader\n"
                      "   Question[ ·]+Their question\n"
@@ -233,7 +234,7 @@ them, and is listed under the part."
                      "   Constraints —\n\n"
                      " Missing roles\n"
                      "   Brief +Constraints\n\n"
-                     " Subject  .*\n"
+                     " Subject[ ·]+Subject\n"
                      " △ (breakdown › Past, present, future)\n"
                      "   Present[ ·]+Issue\n"
                      "   └ member[ ·]+Nobody checks before a test\n"
@@ -257,7 +258,7 @@ them, and is listed under the part."
 (ert-deftest org-truss-test-board-parts-take-patterns ()
   "The brief and the subject take patterns as any heading does, and their
 members play roles in them.  c on a role their breakdown asks for and no
-member plays writes one playing it, where the breakdown lists it; p gives the part another
+member plays writes one playing it, where the breakdown lists it; p gives the division another
 breakdown, and a member for each role, where the breakdown lists it; a
 member playing none of them is marked, and r gives it a role."
   (org-truss-test--with-board org-truss-test--conditions-file
@@ -337,7 +338,7 @@ to is drawn on the line below."
   (let ((org-truss-language 'en))
     (org-truss-test--with "* Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** Reviews run long
 :PROPERTIES:
@@ -345,7 +346,7 @@ to is drawn on the line below."
 :END:
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :TRUSS_LOGIC: reasons
 :END:
 ** Time is wasted
@@ -382,7 +383,7 @@ what a check lists are broken too, and nothing is cut."
          (text (replace-regexp-in-string "LONG" long "#+title: T
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** Constraints
 :PROPERTIES:
@@ -398,7 +399,7 @@ The constraints, LONG.
 *** A question, LONG
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** A claim, LONG
 :PROPERTIES:
@@ -412,7 +413,7 @@ The constraints, LONG.
 :END:
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 :PROPERTIES:
@@ -579,13 +580,13 @@ member is written it is counted as used."
 and the links in those words read as the reader reads them too."
   (org-truss-test--with-board "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** <<m1>>The minutes, [[moor:abc::12][p. 12]], and [[m2][the calendar]]
 ** <<m2>>Calendar
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** [[truss-include:m1]]
 "
@@ -602,7 +603,7 @@ where it is written as well: no line under it names that member again,
 which is drawn where it is written."
   (org-truss-test--with-board "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** The minutes
 :PROPERTIES:
@@ -613,7 +614,7 @@ which is drawn where it is written."
 - Reviews run long
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Where we are
 :PROPERTIES:
@@ -637,7 +638,7 @@ stands for the member it includes, which brings what it has below its
 line, its text when it is drawn whole, with no line of its own."
   (org-truss-test--with-board "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** The fact
 :PROPERTIES:
@@ -647,7 +648,7 @@ line, its text when it is drawn whole, with no line of its own."
 ** Unused
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Claim
 :PROPERTIES:
@@ -660,7 +661,7 @@ line, its text when it is drawn whole, with no line of its own."
 :END:
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:claim]]
 "
@@ -680,7 +681,7 @@ line, its text when it is drawn whole, with no line of its own."
   ;; pointing link is a link in the text, and opens nothing.
   (org-truss-test--with-board "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** Over
 :PROPERTIES:
@@ -694,7 +695,7 @@ line, its text when it is drawn whole, with no line of its own."
 [[https://e.x/minutes][minutes]]
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Claim
 :PROPERTIES:
@@ -707,7 +708,7 @@ It runs over: [[truss-include:over]]
 [[#rep]]
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:claim]]
 "
@@ -723,7 +724,7 @@ It runs over: [[truss-include:over]]
 
 (defconst org-truss-test--told-as-written "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** Fact
 :PROPERTIES:
@@ -731,7 +732,7 @@ It runs over: [[truss-include:over]]
 :END:
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Interpretation
 :PROPERTIES:
@@ -747,7 +748,7 @@ Body of interpretation, on [[m1]].
 Body of part.
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:m2]]
 ** [[truss-include:m3]]
@@ -760,7 +761,7 @@ where it is written: its patterns, its text, the members under it, each
 opening as it does there.  A member it points to is a link in its text,
 drawn in the face of a ground, and nothing below it; one pointed to in
 a comment is no ground.  A line whose words are a link says what the
-member is where it is written, its part and the roles down to it, or the
+member is where it is written, its division and the roles down to it, or the
 words of one above it that plays none."
   (org-truss-test--with-board org-truss-test--told-as-written
     (org-truss-test--show-all)
@@ -804,7 +805,7 @@ as a link, by its words, as one that points to nothing when it does.
 None of it is drawn on one line."
   (let ((org-truss-board-middle-width 40))
   (org-truss-test--with-board
-      (concat "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
+      (concat "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
               "** Approval goes to the head first\n"
               "Read in the manual.\n"
               "#+begin_quote\nThe head approves.\n#+end_quote\n"
@@ -892,7 +893,7 @@ past what is under a member."
          (text (replace-regexp-in-string "LONG" long "#+title: T
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Constraints
@@ -915,7 +916,7 @@ past what is under a member."
 :END:
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** A claim, LONG
 :PROPERTIES:
@@ -960,7 +961,7 @@ line any of them is broken onto."
          (text (replace-regexp-in-string "LONG" long "#+title: T
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: past-present-future
 :END:
 ** Constraints
@@ -974,7 +975,7 @@ line any of them is broken onto."
 [[https://e.x/s][s]]
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** A claim
 :PROPERTIES:
@@ -990,7 +991,7 @@ line any of them is broken onto."
 [[https://e.x/s][s]]
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 - [[truss-include:m1]]
@@ -1095,7 +1096,7 @@ not before closing punctuation."
 in a list there an item for each role it asks for."
   (org-truss-test--with-board "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Why
 :PROPERTIES:
@@ -1122,7 +1123,7 @@ in a list there an item for each role it asks for."
 a term naming no role stays its words."
   (org-truss-test--with-board "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Should we?
 :PROPERTIES:
@@ -1223,7 +1224,7 @@ many it hides; one holding more than the limit starts folded."
 
 (defconst org-truss-test--cycle-file "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Top
 :PROPERTIES:
@@ -1295,11 +1296,11 @@ it: every line with something under it folded, each line on one line."
 its line names the member by its id as a ground, marked when it does not
 hold, and the member is drawn below it as included, as any include link
 draws it.  A heading whose line
-is the link is drawn as written, with the part the member is in beside
+is the link is drawn as written, with the division the member is in beside
 it.  The member's own line counts the members standing on it."
   (org-truss-test--with-board "* S
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :END:
 ** The fact
 :PROPERTIES:
@@ -1312,7 +1313,7 @@ it.  The member's own line counts the members standing on it."
 :END:
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Claim
 :PROPERTIES:
@@ -1506,7 +1507,7 @@ line."
                   :type 'user-error)))
 
 (ert-deftest org-truss-test-board-creates-where-point-is ()
-  "c writes a member last under the heading at point, member or part; on a
+  "c writes a member last under the heading at point, member or division; on a
 missing role one playing it; on a section a member listed there."
   (org-truss-test--with-board org-truss-test--file
     (org-truss-test--goto-member "Reviews run long")
@@ -1614,7 +1615,7 @@ under their checks, after Message."
   "A member's links that tell members are drawn under it, as a section's
 are, each one line where it is not opened; one drawn inside what it tells
 is one line, marked, since it would never end.  Loops and links that
-tell nothing are listed under Broken links, in the part they are in."
+tell nothing are listed under Broken links, in the division they are in."
   (progn
     (org-truss-test--with-board org-truss-test--includes-file
       (let ((text (buffer-string)))
@@ -1634,11 +1635,11 @@ tell nothing are listed under Broken links, in the part they are in."
 the role the reader sees it with, as a member does."
   (org-truss-test--with-board "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_BREAKDOWN: steps
 :END:
 ** Agree
@@ -1809,7 +1810,7 @@ comment names and, when one is named, the file marking a project,
 leaving what is there already.  A file written before gets the line that keeps its attachments
 beside it, unsaved."
   (org-truss-test--in-directory
-      '(("old/truss.org" . "#+title: Old\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"))
+      '(("old/truss.org" . "#+title: Old\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"))
     (let ((org-truss-language 'en)
           (read (lambda (file)
                   (with-temp-buffer (insert-file-contents (expand-file-name file dir))
@@ -1952,10 +1953,10 @@ that would change a heading say so instead."
         (org-truss-test--let-go)))))
 
 (ert-deftest org-truss-test-board-draws-part-and-section-items ()
-  "Members written as items in a part's text and sections in a section's
+  "Members written as items in a division's text and sections in a section's
 are drawn as the headings are, by the roles they play; the commands that
 would change a heading say so on a section written so."
-  (org-truss-test--with-board org-truss-test--part-items-file
+  (org-truss-test--with-board org-truss-test--division-items-file
     (let ((org-truss-board-fold-limit nil))
       (org-truss-board-redraw)
       (let ((text (buffer-string)))
@@ -2012,7 +2013,7 @@ command is asking makes it draw again instead of acting."
 (ert-deftest org-truss-test-board-draws-the-parts-in-order ()
   "The subject, the members and the structure each take a part of the board,
 in the order the work is done, each followed by what is left to do there.
-A part's members are drawn as any member is.  Everywhere a member's right
+A division's members are drawn as any member is.  Everywhere a member's right
 is what the document tells of it, after it the members it stands on that
 do not hold."
   (org-truss-test--with-board org-truss-test--clusters-file
@@ -2062,7 +2063,7 @@ with reasons another."
 (ert-deftest org-truss-test-board-shows-what-is-unfinished ()
   "A section the file has too late is marked, saying which it is below, and
 listed under the structure; a heading playing no role of the pattern above
-is marked, and listed under its part."
+is marked, and listed under its division."
   (org-truss-test--with-board org-truss-test--unfinished-file
     (let ((text (buffer-string)))
       (should (string-match-p (concat "^ ├ Sky ⚠[ ·]+" org-truss-test--gap "空$") text))
@@ -2083,7 +2084,7 @@ is marked, and listed under its part."
 as the reader is told it: in the breakdown's list."
   (org-truss-test--with-board "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** We move
 :PROPERTIES:
@@ -2099,7 +2100,7 @@ as the reader is told it: in the breakdown's list."
 [[https://e.x/the-calendar][the calendar]]
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 - [[truss-include:move]]
 "
@@ -2248,7 +2249,7 @@ full and the lines standing on it."
 (ert-deftest org-truss-test-board-of-one-heading ()
   "In an Org file that is no truss file, the board is of the heading at
 point alone, or of the nearest above it with a pattern: its patterns, what
-is under it in its places, and what they lack, without the parts of a
+is under it in its places, and what they lack, without the divisions of a
 document.  A pattern applied there puts in a heading for each place."
   (org-truss-test--in-directory
       (list (cons "notes.org"
@@ -2264,8 +2265,8 @@ document.  A pattern applied there puts in a heading for each place."
           (org-truss-board))
         (should (get-buffer "*truss notes.org › New approval rules*"))
         (set-buffer "*truss notes.org › New approval rules*")
-        (should (string-match-p "^ Heading  one heading" (buffer-string)))
-        (should-not (string-match-p "Something else\\|Misplaced\\|no structure part" (buffer-string)))
+        (should (string-match-p "^ Heading\n" (buffer-string)))
+        (should-not (string-match-p "Something else\\|Misplaced\\|no structure division" (buffer-string)))
         (org-truss-test--goto-member "New approval rules")
         (org-truss-test--answering '("breakdown › 5W1H")
           (org-truss-board-pattern))
@@ -2354,7 +2355,7 @@ of the rules are only of a truss file; nothing of a heading with no
 pattern near it."
   (org-truss-test--in-directory
       (list (cons "doc/truss.org"
-                  (concat "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
+                  (concat "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
                           org-truss-test--steps))
             (cons "project.org" (concat "* Tasks\n" org-truss-test--steps "* Log\n")))
     (let ((truss (org-truss-test--request-of (expand-file-name "doc/truss.org" dir) "First step"))
@@ -2374,7 +2375,7 @@ own lines, and outside it only what it brings about, by the file's lines
 as they are."
   (org-truss-test--in-directory
       (list (cons "truss.org"
-                  (concat "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
+                  (concat "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
                           "** Base\n:PROPERTIES:\n:CUSTOM_ID: m1\n:END:\n[[file:x.txt]]\n"
                           "** Claim\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n"
                           "*** A fact\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: reason\n:END:\n[[#m1]]\n"

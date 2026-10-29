@@ -1,4 +1,4 @@
-;;; org-truss-core.el --- Members, trusses and the parts of a truss file  -*- lexical-binding: t; -*-
+;;; org-truss-core.el --- Members, trusses and the divisions of a truss file  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 yoshzucker
 
@@ -29,8 +29,8 @@
 ;;   pointing link    [[#m7]], or [[m7]] for an item: points to m7 as grounds
 ;;   include link     [[truss-include:m7]]: includes m7 there in the output
 ;;                    document
-;;   part             Brief, Subject, Message and Structure, each a member
-;;                    with TRUSS_PART
+;;   division         Brief, Subject, Message and Structure, each a member
+;;                    with TRUSS_DIVISION
 ;;   output document  what is written out: Structure, and what its include
 ;;                    links reach
 ;;
@@ -62,7 +62,7 @@
 That is the guide, and the words of the members a pattern adds.  The
 board speaks English whatever this says, so what it shows from the file
 stands apart from its own words.  Identifiers in the file -- property values
-and tags -- stay in English too, and so do the words of a new file's parts
+and tags -- stay in English too, and so do the words of a new file's divisions
 and of the members it gives them, which never reach the reader; a file
 reads the same to every setting."
   :type '(choice (const :tag "English" en) (const :tag "Japanese" ja))
@@ -265,7 +265,7 @@ to be headings.  A role asked for and played by none is a missing role."
   :type '(alist :key-type symbol :value-type plist)
   :group 'org-truss)
 
-(defcustom org-truss-new-parts
+(defcustom org-truss-new-divisions
   '((brief :patterns ((breakdown . reader-question-response-constraints)))
     (subject :patterns ((breakdown . parts))
              :members ((part :patterns ((breakdown . parts)))))
@@ -278,7 +278,7 @@ to be headings.  A role asked for and played by none is a missing role."
                :members ((sky :include situation)
                          (rain :include interpretation)
                          (umbrella :include action))))
-  "What a new file gives its parts, as (PART . SPEC).
+  "What a new file gives its divisions, as (DIVISION . SPEC).
 The basic form: Subject holds the facts, a truss for each source, its
 facts under it; Message the facts the output document tells, its
 situation, as parts that include them or a source's truss whole, what
@@ -292,7 +292,7 @@ SPEC is a plist.  :patterns are the member's, each (KIND . PATTERN), a
 pattern of `org-truss-patterns'.  `org-truss-init' writes a supporting
 member for each role they name, playing it; :members gives one, as
 \(ROLE . SPEC), a SPEC of its own.  :include NAME makes the member's
-words an include link to the part NAME, or to the first member written
+words an include link to the division NAME, or to the first member written
 for the role NAME, so that it is that member there.  Supporting members
 all of which are end members are written as items, the rest as
 headings."
@@ -734,19 +734,19 @@ One for each kind of pattern whose role property it has."
                         (and role (cons kind role))))
                     org-truss-pattern-kinds)))
 
-(defun org-truss--part-pos (part)
-  "Return the position of the heading whose TRUSS_PART is PART, or nil."
+(defun org-truss--division-pos (division)
+  "Return the position of the heading whose TRUSS_DIVISION is DIVISION, or nil."
   (org-with-wide-buffer
    (goto-char (point-min))
    (let ((case-fold-search t)
          found)
      (while (and (not found)
                  (re-search-forward
-                  (format "^[ \t]*:TRUSS_PART:[ \t]+%s[ \t]*$" (regexp-quote part))
+                  (format "^[ \t]*:TRUSS_DIVISION:[ \t]+%s[ \t]*$" (regexp-quote division))
                   nil t))
        (save-excursion
          (org-back-to-heading t)
-         (when (equal (org-entry-get nil "TRUSS_PART") part)
+         (when (equal (org-entry-get nil "TRUSS_DIVISION") division)
            (setq found (point)))))
      found)))
 
@@ -760,9 +760,9 @@ POS is where it is written, WORDS its words: a heading's text without tags
 or keyword, an item's first line.  LEVEL is its level, a heading's or that
 of the heading it would be.  ID is the <<ID>> in its words, or a heading's
 CUSTOM_ID, and
-TAGS its tags, a heading's or those at the end of an item's first line.  PART is the part it is in: `brief', `subject',
-`message' or `structure'; IS-PART is non-nil for the four members with
-TRUSS_PART themselves.
+TAGS its tags, a heading's or those at the end of an item's first line.  DIVISION is the division it is in: `brief', `subject',
+`message' or `structure'; IS-DIVISION is non-nil for the four members
+with TRUSS_DIVISION themselves.
 
 LOGIC, BREAKDOWN and TELLING are its patterns, one of each kind: with any,
 it is the apex member of a truss, and SUPPORTS, the members right under it,
@@ -782,17 +782,17 @@ whose text it is written.  PIECES is nil but where its text holds lists
 of its supporting members: then its body as they cut it, (TEXT . N) for
 the text before a list and the number of its items, and (TEXT) for the
 text after the last; see `org-truss--body-pieces'."
-  pos id words level tags part is-part roles logic breakdown telling as
+  pos id words level tags division is-division roles logic breakdown telling as
   points includes source-links cited quoted body notes supports holder pieces)
 
 (cl-defstruct (org-truss-model (:constructor org-truss--make-model)
                                (:copier nil))
   "Everything read from one truss file.
-BRIEF, SUBJECT, MESSAGE and STRUCTURE are the members of the four parts.
-MEMBERS are all its members, the parts' among them, in the order of the
+BRIEF, SUBJECT, MESSAGE and STRUCTURE are the members of the four divisions.
+MEMBERS are all its members, the divisions' among them, in the order of the
 file.  ALONE is the member read on its own when the file is no truss
-file; see `org-truss--alone'.  LOCATIONS say where the title and the parts
-are, keyed (title) and (PART).  INDEX finds a member by its ID, and
+file; see `org-truss--alone'.  LOCATIONS say where the title and the divisions
+are, keyed (title) and (DIVISION).  INDEX finds a member by its ID, and
 PARENTS the member any is right under; DUPLICATES are the IDs more than
 one member has."
   buffer title brief subject message structure alone members locations
@@ -941,8 +941,8 @@ slot of `org-truss-member' says -- nil without LISTS."
   (mapcar (lambda (l) (cons (org-element-property :begin l) (org-element-property :end l)))
           lists))
 
-(defun org-truss--read-item (item part holder level patterns)
-  "Read ITEM, an item of a list marked #+attr_truss, as a member of PART.
+(defun org-truss--read-item (item division holder level patterns)
+  "Read ITEM, an item of a list marked #+attr_truss, as a member of DIVISION.
 It is written in the text of the heading at HOLDER, at LEVEL; PATTERNS
 are those of the member it supports, (KIND . PATTERN)."
   (let* ((lists (org-truss--item-lists-in item))
@@ -973,7 +973,7 @@ are those of the member it supports, (KIND . PATTERN)."
                 (org-truss--dedent (org-with-point-at holder (org-truss--read-text parsed :body)))
                 lists)))
     (org-truss--make-member
-     :part part
+     :division division
      :holder holder
      :pos (org-element-property :begin item)
      :id (and (string-match "<<\\([^<>\n]+\\)>>" words) (match-string 1 words))
@@ -993,12 +993,12 @@ are those of the member it supports, (KIND . PATTERN)."
      :body (car body)
      :pieces (cdr body)
      :notes (org-truss--dedent (org-with-point-at holder (org-truss--read-text parsed :comments)))
-     :supports (org-truss--read-items lists part holder (1+ level) own-patterns))))
+     :supports (org-truss--read-items lists division holder (1+ level) own-patterns))))
 
-(defun org-truss--read-items (lists part holder level patterns)
-  "Read the items of LISTS as members of PART; see `org-truss--read-item'."
+(defun org-truss--read-items (lists division holder level patterns)
+  "Read the items of LISTS as members of DIVISION; see `org-truss--read-item'."
   (mapcan (lambda (list)
-            (mapcar (lambda (item) (org-truss--read-item item part holder level patterns))
+            (mapcar (lambda (item) (org-truss--read-item item division holder level patterns))
                     (org-element-contents list)))
           lists))
 
@@ -1014,13 +1014,14 @@ kind, as by an item with no term."
                                      (cons (car p) (car one)))))
                             patterns))))
 
-(defun org-truss--read-heading (pos part &optional is-part patterns)
-  "Read the heading at POS as a member of PART, and the members under it.
+(defun org-truss--read-heading (pos division &optional is-division patterns)
+  "Read the heading at POS as a member of DIVISION, and the members under it.
 The items of the lists marked #+attr_truss in its text first, then the
 headings under it; the lists give it the patterns its properties do not.
-IS-PART says it is the member of PART itself, with TRUSS_PART.  PATTERNS
-are those of the member above, (KIND . PATTERN): a pattern of one role
-there is played without the role written."
+IS-DIVISION says it is the member of DIVISION itself, with
+TRUSS_DIVISION.  PATTERNS are those of the member above, (KIND .
+PATTERN): a pattern of one role there is played without the role
+written."
   (let* ((bounds (org-truss--text-bounds pos))
          (lists (org-truss--text-item-lists (car bounds) (cdr bounds)))
          (fields (org-truss--heading-fields
@@ -1040,10 +1041,10 @@ there is played without the role written."
                                      (and id (cons kind id))))
                                  org-truss-pattern-kinds))))
       (apply #'org-truss--make-member
-             :part part
-             :is-part is-part
-             :supports (append (org-truss--read-items lists part pos (1+ (plist-get fields :level)) own)
-                               (mapcar (lambda (child) (org-truss--read-heading child part nil own))
+             :division division
+             :is-division is-division
+             :supports (append (org-truss--read-items lists division pos (1+ (plist-get fields :level)) own)
+                               (mapcar (lambda (child) (org-truss--read-heading child division nil own))
                                        (org-truss--child-headings pos)))
              fields))))
 
@@ -1075,13 +1076,13 @@ duplicates, and the index finds the first.  See `org-truss-model'."
   (with-current-buffer (or buffer (current-buffer))
     (org-with-wide-buffer
      (let* ((alone-pos (org-truss--alone-pos))
-            (part (lambda (name)
-                    (let ((pos (and (not alone-pos) (org-truss--part-pos (symbol-name name)))))
-                      (and pos (org-truss--read-heading pos name t)))))
-            (brief (funcall part 'brief))
-            (subject (funcall part 'subject))
-            (message (funcall part 'message))
-            (structure (funcall part 'structure))
+            (division (lambda (name)
+                        (let ((pos (and (not alone-pos) (org-truss--division-pos (symbol-name name)))))
+                          (and pos (org-truss--read-heading pos name t)))))
+            (brief (funcall division 'brief))
+            (subject (funcall division 'subject))
+            (message (funcall division 'message))
+            (structure (funcall division 'structure))
             (alone (and alone-pos (org-truss--read-heading alone-pos 'message)))
             (tops (delq nil (list brief subject message structure alone)))
             (members (org-truss--by-position (mapcan #'org-truss--subtree tops)))
@@ -1109,8 +1110,8 @@ duplicates, and the index finds the first.  See `org-truss-model'."
                              (goto-char (point-min))
                              (and (re-search-forward "^[ \t]*#\\+title:" nil t)
                                   (list (cons '(title) (line-beginning-position)))))
-                           (mapcar (lambda (p) (cons (list (org-truss-member-part p))
-                                                     (org-truss-member-pos p)))
+                           (mapcar (lambda (p) (cons (list (org-truss-member-division p))
+                                                         (org-truss-member-pos p)))
                                    (delq nil (list brief subject))))
         :index index
         :parents parents
@@ -1122,12 +1123,12 @@ duplicates, and the index finds the first.  See `org-truss-model'."
   "Return the member of MODEL with ID, which a link names, or nil."
   (gethash id (org-truss-model-index model)))
 
-(defun org-truss-members-in (model &rest parts)
-  "Return the members of MODEL written in PARTS, in the order of the file.
-Not the members of the parts themselves; the member read alone, when
+(defun org-truss-members-in (model &rest divisions)
+  "Return the members of MODEL written in DIVISIONS, in the order of the file.
+Not the members of the divisions themselves; the member read alone, when
 there is one, is in `message'."
-  (seq-filter (lambda (m) (and (not (org-truss-member-is-part m))
-                               (memq (org-truss-member-part m) parts)))
+  (seq-filter (lambda (m) (and (not (org-truss-member-is-division m))
+                               (memq (org-truss-member-division m) divisions)))
               (org-truss-model-members model)))
 
 (defun org-truss-contents (model)
@@ -1160,7 +1161,7 @@ what it says."
 
 (defun org-truss-in-structure-p (member)
   "Non-nil when MEMBER is Structure's, or Structure itself."
-  (eq (org-truss-member-part member) 'structure))
+  (eq (org-truss-member-division member) 'structure))
 
 (defun org-truss-item-p (member)
   "Non-nil when MEMBER is written as an item of a list, not as a heading."
@@ -1677,14 +1678,14 @@ includes, and says nothing of its own."
 (defun org-truss-claim-apart-p (model member)
   "Non-nil when MEMBER of MODEL is a claim set apart, to be pointed to.
 A member of Message, a heading or an item alike, but not one right under
-the part, where its breakdown is told, not one in what plays `action',
+the division, where its breakdown is told, not one in what plays `action',
 and not an include link alone.  A reason, or the like, written under the
 member it holds up is placed where it is used already."
   (let ((up (org-truss-parent model member)))
-    (and (eq (org-truss-member-part member) 'message)
-         (not (org-truss-member-is-part member))
+    (and (eq (org-truss-member-division member) 'message)
+         (not (org-truss-member-is-division member))
          (not (org-truss-include-alone-p member))
-         up (not (org-truss-member-is-part up))
+         up (not (org-truss-member-is-division up))
          (not (and (org-truss-member-logic up) (org-truss-member-role member 'logic)))
          (let ((m member) action)
            (while (and m (not action))
@@ -1700,7 +1701,7 @@ under it."
   (let ((id (org-truss-member-id member))
         (own (org-truss--subtree member))
         (above (let ((m (org-truss-parent model member)) ids)
-                 (while (and m (not (org-truss-member-is-part m)))
+                 (while (and m (not (org-truss-member-is-division m)))
                    (when (org-truss-member-id m) (push (org-truss-member-id m) ids))
                    (setq m (org-truss-parent model m)))
                  ids)))
@@ -1740,7 +1741,7 @@ grounds.  Nil for a member that is no claim set apart."
 
 (defun org-truss-document-title (model)
   "Return the title MODEL's output document is written under, or nil.
-The file's #+title: Structure's words name a part, and are never
+The file's #+title: Structure's words name a division, and are never
 written out."
   (org-truss-model-title model))
 
@@ -1874,9 +1875,9 @@ includes of Subject only shows it, and needs nothing."
                                  (org-truss-members-in model 'message)))
          (in-situation (mapcan (lambda (s) (copy-sequence (org-truss--subtree s))) situations))
          (todo (seq-uniq
-                (append (seq-remove (lambda (m) (or (memq m in-situation) (org-truss-member-is-part m)))
+                (append (seq-remove (lambda (m) (or (memq m in-situation) (org-truss-member-is-division m)))
                                     (org-truss-members-in model 'message))
-                        (seq-remove (lambda (m) (memq (org-truss-member-part m) '(subject brief)))
+                        (seq-remove (lambda (m) (memq (org-truss-member-division m) '(subject brief)))
                                     (org-truss-told model)))))
          (seen nil))
     (while todo
@@ -1969,11 +1970,11 @@ See `org-truss-situation-sources'."
 
 (defun org-truss-placeholder-p (member)
   "Non-nil when MEMBER's words are those it was given, to be written over.
-A part's name, for a part; for any member, the name of a role it plays,
+A division's name, for a division; for any member, the name of a role it plays,
 in English or Japanese, as a new file and a pattern put in write it."
   (let ((words (org-truss-member-words member)))
-    (or (and (org-truss-member-is-part member)
-             (equal words (capitalize (symbol-name (org-truss-member-part member)))))
+    (or (and (org-truss-member-is-division member)
+             (equal words (capitalize (symbol-name (org-truss-member-division member)))))
         (seq-some (lambda (role)
                     (member words (cdr (assq (cdr role) org-truss-roles))))
                   (org-truss-member-roles member)))))
@@ -2085,9 +2086,9 @@ member whose pattern asks, at the member that lacks, at the link.
                                 (funcall org-truss-listed-headings-function model))
           :out-of-order (mapcan #'org-truss-out-of-order members)
           :no-grounds (seq-filter (lambda (m) (org-truss-missing-grounds model m)) members)
-          :open (seq-filter (lambda (m) (or (memq m needed) (eq (org-truss-member-part m) 'message)))
+          :open (seq-filter (lambda (m) (or (memq m needed) (eq (org-truss-member-division m) 'message)))
                             opens)
-          :open-unneeded (seq-remove (lambda (m) (or (memq m needed) (eq (org-truss-member-part m) 'message)))
+          :open-unneeded (seq-remove (lambda (m) (or (memq m needed) (eq (org-truss-member-division m) 'message)))
                                      opens)
           :open-told (seq-filter (lambda (m) (memq m told)) opens)
           :settled (seq-filter #'org-truss-has-grounds-p opens)
@@ -2162,7 +2163,7 @@ member whose pattern asks, at the member that lacks, at the link.
     ("Said again"
      . "members of Message that stand on the same members, two or more, as another does -- by pointing links, include links, or supporting members that are include links alone: one says what the other says again; keep the one, and point to it or include it where the other was")
     ("Set apart"
-     . "claims set apart in Message, as headings or items -- not right under the part, not in Action, not reasons under the member they hold up -- that fewer than two members use, by a pointing or an include link, or that stand on fewer than two grounds: one used in one place is a reason, written under the member using it, as a heading or an item; one that only says a fact again is not written, and the fact is included; one nothing uses is not needed")
+     . "claims set apart in Message, as headings or items -- not right under the division, not in Action, not reasons under the member they hold up -- that fewer than two members use, by a pointing or an include link, or that stand on fewer than two grounds: one used in one place is a reason, written under the member using it, as a heading or an item; one that only says a fact again is not written, and the fact is included; one nothing uses is not needed")
     ("Missing roles"
      . "roles the TRUSS_LOGIC, TRUSS_BREAKDOWN or TRUSS_TELLING of an apex member asks for that none of its supporting members plays")
     ("No role"
@@ -2176,7 +2177,7 @@ member whose pattern asks, at the member that lacks, at the link.
     ("Out of order"
      . "supporting members the file has below one that the TRUSS_TELLING of their apex member tells after them; the output document follows the file, so move them there")
     ("Words to write"
-     . "members the output document tells whose words are still those they were given: the part's name, or the name of the role they play; write the reader's words over them"))
+     . "members the output document tells whose words are still those they were given: the division's name, or the name of the role they play; write the reader's words over them"))
   "What each check finds, by the name the board and the report give it.
 In the order the report prints them.")
 
@@ -2419,7 +2420,7 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
   "Non-nil when BUFFER, or the current buffer, is a truss file."
   (with-current-buffer (or buffer (current-buffer))
     (and (derived-mode-p 'org-mode)
-         (org-truss--part-pos "message")
+         (org-truss--division-pos "message")
          t)))
 
 (declare-function project-root "project" (project))

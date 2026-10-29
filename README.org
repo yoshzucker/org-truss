@@ -70,17 +70,17 @@ words, and the board, the checks and this README use them alone.
 | include link    | ~[[truss-include:m7]]~: includes m7 there in the output document, the whole truss when m7 is an apex member  |
 | output document | what the file is written out as, in ~out/~                                                                   |
 
-** Four parts
+** Four divisions
 
-| Part      | What it holds                                                                          | Where                   |
-|-----------+----------------------------------------------------------------------------------------+-------------------------|
-| Brief     | the reader, and what the output document must satisfy                                  | ~TRUSS_PART: brief~     |
-| Subject   | the facts found: one truss for each source                                             | ~TRUSS_PART: subject~   |
-| Message   | what the output document says: what the facts mean, and what to do                     | ~TRUSS_PART: message~   |
-| Structure | the output document's outline, built of trusses, its text holding the include links   | ~TRUSS_PART: structure~ |
+| Division  | What it holds                                                                          | Where                       |
+|-----------+----------------------------------------------------------------------------------------+-----------------------------|
+| Brief     | the reader, and what the output document must satisfy                                  | ~TRUSS_DIVISION: brief~     |
+| Subject   | the facts found: one truss for each source                                             | ~TRUSS_DIVISION: subject~   |
+| Message   | what the output document says: what the facts mean, and what to do                     | ~TRUSS_DIVISION: message~   |
+| Structure | the output document's outline, built of trusses, its text holding the include links   | ~TRUSS_DIVISION: structure~ |
 
-Each part is found by its ~TRUSS_PART~, at whatever level and in whatever
-order the parts sit.  They are filled from the top.
+Each division is found by its ~TRUSS_DIVISION~, at whatever level and in
+whatever order the divisions sit.  They are filled from the top.
 
 Brief is the architect's brief: the conditions the design has to meet.
 Every check is measured against it.
@@ -94,9 +94,9 @@ Message against the facts it stands on, and Structure against the
 reader.  What the problem is taken to be is a claim, so it belongs in
 Message, not Subject.
 
-A part is an apex member like any other, and is broken down as any member
-can be.  A new file is written in the basic form: the facts, what they
-mean, what to do, told in that order.
+A division is an apex member like any other, and is broken down as any
+member can be.  A new file is written in the basic form: the facts, what
+they mean, what to do, told in that order.
 
 | Member         | Pattern                                           | Written                                                               |
 |----------------+---------------------------------------------------+-----------------------------------------------------------------------|
@@ -115,16 +115,17 @@ whole: its parts include the trusses of the sources whose facts the
 claims stand on, and no others, so the reader sees what each source says
 before what is drawn from it, and a source added to Subject, however
 poor, reaches the output document only once a claim stands on it.
-/Sources in Situation/ lists what it shows amiss.  A new file is an output document as it stands, each word of it
-to be written over, which /Words to write/ lists until it is.  Action
-points to the claim it follows from, once; a step takes a ~TRUSS_LOGIC~
-of its own only for reasons of its own.  For a document of another form, give Message
-and Structure other patterns: /pattern/ on the part's line on the board
-puts one on, and puts in a member for each role it lacks.  The facts stay
-in Subject.  What each part, and each role of Brief's and Message's
-breakdowns, is for, ~?~ on its line of the board says.
+/Sources in Situation/ lists what it shows amiss.  A new file is an
+output document as it stands, each word of it to be written over, which
+/Words to write/ lists until it is.  Action points to the claim it
+follows from, once; a step takes a ~TRUSS_LOGIC~ of its own only for
+reasons of its own.  For a document of another form, give Message and
+Structure other patterns: /pattern/ on the division's line on the board
+puts one on, and puts in a member for each role it lacks.  The facts
+stay in Subject.  What each division, and each role of Brief's and
+Message's breakdowns, is for, ~?~ on its line of the board says.
 
-The members of the parts are members like any other: they can have
+The members of the divisions are members like any other: they can have
 grounds, be assumptions, be apex members of trusses of their own and be
 included by Structure.  A book states its intended reader; a proposal
 states the constraints it works within.  Such a statement is written once,
@@ -133,7 +134,7 @@ fact that cannot be shown -- a figure that is confidential -- is tagged
 ~:noexport:~ in Subject; a claim the output document tells that stands on
 it is listed under /Hidden grounds/.
 
-The work on an output document goes in three steps, one part each.
+The work on an output document goes in three steps, one division each.
 
 - /Find out/, in Subject.  Gather the facts, each with its grounds, one
   truss for each source: a member naming the source as its apex member,
@@ -145,11 +146,11 @@ The work on an output document goes in three steps, one part each.
   follow from.
 - /Tell/, in Structure.  Its members are the headings of the output
   document; their text includes the trusses and members the reader is
-  shown, from any part.
+  shown, from any division.
 
-Where a member is written changes nothing of how it is checked or written
-out.  The parts keep what was found apart from what the output document
-says of it.
+Where a member is written changes nothing of how it is checked or
+written out.  The divisions keep what was found apart from what the
+output document says of it.
 
 ** Patterns and roles
 
@@ -165,11 +166,11 @@ pattern's property with ~_ROLE~ after it.
 
 The three are apart.  A member has at most one of each, and a supporting
 member plays a role in each its apex member has: a reason that is also a
-pro, and told as PREP's reason, says ~reason~, ~pros~ and ~reason~ in the
-three.  A member with members under it and no pattern is listed /No
+pro, and told as PREP's reason, says ~reason~, ~pros~ and ~reason~ in
+the three.  A member with members under it and no pattern is listed /No
 relation/: nothing says what they are to it.  Every member takes all
-three, and reads them alike: a part, a member of Message, a member of
-Structure.
+three, and reads them alike: a division, a member of Message, a member
+of Structure.
 
 /Logic/ is the truss itself: what holds the apex member up.  The three
 are told apart by taking one supporting member out.  Reasons each hold
@@ -355,12 +356,12 @@ We would meet half as often.
   ~list~, says how the output document writes the supporting members of
   that one truss, where what it is would write them the other way.
 
-Every part reads items so, Brief and Structure among them:
+Every division reads items so, Brief and Structure among them:
 
 #+begin_src org
 ,* Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 ,#+attr_truss:
@@ -394,7 +395,7 @@ These supporting members need none:
 - a member tagged ~:open:~, until it is settled (see [[*Scope]]).
 
 Whether a member must have grounds comes from its role alone: not from
-the part it is written in, nor from whether anything includes it.
+the division it is written in, nor from whether anything includes it.
 
 A member a member links to as grounds is a reason it stands on, by a
 link, as a reason written under it would be (see [[*Patterns and
@@ -472,12 +473,12 @@ an item.
 
 Two checks count these (see [[*What is left to do]]).  /Set apart/ asks
 it of each claim set apart in Message, a heading or an item: not one
-right under the part, where its breakdown is told; not one in what plays
-/action/, a step being no claim; not a reason written under the member
-it holds up, which is where it is used already.  A
-member uses it by pointing to it, standing on it or including it, or by
-including a member it is under, which brings it into the output document
--- Structure including Interpretation whole, say.  Its grounds are the
+right under the division, where its breakdown is told; not one in what
+plays /action/, a step being no claim; not a reason written under the
+member it holds up, which is where it is used already.  A member uses it
+by pointing to it, standing on it or including it, or by including a
+member it is under, which brings it into the output document --
+Structure including Interpretation whole, say.  Its grounds are the
 members and sources it links to, its quotes, and its reasons.  /Said
 again/ finds members of Message that stand on the same members, two or
 more, as another does.  A claim that only reads one fact again is past
@@ -543,8 +544,9 @@ Write a truss to be checked against one source; the check sees to it.
   one source.  An apex member among its supporting members is held to
   this itself, and may point into another -- a form's fields under the
   form, beside the law under the law.
-- A ~TRUSS_LOGIC~ truss, in any part: the links to sources in the text of
-  its apex member and of every member under it point into one source.
+- A ~TRUSS_LOGIC~ truss, in any division: the links to sources in the
+  text of its apex member and of every member under it point into one
+  source.
 
 A source taken by org-moor is one wherever in it its links point and
 whatever words they give it, ~[[moor:ID::14]]~ and ~[[moor:ID::200][field
@@ -585,31 +587,31 @@ shows what it reads.
 
 Twenty-three checks, each found where the problem is:
 
-| Check                | Found at                   | What it finds                                                                                                                           |
-|----------------------+----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
-| Missing roles        | the apex member            | a role its pattern asks for that none of its supporting members plays                                                                   |
-| No role              | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                 |
-| No pattern           | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                        |
-| No relation          | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the parts and Structure as any   |
-| Headings in a list   | the apex member            | its ~TRUSS_AS~ says headings, and its supporting members are written as a list all the same, in a list or deep                          |
-| Out of order         | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                      |
-| No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                            |
-| Open                 | the open member            | tagged ~:open:~, and something needed stands on it, or it is in Message: to be found out                                                |
-| Open, not needed     | the open member            | tagged ~:open:~, and nothing needed stands on it: not to be looked into                                                                 |
-| Open in the output   | the open member            | tagged ~:open:~, and the output document tells it                                                                                       |
-| Settled              | the open member            | tagged ~:open:~, and has grounds: the tag is to come off                                                                                |
-| Unused               | the fact                   | of Subject, and nothing needed stands on it (see [[*Scope]])                                                                            |
-| Aside with members   | the source                 | tagged ~:aside:~, and holds members: it is one line                                                                                     |
-| Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                          |
-| Hidden grounds       | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~ |
-| Quotes not found     | the member that quotes     | a ~#+begin_quote~ whose words are not in the source it is from, where that source's text can surely be read                              |
-| Grounds set low      | the apex member            | its supporting members, two or more, all stand on the same member, and it does not: it is to stand on that member, once                 |
-| Mixed sources        | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                            |
-| Sources in Situation | the source, or the fact    | a source a claim stands on that Situation leaves out, one it includes that no claim stands on, a fact it includes in place of its source |
-| Said again           | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])        |
-| Set apart            | the claim                  | set apart in Message, a heading or an item, that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]]) |
-| Broken links         | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back |
-| Words to write       | the member                 | is in the output document with the words it was given: its part's name, or the name of a role it plays                                  |
+| Check                | Found at                   | What it finds                                                                                                                            |
+|----------------------+----------------------------+------------------------------------------------------------------------------------------------------------------------------------------|
+| Missing roles        | the apex member            | a role its pattern asks for that none of its supporting members plays                                                                    |
+| No role              | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                  |
+| No pattern           | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                         |
+| No relation          | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the divisions and Structure as any |
+| Headings in a list   | the apex member            | its ~TRUSS_AS~ says headings, and its supporting members are written as a list all the same, in a list or deep                           |
+| Out of order         | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                       |
+| No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                             |
+| Open                 | the open member            | tagged ~:open:~, and something needed stands on it, or it is in Message: to be found out                                                 |
+| Open, not needed     | the open member            | tagged ~:open:~, and nothing needed stands on it: not to be looked into                                                                  |
+| Open in the output   | the open member            | tagged ~:open:~, and the output document tells it                                                                                        |
+| Settled              | the open member            | tagged ~:open:~, and has grounds: the tag is to come off                                                                                 |
+| Unused               | the fact                   | of Subject, and nothing needed stands on it (see [[*Scope]])                                                                             |
+| Aside with members   | the source                 | tagged ~:aside:~, and holds members: it is one line                                                                                      |
+| Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                           |
+| Hidden grounds       | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~  |
+| Quotes not found     | the member that quotes     | a ~#+begin_quote~ whose words are not in the source it is from, where that source's text can surely be read                               |
+| Grounds set low      | the apex member            | its supporting members, two or more, all stand on the same member, and it does not: it is to stand on that member, once                  |
+| Mixed sources        | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                             |
+| Sources in Situation | the source, or the fact    | a source a claim stands on that Situation leaves out, one it includes that no claim stands on, a fact it includes in place of its source  |
+| Said again           | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])         |
+| Set apart            | the claim                  | set apart in Message, a heading or an item, that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])  |
+| Broken links         | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back  |
+| Words to write       | the member                 | is in the output document with the words it was given: its division's name, or the name of a role it plays                               |
 
 They say what is so; what to do about it is written in the file.
 
@@ -651,31 +653,32 @@ Inside a repository it makes the directory a project apart from the rest.
 A ~:GUIDE:~ drawer at the head of ~truss.org~, before the first heading,
 holds the rules of the file, the same for whoever edits it, by hand, on
 the board, or as a language model working in the file: the words above,
-the four parts, how members and trusses are written, grounds, claims,
-sources, what is in the output document, what goes in the directories
-beside it, and the command that checks the file.  Org folds it as it folds any
-drawer, out of the way of the parts, and ~TAB~ on it opens it to be read.
-Its example is in an example block, and its IDs, ~<<m21>>~ among them, are
-no member's: IDs are counted from the first heading.
+the four divisions, how members and trusses are written, grounds,
+claims, sources, what is in the output document, what goes in the
+directories beside it, and the command that checks the file.  Org folds
+it as it folds any drawer, out of the way of the divisions, and ~TAB~ on
+it opens it to be read.  Its example is in an example block, and its
+IDs, ~<<m21>>~ among them, are no member's: IDs are counted from the
+first heading.
 
-What each part, and each role of Brief's and Message's breakdowns, is for
-is not written in the file: ~?~ on the board says it in the echo area, on
-the line of the part, of the member playing the role, or of the role
-missing; on any other member, ~?~ says its patterns and the roles it
-plays.  ~org-truss-batch-guide~ prints the guide and all of these, for an
-agent (see [[*Batch]]).  The board's keys are at its foot, and what each
-check finds is said where it is reported.  The words of a new file are
-English whatever ~org-truss-language~ says: they name the parts and the
-roles, to be written over; those Structure includes reach the reader
-until they are, and /Words to write/ lists them.
+What each division, and each role of Brief's and Message's breakdowns,
+is for is not written in the file: ~?~ on the board says it in the echo
+area, on the line of the division, of the member playing the role, or of
+the role missing; on any other member, ~?~ says its patterns and the
+roles it plays.  ~org-truss-batch-guide~ prints the guide and all of
+these, for an agent (see [[*Batch]]).  The board's keys are at its foot,
+and what each check finds is said where it is reported.  The words of a
+new file are English whatever ~org-truss-language~ says: they name the
+divisions and the roles, to be written over; those Structure includes
+reach the reader until they are, and /Words to write/ lists them.
 
 The guide learns, and a file keeps the wording it was written with.
-~M-x org-truss-refresh-guides~ puts the current guide back in its drawer,
-in place of the guide before it -- a drawer, or the comments it was once
-written in -- and takes away the ~:GUIDE:~ drawers once written under the
-parts and the members playing their roles.  One of your own, of a role
-nothing is said of or of any other member, stays, and so does anything
-else you wrote.
+~M-x org-truss-refresh-guides~ puts the current guide back in its
+drawer, in place of the guide before it -- a drawer, or the comments it
+was once written in -- and takes away the ~:GUIDE:~ drawers once written
+under the divisions and the members playing their roles.  One of your
+own, of a role nothing is said of or of any other member, stays, and so
+does anything else you wrote.
 
 ** An example
 
@@ -687,7 +690,7 @@ The guide's drawer left out:
 
 ,* Brief
 :PROPERTIES:
-:TRUSS_PART: brief
+:TRUSS_DIVISION: brief
 :TRUSS_BREAKDOWN: reader-question-response-constraints
 :END:
 ,#+attr_truss:
@@ -698,7 +701,7 @@ The guide's drawer left out:
 
 ,* Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: parts
 :END:
 ,** <<m8>>The calendar this quarter
@@ -720,7 +723,7 @@ The guide's drawer left out:
 
 ,* Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
 ,** <<m1>>Reviews run long, and the same items come back
@@ -770,7 +773,7 @@ Half of each agenda repeats the week before.
 
 ,* Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_TELLING: sky-rain-umbrella
 :END:
 ,#+attr_truss:
@@ -852,7 +855,7 @@ output document is never a copy that has to be kept in step by hand.
 
 ** What the outline means
 
-Within the parts, the outline carries meaning in these places only:
+Within the divisions, the outline carries meaning in these places only:
 
 - Under an apex member, its supporting members play its roles, and the
   order they are written in is the order a telling pattern tells them in,
@@ -918,7 +921,7 @@ A member is given an ID once something points to it: written by hand,
 ~<<m7>>~ before its words, or by /new/ writing it in Structure.  An ID
 is ~m~ and the next number free in the file, counted from the first
 heading.  Two members with one ID, and a link that points to no member,
-are reported as /Broken links/, at each in the part it is in.
+are reported as /Broken links/, at each in the division it is in.
 
 A link written by words, ~[[*words]]~ or ~[[truss-include:*words]]~ --
 with Org's completion, say -- names no ID and shows as broken.
@@ -960,14 +963,14 @@ This is the board of the file above, every line open:
 #+begin_example
  Title ············· Fortnightly reviews
 
- Brief  what the output document must satisfy
+ Brief ······················ Brief
  △ (breakdown › Reader, Question, Response, Constraints)
    Reader ··················· The team leads
    Question ················· Should the review stay weekly?
    Response wanted ·········· Agree to try fortnightly reviews next quarter
    Constraints ·············· One page
 
- Subject  the facts found
+ Subject ···················· Subject
  ▲ (breakdown › parts)
    Part ····················· The calendar this quarter
    △ (breakdown › parts)
@@ -977,7 +980,7 @@ This is the board of the file above, every line open:
    △ (breakdown › parts)
    └ Part ··················· - Six of twelve items each week come back from th…
 
- Message  what the output document says
+ Message ···················· Message
  ▲ (breakdown › Situation, Interpretation, Action)
    Situation ················ Reviews run long, and the same items come back
    ▲ (breakdown › parts)
@@ -1004,7 +1007,7 @@ This is the board of the file above, every line open:
  Set apart
    Part ····················· The review takes longer …  used in 1 place, on 2 grounds
 
- Structure  the output document's outline
+ Structure ·················· Structure
  ▲ (telling › Sky, Rain, Umbrella)
  ├ Sky ······················ ↪Message›Situation Reviews run long, and the same…
  ├ Rain ····················· ↪Message›Interpretation The weekly review costs t…
@@ -1028,13 +1031,13 @@ bring is drawn under both.  Structure then reads as the output document,
 down the page:
 
 #+begin_example
- Subject  the facts found
+ Subject ···················· Subject
  ▲ (breakdown › parts)
 
- Message  what the output document says
+ Message ···················· Message
  ▲ (breakdown › Situation, Interpretation, Action)
  ...
- Structure  the output document's outline
+ Structure ·················· Structure
  ▲ (telling › Sky, Rain, Umbrella)
  ├ Sky ······················ ↪Message›Situation Reviews run long, and the same…
  │ ▲ (breakdown › parts)
@@ -1078,57 +1081,57 @@ line.
 
 Each line has two columns.  On the left is what the board says the line
 is: the role a member plays in the patterns above it -- /member/ for one
-that plays none -- and the tree that joins them.  After the role come, in
-brackets, what wants seeing to: =[no role]= for a supporting member that
-plays no role of its apex member's patterns, =[no pattern]= for one that
-plays a role the member above has no pattern for, =[assumed]= for an
-assumption, =[open]= and =[aside]= for one tagged ~:open:~ or ~:aside:~,
-=[noexport]= for one tagged ~:noexport:~, =[no grounds]= for
+that plays none -- and the tree that joins them.  After the role come,
+in brackets, what wants seeing to: =[no role]= for a supporting member
+that plays no role of its apex member's patterns, =[no pattern]= for one
+that plays a role the member above has no pattern for, =[assumed]= for
+an assumption, =[open]= and =[aside]= for one tagged ~:open:~ or
+~:aside:~, =[noexport]= for one tagged ~:noexport:~, =[no grounds]= for
 a reason that must have grounds and has none.  Dots lead from the left
 to the words, and the mouse on them names the member by its ID as the
-file names it: =<<m9>>= where it is written, and =[[m9]]= where an include
-link includes it; a member under one a link brings, as where it is
-written.  From one column the same on every line come the file's own
+file names it: =<<m9>>= where it is written, and =[[m9]]= where an
+include link includes it; a member under one a link brings, as where it
+is written.  From one column the same on every line come the file's own
 words -- members' words, the title -- and links read as the reader reads
 them: a member whose words are an include link alone reads as the words
 of the member it includes, after what that member is where it is
-written, its part and the roles down to it, =↪Message›Interpretation›Part=;
-see [[*Marks]].  A heading is the reader's words, and its text is what
-the reader is told but its comments, so the
-words are what the output document says: a member it writes as an item
-of a list opens with its bullet, =- =, or its number, =1. =, and the role
-it plays when the pattern labels it; one it writes as a heading -- a
-compound truss's supporting member written as a heading, or one under a
-pattern that lists nothing -- opens with no bullet, its number and its
-role alone.  Once an item, all under it is a list, as in the output
-document; a member an include link in a member's text includes is an
-item.  A heading's words
-are in the face Org gives a heading of its level, so they look as they
-do in the file; the board colours them itself, so it does not matter
-whether the file has been shown yet.  Over it they are in the face
-~org-truss-outside~, slanted by default, while the output document does
-not include the member.  The words of the parts' headings are not among
-them: a part's heading never reaches the reader, so its line says only
-/Brief/, /Structure/.  The left is as wide as it needs; the words take
-the rest of the window, and are drawn again when it is resized.  Words
-too long for it are cut short at the window's edge, the whole of them in
-the tooltip, unless the line is drawn whole; see [[*Reading lines whole]].
+written, its division and the roles down to it,
+=↪Message›Interpretation›Part=; see [[*Marks]].  A heading is the
+reader's words, and its text is what the reader is told but its
+comments, so the words are what the output document says: a member it
+writes as an item of a list opens with its bullet, =- =, or its number,
+=1. =, and the role it plays when the pattern labels it; one it writes
+as a heading -- a compound truss's supporting member written as a
+heading, or one under a pattern that lists nothing -- opens with no
+bullet, its number and its role alone.  Once an item, all under it is a
+list, as in the output document; a member an include link in a member's
+text includes is an item.  A heading's words are in the face Org gives a
+heading of its level, so they look as they do in the file; the board
+colours them itself, so it does not matter whether the file has been
+shown yet.  Over it they are in the face ~org-truss-outside~, slanted by
+default, while the output document does not include the member.  A
+division's line says its name, /Brief/, /Structure/, and then its
+heading's words, which never reach the reader; the mouse on it says what
+is done there.  The left is as wide as it needs; the words take the rest
+of the window, and are drawn again when it is resized.  Words too long
+for it are cut short at the window's edge, the whole of them in the
+tooltip, unless the line is drawn whole; see [[*Reading lines whole]].
 What a member holds starts two columns right of its word: the sources it
-stands on, the members its links include.  Its supporting members branch off
-from the column of its word.  The line of the tree starts right under the
-line naming its patterns and runs down past whatever comes before the
-first branch -- the sources it stands on or the members its links include, and
-drawn whole its text -- so each member is held by it as far down as it
-goes.  The tree of the members outside Structure is drawn in the face
-~org-truss-branch~, faint by default, so where it meets Structure's tree
-the two read apart.
+stands on, the members its links include.  Its supporting members branch
+off from the column of its word.  The line of the tree starts right
+under the line naming its patterns and runs down past whatever comes
+before the first branch -- the sources it stands on or the members its
+links include, and drawn whole its text -- so each member is held by it
+as far down as it goes.  The tree of the members outside Structure is
+drawn in the face ~org-truss-branch~, faint by default, so where it
+meets Structure's tree the two read apart.
 
-The two columns say the same in every part.  The left is where a line
-stands in the patterns; the words, what is asserted and how the reader
-is told it, so whether the logic holds -- or, in Structure, whether the
-story does -- is read down it, and, drawn whole, whether it reads as
-prose.  A member's line is the same where it is written and where a link
-includes it.
+The two columns say the same in every division.  The left is where a
+line stands in the patterns; the words, what is asserted and how the
+reader is told it, so whether the logic holds -- or, in Structure,
+whether the story does -- is read down it, and, drawn whole, whether it
+reads as prose.  A member's line is the same where it is written and
+where a link includes it.
 
 ** Marks
 
@@ -1145,10 +1148,10 @@ its line says little of its links:
 | =↪Message›Interpretation›Part= | before the words, which are a link alone | the member they link to is a part of Message's interpretation       |
 
 What a member stands on is in its text, drawn whole as the reader reads
-it: a pointing link as the words of the member it points to, in the
-face of a ground; a link to a source as its words, in the face of a
-source, or of what wants doing when it points to nothing; a quotation as
-a paragraph of its own in quotation marks, after =✓= when its words were
+it: a pointing link as the words of the member it points to, in the face
+of a ground; a link to a source as its words, in the face of a source,
+or of what wants doing when it points to nothing; a quotation as a
+paragraph of its own in quotation marks, after =✓= when its words were
 found in its source, =✗= when not, =?= when the source cannot be read.
 The mouse on a link says where it goes, and ~RET~ on it follows it: to
 the member, or the source; ~m o~ on a link to a source, or on a
@@ -1157,16 +1160,16 @@ is written, dimmed with the comment, and is no ground.  With point on a
 line, the lines linked to it light up, one step either way: where each
 member it stands on is drawn, and each line standing on it or including
 it.  /same/ goes to them in turn.  An include link written besides a
-member's words has a line of its own under the member: =• included=,
-the mouse on its dots naming the member it includes by its ID,
-=[[m12]]=.  A member whose words are an include link alone is that
-member, and has no such line; where it is written is said just before
-its words, its part and the members above it -- how near to its sources
-what it stands on is.  ~org-truss-board-marks~ sets the marks of a link,
-and ~org-truss-board-where-marks~ those before the words.  A role a
-member's pattern asks for and it lacks -- /Minor premise —/ -- follows
-what it holds, with the pattern that asks when the member has more than
-one.  /new/ on it writes a member playing it.
+member's words has a line of its own under the member: =• included=, the
+mouse on its dots naming the member it includes by its ID, =[[m12]]=.  A
+member whose words are an include link alone is that member, and has no
+such line; where it is written is said just before its words, its
+division and the members above it -- how near to its sources what it
+stands on is.  ~org-truss-board-marks~ sets the marks of a link, and
+~org-truss-board-where-marks~ those before the words.  A role a member's
+pattern asks for and it lacks -- /Minor premise —/ -- follows what it
+holds, with the pattern that asks when the member has more than one.
+/new/ on it writes a member playing it.
 
 The other marks of the board are not links:
 
@@ -1195,14 +1198,14 @@ document includes -- what is under it -- beside what it stands on,
 sources and members, and its gaps, so the output document can be read
 down Structure.
 
-Each part is followed by what is left to do in it, check by check --
+Each division is followed by what is left to do in it, check by check --
 /Broken links/, /No grounds/, /Weak grounds/, /Hidden grounds/, /Quotes
 not found/, /Grounds set low/, /Mixed sources/, /Sources in Situation/,
-/Said again/, /Set apart/, /Missing roles/, /No role/, /No pattern/,
-/No relation/, /Headings in a list/, /Out of order/, /Words to write/ (see
-[[*What is left to do]]) -- each thing listed in the part it is found in,
-and ~RET~ on it goes there.  The mouse on the name of a check says what it
-finds.
+/Said again/, /Set apart/, /Missing roles/, /No role/, /No pattern/, /No
+relation/, /Headings in a list/, /Out of order/, /Words to write/ (see
+[[*What is left to do]]) -- each thing listed in the division it is
+found in, and ~RET~ on it goes there.  The mouse on the name of a check
+says what it finds.
 
 The patterns a member names go on the line just below it, in parentheses,
 where its supporting members branch off.  A step or a part opens with
@@ -1270,7 +1273,7 @@ where Emacs shows no pictures, a link to a file reads as the file's name.
 
 The board's words are English whatever ~org-truss-language~ says, so in a
 file written in another language the two sides read apart at a glance.
-What ~?~ says of a part or a role is in ~org-truss-language~, as the
+What ~?~ says of a division or a role is in ~org-truss-language~, as the
 guide is.
 
 ** Commands
@@ -1395,7 +1398,7 @@ drawn, the quotation is marked with which:
 | Mark | Says                                                                     |
 |------+--------------------------------------------------------------------------|
 | =✓=  | found in the source                                                      |
-| =✗=  | not found: listed under /Quotes not found/, below the part               |
+| =✗=  | not found: listed under /Quotes not found/, below the division           |
 | =?=  | not looked for: the source's text cannot surely be read, or none linked |
 
 ~org-truss-board-quote-marks~ sets them.  /Quotes not found/ is a
@@ -1598,7 +1601,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-file-name~          | ~"truss.org"~                  |                                               |
 | ~org-truss-patterns~           | those above                    | add your own                                  |
 | ~org-truss-roles~              | reason, who, sky, reader ...   | roles a pattern of your own can name          |
-| ~org-truss-new-parts~          | the basic form above           | the patterns a new file's parts are given,    |
+| ~org-truss-new-divisions~      | the basic form above           | the patterns a new file's divisions are given,|
 |                                |                                | the members under them, and what Structure    |
 |                                |                                | includes                                      |
 | ~org-truss-output-directory~   | ~"out"~                        |                                               |
@@ -1622,8 +1625,8 @@ The language is that of what org-truss writes for you to read or to
 rewrite: the guide, what ~?~ says, the members a pattern adds, and what
 the output document says of a broken link.  The board stays English.
 Identifiers in the file -- property values and tags -- stay in English
-too, and so do the headings of a new file's parts and their roles, so a
-file reads the same to everyone.
+too, and so do the headings of a new file's divisions and their roles,
+so a file reads the same to everyone.
 
 * Batch
 
@@ -1656,9 +1659,9 @@ the rest of the rules are in the file's guide; the same words whichever
 heading, or the whole file, was taken out.
 
 The second prints the board as text, for anything that reads the
-structure without Emacs open.  The fourth prints the guide, as the drawer
-at a truss file's head holds it, and then what ~?~ says of each part and
-of each role of Brief's and Message's breakdowns, in
+structure without Emacs open.  The fourth prints the guide, as the
+drawer at a truss file's head holds it, and then what ~?~ says of each
+division and of each role of Brief's and Message's breakdowns, in
 ~org-truss-language~.
 
 The last, with org-moor, takes a file -- copied, never moved -- or a web

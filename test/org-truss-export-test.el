@@ -60,7 +60,7 @@ no text follows it: one list, numbered on.  A heading under a pattern of
 one role plays it with none written, as an item does."
   (let ((out (org-truss-test--render "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Check
 :PROPERTIES:
@@ -73,7 +73,7 @@ one role plays it with none written, as an item does."
 *** Write it down                                              :assumption:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 [[truss-include:m1]]
 ")))
@@ -82,7 +82,7 @@ one role plays it with none written, as an item does."
 (ert-deftest org-truss-test-render-section-items ()
   "Sections written as items of a list in the structure's text are told as
 its headings are: a heading each, its text and what it tells under it."
-  (let ((out (org-truss-test--render org-truss-test--part-items-file)))
+  (let ((out (org-truss-test--render org-truss-test--division-items-file)))
     (should (string-match-p
              (concat "^We propose a change\\.\n\n"
                      "\\* Where we are\n\n"
@@ -103,7 +103,7 @@ stays between them."
               (replace-regexp-in-string
                "- umbrella :: \\[\\[truss-include:m1\\]\\]\n"
                "- umbrella :: [[truss-include:m1]]\nSo we change.\n#+attr_truss:\n- Last\n"
-               org-truss-test--part-items-file t t))))
+               org-truss-test--division-items-file t t))))
     (should (string-match-p
              (concat "^We propose a change\\.\n\n"
                      "- Where we are\n\n"
@@ -166,7 +166,7 @@ it is told, its text following."
 
 (ert-deftest org-truss-test-render-document-title ()
   "The file's #+title is the title the document is written under: the
-structure's heading names a part."
+structure's heading names a division."
   (should (string-match-p "\\`#\\+title: Fortnightly reviews\n"
                           (org-truss-test--render org-truss-test--file))))
 
@@ -182,7 +182,7 @@ there the document says so."
   (let* ((org-truss-language 'en)
          (out (org-truss-test--render "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Reviews run long
 :PROPERTIES:
@@ -203,7 +203,7 @@ We move, as [[#long]] and [[#long][the calendar]] show:
 [[truss-include:move]]
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 - [[truss-include:move]]
@@ -231,7 +231,7 @@ the order of the file among the sections, its text under its heading.
 Below the sixth level, what is under a heading is a list."
   (let ((out (org-truss-test--render "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Meetings run long
 :PROPERTIES:
@@ -247,7 +247,7 @@ Only a body.
 *** Under the body
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Sky
 *** Where we are
@@ -277,7 +277,7 @@ heading; under a telling alone, what it holds is told as the heading is,
 under headings a level down."
   (let ((out (org-truss-test--render "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** We move to fortnightly
 :PROPERTIES:
@@ -300,7 +300,7 @@ under headings a level down."
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:move]]
 ** [[truss-include:story]]
@@ -316,12 +316,12 @@ under headings a level down."
 (ert-deftest org-truss-test-render-member-first ()
   "A member comes before what is under it, its title, then its body; with
 a telling pattern or none, it is told the same."
-  (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_PART: message\n:END:\n"
+  (let* ((text (concat "* M\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
                        "** Claim\n:PROPERTIES:\n:CUSTOM_ID: claim\n:TRUSS_TELLING: prep\n:END:\n"
                        "Claim body.\n"
                        "*** Doubt\n"
                        "*** Ground\n# [[https://e.x/s][s]]\n"
-                       "* S\n:PROPERTIES:\n:TRUSS_PART: structure\n:END:\n** Only\n- [[truss-include:claim]]\n"))
+                       "* S\n:PROPERTIES:\n:TRUSS_DIVISION: structure\n:END:\n** Only\n- [[truss-include:claim]]\n"))
          (out (org-truss-test--render text)))
     (should (string-match-p "^- Claim\n\n  Claim body\\.\n\n  - Doubt\n  - Ground\n" out))
     (should (equal (org-truss-test--render (replace-regexp-in-string ":TRUSS_TELLING: prep\n" "" text))
@@ -333,7 +333,7 @@ line in a section is no heading, but an item of a list."
   (let ((out (org-truss-test--render "#+title: T
 * M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Inner title
 :PROPERTIES:
@@ -341,7 +341,7 @@ line in a section is no heading, but an item of a list."
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** What to do
 :PROPERTIES:
@@ -424,7 +424,7 @@ told which part of the breakdown each is.  What plays none is told as
 written."
   (let ((text "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** We move to fortnightly reviews
 :PROPERTIES:
@@ -444,7 +444,7 @@ Some items wait a week more.
 *** Robin likes it
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 - [[truss-include:move]]
 "))
@@ -463,7 +463,7 @@ it would be a heading or an item of a list."
   (dolist (pattern '("" ":TRUSS_BREAKDOWN: parts\n"))
     (let ((out (org-truss-test--render (concat "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Kept
 :PROPERTIES:
@@ -475,7 +475,7 @@ it would be a heading or an item of a list."
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 " pattern ":END:
 ** Shown
 - [[truss-include:kept]]
@@ -496,7 +496,7 @@ and the sections below it, items of a list again."
   (let* ((org-truss-language 'en)
          (file "* M
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Agree next week
 :PROPERTIES:
@@ -511,7 +511,7 @@ and the sections below it, items of a list again."
 :END:
 * S
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :TRUSS_BREAKDOWN: steps
 :END:
 ** Agree
@@ -607,7 +607,7 @@ document, linked from where the document is written."
 #+title: T
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** A claim
 :PROPERTIES:
@@ -619,7 +619,7 @@ As the shot shows.
 [[attachment:shot.png]]
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** Now
 - [[truss-include:m1]]
@@ -654,7 +654,7 @@ a listing pattern a list, a heading among them too."
   (let ((text (org-truss-test--render "#+title: T
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Do it
 :PROPERTIES:
@@ -682,7 +682,7 @@ a listing pattern a list, a heading among them too."
 :END:
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:m1]]
 ** [[truss-include:m2]]
@@ -699,7 +699,7 @@ one.  In a list they stay a list, and the check says so."
   (let ((file "#+title: T
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Why
 :PROPERTIES:
@@ -723,7 +723,7 @@ one.  In a list they stay a list, and the check says so."
 2. Book a room
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:m1]]
 ** [[truss-include:m2]]
@@ -751,7 +751,7 @@ what the truss is, not how it is written."
   (let ((file "#+title: T
 * Subject
 :PROPERTIES:
-:TRUSS_PART: subject
+:TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: parts
 :END:
 ** The minutes
@@ -763,7 +763,7 @@ what the truss is, not how it is written."
 - Eight of twelve ran over
 * Message
 :PROPERTIES:
-:TRUSS_PART: message
+:TRUSS_DIVISION: message
 :END:
 ** Where we are
 :PROPERTIES:
@@ -773,7 +773,7 @@ what the truss is, not how it is written."
 *** [[truss-include:m1]]
 * Structure
 :PROPERTIES:
-:TRUSS_PART: structure
+:TRUSS_DIVISION: structure
 :END:
 ** [[truss-include:m2]]
 "))

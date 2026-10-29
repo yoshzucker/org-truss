@@ -119,7 +119,7 @@ line that keeps them there, left unsaved to be looked over."
 (defun org-truss-refresh-guides ()
   "Put the current guide back into the nearest truss file.
 The guide is written anew in its drawer at the head, in place of a guide
-before it, and the :GUIDE: drawers once written under the parts and their
+before it, and the :GUIDE: drawers once written under the divisions and their
 roles go; see `org-truss-refresh-guides-in-buffer'.  The buffer is left
 unsaved, to be looked over."
   (interactive)
@@ -133,7 +133,7 @@ unsaved, to be looked over."
 ;;;###autoload
 (defun org-truss-check ()
   "List what the nearest truss file leaves undone, a line for each thing.
-What the board shows under each part, as text: under each check, what it
+What the board shows under each division, as text: under each check, what it
 finds and where, by line.  RET on a line visits it."
   (interactive)
   (let* ((file (or (org-truss-locate)
@@ -272,25 +272,25 @@ copy brings it about, by the file's lines."
         (org-truss--check-as file after))))))
 
 (defun org-truss-batch-guide ()
-  "Print the guide of a truss file, and what each part and role is for.
+  "Print the guide of a truss file, and what each division and role is for.
 
   emacs --batch -L DIR -l org-truss -f org-truss-batch-guide
 
 In `org-truss-language': the guide, as the drawer at a truss file's head
-holds it, then what the board's ? says of each part and of each role of
+holds it, then what the board's ? says of each division and of each role of
 Brief's and Message's breakdowns."
   (princ (org-truss-guide))
-  (princ (concat "\n" (org-truss--pick "What each part and role is for"
+  (princ (concat "\n" (org-truss--pick "What each division and role is for"
                                        "部と役が何を書く所か")
                  "\n"))
-  (pcase-dolist (`(,key . ,_) org-truss--part-guides)
-    (let* ((part (if (consp key) (car key) key))
+  (pcase-dolist (`(,key . ,_) org-truss--division-guides)
+    (let* ((division (if (consp key) (car key) key))
            (role (and (consp key) (cadr key))))
       (princ (format "  %s%s: %s\n"
-                     (capitalize (symbol-name part))
+                     (capitalize (symbol-name division))
                      (if role (concat " › " (org-truss-role-name role)) "")
                      (replace-regexp-in-string "[ \t]*\n[ \t]*" (org-truss--pick " " "")
-                                               (org-truss-part-guide part role)))))))
+                                               (org-truss-division-guide division role)))))))
 
 (defun org-truss-batch-board ()
   "Print the board of the truss file named on the command line.

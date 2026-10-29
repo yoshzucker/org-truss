@@ -14,7 +14,7 @@
 ;; What org-truss tells whoever edits a truss file, a person or a model.
 ;; The guide, the rules of the file, is in a :GUIDE: drawer at its head,
 ;; before the first heading, folded as drawers are and opened to be read.
-;; What each part and each role of Brief's and Message's breakdowns is for
+;; What each division and each role of Brief's and Message's breakdowns is for
 ;; is said by the board, `?' on its line, and printed by
 ;; `org-truss-batch-guide' with the guide.  Here too are the first line
 ;; that keeps attachments beside the file, and the skeleton of a new file.
@@ -66,7 +66,7 @@ Words
                   document, the whole truss when m7 is an apex member.  A
                   member whose words are an include link alone is m7 itself
 
-The four parts (told apart by TRUSS_PART; filled from the top)
+The four divisions (told apart by TRUSS_DIVISION; filled from the top)
   Brief      the reader, and what the output document must satisfy
   Subject    the facts found.  One truss for each source: a member naming
              the source as its apex member, the source's facts as its
@@ -89,7 +89,7 @@ The four parts (told apart by TRUSS_PART; filled from the top)
     (Situation), m2 (Interpretation) and m3 (Action), each that member
     there: its words are the output document's heading
   For a document of another form, change the patterns of Message and
-  Structure; the facts stay in Subject.  What each part, and each role of
+  Structure; the facts stay in Subject.  What each division, and each role of
   Brief and Message, is for, ? on its line of the board says
 
 Writing
@@ -287,7 +287,7 @@ M-x org-truss-export で、OUT/ に書き出す。
               m7 が頂点部材なら、トラスごと展開する。部材の言葉を展開
               リンクだけにすると、その部材は m7 そのものになる
 
-4つの部（TRUSS_PART で見分ける。上から順に埋める）
+4つの部（TRUSS_DIVISION で見分ける。上から順に埋める）
   Brief      読み手と、出力文書が満たす条件
   Subject    調べた事実。資料ごとにトラスを一つ作る（資料を名指す部材を
              頂点部材に、その資料の事実を支持部材に置く）
@@ -455,7 +455,7 @@ M-x org-truss-export で、OUT/ に書き出す。
 #TAKE")
   "The guide of a truss file, in English and Japanese.
 It holds the rules of the file, the same for whoever edits it -- a person,
-or a model working in the file: the words, the four parts, how members
+or a model working in the file: the words, the four divisions, how members
 and trusses are written, grounds, claims, sources, what is in the output
 document, and what goes in the directories beside it.  ORG-TRUSS-DIR and
 ORG-DOCK-DIR and ORG-ITEM-TAGS-DIR stand for where org-truss, org-dock
@@ -476,7 +476,7 @@ A file or a page read, taken into SOURCES/ with a link printed to cite it
   "How an agent takes a source, at the end of the guide.
 Written there when org-moor is there to take it with.")
 
-(defconst org-truss--part-guides
+(defconst org-truss--division-guides
   '((brief
      "What the output document must satisfy.  A member here is in the output
 document only when Structure includes it."
@@ -527,10 +527,10 @@ a step with reasons of its own has a TRUSS_LOGIC of its own."
      "The output document's outline: the members it carries, by include
 links."
      "出力文書の構成。載せる部材を展開リンクで書く。"))
-  "What each part, and each role of Brief's and Message's breakdowns, is for.
-In English and Japanese.  Keyed by a part, or by (PART ROLE) for a member
-right under the part that plays ROLE in its breakdown.  The board says
-it, `?' on the line, and `org-truss-batch-guide' prints it.")
+  "What each division, and each role of Brief's and Message's breakdowns, is for.
+In English and Japanese.  Keyed by a division, or by (DIVISION ROLE) for a
+member right under the division that plays ROLE in its breakdown.  The
+board says it, `?' on the line, and `org-truss-batch-guide' prints it.")
 
 (defun org-truss-guide ()
   "Return the guide of a truss file, in `org-truss-language', as plain text.
@@ -569,24 +569,24 @@ directories beside it are named as they are set here."
   "Return the :GUIDE: drawer that holds the guide at the head of a truss file."
   (concat ":GUIDE:\n" (org-truss-guide) ":END:\n"))
 
-(defun org-truss-part-guide (part &optional role)
-  "Return what PART is for, or what a member of it playing ROLE is for.
+(defun org-truss-division-guide (division &optional role)
+  "Return what DIVISION is for, or what a member of it playing ROLE is for.
 In `org-truss-language'; nil when nothing is said of it, as of a role
 of a pattern of your own."
-  (let ((entry (alist-get (if role (list part role) part) org-truss--part-guides nil nil #'equal)))
+  (let ((entry (alist-get (if role (list division role) division) org-truss--division-guides nil nil #'equal)))
     (and entry (org-truss--pick (nth 0 entry) (nth 1 entry)))))
 
 (defun org-truss-guide-of (model member)
   "Return what the board says MEMBER of MODEL is for, on one line, or nil.
-A part's guide; for a member right under a part playing a role of its
+A division's guide; for a member right under a division playing a role of its
 breakdown, that role's, when one is said; for any other member, the
 patterns it has and the roles it plays, with what each pattern asks for."
   (let* ((up (org-truss-parent model member))
-         (part (org-truss-member-part member))
+         (division (org-truss-member-division member))
          (role (org-truss-member-role member 'breakdown))
-         (text (cond ((org-truss-member-is-part member) (org-truss-part-guide part))
-                     ((and up (org-truss-member-is-part up) role)
-                      (org-truss-part-guide part role))))
+         (text (cond ((org-truss-member-is-division member) (org-truss-division-guide division))
+                     ((and up (org-truss-member-is-division up) role)
+                      (org-truss-division-guide division role))))
          (text (or text
                    (string-join
                     (append
@@ -623,9 +623,9 @@ takes the value at once, as visiting the file would give it."
        (modify-file-local-variable-prop-line 'org-attach-id-dir dir 'add-or-replace)
        (setq-local org-attach-id-dir dir)))))
 
-(defun org-truss--new-ids (parts)
-  "Return the IDs a new file gives what the :include of PARTS name.
-PARTS are as `org-truss-new-parts' has them.  As (NAME . ID), m1, m2 and
+(defun org-truss--new-ids (divisions)
+  "Return the IDs a new file gives what the :include of DIVISIONS name.
+DIVISIONS are as `org-truss-new-divisions' has them.  As (NAME . ID), m1, m2 and
 on in the order the includes come."
   (let (names)
     (cl-labels ((walk (spec)
@@ -634,16 +634,16 @@ on in the order the includes come."
                       (push name names)))
                   (dolist (member (plist-get spec :members))
                     (walk (cdr member)))))
-      (dolist (part parts)
-        (walk (cdr part))))
+      (dolist (division divisions)
+        (walk (cdr division))))
     (seq-map-indexed (lambda (name i) (cons name (format "m%d" (1+ i))))
                      (nreverse names))))
 
 (defun org-truss--new-member (level name words props spec ids)
   "Return a member of a new file, a heading at LEVEL, as text.
-NAME is the part or the role it is written for, WORDS its words, PROPS
+NAME is the division or the role it is written for, WORDS its words, PROPS
 the properties it opens with, as (PROPERTY . VALUE).  SPEC, as
-`org-truss-new-parts' gives one, says its patterns and what is written
+`org-truss-new-divisions' gives one, says its patterns and what is written
 under it: a supporting member for each role, as items when all are end
 members, or members of a telling that are include links alone, which
 are headings of the output document all the same; else as headings.
@@ -717,11 +717,11 @@ takes its ID, and is taken off."
   "Return the text of a new truss file titled TITLE.
 Its first line keeps what is attached to its headings beside it; see
 `org-truss--file-variables'.  Then the guide, in its drawer, in
-`org-truss-language'.  Then the parts, with the patterns and the members
-`org-truss-new-parts' gives them.  Their words are English whatever
-`org-truss-language' says: they name the parts and the roles, and are
+`org-truss-language'.  Then the divisions, with the patterns and the members
+`org-truss-new-divisions' gives them.  Their words are English whatever
+`org-truss-language' says: they name the divisions and the roles, and are
 written over -- those Structure includes reach the reader."
-  (let ((ids (let ((all (org-truss--new-ids org-truss-new-parts)))
+  (let ((ids (let ((all (org-truss--new-ids org-truss-new-divisions)))
                (cons (copy-sequence all) all))))
     (concat
      (org-truss--file-variables)
@@ -729,12 +729,12 @@ written over -- those Structure includes reach the reader."
      (org-truss--guide-drawer) "\n"
      (string-remove-suffix
       "\n"
-      (mapconcat (lambda (part)
+      (mapconcat (lambda (division)
                    (org-truss--new-member
-                    1 (car part) (capitalize (symbol-name (car part)))
-                    (list (cons "TRUSS_PART" (symbol-name (car part))))
-                    (cdr part) ids))
-                 org-truss-new-parts "")))))
+                    1 (car division) (capitalize (symbol-name (car division)))
+                    (list (cons "TRUSS_DIVISION" (symbol-name (car division))))
+                    (cdr division) ids))
+                 org-truss-new-divisions "")))))
 
 (defconst org-truss--guide-drawer-re
   "^[ \t]*:GUIDE:[ \t]*\n\\(?:.*\n\\)*?[ \t]*:END:[ \t]*\\(?:\n\\|\\'\\)"
@@ -754,7 +754,7 @@ written over -- those Structure includes reach the reader."
   "Put the current guide back at the head of the truss file in this buffer.
 Before the first heading, after the keywords, what is there -- a guide
 of before, the comments a guide was once written in -- gives way to the
-guide in its drawer.  The :GUIDE: drawers once written under each part
+guide in its drawer.  The :GUIDE: drawers once written under each division
 and each member playing a role of its breakdown go, as the board now
 says what they said; one of a role nothing is said of, a guide of your
 own, stays.  A file without the first line that keeps its attachments
@@ -762,15 +762,15 @@ beside it is given one; see `org-truss-put-file-variables'.  Nothing
 else is read or moved."
   (org-truss-put-file-variables)
   (org-with-wide-buffer
-   ;; From the last part up, so what is changed lies below what is still
+   ;; From the last division up, so what is changed lies below what is still
    ;; to change and positions stay good.
-   (dolist (part '(structure message subject brief))
-     (let ((pos (org-truss--part-pos (symbol-name part))))
+   (dolist (division '(structure message subject brief))
+     (let ((pos (org-truss--division-pos (symbol-name division))))
        (when pos
          (dolist (child (reverse (org-truss--child-headings pos)))
            (let ((role (org-truss--intern
                         (org-entry-get child (org-truss-role-property 'breakdown)))))
-             (when (and role (org-truss-part-guide part role))
+             (when (and role (org-truss-division-guide division role))
                (org-truss--delete-guide-drawer child))))
          (org-truss--delete-guide-drawer pos))))
    (goto-char (point-min))
