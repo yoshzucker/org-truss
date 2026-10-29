@@ -981,8 +981,8 @@ This is the board of the file above, every line open:
  ▲ (breakdown › Situation, Interpretation, Action)
    Situation ················ Reviews run long, and the same items come back
    ▲ (breakdown › parts)
-   ├ Part ··················· ↪Subject The calendar this quarter
-   └ Part ··················· ↪Subject The agendas, weeks 1-12
+   ├ Part ··················· ↪Subject›Part The calendar this quarter
+   └ Part ··················· ↪Subject›Part The agendas, weeks 1-12
    Interpretation ··········· The weekly review costs the team more time than i…
    ▲ (breakdown › parts)
    ├ Part ··················· The review takes longer than it is given
@@ -1006,9 +1006,9 @@ This is the board of the file above, every line open:
 
  Structure  the output document's outline
  ▲ (telling › Sky, Rain, Umbrella)
- ├ Sky ······················ ↪Message Reviews run long, and the same items com…
- ├ Rain ····················· ↪Message The weekly review costs the team more ti…
- └ Umbrella ················· ↪Message Hold the review every other week
+ ├ Sky ······················ ↪Message›Situation Reviews run long, and the same…
+ ├ Rain ····················· ↪Message›Interpretation The weekly review costs t…
+ └ Umbrella ················· ↪Message›Action Hold the review every other week
 #+end_example
 
 Each member is drawn once, where it is written.  What it stands on is in
@@ -1036,16 +1036,16 @@ down the page:
  ...
  Structure  the output document's outline
  ▲ (telling › Sky, Rain, Umbrella)
- ├ Sky ······················ ↪Message Reviews run long, and the same items com…
+ ├ Sky ······················ ↪Message›Situation Reviews run long, and the same…
  │ ▲ (breakdown › parts)
- │ ├ Part ··················· ↪Subject The calendar this quarter
+ │ ├ Part ··················· ↪Subject›Part The calendar this quarter
  │ │ △ (breakdown › parts)
  │ │ ├ Part ················· - Eight of twelve reviews ran past the hour
  │ │ └ Part ················· - The longest ran forty minutes over
- │ └ Part ··················· ↪Subject The agendas, weeks 1-12
+ │ └ Part ··················· ↪Subject›Part The agendas, weeks 1-12
  │   △ (breakdown › parts)
  │   └ Part ················· - Six of twelve items each week come back from th…
- ├ Rain ····················· ↪Message The weekly review costs the team more ti…
+ ├ Rain ····················· ↪Message›Interpretation The weekly review costs t…
  │ ▲ (breakdown › parts)
  │ ├ Part ··················· The review takes longer than it is given
  │ │ △ (logic › reasons)
@@ -1056,7 +1056,7 @@ down the page:
  │   ├ Reason ··············· - Half of each agenda is what was open the week b…
  │   ├ Reason [no grounds] ·· - Nothing urgent waits for the review
  │   └ Reason [assumed] ····· - Items need a week to move
- └ Umbrella ················· ↪Message Hold the review every other week
+ └ Umbrella ················· ↪Message›Action Hold the review every other week
    △ (breakdown › steps)
    ├ Step ··················· 1. Cancel every second review in the calendar
    └ Step ··················· 2. Carry what is still open to the next one
@@ -1091,9 +1091,10 @@ link includes it; a member under one a link brings, as where it is
 written.  From one column the same on every line come the file's own
 words -- members' words, the title -- and links read as the reader reads
 them: a member whose words are an include link alone reads as the words
-of the member it includes, after where that member is written, its part
-and the members above it, =↪Message›Interpretation=; see [[*Marks]].  A heading is the reader's
-words, and its text is what the reader is told but its comments, so the
+of the member it includes, after what that member is where it is
+written, its part and the roles down to it, =↪Message›Interpretation›Part=;
+see [[*Marks]].  A heading is the reader's words, and its text is what
+the reader is told but its comments, so the
 words are what the output document says: a member it writes as an item
 of a list opens with its bullet, =- =, or its number, =1. =, and the role
 it plays when the pattern labels it; one it writes as a heading -- a
@@ -1138,10 +1139,10 @@ member that includes it, a member of Structure or another: what the
 reader is shown, and where.  A member is drawn where it is written, and
 its line says little of its links:
 
-| Mark                       | Where                                    | Says                                                                |
-|----------------------------+------------------------------------------+---------------------------------------------------------------------|
-| =⏚m7=                      | after a member's words                   | it stands on m7, which no member is, or which has no grounds itself |
-| =↪Message›Interpretation= | before the words, which are a link alone | the member they link to is written in Message, under Interpretation |
+| Mark                           | Where                                    | Says                                                                |
+|--------------------------------+------------------------------------------+---------------------------------------------------------------------|
+| =⏚m7=                          | after a member's words                   | it stands on m7, which no member is, or which has no grounds itself |
+| =↪Message›Interpretation›Part= | before the words, which are a link alone | the member they link to is a part of Message's interpretation       |
 
 What a member stands on is in its text, drawn whole as the reader reads
 it: a pointing link as the words of the member it points to, in the
@@ -1236,8 +1237,10 @@ where included, the board drawn whole is the output document, near
 enough, beside the tree and the comments it was built from:
 
 #+begin_example
- ├ Rain ····················· ↪Message The weekly review costs the team more
- │                                     time than it gives back
+ ├ Rain ····················· ↪Message›Interpretation The weekly review
+ │                                                    costs the team more
+ │                                                    time than it gives
+ │                                                    back
  │ ▲ (breakdown › parts)
  │ ├ Part ··················· The review takes longer than it is given
  │ │ △ (logic › reasons)
@@ -1608,7 +1611,7 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-board-image-height~ | 15                             | most lines a picture takes on the board       |
 | ~org-truss-board-fold-limit~   | 0, all folded; ~nil~, all open | members one holds before it starts folded     |
 | ~org-truss-board-marks~        | =⏚= =•=                        | marks the board says a link with              |
-| ~org-truss-board-where-marks~  | =↪= =›=                        | marks of where the member linked to is        |
+| ~org-truss-board-where-marks~  | =↪= =›=                        | marks of what the member linked to is         |
 |                                |                                | written, before the words                     |
 | ~org-truss-board-truss-marks~  | =△= =▲=                        | marks of a simple and a compound truss        |
 | ~org-truss-board-quote-marks~  | =✓= =✗= =?=                    | marks of a quotation found, not, unchecked    |

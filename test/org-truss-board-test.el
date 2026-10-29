@@ -569,10 +569,32 @@ member is written it is counted as used."
       (when whole
         (org-truss-test--show-all))
       (let ((text (buffer-string)))
-        (should (string-match-p "├ Rain[ ·]+↪Message Interpretation\n └ Umbrella" text))
+        (should (string-match-p "├ Rain[ ·]+↪Message›Interpretation Interpretation\n └ Umbrella" text))
         (should (string-match-p "^   Interpretation[ ·]+Interpretation$" text))
         (should (equal (org-truss-test--id-at "^   Interpretation[ ·]+Interpretation$") "<<m2>>"))
         (should-not (string-match-p "\\[\\[truss-include:m2\\]\\]" text))))))
+
+(ert-deftest org-truss-test-board-include-reads-links-in-words ()
+  "An include link alone reads as the words of the member it includes,
+and the links in those words read as the reader reads them too."
+  (org-truss-test--with-board "* S
+:PROPERTIES:
+:TRUSS_PART: subject
+:END:
+** <<m1>>The minutes, [[moor:abc::12][p. 12]], and [[m2][the calendar]]
+** <<m2>>Calendar
+* M
+:PROPERTIES:
+:TRUSS_PART: message
+:END:
+** [[truss-include:m1]]
+"
+    (dolist (whole '(nil t))
+      (when whole
+        (org-truss-test--show-all))
+      (let ((text (buffer-string)))
+        (should (string-match-p "↪Subject +The minutes, p\\. 12, and the calendar" text))
+        (should-not (string-match-p "moor:" text))))))
 
 (ert-deftest org-truss-test-board-part-that-includes ()
   "A part whose words are an include link alone is the member it includes,
@@ -737,8 +759,9 @@ Body of part.
 where it is written: its patterns, its text, the members under it, each
 opening as it does there.  A member it points to is a link in its text,
 drawn in the face of a ground, and nothing below it; one pointed to in
-a comment is no ground.  A line whose words are a link says where the
-member is written, its part and the members above it."
+a comment is no ground.  A line whose words are a link says what the
+member is where it is written, its part and the roles down to it, or the
+words of one above it that plays none."
   (org-truss-test--with-board org-truss-test--told-as-written
     (org-truss-test--show-all)
     (let* ((under (lambda (start)
@@ -756,7 +779,7 @@ member is written, its part and the members above it."
            (written (funcall under "^   member[ ·]+Interpretation")))
       (should (equal written '("△ (breakdown › parts)" "Body of interpretation, on Fact."
                                "# A note, on [[m1]] too." "Part ········ - Part one" "Body of part.")))
-      (should (string-match-p "^ └ member[ ·]+↪Message›Interpretation Part one$" (buffer-string)))
+      (should (string-match-p "^ └ member[ ·]+↪Message›Interpretation›Part Part one$" (buffer-string)))
       (org-truss-test--opened-where-included)
       (org-truss-test--show-all)
       (should (equal (funcall under "^ ├ member[ ·]+↪Message Interpretation") written))

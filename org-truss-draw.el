@@ -113,10 +113,10 @@ none linked -- and was not looked in.  See `org-truss-quote-found'."
 
 (defcustom org-truss-board-where-marks
   '((link . "↪") (step . "›"))
-  "The marks just before a line's words saying where the member they link to is.
-`link' before where it is written: its part, then the words of each
-member above it, `step' between them, ↪Message›Interpretation.  See
-`org-truss--parts-text'."
+  "The marks just before a line's words saying what the member they link to is.
+`link' before what it is where it is written: its part, then the role of
+each member down to it, `step' between them, ↪Message›Interpretation›Part.
+See `org-truss--parts-text'."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 
@@ -250,17 +250,22 @@ whole; see `org-truss--whole-lines'."
         :item item :whole org-truss--whole))
 
 (defun org-truss--path-text (model member &optional width)
-  "Return where MEMBER of MODEL is written: its part, then each member above it.
-Down to the one it is under, joined by `step' of
-`org-truss-board-where-marks', Message›Interpretation; each member's
-words cut short to WIDTH, when given."
+  "Return what MEMBER of MODEL is where it is written: its part, then roles.
+The role each member from the one under the part down to MEMBER plays,
+joined by `step' of `org-truss-board-where-marks',
+Message›Interpretation›Part; one above MEMBER that plays none is named
+by its words instead, cut short to WIDTH when given, and MEMBER itself
+playing none is left out."
   (let ((step (alist-get 'step org-truss-board-where-marks))
-        (m (org-truss-parent model member))
+        (m member)
         names)
     (while (and m (not (org-truss-member-is-part m)))
-      (push (let ((words (org-truss--link-text (org-truss-member-words m))))
-              (if width (truncate-string-to-width words width nil nil "…") words))
-            names)
+      (let ((role (org-truss--role-names m)))
+        (cond (role (push role names))
+              ((not (eq m member))
+               (push (let ((words (org-truss--link-text (org-truss-member-words m))))
+                       (if width (truncate-string-to-width words width nil nil "…") words))
+                     names))))
       (setq m (org-truss-parent model m)))
     (string-join (cons (capitalize (symbol-name (org-truss-member-part member))) names) step)))
 
@@ -268,10 +273,10 @@ words cut short to WIDTH, when given."
   "Return where the members the links in WORDS point to are, or nil.
 WORDS are a member's as written; a link in them, [[m7]] or
 [[truss-include:m7]], leaves the board's middle naming only the link, so
-where the member it names is written is said before it: its part --
-Brief, Subject, Message, Structure -- and the members it is under,
-↪Message›Interpretation; see `org-truss--path-text'.  The mouse on it
-says it whole."
+what the member it names is where it is written is said before it: its
+part -- Brief, Subject, Message, Structure -- and the roles down to it,
+↪Message›Interpretation›Part; see `org-truss--path-text'.  The mouse on
+it says it whole."
   (let ((members (seq-uniq
                   (delq nil (mapcar (lambda (id) (org-truss-member-by-id model id))
                                     (append (org-truss--includes-in words) (org-truss--points-in words)))))))
@@ -390,14 +395,18 @@ grounds and lacks them, each in its face."
               (propertize " [no grounds]" 'face 'org-truss-attention)
             "")))
 
+(defvar org-truss--reading nil
+  "The members whose words a link is being read as, the latest first.
+One among them read again would be read without end.")
+
 (defun org-truss--link-text (text &optional marked)
   "Return TEXT with each link read as its description, or else its target.
 A link to a file without one reads as the file's name, and a pointing or
-include link as the member's words.  MARKED, each is drawn as a link:
-one to a member in the face of a ground, one to a source in the face of
-a source, or of what wants doing when it points to nothing; the mouse
-on it says what it links to, and RET follows it, see
-`org-truss-board-visit'."
+include link as the member's words, the links in them read in turn.
+MARKED, each is drawn as a link: one to a member in the face of a
+ground, one to a source in the face of a source, or of what wants doing
+when it points to nothing; the mouse on it says what it links to, and
+RET follows it, see `org-truss-board-visit'."
   (replace-regexp-in-string
    "\\[\\[\\*?\\([^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
    (lambda (link)
@@ -411,7 +420,9 @@ on it says what it links to, and RET follows it, see
                        (save-match-data
                          (and (string-match "\\`\\(?:file:\\|\\.\\.?/\\)\\([^:]+\\)" target)
                               (file-name-nondirectory (org-link-unescape (match-string 1 target)))))
-                       (and member (org-truss-member-words member))
+                       (and member (not (memq member org-truss--reading))
+                            (let ((org-truss--reading (cons member org-truss--reading)))
+                              (org-truss--link-text (org-truss-member-words member) marked)))
                        target)))
        (cond ((not marked) words)
              (member
