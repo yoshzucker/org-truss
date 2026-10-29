@@ -66,6 +66,22 @@ change to text properties alone -- fontification, which runs whenever the
 file is shown -- moves no position the board holds, and must not make the
 board think the file was edited.")
 
+(defvar org-truss--one-reading nil
+  "While one command draws the board more than once, the file as read for it.
+\(MODEL . CHECKS), each nil until the first drawing reads it; nil outside
+such a command, when each drawing reads the file.  Folding and opening
+lines change no text of the file, so TAB, which may draw the board
+several times to find what a line brings, reads and checks it once.")
+
+(defmacro org-truss--reading-once (&rest body)
+  "Run BODY reading the truss file, and its sources, once however often it draws.
+See `org-truss--one-reading'.  Only for a command that changes no text of
+the file between its drawings."
+  (declare (indent 0))
+  `(let ((org-truss--one-reading (list nil))
+         (org-truss--sources-read (make-hash-table :test #'equal)))
+     ,@body))
+
 (defvar-local org-truss--view nil
   "The buffer showing this board's output document, if one has been opened.")
 
@@ -169,12 +185,17 @@ command acts on the file as it is, and a key pressed once is enough."
   (let ((key (plist-get (org-truss--item) :key))
         (line (line-number-at-pos))
         (inhibit-read-only t)
-        (model (org-truss-read org-truss--source))
+        (model (or (car org-truss--one-reading) (org-truss-read org-truss--source)))
         (window (get-buffer-window (current-buffer) t)))
+    (when org-truss--one-reading
+      (setcar org-truss--one-reading model))
     (setq org-truss--drawn-width (and window (window-body-width window)))
     (erase-buffer)
     (insert (let ((org-truss--folding org-truss--folds)
                   (org-truss--order org-truss--board-order)
+                  (org-truss--checks (and org-truss--one-reading
+                                          (or (cdr org-truss--one-reading)
+                                              (setcdr org-truss--one-reading (org-truss-checks model)))))
                   (org-truss--images (display-images-p (and window (window-frame window)))))
               (org-truss-board-text model nil org-truss--drawn-width))
             "\n" (propertize (org-truss--board-help) 'face 'org-truss-dim)
@@ -1010,9 +1031,10 @@ it -- its text, its patterns -- the member's line cycles.  A folded line says ho
 ALL, as \\[universal-argument] TAB in Org, the whole board cycles instead;
 see `org-truss-board-cycle-all'."
   (interactive "P")
-  (if all
-      (org-truss-board-cycle-all)
-    (org-truss--cycle-line)))
+  (org-truss--reading-once
+    (if all
+        (org-truss--cycle-all)
+      (org-truss--cycle-line))))
 
 (defun org-truss--cycle-line ()
   "Cycle the line at point, as `org-truss-board-cycle' says."
@@ -1047,6 +1069,11 @@ As S-TAB does in Org, in three steps: overview, every member folded down
 to the parts; contents, every member open on one line; and everything,
 every line whole with its text."
   (interactive)
+  (org-truss--reading-once
+    (org-truss--cycle-all)))
+
+(defun org-truss--cycle-all ()
+  "Cycle the whole board, as `org-truss-board-cycle-all' says."
   (let ((key (plist-get (org-truss--item) :key))
         (drawn (org-truss--drawn-folds)))
     (cond ((seq-every-p (lambda (item) (eq (org-truss--state item) 'whole)) drawn)

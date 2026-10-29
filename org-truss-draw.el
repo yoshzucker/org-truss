@@ -1499,11 +1499,12 @@ whole is broken to fit; see `org-truss-board-middle-width'.
 What the board is drawn from is worked out once and bound for the
 drawing: how each member is used, what the output document has, what
 the checks find, what Structure brings, and the sources quotes are
-looked for in, each read once."
+looked for in, each read once.  What the checks find, and the sources,
+are taken as they are when already bound for MODEL."
   (let* ((org-truss--uses (org-truss--member-uses model))
          (org-truss--in-document (org-truss-in-document model))
-         (org-truss--source-texts (make-hash-table :test #'equal))
-         (org-truss--checks (org-truss-checks model))
+         (org-truss--sources-read (or org-truss--sources-read (make-hash-table :test #'equal)))
+         (org-truss--checks (or org-truss--checks (org-truss-checks model)))
          (org-truss--chained (and (eq org-truss--order 'included) (org-truss--chain model)))
          (org-truss--base-directory (org-truss--model-directory model))
          (whole (or entries (rassq 'whole org-truss--folding)))

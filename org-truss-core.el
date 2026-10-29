@@ -1446,12 +1446,15 @@ not there to look."
          (dir (if file (file-name-directory file) default-directory)))
     (cond ((string-prefix-p "moor:" target)
            (and org-truss-moor-missing-function
-                (funcall org-truss-moor-missing-function path file)))
+                (org-truss--source-once (list 'moor-missing path file)
+                  (lambda () (funcall org-truss-moor-missing-function path file)))))
           ((string-prefix-p "attachment:" target)
            (let ((attach (org-with-point-at pos (ignore-errors (org-attach-dir)))))
              (not (and attach (file-exists-p (expand-file-name path attach))))))
           ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
-           (not (file-exists-p (expand-file-name path dir)))))))
+           (let ((full (expand-file-name path dir)))
+             (org-truss--source-once (list 'missing full)
+               (lambda () (not (file-exists-p full)))))))))
 
 ;;;; Quotes against their sources
 
@@ -1481,11 +1484,13 @@ A `file:' link to a text file; a `moor:' link as
          (dir (if file (file-name-directory file) default-directory)))
     (cond ((string-prefix-p "moor:" target)
            (and org-truss-moor-text-function
-                (funcall org-truss-moor-text-function path file)))
+                (org-truss--source-once (list 'moor-text path file)
+                  (lambda () (funcall org-truss-moor-text-function path file)))))
           ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
            (let ((full (expand-file-name path dir)))
              (and (member (downcase (or (file-name-extension full) "")) org-truss-quote-text-extensions)
-                  (file-readable-p full)
+                  (org-truss--source-once (list 'readable full)
+                    (lambda () (file-readable-p full)))
                   full))))))
 
 (defun org-truss--squeezed (text)
@@ -1495,12 +1500,26 @@ tell a quote from its source; a word changed does."
   (replace-regexp-in-string "[[:space:]　﻿​]+" ""
                             (ucs-normalize-NFKC-string text)))
 
-(defvar org-truss--source-texts nil
-  "While the quotes of one file are looked for, the sources read so far.
-A hash table from each file to its text, squeezed, or `unreadable'; nil
-at any other time, when each source is read as it is asked for.  Bound
-by `org-truss-checks' and the board for one reading of the file alone,
-so nothing read is kept past it.")
+(defvar org-truss--sources-read nil
+  "While one reading of a file looks at its sources, what was found of each.
+A hash table from what was asked -- whether a source is there, which file
+its quotes are looked for in, that file's text -- to the answer; nil at
+any other time, when each is looked up as it is asked for.  Every link
+to a source and every check asks again, and on some systems each look at
+a file is slow.  Bound by `org-truss-checks' and the board for one
+reading of the file alone, so nothing found is kept past it.")
+
+(defun org-truss--source-once (key look)
+  "Return what LOOK, called with no arguments, finds of a source, asked as KEY.
+Looked up once while `org-truss--sources-read' is bound."
+  (declare (indent 1))
+  (if (null org-truss--sources-read)
+      (funcall look)
+    (let ((found (gethash key org-truss--sources-read 'unread)))
+      (when (eq found 'unread)
+        (setq found (funcall look))
+        (puthash key found org-truss--sources-read))
+      found)))
 
 (defun org-truss--read-source-text (file)
   "Return FILE's text as a quote is matched against it, or nil.
@@ -1525,15 +1544,10 @@ Emacs did not guess, EUC-JP where Japanese is not set, is read as."
 
 (defun org-truss--quote-source-text (file)
   "Return FILE's text as a quote is matched against it, or nil.
-Read once while `org-truss--source-texts' is bound; see
+Read once while `org-truss--sources-read' is bound; see
 `org-truss--read-source-text'."
-  (if (null org-truss--source-texts)
-      (org-truss--read-source-text file)
-    (let ((text (gethash file org-truss--source-texts 'unread)))
-      (when (eq text 'unread)
-        (setq text (or (org-truss--read-source-text file) 'unreadable))
-        (puthash file text org-truss--source-texts))
-      (and (stringp text) text))))
+  (org-truss--source-once (list 'text file)
+    (lambda () (org-truss--read-source-text file))))
 
 (defun org-truss-quote-found (quote link file)
   "Return whether QUOTE is in the source LINK points to: `found', `missing' or nil.
@@ -2047,7 +2061,7 @@ member whose pattern asks, at the member that lacks, at the link.
                  point to nothing there
 :duplicates      IDs more than one member has"
   (let* ((members (org-truss-model-members model))
-         (org-truss--source-texts (or org-truss--source-texts (make-hash-table :test #'equal)))
+         (org-truss--sources-read (or org-truss--sources-read (make-hash-table :test #'equal)))
          (told (org-truss-told model))
          (needed (org-truss-needed model))
          (opens (seq-filter #'org-truss-open-p members))
