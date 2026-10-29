@@ -595,7 +595,7 @@ and the links in those words read as the reader reads them too."
         (org-truss-test--show-all))
       (let ((text (buffer-string)))
         (should (string-match-p "↪Subject +The minutes, p\\. 12, and the calendar" text))
-        (should-not (string-match-p "moor:" text))))))
+        (should-not (string-match-p "↪Subject.*moor:" text))))))
 
 (ert-deftest org-truss-test-board-part-that-includes ()
   "A part whose words are an include link alone is the member it includes,

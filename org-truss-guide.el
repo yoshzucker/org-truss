@@ -68,9 +68,9 @@ Words
 
 The four divisions (told apart by TRUSS_DIVISION; filled from the top)
   Brief      the reader, and what the output document must satisfy
-  Subject    the facts found.  One truss for each source: a member naming
-             the source as its apex member, the source's facts as its
-             supporting members
+  Subject    the facts found.  One truss for each source: a member whose
+             words are the link to the source as its apex member, the
+             source's facts as its supporting members
   Message    what the output document says: what the facts mean, and what
              to do
   Structure  the output document's outline, built of trusses.  Each member
@@ -192,10 +192,11 @@ Sources
   different sources together, point to the members that hold them, not
   to the sources
   Name the source once, in the apex member of the truss that points into
-  it: a link with its title in the apex member's text, before the list
-  of its supporting members, ~[[moor:ID][TITLE]]~ ; under it, a link named
-  by its place alone, ~[[moor:ID::223][l. 223]]~ , ~[[moor:ID::12][p. 12]]~ ,
-  at the end of an item's first line, not on a line of its own
+  it: its words are the link with the source's title, ~[[moor:ID][TITLE]]~ ,
+  not what is drawn from it -- that is a claim, for Message.  Under it, a
+  link named by its place alone, ~[[moor:ID::223][l. 223]]~ ,
+  ~[[moor:ID::12][p. 12]]~ , at the end of an item's first line, not on a
+  line of its own
 
 Scope
   Whether a source or a fact is needed is set by whether the response
@@ -289,8 +290,8 @@ M-x org-truss-export で、OUT/ に書き出す。
 
 4つの部（TRUSS_DIVISION で見分ける。上から順に埋める）
   Brief      読み手と、出力文書が満たす条件
-  Subject    調べた事実。資料ごとにトラスを一つ作る（資料を名指す部材を
-             頂点部材に、その資料の事実を支持部材に置く）
+  Subject    調べた事実。資料ごとにトラスを一つ作る（言葉が資料へのリンク
+             である部材を頂点部材に、その資料の事実を支持部材に置く）
   Message    出力文書が言うこと：事実の意味（解釈）と、すること（行動）
   Structure  出力文書の構成を、トラスで組む。部材一つが出力文書の見出し
              一つになり、その本文に、載せるトラスや部材を展開リンクで書く
@@ -401,9 +402,10 @@ M-x org-truss-export で、OUT/ に書き出す。
   moor: の資料は、中のどこを指しても一つ。別の資料の事実を組み合わせる
   ときは、資料へのリンクを書かず、その事実の部材を指すリンクで指す
   資料の名前は、その資料を指すトラスの頂点部材に一度だけ書く。頂点部材の
-  本文の、支持部材の箇条書きの前に題で ~[[moor:ID][題]]~ と書き、その下
-  の部材では場所だけで ~[[moor:ID::223][l. 223]]~ 、 ~[[moor:ID::12][p. 12]]~
-  と書く。項目では、改行せずに1行目の終わりに書く
+  言葉を、題で書いたリンク ~[[moor:ID][題]]~ にする。資料から引き出した
+  ことは書かない（それは主張で、Message に書く）。その下の部材では場所
+  だけで ~[[moor:ID::223][l. 223]]~ 、 ~[[moor:ID::12][p. 12]]~ と書く。
+  項目では、改行せずに1行目の終わりに書く
 
 調べる範囲
   資料や事実が要るかどうかは、Brief の求める反応に至るのに要るかで決まる。
@@ -496,10 +498,10 @@ document only when Structure includes it."
 written (names, what is confidential)."
      "文書が守るもの：分量、形式、書いてはいけないこと（個人名、社外秘など）。")
     (subject
-     "The facts found.  For each source, a member naming it, the source's
-facts under it."
-     "調べた事実。資料ごとに、その資料を名指す部材を一つ作り、その資料の事実を
-下に置く。事実だけを書き、その意味は Message に書く。")
+     "The facts found.  For each source, a member whose words are the link to
+it, by its title, the source's facts under it."
+     "調べた事実。資料ごとに、言葉がその資料への題のリンクである部材を一つ作り、
+その資料の事実を下に置く。事実だけを書き、その意味は Message に書く。")
     (message
      "What the facts mean here, and what to do.  One statement each, the
 reasons under the claim."

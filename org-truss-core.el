@@ -803,8 +803,11 @@ one member has."
 PARSED is the parse of its text."
   (org-with-point-at pos
     ;; What it stands on is what the reader is told: a link on a comment
-    ;; line is the file's alone, and no ground.
-    (let ((all (plist-get parsed :body)))
+    ;; line is the file's alone, and no ground.  A source is linked on
+    ;; its line too, as an item's first line links one: the apex member
+    ;; of a source's truss is the link to it.
+    (let* ((all (plist-get parsed :body))
+           (sourced (concat (org-truss--heading-words) "\n" all)))
       (list :pos pos
             ;; <<m7>> in its words, as an item has it, or its CUSTOM_ID.
             :id (or (org-truss--heading-target)
@@ -821,8 +824,8 @@ PARSED is the parse of its text."
             :points (org-truss--points-in all)
             :includes (append (org-truss--includes-in (org-truss--heading-words))
                               (plist-get parsed :includes))
-            :source-links (org-truss--source-links-in all)
-            :cited (car (org-truss--source-links-in all))
+            :source-links (org-truss--source-links-in sourced)
+            :cited (car (org-truss--source-links-in sourced))
             :quoted (org-truss--quotes-in all)
             :body (org-truss--read-text parsed :body)
             :notes (org-truss--read-text parsed :comments)))))
@@ -1571,9 +1574,9 @@ truss file."
 
 (defun org-truss-quote-link (model member quote)
   "Return the link to the source QUOTE of MEMBER of MODEL is from, or nil.
-One linked in the quote; else the first MEMBER's text cites; else the
-first the text of a member above it cites, the apex member a source is
-named in once."
+One linked in the quote; else the first MEMBER cites; else the first a
+member above it cites, the apex member whose words are the link to the
+source, named there once."
   (or (car (org-truss--source-links-in quote))
       (let ((m member) link)
         (while (and m (not link))

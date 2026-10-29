@@ -152,7 +152,7 @@ On a line of its own after the member's text."
   "Open a source of the board's line, as following its link does.
 On a link to a source drawn in a member's text, that one; on a quotation
 there, a link in it or else the first the text cites; elsewhere on a
-member's lines, one its own text links to, asked for when several --
+member's lines, one its own words or text link to, asked for when several --
 not those of the members under it, which the board shows under them.
 ORIGIN opens where a source taken by org-moor came from rather than its
 copy; any other link is followed either way.  HOW is the prefix, as for
@@ -165,7 +165,9 @@ following a link."
       (let* ((links (or (and here (string-match-p (concat "\\`" org-truss--source-link-re "\\'") here)
                              (list here))
                         (seq-uniq (org-truss--source-links-in
-                                   (plist-get (org-truss--text-at pos) :all)))
+                                   (concat (org-with-point-at pos
+                                             (if (org-at-heading-p) (org-truss--heading-words) ""))
+                                           "\n" (plist-get (org-truss--text-at pos) :all))))
                         (user-error "No source here")))
              (link (if (cdr links)
                        (org-truss--read-choice

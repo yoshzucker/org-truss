@@ -1274,6 +1274,33 @@ a breakdown, or in a section's text, such a link tells and is no ground."
                      '(("[[truss-include:bare]]" . "bare"))))
       (should-not (org-truss-member-grounds (car (org-truss-member-supports split)))))))
 
+(ert-deftest org-truss-test-source-named-by-heading ()
+  "A heading whose words are the link to a source cites it, as an item's
+first line does: the facts under it, linked by their place alone or not
+at all, are of that source, and their quotes are looked for in it."
+  (org-truss-test--with "* S
+:PROPERTIES:
+:TRUSS_DIVISION: subject
+:END:
+** <<m1>>[[moor:manual][The manual]]
+
+#+attr_truss: :breakdown parts
+- <<m2>>Approval goes first to the head [[moor:manual::12][p. 12]]
+- <<m3>>Finance approves last
+  #+begin_quote
+  Finance approves last.
+  #+end_quote
+"
+    (let* ((model (org-truss-read))
+           (manual (org-truss-member-by-id model "m1"))
+           (last (org-truss-member-by-id model "m3")))
+      (should (equal (org-truss-member-words manual) "[[moor:manual][The manual]]"))
+      (should (equal (org-truss-member-source-links manual) '("[[moor:manual][The manual]]")))
+      (should (equal (org-truss-member-cited manual) "[[moor:manual][The manual]]"))
+      (should (equal (org-truss-quote-link model last "Finance approves last.")
+                     "[[moor:manual][The manual]]"))
+      (should-not (plist-get (org-truss-checks model) :mixed-sources)))))
+
 (ert-deftest org-truss-test-mixed-sources ()
   "The parts with nothing under them keep to one source, and a logic keeps
 to one in all it holds, wherever they are.  One taken by org-moor is one

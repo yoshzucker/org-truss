@@ -137,8 +137,8 @@ it is listed under /Hidden grounds/.
 The work on an output document goes in three steps, one division each.
 
 - /Find out/, in Subject.  Gather the facts, each with its grounds, one
-  truss for each source: a member naming the source as its apex member,
-  the source's facts as its supporting members.
+  truss for each source: a member whose words are the link to the source
+  as its apex member, the source's facts as its supporting members.
 - /Make sense/, in Message.  Say what the facts mean here, and what is to
   be done, one statement each.  A claim's reasons are its supporting
   members, and stand on the facts they point to in their text; what is to
@@ -552,17 +552,18 @@ A source taken by org-moor is one wherever in it its links point and
 whatever words they give it, ~[[moor:ID::14]]~ and ~[[moor:ID::200][field
 B]]~ alike; a file is one, a URL is one.  Pointing links are no sources.
 
-A truss pointing into one source names it once, in its apex member: a
-link with the source's title in the apex member's text, before the list
-of its supporting members, ~[[moor:ID][Manual]]~; under it, each link is
-named by its place alone, ~[[moor:ID::223][l. 223]]~, ~[[moor:ID::12][p.
+A truss pointing into one source names it once, in its apex member:
+its words are the link with the source's title, ~[[moor:ID][Manual]]~.
+They name the source, not what is drawn from it: that is a claim, and
+its place is Message.  So a reader sees where one source's facts begin,
+and that all under it are of that source.  Under it, each link is named
+by its place alone, ~[[moor:ID::223][l. 223]]~, ~[[moor:ID::12][p.
 12]]~ -- in an item, at the end of its first line, not on a line of its
 own, so the output document gives the place at the end of the fact, not
 as a paragraph after it:
 
 #+begin_example
-,** Approval manual 2026
-[[moor:6f1c...][Approval manual 2026]]
+,** [[moor:6f1c...][Approval manual 2026]]
 ,#+attr_truss:
 - <<m21>>Approval goes to the department head first [[moor:6f1c...::12][p. 12]]
 - <<m22>>Finance approves last [[moor:6f1c...::14][p. 14]]
@@ -570,7 +571,8 @@ as a paragraph after it:
 
 The link goes to the same source either way; only its words
 change, so the file and the output document say which source once,
-where the facts of it begin, and where in it beside each fact.  With
+in the heading the facts of it begin under, and where in it beside each
+fact.  With
 org-moor, what it writes in ~truss.org~ -- a place noted beside the
 source, ~C-c C-l~, what an agent the heading is handed to is told to
 write -- is named so: a link to a place by the place, one to the source
@@ -704,22 +706,19 @@ The guide's drawer left out:
 :TRUSS_DIVISION: subject
 :TRUSS_BREAKDOWN: parts
 :END:
-,** <<m8>>The calendar this quarter
+,** <<m8>>[[https://calendar.example.com/export][The calendar this quarter]]
 :PROPERTIES:
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
 - <<m2>>Eight of twelve reviews ran past the hour
-  By the [[https://calendar.example.com/export][calendar export]].
 - <<m3>>The longest ran forty minutes over
-  By the [[https://calendar.example.com/export][calendar export]].
-,** <<m9>>The agendas, weeks 1-12
+,** <<m9>>[[https://wiki.example.com/reviews/agendas][The agendas, weeks 1-12]]
 :PROPERTIES:
 :TRUSS_BREAKDOWN: parts
 :END:
 ,#+attr_truss:
 - <<m4>>Six of twelve items each week come back from the week before
-  In the [[https://wiki.example.com/reviews/agendas][agendas, weeks 1-12]].
 
 ,* Message
 :PROPERTIES:
@@ -1556,12 +1555,12 @@ The file above is written out as:
 
 ,* Reviews run long, and the same items come back
 
-,** The calendar this quarter
+,** [[https://calendar.example.com/export][The calendar this quarter]]
 
 - Eight of twelve reviews ran past the hour
 - The longest ran forty minutes over
 
-,** The agendas, weeks 1-12
+,** [[https://wiki.example.com/reviews/agendas][The agendas, weeks 1-12]]
 
 - Six of twelve items each week come back from the week before
 
