@@ -513,12 +513,14 @@ and puts the member mid-window."
     (org-fold-region (point) (cdr (org-truss--text-bounds (point))) nil 'block)
     (when center (recenter (/ (window-height) 2)))))
 
-(defun org-truss--open-link (link)
+(defun org-truss--open-link (link &optional keys)
   "Open LINK, a link to a source, as RET on it in the truss file opens it.
 From where it is written in the text of the line's member, or else
 anywhere in the file, by `org-open-at-point', given the prefix this
 command was: what opens it knows the heading it is under, and opens it
-from the board's window.  The file stays out of sight."
+from the board's window.  The file stays out of sight.  With KEYS, by
+the command they are bound to in the file instead, as they open it
+there, when it is one."
   (let ((item (org-truss--item)))
     (with-current-buffer org-truss--source
       (org-with-wide-buffer
@@ -526,19 +528,23 @@ from the board's window.  The file stays out of sight."
        (if (or (search-forward link nil t)
                (progn (goto-char (point-min))
                       (search-forward link nil t)))
-           (progn (goto-char (1+ (match-beginning 0)))
-                  (org-open-at-point current-prefix-arg))
+           (let ((command (progn (goto-char (1+ (match-beginning 0)))
+                                 (and keys (key-binding keys t nil (point))))))
+             (if (and (commandp command)
+                      (not (eq command 'org-truss-board-open-link)))
+                 (call-interactively command)
+               (org-open-at-point current-prefix-arg)))
          (org-link-open-from-string link current-prefix-arg))))))
 
-(defun org-truss--follow-link ()
+(defun org-truss--follow-link (&optional keys)
   "Follow the link drawn at point; nil when there is none.
 One to a member goes to its line on the board, see
 `org-truss--go-drawn'; one to a source opens it, see
-`org-truss--open-link'."
+`org-truss--open-link', which takes KEYS."
   (let ((link (get-text-property (point) 'org-truss-link))
         (to (get-text-property (point) 'org-truss-link-to)))
     (cond (to (push-mark) (org-truss--go-drawn to link) t)
-          (link (org-truss--open-link link) t))))
+          (link (org-truss--open-link link keys) t))))
 
 (defun org-truss--follow (display &optional center)
   "Follow the link in a member's text at point, or go to the line's member.
@@ -550,9 +556,11 @@ CENTER as it takes it."
 
 (defun org-truss-board-open-link ()
   "Follow the link at point: to the member's line, or open the source.
-As \\[org-open-at-point] does in the file; see `org-truss--follow-link'."
+The source opens as the keys of this command open it in the file, so
+the command bound to them there opens it, \\[org-open-at-point] when
+nothing else is; see `org-truss--follow-link'."
   (interactive)
-  (unless (org-truss--follow-link)
+  (unless (org-truss--follow-link (this-command-keys-vector))
     (user-error "No link here")))
 
 (defun org-truss-board-visit ()

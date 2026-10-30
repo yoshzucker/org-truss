@@ -839,7 +839,21 @@ On [[m1]], and [[https://example.com/w][the forecast]].
           (funcall command))
         (should (equal opened (list source "https://example.com/w" "Take an umbrella")))
         (should (eq (current-buffer) board))
-        (should-not (get-buffer-window source))))))
+        (should-not (get-buffer-window source)))
+      ;; C-c C-o bound to another command in the file opens it so.
+      (let ((map (make-sparse-keymap)))
+        (set-keymap-parent map org-mode-map)
+        (define-key map (kbd "C-c C-o")
+                    (lambda () (interactive)
+                      (setq opened (org-element-property :raw-link (org-element-context)))))
+        (with-current-buffer source (use-local-map map))
+        (goto-char (point-min))
+        (search-forward "the forecast")
+        (backward-char 1)
+        (cl-letf (((symbol-function 'this-command-keys-vector)
+                   (lambda () (kbd "C-c C-o"))))
+          (org-truss-board-open-link))
+        (should (equal opened "https://example.com/w"))))))
 
 (ert-deftest org-truss-test-board-quotes-in-the-text ()
   "A quotation is drawn in its member's text, where it stands, a paragraph
