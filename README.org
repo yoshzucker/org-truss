@@ -1152,8 +1152,10 @@ of a ground; a link to a source as its words, in the face of a source,
 or of what wants doing when it points to nothing; a quotation as a
 paragraph of its own in quotation marks, after =✓= when its words were
 found in its source, =✗= when not, =?= when the source cannot be read.
-The mouse on a link says where it goes, and ~RET~ on it follows it: to
-the member, or the source; ~m o~ on a link to a source, or on a
+The mouse on a link says where it goes, and ~RET~ or ~C-c C-o~ on it
+follows it: one to a member goes to the member's line on the board,
+unfolding what hides it; one to a source opens it as ~RET~ on it in the
+file does, from where it is written there; ~m o~ on a link to a source, or on a
 quotation, opens that source.  A link on a comment line is drawn as it
 is written, dimmed with the comment, and is no ground.  With point on a
 line, the lines linked to it light up, one step either way: where each
@@ -1322,6 +1324,7 @@ done in the file, by hand or with Org's own commands.
 | see     | visit              | ~RET~     | go to it                                                                     | same                                               |
 |         | visit-other-window |           | go to it in the other window                                                 | same                                               |
 |         | show               |           | show it in the other window, staying on the board                            | same                                               |
+|         | open-link          | ~C-c C-o~ | on a link, go to the member's line, or open the source                       | same                                               |
 |         | cycle              | ~TAB~     | fold it, show it whole with what is right under it, or all under it          | same                                               |
 |         | cycle-all          | ~C-u TAB~ | fold every line, open every one, or show every one whole; ~S-TAB~ too        | same                                               |
 |         | fold               |           | fold what is under it, or unfold it                                          | same                                               |

@@ -119,6 +119,7 @@ Filled by org-truss-moor.el; empty without org-moor.")
            org-truss-board-moor-map)
     (shape org-truss-board-pattern org-truss-board-roles)
     (see org-truss-board-visit org-truss-board-visit-other-window org-truss-board-show
+         org-truss-board-open-link
          org-truss-board-cycle org-truss-board-cycle-all org-truss-board-fold
          org-truss-board-same
          org-truss-board-order org-truss-board-guide org-truss-board-view
@@ -220,6 +221,7 @@ command acts on the file as it is, and a key pressed once is enough."
 (defvar org-truss-board-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'org-truss-board-visit)
+    (define-key map (kbd "C-c C-o") #'org-truss-board-open-link)
     (define-key map (kbd "o") #'org-truss-board-order)
     (define-key map (kbd "TAB") #'org-truss-board-cycle)
     (define-key map (kbd "<backtab>") #'org-truss-board-cycle-all)
@@ -511,24 +513,54 @@ and puts the member mid-window."
     (org-fold-region (point) (cdr (org-truss--text-bounds (point))) nil 'block)
     (when center (recenter (/ (window-height) 2)))))
 
+(defun org-truss--open-link (link)
+  "Open LINK, a link to a source, as RET on it in the truss file opens it.
+From where it is written in the text of the line's member, or else
+anywhere in the file, by `org-open-at-point', given the prefix this
+command was: what opens it knows the heading it is under, and opens it
+from the board's window.  The file stays out of sight."
+  (let ((item (org-truss--item)))
+    (with-current-buffer org-truss--source
+      (org-with-wide-buffer
+       (goto-char (or (plist-get item :pos) (point-min)))
+       (if (or (search-forward link nil t)
+               (progn (goto-char (point-min))
+                      (search-forward link nil t)))
+           (progn (goto-char (1+ (match-beginning 0)))
+                  (org-open-at-point current-prefix-arg))
+         (org-link-open-from-string link current-prefix-arg))))))
+
+(defun org-truss--follow-link ()
+  "Follow the link drawn at point; nil when there is none.
+One to a member goes to its line on the board, see
+`org-truss--go-drawn'; one to a source opens it, see
+`org-truss--open-link'."
+  (let ((link (get-text-property (point) 'org-truss-link))
+        (to (get-text-property (point) 'org-truss-link-to)))
+    (cond (to (push-mark) (org-truss--go-drawn to link) t)
+          (link (org-truss--open-link link) t))))
+
 (defun org-truss--follow (display &optional center)
   "Follow the link in a member's text at point, or go to the line's member.
-DISPLAY shows the truss file.  A link drawn in a member's text is
-followed as Org follows it from the file: one to a member goes to it
-there, one to a source opens the source.  Elsewhere on the line, see
-`org-truss--go'; CENTER as it takes it."
-  (let ((link (get-text-property (point) 'org-truss-link)))
-    (if (not link)
-        (org-truss--go display center)
-      (funcall display org-truss--source)
-      (widen)
-      (org-link-open-from-string link))))
+DISPLAY shows the truss file.  On a link drawn in a member's text, see
+`org-truss--follow-link'.  Elsewhere on the line, see `org-truss--go';
+CENTER as it takes it."
+  (unless (org-truss--follow-link)
+    (org-truss--go display center)))
+
+(defun org-truss-board-open-link ()
+  "Follow the link at point: to the member's line, or open the source.
+As \\[org-open-at-point] does in the file; see `org-truss--follow-link'."
+  (interactive)
+  (unless (org-truss--follow-link)
+    (user-error "No link here")))
 
 (defun org-truss-board-visit ()
   "Go to the line's member in the truss file, in this window.
 As RET does in the agenda: the file takes the board's window.  On a link
-in a member's text, follow it instead: to the member it points to, or
-the source."
+in a member's text, follow it instead: to the line of the member it
+points to, on the board, or open the source as RET on it in the file
+does; see `org-truss--follow-link'."
   (interactive)
   (org-truss--follow #'pop-to-buffer-same-window))
 
@@ -703,11 +735,16 @@ what hides it."
         (setq org-truss--same-from (plist-get item :key))
         (goto-char (car (car links)))
         (message "Link 1 of %d" (length links))))
-     (t
-      (unless (or written (not (org-truss--open-folds-over pos)))
-        (setq written (org-truss--home-line pos)))
-      (goto-char (car (or written (user-error "%s is not written on the board"
-                                              (plist-get item :words)))))))))
+     (t (org-truss--go-drawn pos (plist-get item :words))))))
+
+(defun org-truss--go-drawn (pos words)
+  "Go to the line the member at POS is drawn in full, unfolding what hides it.
+See `org-truss--home-line'.  WORDS name it when it is not on the board."
+  (let ((line (or (org-truss--home-line pos)
+                  (and (org-truss--open-folds-over pos)
+                       (org-truss--home-line pos))
+                  (user-error "%s is not written on the board" words))))
+    (goto-char (car line))))
 
 ;;;; Lines lit with the line at point
 

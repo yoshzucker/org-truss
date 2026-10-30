@@ -797,6 +797,50 @@ words of one above it that plays none."
       (let ((model (org-truss-read)))
         (should (equal (org-truss-member-points (org-truss-member-by-id model "m2")) '("m1")))))))
 
+(ert-deftest org-truss-test-board-follows-links ()
+  "RET on a link to a member goes to the member's line on the board; on a
+link to a source, it opens it as RET on it in the file does, from where it
+is written there, with the file out of sight.  C-c C-o does the same."
+  (org-truss-test--with-board "* S
+:PROPERTIES:
+:TRUSS_DIVISION: subject
+:END:
+** <<m1>>Rain
+* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:END:
+** Take an umbrella
+On [[m1]], and [[https://example.com/w][the forecast]].
+"
+    (org-truss-test--show-all)
+    (let ((rain (with-current-buffer source
+                  (goto-char (point-min))
+                  (search-forward "<<m1>>")
+                  (line-beginning-position)))
+          (board (current-buffer))
+          opened)
+      (dolist (command '(org-truss-board-visit org-truss-board-open-link))
+        (goto-char (point-min))
+        (search-forward "On Rain")
+        (backward-char 1)
+        (funcall command)
+        (should (eq (current-buffer) board))
+        (should (eql (plist-get (org-truss--item) :pos) rain))
+        (goto-char (point-min))
+        (search-forward "the forecast")
+        (backward-char 1)
+        (cl-letf (((symbol-function 'org-open-at-point)
+                   (lambda (&optional _arg)
+                     (setq opened (list (current-buffer)
+                                        (org-element-property :raw-link (org-element-context))
+                                        (save-excursion (org-back-to-heading t)
+                                                        (org-get-heading t t t t)))))))
+          (funcall command))
+        (should (equal opened (list source "https://example.com/w" "Take an umbrella")))
+        (should (eq (current-buffer) board))
+        (should-not (get-buffer-window source))))))
+
 (ert-deftest org-truss-test-board-quotes-in-the-text ()
   "A quotation is drawn in its member's text, where it stands, a paragraph
 of its own in quotation marks after the mark of what its source was found
@@ -1350,7 +1394,7 @@ it.  The member's own line counts the members standing on it."
 leaves the rest to be called by name."
   (org-truss-test--with-board org-truss-test--cycle-file
     (let ((text (buffer-string)))
-      (should (string-match-p "^see +RET visit  TAB cycle  <backtab> cycle-all  o order  \\? guide" text))
+      (should (string-match-p "^see +RET visit  C-c C-o open-link  TAB cycle  <backtab> cycle-all  o order  \\? guide" text))
       (should (string-match-p "^write +m source$" text))
       (should-not (string-match-p "^place" text))
       (should-not (string-match-p " new " text)))))

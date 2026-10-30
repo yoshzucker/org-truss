@@ -404,8 +404,9 @@ One among them read again would be read without end.")
 A link to a file without one reads as the file's name, and a pointing or
 include link as the member's words, the links in them read in turn.
 MARKED, each is drawn as a link: one to a member in the face of a
-ground, one to a source in the face of a source, or of what wants doing
-when it points to nothing; the mouse on it says what it links to, and
+ground, holding where the member is written, one to a source in the
+face of a source, or of what wants doing when it points to nothing; the
+mouse on it says what it links to, and
 RET follows it, see `org-truss-board-visit'."
   (replace-regexp-in-string
    "\\[\\[\\*?\\([^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
@@ -427,6 +428,7 @@ RET follows it, see `org-truss-board-visit'."
        (cond ((not marked) words)
              (member
               (propertize words 'face 'org-truss-ground 'org-truss-link link
+                          'org-truss-link-to (org-truss-member-pos member)
                           'help-echo (format "%s: %s, written in %s" link (org-truss-member-words member)
                                              (org-truss--path-text org-truss--model member))))
              ((save-match-data (string-match-p (concat "\\`" org-truss--source-link-re "\\'") link))
