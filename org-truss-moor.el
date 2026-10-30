@@ -59,6 +59,15 @@ title; the members under it name the place, p. 12."
 
 (add-hook 'org-moor-place-alone-functions #'org-truss-moor-place-alone-p)
 
+;; The same from the package's autoloads, so that a truss file's sources go
+;; beside it before anything of org-truss has been used: a source taken in
+;; the file, or in a copy of a heading org-dock took out of it, and the
+;; command an agent is handed to take one, which is written before
+;; `org-truss-dock-request' loads org-truss.
+;;;###autoload (autoload 'org-truss-moor-sources "org-truss")
+;;;###autoload (autoload 'org-truss-moor-place-alone-p "org-truss")
+;;;###autoload (with-eval-after-load 'org-moor (add-hook 'org-moor-sources-directory-functions #'org-truss-moor-sources) (add-hook 'org-moor-place-alone-functions #'org-truss-moor-place-alone-p))
+
 (defun org-truss-moor--words-end (pos)
   "Return where the words of the item at POS end, before its tags."
   (save-excursion
