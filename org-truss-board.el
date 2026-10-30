@@ -408,7 +408,7 @@ while a command was asking something."
     org-truss-board-edit org-truss-board-same
     org-truss-board-pattern org-truss-board-roles
     org-truss-board-take-url org-truss-board-take-file org-truss-board-take-clipboard
-    org-truss-board-keep-copy org-truss-board-link-source)
+    org-truss-board-keep-replica org-truss-board-link-source)
   "The board's commands that take a member written as an item of a list.")
 
 (defun org-truss--want (item &rest types)

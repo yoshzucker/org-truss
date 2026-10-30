@@ -631,7 +631,7 @@ adds what is missing and leaves what is there.
 
 So the directory can be moved, or handed over, whole.  With org-moor, a
 source taken from a truss file goes in its ~sources/~: a directory named by
-the source's id, holding its copy and its record -- a title, where it came
+the source's id, holding its replica and its record -- a title, where it came
 from, how and when.  A member cites it with a ~moor:~ link, ~[[moor:ID::12][p. 12]]~
 for a page or a line, the source named once above it (see [[*One source
 at a time]]), in its text, beside the words it quotes or
@@ -1386,7 +1386,7 @@ member's text cites, else the first a member above it cites.  Line
 breaks, spaces and full- or half-width letters are set aside, and words
 left out are marked =…=; a word changed is not found.  It looks only
 where the source's text can surely be read as the one who quoted it
-read it: a copy that is text, or what org-moor made a slide deck, a page
+read it: a replica that is text, or what org-moor made a slide deck, a page
 or a document readable as.  A PDF, a picture, a file that does not read
 cleanly -- raw bytes, or beyond ASCII in a coding of one byte a letter,
 as a file in a coding Emacs did not guess is read -- is not looked in,
@@ -1408,17 +1408,17 @@ working by ~org-truss-batch-check~ is told of it.
 into the truss file's ~sources/~, and writes the link to it on a line of
 its own after the member's text -- for an item, at the end of its first
 line, before its tags -- the reader's citation too: ~m w~ a page
-or a file on the web, its copy fetched in the background
+or a file on the web, its replica fetched in the background
 (~org-moor-take-url~); ~m f~ a file (~org-moor-take-file~); ~m c~ the
 clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file
-has, by its title, and ~m k~ keeps a copy, from their origins, of the
+has, by its title, and ~m k~ keeps a replica, from their origins, of the
 sources the member links to that have none -- those an agent took without
-being able to fetch them as you, signed in (~org-moor-keep-copy~).  ~m o~
+being able to fetch them as you, signed in (~org-moor-keep-replica~).  ~m o~
 opens a source to check what a member says against it: on a link to a
 source in a member's text, that source; on a quotation there, the source
 it quotes, linked in it or else the first the text cites; elsewhere on a
 member's lines, one its own text links to, asked for when there are
-several.  The copy, at
+several.  The replica, at
 the page or line the link names, as following the link does; ~m O~ where
 it came from instead, the page on the web.  A link to anything but a
 source org-moor took is followed as it is, with either.  A link put on a
@@ -1538,7 +1538,7 @@ Structure is in it, and the trusses and members its include links reach.
   and pandoc makes a picture an image.  /view/ shows the pictures where
   they are.
 - A ~moor:~ link, with org-moor, goes where its source came from, since
-  the copy in ~sources/~ is yours and the reader has none: to the page on
+  the replica in ~sources/~ is yours and the reader has none: to the page on
   the web, at the page the link names when it is a PDF,
   ~[[https://e.x/act.pdf#page=14][Act p. 14]]~.  A source that came from
   no such page -- a file, a mail -- is named by the link's words, or its
@@ -1546,7 +1546,7 @@ Structure is in it, and the trusses and members its include links reach.
   named by a place alone, ~l. 223~, has the source's title put before
   it, ~Manual l. 223~, so the reader is told which source wherever it
   is first cited; the links after it are as written.  /view/ keeps the
-  link to the copy, to be followed in Emacs.
+  link to the replica, to be followed in Emacs.
 
 The file above is written out as:
 

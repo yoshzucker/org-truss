@@ -15,7 +15,7 @@
 ;;
 ;; A truss file keeps what was read beside it, in
 ;; `org-truss-sources-directory', so that the directory can be handed over
-;; whole.  org-moor keeps a source as a directory there -- its copy and its
+;; whole.  org-moor keeps a source as a directory there -- its replica and its
 ;; record -- and a member cites one with a `moor:' link in its text, which
 ;; gives it grounds.
 ;;
@@ -24,10 +24,10 @@
 ;; the apex member of the truss pointing into it; `m' on the board
 ;; takes one for a member as org-moor takes one -- a page, a file, the
 ;; clipboard -- or links one taken before, for it to stand on; `m o' and
-;; `m O' open a source the board's line names, its copy or where it came
+;; `m O' open a source the board's line names, its replica or where it came
 ;; from, so what a member stands on is read beside it; the check finds a
 ;; `moor:' link to a source that is not there; the output document links
-;; to where a source came from, not to the copy, and names the source at
+;; to where a source came from, not to the replica, and names the source at
 ;; the first link to it there; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
 ;; cannot ask Emacs, and prints the link to cite it with.
@@ -101,7 +101,7 @@ member's text; for an item, at the end of its first line."
 
 (defun org-truss-board-take-url ()
   "Take a web page or a file on the web for the member at point.
-Its copy is fetched in the background, as `org-moor-take-url' fetches it,
+Its replica is fetched in the background, as `org-moor-take-url' fetches it,
 and the link to it written in the member's text: grounds."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-take-url))
@@ -118,12 +118,12 @@ The link to it is written in the member's text: grounds."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-take-clipboard))
 
-(defun org-truss-board-keep-copy ()
-  "Keep a copy of the sources the member at point links to that have none.
-From their origins, as `org-moor-keep-copy' does: for sources an agent
+(defun org-truss-board-keep-replica ()
+  "Keep a replica of the sources the member at point links to that have none.
+From their origins, as `org-moor-keep-replica' does: for sources an agent
 took, which could not fetch them as you, signed in."
   (interactive)
-  (org-truss-moor--at-heading #'org-moor-keep-copy))
+  (org-truss-moor--at-heading #'org-moor-keep-replica))
 
 (defun org-truss-board-link-source ()
   "Link the member at point to a source the truss file has: grounds.
@@ -155,7 +155,7 @@ there, a link in it or else the first the text cites; elsewhere on a
 member's lines, one its own words or text link to, asked for when several --
 not those of the members under it, which the board shows under them.
 ORIGIN opens where a source taken by org-moor came from rather than its
-copy; any other link is followed either way.  HOW is the prefix, as for
+replica; any other link is followed either way.  HOW is the prefix, as for
 following a link."
   (let* ((item (org-truss--want (org-truss--item) 'member))
          (pos (plist-get item :pos))
@@ -177,7 +177,7 @@ following a link."
              (end (cdr (org-truss--text-bounds pos))))
         (save-excursion
           ;; Point on the link, so it is followed from where it is written:
-          ;; a file beside the truss file, the member a copy is read for.
+          ;; a file beside the truss file, the member a replica is read for.
           (goto-char pos)
           (unless (search-forward link end t)
             (user-error "The link is no longer in the member's text: %s" link))
@@ -187,7 +187,7 @@ following a link."
             (org-open-at-point how)))))))
 
 (defun org-truss-board-open-source (&optional how)
-  "Open the copy of a source of the board's line, or follow its link.
+  "Open the replica of a source of the board's line, or follow its link.
 On a link to a source in a member's text, that one; on a quotation
 there, the one it quotes; elsewhere, one the member's text links to.  HOW, the prefix, as for following a
 link: \\[universal-argument] in Emacs, two in the program the system opens it with."
@@ -206,7 +206,7 @@ source taken by org-moor is followed as it is."
 (define-key org-truss-board-moor-map (kbd "w") #'org-truss-board-take-url)
 (define-key org-truss-board-moor-map (kbd "f") #'org-truss-board-take-file)
 (define-key org-truss-board-moor-map (kbd "c") #'org-truss-board-take-clipboard)
-(define-key org-truss-board-moor-map (kbd "k") #'org-truss-board-keep-copy)
+(define-key org-truss-board-moor-map (kbd "k") #'org-truss-board-keep-replica)
 (define-key org-truss-board-moor-map (kbd "l") #'org-truss-board-link-source)
 
 (defun org-truss-moor-missing-p (id file)
@@ -218,16 +218,16 @@ FILE is the file the link to it is in; with none, the current buffer's."
 
 (defun org-truss-moor-quote-text (id file)
   "Return the text file a quote from source ID of FILE is looked for in, or nil.
-Its copy when that is text; else what org-moor made the copy readable as
+Its replica when that is text; else what org-moor made the replica readable as
 -- a slide deck, a page, a document by pandoc -- when it has, which is
-what an agent read.  Nil for a PDF and for a copy not made readable:
+what an agent read.  Nil for a PDF and for a replica not made readable:
 their text cannot surely be read as the agent read it.  Nothing is made
 here."
   (let* ((record (ignore-errors (org-moor-record id (org-moor-sources file))))
-         (copy (and record (plist-get record :copy))))
-    (cond ((null copy) nil)
-          ((org-moor-text-file-p copy) copy)
-          (t (org-moor--made-readable copy)))))
+         (replica (and record (plist-get record :replica))))
+    (cond ((null replica) nil)
+          ((org-moor-text-file-p replica) replica)
+          (t (org-moor--made-readable replica)))))
 
 (setq org-truss-moor-text-function #'org-truss-moor-quote-text)
 
@@ -237,7 +237,7 @@ here."
 
 (defun org-truss-moor-export-link (path words file &optional first)
   "Return the `moor:' link to PATH, named WORDS, as the reader of FILE follows it.
-The reader has no copy of the source, so the link goes to its origin: a
+The reader has no replica of the source, so the link goes to its origin: a
 page on the web, at the page of a PDF the link names.  A source that came
 from no such page -- a file, a mail -- is named by WORDS, or its title, as
 text, since nothing there can be opened by the reader.  FIRST, the first

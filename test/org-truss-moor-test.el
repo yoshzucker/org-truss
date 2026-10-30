@@ -49,7 +49,7 @@ printed a link to cite it by."
       (should (string-match "\\`\\[\\[moor:\\([^]]+\\)\\]\\[Minutes of May\\]\\]\n\\'" printed))
       (let ((record (org-moor-record (match-string 1 printed) (expand-file-name "sources/" dir))))
         (should (equal (plist-get record :origin) file))
-        (should (plist-get record :copy)))
+        (should (plist-get record :replica)))
       (should (file-exists-p file)))))
 
 (ert-deftest org-truss-test-board-takes-a-source ()
@@ -73,7 +73,7 @@ heading, after its text: grounds.  m l links one taken before."
           (org-truss-board-take-file))
         (let ((record (car (org-moor-sources-in (expand-file-name "sources/" dir)))))
           (should (equal (plist-get record :title) "Minutes"))
-          (should (plist-get record :copy))
+          (should (plist-get record :replica))
           (with-current-buffer source
             (should (string-search (concat "Some items cannot wait two weeks.\n"
                                            (org-moor-link record) "\n")

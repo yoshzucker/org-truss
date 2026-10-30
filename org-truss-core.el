@@ -1464,8 +1464,8 @@ not there to look."
 
 ;; A quote is the source's words as they are, so it is looked for in the
 ;; source.  Only where the source's text can surely be read as the agent
-;; that quoted it read it: a copy that is text, or what org-moor made a
-;; copy readable as.  A PDF, a picture, a file that does not read cleanly
+;; that quoted it read it: a replica that is text, or what org-moor made a
+;; replica readable as.  A PDF, a picture, a file that does not read cleanly
 ;; is not looked in, and nothing is said of a quote from it: a quote not
 ;; found must be one that is not there.
 

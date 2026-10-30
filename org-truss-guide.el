@@ -222,7 +222,7 @@ Quotes
   period, its team)
   In its text, a quote, #+begin_quote: the source's words that hold the
   fact up, one or two sentences, copied as they are from what you read (a
-  moor: source's copy, or what the copy was made readable as).  Change no
+  moor: source's replica, or what the replica was made readable as).  Change no
   word; mark words left out with …
   Put the quote in the text, not in a comment: the output document shows
   it, and its reader checks the fact by it
