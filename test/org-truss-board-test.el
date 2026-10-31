@@ -1870,7 +1870,8 @@ the link that placed it, and leaves the file unmodified when it was."
               (org-truss-board-new))
             (with-current-buffer (org-truss-test--copy)
               (should org-dock-mode)
-              (should (string-match-p "C-c C-c" (format "%s" header-line-format)))
+              ;; The header line is a form redisplay evaluates, and batch does not.
+              (should (string-match-p "C-c C-c" (eval (cadr header-line-format) t)))
               (insert "Two joined in May.\n")
               (org-truss-test--let-go))
             (should-not (org-truss-test--copy))
