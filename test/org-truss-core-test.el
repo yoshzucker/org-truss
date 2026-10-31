@@ -1589,7 +1589,10 @@ Penalties only.
       (should (equal (funcall words :aside-members) '("Rule B")))
       (should-not (plist-get checks :no-grounds))
       (should (string-match-p "^Open -- .*\n.*: What rule C says -- open: to be found out$"
-                              (org-truss-check-report model))))))
+                              (org-truss-check-report model)))
+      (should (string-match-p ": Nobody objects -- open: to be found out, in the output$"
+                              (org-truss-check-report model)))
+      (should-not (string-match-p "^Open in the output" (org-truss-check-report model))))))
 
 (ert-deftest org-truss-test-item-tags ()
   "Tags at the end of an item's first line are its tags, not its words:

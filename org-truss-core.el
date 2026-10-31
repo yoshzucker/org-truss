@@ -2327,7 +2327,8 @@ member whose pattern asks, at the member that lacks, at the link.
 :open            members tagged :open: that what Brief asks for needs,
                  or that are in Message; see `org-truss-needed'
 :open-unneeded   members tagged :open: that nothing needed stands on
-:open-told       members tagged :open: the output document tells
+:open-told       members tagged :open: the output document tells; said
+                 on their lines in Open and Open, not needed
 :settled         members tagged :open: that have grounds
 :unused          facts no claim stands on; see `org-truss-unused-facts'
 :aside-members   members tagged :aside: with members under them'
@@ -2448,11 +2449,9 @@ member whose pattern asks, at the member that lacks, at the link.
     ("Axis not named"
      . "members cut by an axis that no paragraph of their text with grounds names by the word TRUSS_BY or :by gives it -- for a table, both its axes: say which grounds hold it whole, in the same words")
     ("Open"
-     . "members tagged :open:, not settled yet, that what Brief asks for needs: to be found out, where their text says to look; settled, they take grounds, or the user takes them as given, :assumption:, or they go")
+     . "members tagged :open:, not settled yet, that what Brief asks for needs: to be found out, where their text says to look; settled, they take grounds, or the user takes them as given, :assumption:, or they go; \"in the output\" when the output document tells them, giving the reader what is not settled")
     ("Open, not needed"
      . "members tagged :open: that no claim needs: not to be looked into; set aside what they would be found in, :aside:, or take them away")
-    ("Open in the output"
-     . "members tagged :open: the output document tells: it gives the reader what is not settled")
     ("Settled"
      . "members tagged :open: that have grounds now: take the tag off")
     ("Unused"
@@ -2520,6 +2519,13 @@ it comes to hold.")
 (defconst org-truss-open-text
   "open: to be found out"
   "What the board and the report say of a member tagged :open: that is needed.")
+
+(defun org-truss-open-line-text (text member checks)
+  "TEXT said of MEMBER, tagged :open:, and that the output document tells it.
+CHECKS is what `org-truss-checks' returns."
+  (if (memq member (plist-get checks :open-told))
+      (concat text ", in the output")
+    text))
 
 (defconst org-truss-placeholder-text
   "the words it was given, which reach the reader"
@@ -2656,14 +2662,13 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
                  (mapcar (lambda (e) (funcall member-line (car e) (org-truss-axes-not-named-text e)))
                          (plist-get checks :axes-not-named)))
            (cons "Open"
-                 (mapcar (lambda (m) (funcall member-line m org-truss-open-text))
+                 (mapcar (lambda (m) (funcall member-line m (org-truss-open-line-text
+                                                             org-truss-open-text m checks)))
                          (plist-get checks :open)))
            (cons "Open, not needed"
-                 (mapcar (lambda (m) (funcall member-line m "nothing needed stands on it"))
+                 (mapcar (lambda (m) (funcall member-line m (org-truss-open-line-text
+                                                             "nothing needed stands on it" m checks)))
                          (plist-get checks :open-unneeded)))
-           (cons "Open in the output"
-                 (mapcar (lambda (m) (funcall member-line m "told while open"))
-                         (plist-get checks :open-told)))
            (cons "Settled"
                  (mapcar (lambda (m) (funcall member-line m "has grounds, tagged :open:"))
                          (plist-get checks :settled)))

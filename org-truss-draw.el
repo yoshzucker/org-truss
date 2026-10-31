@@ -1354,13 +1354,10 @@ finds it, as `org-truss-check-descriptions' names them."
             #'org-truss-axes-not-named-text)
            (org-truss--check-group
             model "Open" (funcall in (mapcar #'list (plist-get checks :open)))
-            (lambda (_) org-truss-open-text))
+            (lambda (e) (org-truss-open-line-text org-truss-open-text (car e) checks)))
            (org-truss--check-group
             model "Open, not needed" (funcall in (mapcar #'list (plist-get checks :open-unneeded)))
-            (lambda (_) "nothing needed stands on it"))
-           (org-truss--check-group
-            model "Open in the output" (funcall in (mapcar #'list (plist-get checks :open-told)))
-            (lambda (_) "told while open"))
+            (lambda (e) (org-truss-open-line-text "nothing needed stands on it" (car e) checks)))
            (org-truss--check-group
             model "Settled" (funcall in (mapcar #'list (plist-get checks :settled)))
             (lambda (_) "has grounds, tagged :open:"))
