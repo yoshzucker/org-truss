@@ -620,6 +620,12 @@ read at all, as the lists of members written in the text are not; see
   "A link to a source: a file, one taken by org-moor or attached or any
 other, or a page on the web.")
 
+(defconst org-truss--place-name-re
+  "\\`\\(?:[pl]\\. [0-9]+\\|“[^”]*”\\)\\'"
+  "Words naming a place alone, as org-moor names a link in a truss file:
+p. 12, l. 223, or the words quoted there.  Such a link names its source
+once, in the apex member above it.")
+
 (defun org-truss--source-links-in (text)
   "Return every link to a source in TEXT, in order."
   (let ((from 0) found)

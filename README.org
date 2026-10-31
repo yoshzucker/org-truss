@@ -1205,10 +1205,18 @@ its line says little of its links:
 | =⏚m7=                          | after a member's words                   | it stands on m7, which no member is, or which has no grounds itself |
 | =↪Message›Interpretation›Part= | before the words, which are a link alone | the member they link to is a part of Message's interpretation       |
 
-What a member stands on is in its text, drawn whole as the reader reads
-it: a pointing link as the words of the member it points to, in the face
-of a ground; a link to a source as its words, in the face of a source,
-or of what wants doing when it points to nothing; a quotation as a
+What a member stands on is in its text, drawn whole: a pointing link as
+its description, or else the ID it points to, =m12=, in the face of a
+ground -- it brings no member there, as an include link does, and the
+mouse on it says the member's words; a link to a source as its words, in
+the face of a source, or of what wants doing when it points to nothing.
+Each source has a short name on the board, =a=, =b= and on: Subject's
+trusses in order, then any other source a member links to.  A link
+named by its place alone, ~l. 12~, or by its source's title has the name
+before it, =[a] l. 12=, =[a] Approval manual 2026=, so a place says which
+source wherever it is read, the order of what is included among it; the
+mouse on it says the title.  The names are the board's, drawn each time
+and written nowhere.  A quotation is drawn as a
 paragraph of its own in quotation marks, after =✓= when its words were
 found in its source, =✗= when not, =?= when the source cannot be read.
 The mouse on a link says where it goes, and ~RET~ or ~C-c C-o~ on it

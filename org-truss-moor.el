@@ -240,10 +240,6 @@ here."
 
 (setq org-truss-moor-text-function #'org-truss-moor-quote-text)
 
-(defconst org-truss-moor--place-name-re
-  "\\`\\(?:[pl]\\. [0-9]+\\|“[^”]*”\\)\\'"
-  "Words naming a place alone, as org-moor names it in a truss file.")
-
 (defun org-truss-moor-export-link (path words file &optional first)
   "Return the `moor:' link to PATH, named WORDS, as the reader of FILE follows it.
 The reader has no replica of the source, so the link goes to its origin: a
@@ -258,7 +254,7 @@ its source above it is not left without it."
                (origin (plist-get record :origin))
                (title (plist-get record :title))
                (name (cond ((not words) (or title id))
-                           ((and first title (string-match-p org-truss-moor--place-name-re words))
+                           ((and first title (string-match-p org-truss--place-name-re words))
                             (concat title " " words))
                            (t words))))
     (if (not (and origin (string-match-p "\\`https?://" origin)))

@@ -577,7 +577,8 @@ member is written it is counted as used."
 
 (ert-deftest org-truss-test-board-include-reads-links-in-words ()
   "An include link alone reads as the words of the member it includes,
-and the links in those words read as the reader reads them too."
+and the links in those words read as they do anywhere on the board: a
+place in a source after the source's short name."
   (org-truss-test--with-board "* S
 :PROPERTIES:
 :TRUSS_DIVISION: subject
@@ -594,7 +595,7 @@ and the links in those words read as the reader reads them too."
       (when whole
         (org-truss-test--show-all))
       (let ((text (buffer-string)))
-        (should (string-match-p "↪Subject +The minutes, p\\. 12, and the calendar" text))
+        (should (string-match-p "↪Subject +The minutes, \\[a\\] p\\. 12, and the calendar" text))
         (should-not (string-match-p "↪Subject.*moor:" text))))))
 
 (ert-deftest org-truss-test-board-part-that-includes ()
@@ -778,7 +779,7 @@ words of one above it that plays none."
                         (forward-line 1))
                       (nreverse middles))))
            (written (funcall under "^   member[ ·]+Interpretation")))
-      (should (equal written '("△ (breakdown › parts)" "Body of interpretation, on Fact."
+      (should (equal written '("△ (breakdown › parts)" "Body of interpretation, on m1."
                                "# A note, on [[m1]] too." "Part ········ - Part one" "Body of part.")))
       (should (string-match-p "^ └ member[ ·]+↪Message›Interpretation›Part Part one$" (buffer-string)))
       (org-truss-test--opened-where-included)
@@ -790,12 +791,46 @@ words of one above it that plays none."
       (should (string-match-p "^ ├ member[ ·]+↪Message Interpretation  ⏚m1$" (buffer-string)))
       (should-not (string-match-p "reason" (buffer-string)))
       (goto-char (point-min))
-      (search-forward "on Fact")
+      (search-forward "on m1")
       (should (eq (get-text-property (1- (point)) 'face) 'org-truss-ground))
       (should (equal (get-text-property (1- (point)) 'org-truss-link) "[[m1]]")))
     (with-current-buffer source
       (let ((model (org-truss-read)))
         (should (equal (org-truss-member-points (org-truss-member-by-id model "m2")) '("m1")))))))
+
+(ert-deftest org-truss-test-board-names-sources-short ()
+  "A pointing link reads as its description, or the ID it points to; a
+link to a source named by its place alone, or by its title, has the
+source's short name before it, Subject's sources named first, in order,
+and the mouse on it says the title."
+  (org-truss-test--with-board "* S
+:PROPERTIES:
+:TRUSS_DIVISION: subject
+:END:
+#+attr_truss: :breakdown parts
+** [[https://e.x/rules][Rules]]
+#+attr_truss: :breakdown parts
+- <<m1>>The head approves [[https://e.x/rules#3][l. 12]]
+** [[https://e.x/faq][FAQ]]
+#+attr_truss: :breakdown parts
+- <<m2>>Paid at month end [[https://e.x/faq#2][p. 2]]
+* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:END:
+** The head approves it
+[[m1]], [[m2][paid later]], [[https://e.x/rules#4][l. 40]], [[https://e.x/other][elsewhere]].
+"
+    (org-truss-test--show-all)
+    (let ((text (buffer-string)))
+      (should (string-match-p "Part[ ·]+\\[a\\] Rules$" text))
+      (should (string-match-p "Part[ ·]+\\[b\\] FAQ$" text))
+      (should (string-match-p "The head approves \\[a\\] l\\. 12$" text))
+      (should (string-match-p "Paid at month end \\[b\\] p\\. 2$" text))
+      (should (string-match-p "^ +m1, paid later, \\[a\\] l\\. 40, elsewhere\\.$" text)))
+    (goto-char (point-min))
+    (search-forward "l. 40")
+    (should (string-prefix-p "a: Rules, " (get-text-property (1- (point)) 'help-echo)))))
 
 (ert-deftest org-truss-test-board-follows-links ()
   "RET on a link to a member goes to the member's line on the board; on a
@@ -822,7 +857,7 @@ On [[m1]], and [[https://example.com/w][the forecast]].
           opened)
       (dolist (command '(org-truss-board-visit org-truss-board-open-link))
         (goto-char (point-min))
-        (search-forward "On Rain")
+        (search-forward "On m1")
         (backward-char 1)
         (funcall command)
         (should (eq (current-buffer) board))
@@ -1040,7 +1075,7 @@ line any of them is broken onto."
 :CUSTOM_ID: m2
 :TRUSS_LOGIC: reasons
 :END:
-[[#m1]]
+[[#m1]], LONG
 [[https://e.x/s][s]]
 *** A reason
 :PROPERTIES:
@@ -1657,7 +1692,7 @@ is listed under its check, at the member that points to it."
       (should (string-match-p "^ Weak grounds\n   member[ ·]+Unused aside +\\[\\[lone\\]\\] has no grounds$" text))
       (should (string-match-p "^ Broken links\n   member[ ·]+Unused aside +\\[\\[file:nowhere\\.pdf\\]\\[the memo\\]\\] not found$" text)))
     (org-truss-test--show-all)
-    (org-truss-test--goto-line-with "^ +Lone remark the memo$")
+    (org-truss-test--goto-line-with "^ +lone the memo$")
     (search-forward "the memo")
     (should (memq 'org-truss-attention (ensure-list (get-text-property (1- (point)) 'face))))))
 

@@ -218,6 +218,49 @@ it in either: its text names them, as links.")
 (defvar org-truss--checks nil
   "What `org-truss-checks' says of the board being drawn.")
 
+(defvar org-truss--source-labels nil
+  "While a board is drawn, the short name each source goes by on it, or nil.
+A hash table from a source, as `org-truss--source-of' names it, to
+\(LABEL . TITLE); see `org-truss--source-labels'.")
+
+(defun org-truss--label-key (link)
+  "Return the source LINK is labelled by on the board: `org-truss--source-of'
+it, a page on the web without the place in it after #."
+  (let ((source (org-truss--source-of link)))
+    (if (string-match-p "\\`https?:" source)
+        (replace-regexp-in-string "#.*\\'" "" source)
+      source)))
+
+(defun org-truss--label-name (n)
+  "Return the Nth short name of a source, from 0: a to z, then aa, ab and on."
+  (if (< n 26)
+      (string (+ ?a n))
+    (concat (org-truss--label-name (1- (/ n 26))) (string (+ ?a (% n 26))))))
+
+(defun org-truss--source-labels (model)
+  "Return the short names the board gives the sources of MODEL, a hash table.
+Those of Subject's trusses first, in order -- a source named by a
+member's words, its title the link's -- then any other a member links
+to, in the order of the file.  A link named by its place alone, l. 12,
+is drawn after its source's name, [a] l. 12, so it says which source
+wherever it is read; the names are the board's, and written nowhere."
+  (let ((labels (make-hash-table :test #'equal))
+        (n 0))
+    (cl-flet ((add (link title)
+                (let ((source (org-truss--label-key link)))
+                  (unless (gethash source labels)
+                    (puthash source (cons (org-truss--label-name n) title) labels)
+                    (setq n (1+ n))))))
+      (dolist (m (org-truss-members-in model 'subject))
+        (let ((words (org-truss-member-words m)))
+          (when (string-match (concat "\\`" org-truss--source-link-re "\\'") words)
+            (add words (and (string-match "\\]\\[\\([^]\n]*\\)\\]\\]\\'" words)
+                            (match-string 1 words))))))
+      (dolist (m (org-truss-model-members model))
+        (dolist (link (org-truss-member-source-links m))
+          (add link nil))))
+    labels))
+
 (defvar org-truss--chained nil
   "While a board is drawn as included, the members Structure brings, or nil.
 A hash table, see `org-truss--chain'.  They are drawn under Structure,
@@ -405,8 +448,12 @@ One among them read again would be read without end.")
 
 (defun org-truss--link-text (text &optional marked)
   "Return TEXT with each link read as its description, or else its target.
-A link to a file without one reads as the file's name, and a pointing or
-include link as the member's words, the links in them read in turn.
+A link to a file without one reads as the file's name, and an include
+link as the member's words, the links in them read in turn; a pointing
+link as the ID it points to, m7, since it brings no member there.  A
+link to a source named by its place alone, or by its source's title, has
+the source's short name before it, [a] l. 12; see
+`org-truss--source-labels'.
 MARKED, each is drawn as a link: one to a member in the face of a
 ground, holding where the member is written, one to a source in the
 face of a source, or of what wants doing when it points to nothing; the
@@ -416,19 +463,32 @@ RET follows it, see `org-truss-board-visit'."
    "\\[\\[\\*?\\([^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
    (lambda (link)
      (let* ((target (match-string 1 link))
+            (given (match-string 2 link))
+            (include (string-prefix-p (concat org-truss-include-type ":") target))
             (member (and org-truss--model
                          (org-truss-member-by-id
                           org-truss--model
                           (org-truss--link-id (string-remove-prefix
                                                (concat org-truss-include-type ":") target)))))
-            (words (or (match-string 2 link)
+            (source (and (not member)
+                         (save-match-data
+                           (string-match-p (concat "\\`" org-truss--source-link-re "\\'") link))))
+            (label (and source org-truss--source-labels
+                        (gethash (save-match-data (org-truss--label-key link)) org-truss--source-labels)))
+            (words (or given
                        (save-match-data
                          (and (string-match "\\`\\(?:file:\\|\\.\\.?/\\)\\([^:]+\\)" target)
                               (file-name-nondirectory (org-link-unescape (match-string 1 target)))))
-                       (and member (not (memq member org-truss--reading))
+                       (and member include (not (memq member org-truss--reading))
                             (let ((org-truss--reading (cons member org-truss--reading)))
                               (org-truss--link-text (org-truss-member-words member) marked)))
-                       target)))
+                       (and member (org-truss--link-id target))
+                       target))
+            (words (if (and label given
+                            (or (save-match-data (string-match-p org-truss--place-name-re given))
+                                (equal given (cdr label))))
+                       (format "[%s] %s" (car label) words)
+                     words)))
        (cond ((not marked) words)
              (member
               (propertize words 'face 'org-truss-ground 'org-truss-link link
@@ -440,7 +500,10 @@ RET follows it, see `org-truss-board-visit'."
                                       (plist-get org-truss--checks :broken-sources))))
                 (propertize words 'face (if broken 'org-truss-attention 'org-truss-source)
                             'org-truss-link link
-                            'help-echo (if broken (format "%s: not found" target) target))))
+                            'help-echo (cond (broken (format "%s: not found" target))
+                                             ((cdr label) (format "%s: %s, %s" (car label) (cdr label) target))
+                                             (label (format "%s: %s" (car label) target))
+                                             (t target)))))
              (t words))))
    text t t))
 
@@ -1524,6 +1587,7 @@ are taken as they are when already bound for MODEL."
          (org-truss--in-document (org-truss-in-document model))
          (org-truss--sources-read (or org-truss--sources-read (make-hash-table :test #'equal)))
          (org-truss--checks (or org-truss--checks (org-truss-checks model)))
+         (org-truss--source-labels (org-truss--source-labels model))
          (org-truss--chained (and (eq org-truss--order 'included) (org-truss--chain model)))
          (org-truss--base-directory (org-truss--model-directory model))
          (whole (or entries (rassq 'whole org-truss--folding)))
