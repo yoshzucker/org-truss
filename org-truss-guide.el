@@ -40,15 +40,16 @@ Beside this file
 Words
   pattern         what a heading or an item says the ones right under it
                   are to it.  Three kinds
-    TRUSS_LOGIC      reasons.  reasons deduction induction
-    TRUSS_BREAKDOWN  a breakdown.  steps parts what-why-how pros-cons
-                     short-long past-present-future 5w1h 6w1h
-                     reader-question-response-constraints
-                     situation-interpretation-action
-    TRUSS_TELLING    the order of telling.  prep sds scqa sky-rain-umbrella
+    :logic      reasons.  reasons deduction induction
+    :breakdown  a breakdown.  steps parts what-why-how pros-cons short-long
+                past-present-future 5w1h 6w1h
+                reader-question-response-constraints
+                situation-interpretation-action
+    :telling    the order of telling.  prep sds scqa sky-rain-umbrella
   role            what one right under plays in the pattern above: reason,
                   who, sky
   member          one heading, or one item of a list marked #+attr_truss
+  words           what a member says: a heading, an item's first line
   truss           a member with a pattern (its apex member) and the members
                   right under it (its supporting members)
   end member      a member with no pattern.  It has nothing under it
@@ -58,9 +59,8 @@ Words
                   △ on the board
   compound truss  a truss with an apex member among its supporting members.
                   ▲ on the board
-  ID              the name a member is pointed to by: ~<<m7>>~ in its words,
-                  a heading's or an item's first line (a heading's
-                  CUSTOM_ID m7 is read too)
+  ID              the name a member is pointed to by: ~<<m7>>~ in its words
+                  (a heading's CUSTOM_ID m7 is read too)
   pointing link   ~[[m7]]~ (or ~[[#m7]]~).  Points to m7 as grounds
   include link    ~[[truss-include:m7]]~.  Includes m7 there in the output
                   document, the whole truss when m7 is an apex member.  A
@@ -82,12 +82,11 @@ The four divisions (told apart by TRUSS_DIVISION; filled from the top)
   - Message: situation-interpretation-action.  Situation is parts,
     include links to the trusses of the sources whose facts the claims
     stand on.  Interpretation is parts, a claim
-    each, its reasons under it (TRUSS_LOGIC: reasons) pointing to the
-    facts.  Action is steps, and points to the claim it follows from; a
-    step has a TRUSS_LOGIC of its own only for reasons of its own
+    each, its reasons under it (:logic reasons) pointing to the facts.
+    Action is steps; its text points to the claim it follows from.  A step
+    takes a :logic of its own only for reasons of its own
   - Structure: sky-rain-umbrella, its items ~[[truss-include:m1]]~
-    (Situation), m2 (Interpretation) and m3 (Action), each that member
-    there: its words are the output document's heading
+    (Situation), m2 (Interpretation) and m3 (Action)
   For a document of another form, change the patterns of Message and
   Structure; the facts stay in Subject.  What each division, and each role of
   Brief and Message, is for, ? on its line of the board says
@@ -103,55 +102,56 @@ Writing
   Make a heading of a member pointed to from several places, to be found
   easily; keep in one heading a truss checked at once (the facts of one
   source, a claim and its reasons)
-  An item takes tags as a heading does, at the end of its first line:
-  ~- It is quick :assumption:~
-  C-c * makes items headings, C-c - headings items: in a truss file they
-  carry roles, IDs, patterns and tags
 
-  For a heading, the pattern goes in a property, TRUSS_LOGIC and the rest,
-  and the role in the property of the same name with _ROLE after it
-  (TRUSS_LOGIC_ROLE: reason)
-  For an item, the pattern goes in #+attr_truss before the list, and the
-  role before ::
+  Write a member's patterns in #+attr_truss in its text, :logic :breakdown
+  :telling, and a role before its words, then :: -- a heading and an item
+  alike
     #+begin_example
     #+attr_truss: :logic reasons :breakdown pros-cons
     - pros :: <<m21>>Less time in meetings
       Text, as [[m2]] shows
+    *** cons :: Items wait longer
     #+end_example
-  A pattern of one role -- reasons, steps, parts -- has no role written:
-  what is under it plays it, and a heading there needs no properties.
-  An item's first line is its words, the lines under it its text; a list
-  marked #+attr_truss inside it holds its supporting members
-  TRUSS_AS on a heading, or :as in #+attr_truss (headings or list), says
-  how the output document writes the supporting members of that one truss
+  - right before a list, it marks the list: its items are the member's
+    supporting members.  With headings under the member, it is a line of
+    its own, before them
+  - a pattern of one role -- reasons, steps, parts -- has no role written
+  - a property does as well (TRUSS_LOGIC, TRUSS_LOGIC_ROLE and the rest),
+    but #+attr_truss and :: are seen where the member is
+  - :as (headings or list) says how the output document writes the
+    supporting members of that one truss
+  An item's lines under its first are its text.  It takes tags at the end
+  of its first line: ~- It is quick :assumption:~
+  C-c * makes items headings, C-c - headings items; roles, IDs, patterns,
+  axes, values and tags stay as written
 
 Logic
-  Choose an apex member's TRUSS_LOGIC by taking one supporting member out
+  Choose an apex member's :logic by taking one supporting member out
   - reasons: the other supporting members still hold the apex member up.
     Each reason is a deduction whose major premise goes without saying
   - deduction: the apex member no longer follows.  The major and the minor
     premise hold it up only together; write both
   - induction: the supporting members are cases of one kind, two or more,
     and the apex member generalises them
-  Grounds are reasons.  When two grounds hold a member up only together,
-  they are no grounds: make the member the apex member of a TRUSS_LOGIC:
-  deduction, its major and minor premise its supporting members
+  Two grounds that hold a member up only together are no grounds but a
+  deduction: make the member the apex member of :logic deduction, its
+  major and minor premise its supporting members
 
 Grounds
-  In a TRUSS_LOGIC truss, each supporting member has grounds.  Grounds are,
+  In a :logic truss, each supporting member has grounds.  Grounds are,
   in its text
   - a pointing link or an include link to a member
   - a link to a source: moor:, file:, URL
   - a quote, #+begin_quote
   These supporting members need none
-  - the apex member of a TRUSS_LOGIC truss: its supporting members are its
+  - the apex member of a :logic truss: its supporting members are its
     grounds
   - a member tagged :assumption:: the user takes it as given.  Only the
     user tags it
   - a member tagged :open:, until it is settled (see Scope)
   A member pointed to or included as grounds is a reason the member stands
-  on, as a supporting member playing reason in a TRUSS_LOGIC: reasons
-  truss is.  Why it holds the member up, its major premise, goes without
+  on, as a supporting member playing reason in a :logic reasons truss
+  is.  Why it holds the member up, its major premise, goes without
   saying: choose grounds for which it does
   A member pointed to as grounds has grounds too, or needs none
   A member in the output document stands on what is in it too: not on a
@@ -179,14 +179,35 @@ Claims
   A claim is as wide as its grounds hold up, and no wider.  For example,
   not \"every team\" from one team's minutes
   Write so that the words of an apex member and its supporting members
-  (a heading, an item's first line) alone show its pattern holds.  Words
-  fit one line, about 60 columns
+  alone show its pattern holds.  Words fit one line, about 60 columns
+
+Axes
+  To lay out what was found so that nothing is left out and nothing
+  overlaps, cut a breakdown by an axis: :by after the breakdown.  Its
+  supporting members are then all there is, each by its value
+    #+begin_example
+    Amounts are cut by the rules [[moor:ID::3][art. 3]].
+    #+attr_truss: :breakdown parts :by Amounts
+    - Under 100k :: The section head approves [[m21]]
+    - 100k or more :: The department head approves [[m22]]
+    #+end_example
+  - the value is the term before :: , or else the member's words.  Name
+    the axis in a short word
+  - that the values are all there is, is a claim: give it grounds in the
+    apex member's own text, in a paragraph that names the axis by that
+    word, once.  One quote there holds up every value it says.  Not known
+    yet: :open:
+  - a value with nothing after it is listed (Missing cells): write what
+    is there, \"none\" with its grounds when there is none, or :open:
+  - two axes, every supporting member cut again by the same one, are a
+    table: rows by the one, columns by the other.  The apex member's text
+    names both axes, with grounds; the rows need none of their own
 
 Sources
   Write a truss to be checked against one source; the check sees to it
   - a parts truss: the links to sources in its end members' text point
     into one source
-  - a TRUSS_LOGIC truss: the links to sources in the text of its apex
+  - a :logic truss: the links to sources in the text of its apex
     member and of every member under it point into one source
   A moor: source is one wherever in it a link points.  To bring facts of
   different sources together, point to the members that hold them, not
@@ -217,9 +238,8 @@ Scope
   it in the facts
 
 Quotes
-  A fact of Subject is an end member: its words (a heading, an item's first
-  line) one fact, in one sentence, keeping the bounds it holds within (its
-  period, its team)
+  A fact of Subject is an end member: its words one fact, in one sentence,
+  keeping the bounds it holds within (its period, its team)
   In its text, a quote, #+begin_quote: the source's words that hold the
   fact up, one or two sentences, copied as they are from what you read (a
   moor: source's replica, or what the replica was made readable as).  Change no
@@ -234,15 +254,18 @@ Quotes
 
 In the output document
   Only Structure, and the trusses and members its include links reach
-  - a member is its words (a heading, an item's first line), then its text
+  - a member is its words, then its text
   - supporting members are written by what the truss is, never by how the
-    file writes them: a list in a simple TRUSS_LOGIC or TRUSS_BREAKDOWN
-    truss (numbered for steps); headings in a compound truss and in a
-    TRUSS_TELLING truss.  Where the pattern names its roles, each opens
-    with its role (\"Pros: \").  TRUSS_AS says otherwise for one truss
-  - once a list, all under it stays a list: TRUSS_AS headings there is
-    not kept, and the check Headings in a list finds it
+    file writes them: a list in a simple :logic or :breakdown truss
+    (numbered for steps); headings in a compound truss and in a :telling
+    truss.  Where the pattern names its roles, each opens with its role
+    (\"Pros: \").  :as says otherwise for one truss
+  - once a list, all under it stays a list: :as headings there is not
+    kept, and the check Headings in a list finds it
   - a member written as an item stands where its list stands
+  - two axes are a table when each cell is a value and its words; with
+    more in a cell, a tree.  Under one axis, each item opens with its
+    value (\"Under 100k: \")
   - a pointing link is m7's words (its description, if it has one); a
     moor: link, where the source came from.  The first link to a source,
     named by its place alone, has the source's title before it
@@ -265,24 +288,25 @@ M-x org-truss-export で、OUT/ に書き出す。
   OUT/      出力文書。手で直さない
 
 言葉
-  型          見出しや項目が、すぐ下のものが自分にとって何かを言うもの。
-              3種類
-    TRUSS_LOGIC      理由。reasons deduction induction
-    TRUSS_BREAKDOWN  内訳。steps parts what-why-how pros-cons short-long
-                     past-present-future 5w1h 6w1h
-                     reader-question-response-constraints
-                     situation-interpretation-action
-    TRUSS_TELLING    語る順。prep sds scqa sky-rain-umbrella
-  役          すぐ下のものが、上の型の中で担うもの。reason、who、sky など
+  型          すぐ下の部材が自分にとって何であるかを、見出しや項目が示す
+              もの。3種類
+    :logic      理由。reasons deduction induction
+    :breakdown  内訳。steps parts what-why-how pros-cons short-long
+                past-present-future 5w1h 6w1h
+                reader-question-response-constraints
+                situation-interpretation-action
+    :telling    語る順。prep sds scqa sky-rain-umbrella
+  役          すぐ下の部材が、上の型の中で担うもの。reason、who、sky など
   部材        見出し一つか、#+attr_truss を付けた箇条書きの項目一つ
+  言葉        部材が言うこと。見出し、項目なら1行目
   トラス      型を持つ部材（頂点部材）と、そのすぐ下の部材（支持部材）
   末端部材    型を持たない部材。下に何も持たない
   事実        Subject の資料のトラスの支持部材。その資料が言うことを
               一文で書き、引用を付ける
   単純トラス  支持部材がすべて末端部材のトラス。盤面の △
   複合トラス  支持部材に頂点部材を含むトラス。盤面の ▲
-  ID          部材を指すための名前。言葉（見出し、項目なら1行目）の
-              ~<<m7>>~ （見出しの CUSTOM_ID の m7 も読む）
+  ID          部材を指すための名前。言葉の中の ~<<m7>>~ （見出しの
+              CUSTOM_ID の m7 も読む）
   指すリンク  ~[[m7]]~ （ ~[[#m7]]~ でもよい）。m7 を根拠として指す
   展開リンク  ~[[truss-include:m7]]~。出力文書のその場所に m7 を展開する。
               m7 が頂点部材なら、トラスごと展開する。部材の言葉を展開
@@ -300,13 +324,12 @@ M-x org-truss-export で、OUT/ に書き出す。
   - Subject：parts。資料ごとにトラスを一つ作る。事実だけを書く
   - Message：situation-interpretation-action。Situation は parts で、
     主張が立脚する事実を持つ資料のトラスへの展開リンクを置く。
-    Interpretation は parts で、主張を
-    一つずつ書き、その下に理由（TRUSS_LOGIC: reasons）を置いて事実を指す。
-    Action は steps で、それが従う主張は Action が指す。その手順だけの
-    理由がある手順にだけ、TRUSS_LOGIC を付ける
+    Interpretation は parts で、主張を一つずつ書き、その下に理由
+    （:logic reasons）を置いて事実を指す。Action は steps で、どの主張から
+    導かれるかを本文で指す。手順に独自の理由があるときだけ、その手順に
+    :logic を付ける
   - Structure：sky-rain-umbrella。項目は ~[[truss-include:m1]]~
-    （Situation）、m2（Interpretation）、m3（Action）で、それぞれその部材
-    そのものになる。その言葉が出力文書の見出しになる
+    （Situation）、m2（Interpretation）、m3（Action）
   別の形の文書にするときは、Message と Structure の型を替える。事実は
   Subject に置いたまま。それぞれの部と、Brief・Message の役が何を書く所か
   は、盤面のその行の ? が言う
@@ -320,56 +343,56 @@ M-x org-truss-export で、OUT/ に書き出す。
   - 同じ部材の下では、項目を見出しより前に置く
   いくつかの場所から指される部材は、見出しにすると探しやすい。一度に確か
   めるトラス（一つの資料の事実、一つの主張とその理由）は、同じ見出しに置く
-  項目にも、見出しと同じくタグを付けられる。1行目の終わりに書く：
-  ~- 速く済む :assumption:~
-  C-c * で項目を見出しに、C-c - で見出しを項目にできる。truss ファイル
-  では、役・ID・型・タグも一緒に移る
 
-  見出しでは、型を TRUSS_LOGIC などのプロパティに、役をその名前に _ROLE
-  を付けたプロパティ（TRUSS_LOGIC_ROLE: reason など）に書く
-  項目では、型を箇条書きの前の #+attr_truss に、役を :: の前に書く
+  型は部材の本文の #+attr_truss に :logic :breakdown :telling で書き、役
+  は言葉の前に書いて :: で区切る。見出しでも項目でも同じ
     #+begin_example
     #+attr_truss: :logic reasons :breakdown pros-cons
     - pros :: <<m21>>会議の時間が減る
       本文（[[m2]]）
+    *** cons :: 返答が遅れる
     #+end_example
-  役が一つの型（reasons、steps、parts）では、役を書かない。下にある部材
-  がその役を担うので、見出しにもプロパティは要らない。項目の
-  1行目が言葉、その下が本文。中に #+attr_truss の箇条書きがあれば、それ
-  がその項目の支持部材になる
-  見出しの TRUSS_AS、または #+attr_truss の :as（headings か list）は、
-  そのトラス一つについて、支持部材を出力文書でどう書くかを決める
+  - 箇条書きのすぐ前に置くと、その項目が部材の支持部材になる。下が見出し
+    なら、その見出しより前に、この行だけを書く
+  - 役が一つの型（reasons、steps、parts）では、役を書かない
+  - プロパティ（TRUSS_LOGIC、TRUSS_LOGIC_ROLE など）に書いてもよい。
+    ただ、#+attr_truss と :: なら部材のその場で見える
+  - :as（headings か list）は、そのトラス一つについて、支持部材を出力
+    文書でどう書くかを決める
+  項目の1行目の下は本文。タグは1行目の終わりに書く：
+  ~- 速く済む :assumption:~
+  C-c * で項目を見出しに、C-c - で見出しを項目にできる。役・ID・型・軸・
+  値・タグは、書いたとおりに残る
 
 論理
-  頂点部材の TRUSS_LOGIC は、支持部材を一つ抜いてみて選ぶ
+  頂点部材の :logic は、支持部材を一つ抜いてみて選ぶ
   - reasons：残りの支持部材が、まだ頂点部材を支える。理由はそれぞれ、
     大前提を言わずに済ませた演繹である
   - deduction：頂点部材が導けなくなる。大前提と小前提は、揃って初めて
     頂点部材を支える。両方を書く
   - induction：支持部材は同じ種類の事例で、2つ以上。頂点部材はそれらを
     一般化する
-  根拠は理由である。2つの根拠が揃って初めて部材を支えるなら、それは根拠
-  ではない。その部材を TRUSS_LOGIC: deduction の頂点部材にし、大前提と
-  小前提をその支持部材にする
+  2つの根拠が揃って初めて部材を支えるなら、それは根拠ではなく演繹である。
+  その部材を :logic deduction の頂点部材にし、大前提と小前提をその支持
+  部材にする
 
 根拠
-  TRUSS_LOGIC のトラスでは、支持部材がそれぞれ根拠を持つ。根拠になるのは、
+  :logic のトラスでは、支持部材がそれぞれ根拠を持つ。根拠になるのは、
   本文の
   - 部材への指すリンクか展開リンク
   - 資料（moor:・file:・URL）へのリンク
   - #+begin_quote の引用
   次の支持部材は、根拠がなくてよい
-  - TRUSS_LOGIC のトラスの頂点部材。その支持部材が根拠になる
+  - :logic のトラスの頂点部材。その支持部材が根拠になる
   - :assumption: を付けた部材。利用者が、根拠なしで受け入れると決めたも
     の。利用者だけが付ける
   - :open: を付けた部材。決着するまでのあいだ（調べる範囲を参照）
   根拠として指したり展開したりした部材は、その部材が立つ理由である。
-  TRUSS_LOGIC: reasons のトラスで reason を担う支持部材と同じ。それが
-  なぜ部材を支えるか（大前提）は、言わずに済ませている。言わずに済む
-  根拠を選ぶ
-  根拠として指した部材も、根拠を持つか、根拠がなくてよい部材であること
-  出力文書に出る部材は、出力文書に出るものに立つ。:noexport: を付けた部材
-  や、その下の部材には立たない
+  :logic reasons のトラスで reason を担う支持部材と同じ。それがなぜ部材
+  を支えるか（大前提）は言わずに済ませているので、言わずに済む根拠を選ぶ
+  根拠として指した部材も、根拠を持つか、根拠がなくてよい部材にする
+  出力文書に出る部材の根拠は、出力文書に出るものにする。:noexport: を
+  付けた部材や、その下の部材を根拠にしない
   根拠は、出力文書に出る本文に書く。コメント行 ~# [[m3]]~ のリンクは根拠
   にならない。指すリンクは、出力文書では m3 の言葉として読まれるので、文
   の中に書く
@@ -390,17 +413,36 @@ M-x org-truss-export で、OUT/ に書き出す。
   主張は、根拠が支える範囲いっぱいまで広げて書き、根拠が支えられない範囲
   までは広げない。例えば、一つのチームの議事録から「どのチームも」とは
   言わない
-  頂点部材と支持部材の言葉（見出し、項目なら1行目）だけを読んで、型が
-  成り立つことがわかるように書く。言葉は1行、全角30字ほどまでにする
+  頂点部材と支持部材の言葉だけを読んで、型が成り立つことがわかるように
+  書く。言葉は1行、全角30字ほどまでにする
+
+軸
+  調べたことを漏れなく重なりなく並べるときは、内訳を軸で分ける。軸は内訳
+  のあとの :by に書く。支持部材はそれで全部になり、それぞれ値で分かれる
+    #+begin_example
+    金額の区分は規程の第3条で全部 [[moor:ID::3][第3条]]。
+    #+attr_truss: :breakdown parts :by 金額
+    - 10万円未満 :: 課長が承認する [[m21]]
+    - 10万円以上 :: 部長が承認する [[m22]]
+    #+end_example
+  - 値は :: の前の語、なければ部材の言葉。軸は短い語で名付ける
+  - 値がそれで全部だということは主張なので、頂点部材の本文に根拠を書く。
+    軸をその語で名指す段落に、一度だけ書く。そこに引用が一つあれば、それ
+    が言う値はすべて支えられる。まだ分からなければ :open:
+  - :: のあとに何もない値は、検査に出る（Missing cells）。そこにあるもの
+    を書くか、ないなら「なし」と根拠を書くか、:open: を付ける
+  - 軸が二つで、支持部材がすべて同じ軸でもう一度分かれていれば、表になる。
+    行は一方の軸、列はもう一方の軸。頂点部材の本文で両方の軸を名指して、
+    根拠を書く。行には根拠は要らない
 
 資料
   トラスは、一つの資料と突き合わせて確かめられるように書く。検査が確かめる
   - parts のトラス：末端部材の本文にある資料へのリンクが、一つの資料を
     指す
-  - TRUSS_LOGIC のトラス：頂点部材とその下のすべての部材の本文にある資料
+  - :logic のトラス：頂点部材とその下のすべての部材の本文にある資料
     へのリンクが、一つの資料を指す
-  moor: の資料は、中のどこを指しても一つ。別の資料の事実を組み合わせる
-  ときは、資料へのリンクを書かず、その事実の部材を指すリンクで指す
+  moor: の資料は、どの場所を指すリンクでも一つと数える。別の資料の事実を
+  組み合わせるときは、資料へのリンクを書かず、その事実の部材を指す
   資料の名前は、その資料を指すトラスの頂点部材に一度だけ書く。頂点部材の
   言葉を、題で書いたリンク ~[[moor:ID][題]]~ にする。資料から引き出した
   ことは書かない（それは主張で、Message に書く）。その下の部材では場所
@@ -422,8 +464,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   を題にして取り込み、事実ではそれを引用する
 
 引用
-  Subject の事実は末端部材で、その言葉（見出し、項目なら1行目）には事実を
-  一つ、一文で書く。その事実が成り立つ範囲（期間、チームなど）は削らない
+  Subject の事実は末端部材で、その言葉には事実を一つ、一文で書く。その
+  事実が成り立つ範囲（期間、チームなど）は削らない
   その本文に、#+begin_quote で引用を置く。中身は、その事実を支える資料の
   言葉を1〜2文、読んだ資料（moor: の資料なら、その写しか、写しを読める形
   にしたもの）からそのまま写したもの。言葉は変えない。省いた所は … で示す
@@ -436,15 +478,17 @@ M-x org-truss-export で、OUT/ に書き出す。
 
 出力文書に出るもの
   Structure と、そこから展開リンクでたどれるトラスや部材だけが出る
-  - 部材は、言葉（見出し、項目なら1行目）のあとに本文が続く
+  - 部材は、言葉のあとに本文が続く
   - 支持部材は、ファイルでの書き方ではなく、トラスが何であるかで出る。
-    単純トラスの TRUSS_LOGIC と TRUSS_BREAKDOWN なら箇条書き（steps は
-    番号付き）、複合トラスと TRUSS_TELLING のトラスなら見出し。役の名前
-    を出す型では、役の名前から始まる（pros なら「メリット：」）。
-    TRUSS_AS で、トラス一つについて変えられる
-  - 一度箇条書きになると、その下はすべて箇条書きになる。そこでの
-    TRUSS_AS の headings は効かず、Headings in a list の検査で見つかる
+    単純トラスの :logic と :breakdown なら箇条書き（steps は番号付き）、
+    複合トラスと :telling のトラスなら見出し。役の名前を出す型では、役の
+    名前から始まる（pros なら「メリット：」）。:as で、トラス一つについて
+    変えられる
+  - 一度箇条書きになると、その下はすべて箇条書きになる。そこでの :as の
+    headings は効かず、Headings in a list の検査で見つかる
   - 項目の部材は、箇条書きのあった場所に出る
+  - 軸が二つで、セルがどれも値と言葉だけなら表になる。セルにそれ以上ある
+    ならツリーになる。軸が一つなら、項目は値から始まる（「10万円未満：」）
   - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料の
     取り込み元になる。場所だけで名指した、その資料への最初のリンクには、
     前に資料の題が付く
@@ -644,7 +688,8 @@ on in the order the includes come."
 (defun org-truss--new-member (level name words props spec ids)
   "Return a member of a new file, a heading at LEVEL, as text.
 NAME is the division or the role it is written for, WORDS its words, PROPS
-the properties it opens with, as (PROPERTY . VALUE).  SPEC, as
+the properties it opens with, as (PROPERTY . VALUE).  Its patterns are
+named in #+attr_truss, and the role of a heading under it before ::.  SPEC, as
 `org-truss-new-divisions' gives one, says its patterns and what is written
 under it: a supporting member for each role, as items when all are end
 members, or members of a telling that are include links alone, which
@@ -670,27 +715,31 @@ takes its ID, and is taken off."
                          (and (eq (nth 0 s) 'telling)
                               (plist-get spec :include) (= (length spec) 2))))))
          (link (lambda (name) (org-truss--include-link (or (alist-get name (cdr ids)) name))))
-         (props (append props
-                        (mapcar (lambda (pattern)
-                                  (cons (alist-get (car pattern) org-truss-pattern-properties)
-                                        (symbol-name (cdr pattern))))
-                                patterns))))
+         ;; Its patterns, in the #+attr_truss of its list, or on a line of
+         ;; their own before the headings under it.
+         (attr (concat "#+attr_truss:"
+                       (mapconcat (lambda (pattern) (format " :%s %s" (car pattern) (cdr pattern)))
+                                  patterns ""))))
     (when id
       (setcar ids (delq id (car ids))))
     (concat
-     (format "%s %s%s\n" (make-string level ?*)
-             (if id (format "<<%s>>" (cdr id)) "")
-             (if include (funcall link include) words))
+     (let ((words (if include (funcall link include) words))
+           (target (if id (format "<<%s>>" (cdr id)) "")))
+       ;; Its ID with its words, after the role before ::, as an item has it.
+       (if (string-match "\\`[^ \t:]+ :: " words)
+           (format "%s %s%s%s\n" (make-string level ?*) (match-string 0 words) target
+                   (substring words (match-end 0)))
+         (format "%s %s%s\n" (make-string level ?*) target words)))
      (if props
          (format ":PROPERTIES:\n%s:END:\n"
                  (mapconcat (lambda (p) (format ":%s: %s\n" (car p) (cdr p))) props ""))
        "")
      "\n"
-     (cond ((null supports) "")
+     (cond ((null supports) (if patterns (concat attr "\n\n") ""))
            ((seq-every-p item-p supports)
             (let ((n 0))
               (concat
-               "#+attr_truss:\n"
+               attr "\n"
                (mapconcat (lambda (s)
                             (let ((numbered (eq (plist-get (org-truss-pattern
                                                             (alist-get (car s) patterns))
@@ -706,14 +755,16 @@ takes its ID, and is taken off."
                           supports "")
                "\n")))
            (t
-            (mapconcat (lambda (s)
-                         (org-truss--new-member
-                          (1+ level) (nth 1 s) (org-truss-role-name (nth 1 s))
-                          (and (nth 3 s)
-                               (list (cons (org-truss-role-property (nth 0 s))
-                                           (symbol-name (nth 1 s)))))
-                          (nth 2 s) ids))
-                       supports ""))))))
+            (concat
+             attr "\n\n"
+             (mapconcat (lambda (s)
+                          (org-truss--new-member
+                           (1+ level) (nth 1 s)
+                           ;; Its role before ::, where its pattern has more than one.
+                           (concat (if (nth 3 s) (format "%s :: " (nth 1 s)) "")
+                                   (org-truss-role-name (nth 1 s)))
+                           nil (nth 2 s) ids))
+                        supports "")))))))
 
 (defun org-truss-skeleton (title)
   "Return the text of a new truss file titled TITLE.

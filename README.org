@@ -58,7 +58,7 @@ words, and the board, the checks and this README use them alone.
 
 | Word            | What it is                                                                                                  |
 |-----------------+-------------------------------------------------------------------------------------------------------------|
-| pattern         | what a heading or an item says the ones right under it are to it: ~TRUSS_LOGIC~, ~TRUSS_BREAKDOWN~, ~TRUSS_TELLING~ |
+| pattern         | what a heading or an item says the ones right under it are to it: ~:logic~, ~:breakdown~, ~:telling~                |
 | role            | what one right under plays in the pattern above: /reason/, /who/, /sky/                                       |
 | member          | one heading, or one item of a list marked ~#+attr_truss~                                                     |
 | truss           | a member with a pattern (its /apex member/) and the members right under it (its /supporting members/)        |
@@ -68,6 +68,8 @@ words, and the board, the checks and this README use them alone.
 | ID              | the name a member is pointed to by: ~<<m7>>~ in its words, a heading's or an item's; a ~CUSTOM_ID~ too      |
 | pointing link   | ~[[m7]]~, or ~[[#m7]]~: points to m7 as grounds                                                             |
 | include link    | ~[[truss-include:m7]]~: includes m7 there in the output document, the whole truss when m7 is an apex member  |
+| axis            | what a breakdown is cut by, ~TRUSS_BY~ or ~:by~: its supporting members are all there is                    |
+| value           | what a member is under an axis: the term before ~::~, or its words                                          |
 | output document | what the file is written out as, in ~out/~                                                                   |
 
 ** Four divisions
@@ -154,15 +156,17 @@ output document says of it.
 
 ** Patterns and roles
 
-An apex member names, in three properties, patterns for its supporting
-members, and each of those says the role it plays in each pattern, in the
-pattern's property with ~_ROLE~ after it.
+An apex member names patterns for its supporting members, of three
+kinds, in ~#+attr_truss~ in its text; each of those says the role it
+plays in each pattern before its words, then ~::~ (see [[*Writing
+members]]).  Properties say the same, a heading's: the pattern's, and
+the role's with ~_ROLE~ after it.
 
-| Pattern property  | Role property          | Its supporting members are  | Patterns                                    |
-|-------------------+------------------------+-----------------------------+---------------------------------------------|
-| ~TRUSS_LOGIC~     | ~TRUSS_LOGIC_ROLE~     | its reasons                 | reasons, deduction, induction               |
-| ~TRUSS_BREAKDOWN~ | ~TRUSS_BREAKDOWN_ROLE~ | its breakdown: its parts    | steps, parts, 5W1H, 6W1H, pros and cons ... |
-| ~TRUSS_TELLING~   | ~TRUSS_TELLING_ROLE~   | told in the pattern's order | PREP, SDS, SCQA, Sky, Rain, Umbrella        |
+| In ~#+attr_truss~ | Property          | Role property          | Its supporting members are  | Patterns                                    |
+|-------------------+-------------------+------------------------+-----------------------------+---------------------------------------------|
+| ~:logic~          | ~TRUSS_LOGIC~     | ~TRUSS_LOGIC_ROLE~     | its reasons                 | reasons, deduction, induction               |
+| ~:breakdown~      | ~TRUSS_BREAKDOWN~ | ~TRUSS_BREAKDOWN_ROLE~ | its breakdown: its parts    | steps, parts, 5W1H, 6W1H, pros and cons ... |
+| ~:telling~        | ~TRUSS_TELLING~   | ~TRUSS_TELLING_ROLE~   | told in the pattern's order | PREP, SDS, SCQA, Sky, Rain, Umbrella        |
 
 The three are apart.  A member has at most one of each, and a supporting
 member plays a role in each its apex member has: a reason that is also a
@@ -306,18 +310,20 @@ An item takes tags as a heading does, at the end of its first line,
 *~ keep them between a heading and an item.
 
 Org's ~C-c *~ makes items headings, and ~C-c -~ headings items.  In a
-truss file they carry what makes each a member: the role it plays,
-before ~::~ or in a ~_ROLE~ property; the patterns and ~:as~ of its
-truss, in ~#+attr_truss~ or in properties; its ID, ~<<m7>>~, with its
-words, a ~CUSTOM_ID~ made one.  Where Org would put a member under
-another -- the items after the one made a heading, a heading made an
-item in the text of the heading before it -- they do nothing, and say
-so: make the rest headings too, or start from the first heading.
+truss file they keep what makes each a member as it is written: the role
+it plays, or its value, before ~::~; the patterns, ~:by~ and ~:as~ of
+its truss, in ~#+attr_truss~; its ID, ~<<m7>>~, with its words.  A role
+in a ~_ROLE~ property goes before ~::~, and the patterns in properties
+into ~#+attr_truss~, when a heading is made an item, which has no
+properties; a ~CUSTOM_ID~ is made ~<<m7>>~.  Where Org would put a
+member under another -- the items after the one made a heading, a
+heading made an item in the text of the heading before it -- they do
+nothing, and say so: make the rest headings too, or start from the
+first heading.
 
-For a heading, the pattern goes in a property, ~TRUSS_LOGIC~ and the
-rest, and the role in the property of the same name with ~_ROLE~ after
-it.  For an item, the pattern goes in ~#+attr_truss~ before the list, and
-the role before ~::~:
+A member's patterns go in ~#+attr_truss~ in its text, and the role it
+plays before its words, then ~::~ -- a heading and an item alike, so
+what a member is shows where it is written:
 
 #+begin_src org
 ,** We move to fortnightly reviews
@@ -329,21 +335,29 @@ We would meet half as often.
   ,#+attr_truss: :breakdown steps
   1. Ask the leads
   2. Ask the team
+,*** pros :: Fewer items carried over
 #+end_src
 
-- ~#+attr_truss~ names patterns as the properties do, ~:logic~,
-  ~:breakdown~ and ~:telling~; the heading takes them for the kinds its
-  properties leave out.  Its items come before the headings under it.
-  ~#+attr_truss:~ naming none marks the items alone, under a heading
-  whose properties name its patterns, or with none.
-- The term before ~::~ is the role an item plays, by its English name, as
-  in ~TRUSS_BREAKDOWN_ROLE~; a term that names no role is part of the
-  item's words.
+- ~#+attr_truss~ right before a list marks it: its items are the
+  member's supporting members, and come before the headings under it.
+  One that marks no list -- a line of its own, before the headings
+  under the member -- names the member's patterns all the same.
+  ~#+attr_truss:~ naming none marks the items alone.
+- The properties say the same, a heading's: ~TRUSS_LOGIC~ and the rest
+  for its patterns, and the property of the same name with ~_ROLE~ after
+  it for its role.  What a property names is read before ~#+attr_truss~
+  and ~::~, which take the kinds it leaves out; the board and /new/
+  write where the member writes it already, and else ~#+attr_truss~ and
+  ~::~.  A heading playing two roles names one before ~::~ and the
+  other in its property.
+- The term before ~::~ is the role a member plays, by its English name,
+  as in ~TRUSS_BREAKDOWN_ROLE~, of a pattern the member above has; a term
+  that names no role is part of its words.
 - A pattern of one role -- ~reasons~, ~steps~, ~parts~ -- has no role
-  written: every item plays it with a term or none, and every heading
-  whose property names no role of its kind.  So a heading under it that
-  is an include link alone, or a fact tagged ~:assumption:~, needs no
-  properties, and the board writes none.
+  written: every member under it plays it, but one that names another
+  role of its kind.  So a heading under it that is an include link
+  alone, or a fact tagged ~:assumption:~, needs nothing written, and the
+  board writes nothing.
 - An item's first line is its words, as a heading's are; the lines under
   it are its text, a comment left out; a list marked so inside it holds
   its supporting members.  A list not marked stays text, the include links
@@ -352,9 +366,11 @@ We would meet half as often.
   heading's words is the heading's: ~[[m21]]~ points to it, and
   ~[[truss-include:m21]]~ includes it.  /new/ gives a member it writes
   one, before its words.
-- ~TRUSS_AS~ on a heading, or ~:as~ in ~#+attr_truss~, ~headings~ or
-  ~list~, says how the output document writes the supporting members of
-  that one truss, where what it is would write them the other way.
+- ~:as~ in ~#+attr_truss~, ~headings~ or ~list~ (~TRUSS_AS~ as a
+  property), says how the output document writes the supporting members
+  of that one truss, where what it is would write them the other way.
+- ~:by~ in ~#+attr_truss~, after the breakdown it cuts (~TRUSS_BY~ as a
+  property), names an axis (see [[*Axes]]).
 
 Every division reads items so, Brief and Structure among them:
 
@@ -362,9 +378,8 @@ Every division reads items so, Brief and Structure among them:
 ,* Structure
 :PROPERTIES:
 :TRUSS_DIVISION: structure
-:TRUSS_TELLING: sky-rain-umbrella
 :END:
-,#+attr_truss:
+,#+attr_truss: :telling sky-rain-umbrella
 - sky :: [[truss-include:m2]]
 - rain :: Why change
 - umbrella :: [[truss-include:m1]]
@@ -503,6 +518,68 @@ up by what is under it, a reader follows the document by its words, and
 each claim is checked on its own, against what is right under it.  Words
 fit one line, about 60 columns.
 
+** Axes
+
+What is found is laid out so that nothing is left out and nothing
+overlaps by cutting a breakdown by an axis: ~:by~ after the breakdown in
+~#+attr_truss~, or ~TRUSS_BY~ on a heading.  Its supporting members are
+then all there is, each by its /value/: the term before ~::~, an item's
+or a heading's, or else the member's words.
+
+#+begin_src org
+,** Expenses
+Amounts are cut by the rules, art. 3 [[moor:6f1c...::3][art. 3]].
+,#+attr_truss: :breakdown parts :by Amounts
+- Under 100k :: The section head approves [[m21]]
+- 100k or more :: The department head approves [[m22]]
+#+end_src
+
+That the values are all there is, is a claim, and whether they are can
+be told from what they mean alone: /under 200k/ and /under 100k/ are
+written alike and leave a gap.  So the file asks where it can be told:
+
+- The apex member has grounds in its own text that the values are all,
+  in a paragraph that names the axis by the word ~:by~ gives it --
+  /Whole without grounds/ and /Axis not named/.  Grounds are written
+  once, at the highest member they hold up: one quote there holds up
+  every value it says, and a value another source says points to its
+  fact in Subject.  Not known yet, it is ~:open:~.
+- A value with nothing after it is listed, /Missing cells/: what is
+  there is written, /none/ with its grounds when there is none, or it is
+  ~:open:~.  So what is not there and what is not known yet are told
+  apart.
+- Items whose terms, two or more, name no role read as values of an axis
+  no ~:by~ names: /Values without :by/.
+
+A value under an axis is no claim set apart: it is placed where it is
+used, as a reason under the member it holds up is.
+
+Two axes cut a member as a table does when every supporting member is
+cut again by one axis: rows by the one, columns by the other.
+
+#+begin_src org
+,** Expenses
+Amounts are cut by the rules, art. 3 [[moor:6f1c...::3][art. 3]]; each
+stage by the FAQ [[moor:a90b...::2][Q2]].
+,#+attr_truss: :breakdown parts :by Amounts
+- Under 100k ::
+  ,#+attr_truss: :breakdown parts :by stage
+  - approval :: The section head [[m21]]
+  - payment :: Month end [[m23]]
+- 100k or more ::
+  ,#+attr_truss: :breakdown parts :by stage
+  - approval :: The department head [[m22]]
+  - payment :: :open:
+#+end_src
+
+The grounds that both axes are whole are the apex member's, which names
+both; the rows need none of their own.  A column a row has no cell in is
+listed under /Missing cells/, and so is a cell whose words are its value
+and nothing more.  The board names each member by its value, and its
+pattern by its axis, /breakdown › parts by Amounts/.  The output document
+writes such a member as a table (see [[*The output document]]); one whose
+cells hold more is told as a tree, which holds every table and more.
+
 ** Scope
 
 What Brief asks for sets what is needed: the sources and facts reached
@@ -587,33 +664,37 @@ shows what it reads.
 
 ** What is left to do
 
-Twenty-three checks, each found where the problem is:
+Twenty-seven checks, each found where the problem is:
 
-| Check                | Found at                   | What it finds                                                                                                                            |
-|----------------------+----------------------------+------------------------------------------------------------------------------------------------------------------------------------------|
-| Missing roles        | the apex member            | a role its pattern asks for that none of its supporting members plays                                                                    |
-| No role              | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                  |
-| No pattern           | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                         |
-| No relation          | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the divisions and Structure as any |
-| Headings in a list   | the apex member            | its ~TRUSS_AS~ says headings, and its supporting members are written as a list all the same, in a list or deep                           |
-| Out of order         | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                       |
-| No grounds           | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                             |
-| Open                 | the open member            | tagged ~:open:~, and something needed stands on it, or it is in Message: to be found out                                                 |
-| Open, not needed     | the open member            | tagged ~:open:~, and nothing needed stands on it: not to be looked into                                                                  |
-| Open in the output   | the open member            | tagged ~:open:~, and the output document tells it                                                                                        |
-| Settled              | the open member            | tagged ~:open:~, and has grounds: the tag is to come off                                                                                 |
-| Unused               | the fact                   | of Subject, and nothing needed stands on it (see [[*Scope]])                                                                             |
-| Aside with members   | the source                 | tagged ~:aside:~, and holds members: it is one line                                                                                      |
-| Weak grounds         | the member that points     | points as grounds, in its text, to a member that does not hold                                                                           |
-| Hidden grounds       | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~  |
-| Quotes not found     | the member that quotes     | a ~#+begin_quote~ whose words are not in the source it is from, where that source's text can surely be read                               |
-| Grounds set low      | the apex member            | its supporting members, two or more, all stand on the same member, and it does not: it is to stand on that member, once                  |
-| Mixed sources        | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                             |
-| Sources in Situation | the source, or the fact    | a source a claim stands on that Situation leaves out, one it includes that no claim stands on, a fact it includes in place of its source  |
-| Said again           | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])         |
-| Set apart            | the claim                  | set apart in Message, a heading or an item, that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])  |
-| Broken links         | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back  |
-| Words to write       | the member                 | is in the output document with the words it was given: its division's name, or the name of a role it plays                               |
+| Check                 | Found at                   | What it finds                                                                                                                              |
+|-----------------------+----------------------------+--------------------------------------------------------------------------------------------------------------------------------------------|
+| Missing roles         | the apex member            | a role its pattern asks for that none of its supporting members plays                                                                      |
+| Missing cells         | the value, or the row      | under an axis, a value with nothing after it; in a table, a column a row has no cell in, a cell that is its value alone                    |
+| No role               | the supporting member      | plays no role of its apex member's pattern: the role is missing, or names one the pattern does not have                                    |
+| No pattern            | the supporting member      | plays a role, in a ~_ROLE~ property or before ~::~, of a kind the member above has no pattern of                                           |
+| No relation           | the member with no pattern | has members right under it, or include links in its text, and no pattern saying what they are to it -- the divisions and Structure as any  |
+| Values without :by    | the apex member            | its items, two or more, all have a term before ~::~ that names no role, and no ~:by~ names their axis                                      |
+| Headings in a list    | the apex member            | its ~TRUSS_AS~ says headings, and its supporting members are written as a list all the same, in a list or deep                             |
+| Out of order          | the supporting member      | written below one its apex member's ~TRUSS_TELLING~ tells after it                                                                         |
+| No grounds            | the member that lacks them | a supporting member of a ~TRUSS_LOGIC~ truss with no grounds                                                                               |
+| Whole without grounds | the apex member            | cut by an axis, and no grounds in its own text that its values are all there is (see [[*Axes]])                                                |
+| Axis not named        | the apex member            | has grounds, and no paragraph with them names the axis -- both, for a table -- by the word ~:by~ gives it                                  |
+| Open                  | the open member            | tagged ~:open:~, and something needed stands on it, or it is in Message: to be found out                                                   |
+| Open, not needed      | the open member            | tagged ~:open:~, and nothing needed stands on it: not to be looked into                                                                    |
+| Open in the output    | the open member            | tagged ~:open:~, and the output document tells it                                                                                          |
+| Settled               | the open member            | tagged ~:open:~, and has grounds: the tag is to come off                                                                                   |
+| Unused                | the fact                   | of Subject, and nothing needed stands on it (see [[*Scope]])                                                                                   |
+| Aside with members    | the source                 | tagged ~:aside:~, and holds members: it is one line                                                                                        |
+| Weak grounds          | the member that points     | points as grounds, in its text, to a member that does not hold                                                                             |
+| Hidden grounds        | the member that stands     | is in the output document, and stands on a member ~:noexport:~ leaves out: one it points to as grounds, or a reason of its ~TRUSS_LOGIC~   |
+| Quotes not found      | the member that quotes     | a ~#+begin_quote~ whose words are not in the source it is from, where that source's text can surely be read                                |
+| Grounds set low       | the apex member            | its supporting members, two or more, all stand on the same member, place in a source or quote, and it does not: it is to stand on it, once |
+| Mixed sources         | the apex member            | a truss pointing into more than one source where it keeps to one (see [[*One source at a time]])                                               |
+| Sources in Situation  | the source, or the fact    | a source a claim stands on that Situation leaves out, one it includes that no claim stands on, a fact it includes in place of its source   |
+| Said again            | the member of Message      | stands on the same members, two or more, as another member of Message does: one says what the other says again (see [[*Claims]])               |
+| Set apart             | the claim                  | set apart in Message, a heading or an item, that fewer than two members use, or that stands on fewer than two grounds (see [[*Claims]])        |
+| Broken links          | the link                   | a link to nothing: to no member, no source or file; an ID two members have; an include link that includes, without end, its member back    |
+| Words to write        | the member                 | is in the output document with the words it was given: its division's name, or the name of a role it plays                                 |
 
 They say what is so; what to do about it is written in the file.
 
@@ -693,9 +774,8 @@ The guide's drawer left out:
 ,* Brief
 :PROPERTIES:
 :TRUSS_DIVISION: brief
-:TRUSS_BREAKDOWN: reader-question-response-constraints
 :END:
-,#+attr_truss:
+,#+attr_truss: :breakdown reader-question-response-constraints
 - reader :: The team leads
 - question :: Should the review stay weekly?
 - response :: Agree to try fortnightly reviews next quarter
@@ -704,78 +784,57 @@ The guide's drawer left out:
 ,* Subject
 :PROPERTIES:
 :TRUSS_DIVISION: subject
-:TRUSS_BREAKDOWN: parts
 :END:
+,#+attr_truss: :breakdown parts
+
 ,** <<m8>>[[https://calendar.example.com/export][The calendar this quarter]]
-:PROPERTIES:
-:TRUSS_BREAKDOWN: parts
-:END:
-,#+attr_truss:
+,#+attr_truss: :breakdown parts
 - <<m2>>Eight of twelve reviews ran past the hour
 - <<m3>>The longest ran forty minutes over
 ,** <<m9>>[[https://wiki.example.com/reviews/agendas][The agendas, weeks 1-12]]
-:PROPERTIES:
-:TRUSS_BREAKDOWN: parts
-:END:
-,#+attr_truss:
+,#+attr_truss: :breakdown parts
 - <<m4>>Six of twelve items each week come back from the week before
 
 ,* Message
 :PROPERTIES:
 :TRUSS_DIVISION: message
-:TRUSS_BREAKDOWN: situation-interpretation-action
 :END:
-,** <<m1>>Reviews run long, and the same items come back
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: situation
-:TRUSS_BREAKDOWN: parts
-:END:
-,#+attr_truss:
+,#+attr_truss: :breakdown situation-interpretation-action
+
+,** situation :: <<m1>>Reviews run long, and the same items come back
+,#+attr_truss: :breakdown parts
 - [[truss-include:m8]]
 - [[truss-include:m9]]
-,** <<m5>>The weekly review costs the team more time than it gives back
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: interpretation
-:TRUSS_BREAKDOWN: parts
-:END:
+,** interpretation :: <<m5>>The weekly review costs the team more time than it gives back
+,#+attr_truss: :breakdown parts
+
 ,*** The review takes longer than it is given
-:PROPERTIES:
-:TRUSS_LOGIC: reasons
-:END:
-,#+attr_truss:
+,#+attr_truss: :logic reasons
 - Most weeks it runs past the hour
   [[m2]].
 - It can run forty minutes over
   [[m3]].
 ,*** <<m6>>Half the items repeat
-:PROPERTIES:
-:TRUSS_LOGIC: reasons
-:END:
 Half of each agenda repeats the week before.
 # Robin keeps raising the same items.  Not something to put in writing.
-,#+attr_truss:
+,#+attr_truss: :logic reasons
 - Half of each agenda is what was open the week before
   [[m4]].
 - Nothing urgent waits for the review
 - Items need a week to move :assumption:
   We assume most items need more than a week to change.
 
-,** <<m7>>Hold the review every other week
-:PROPERTIES:
-:TRUSS_BREAKDOWN_ROLE: action
-:TRUSS_BREAKDOWN: steps
-:END:
+,** action :: <<m7>>Hold the review every other week
 [[m6]], so it can meet less.
-,#+attr_truss:
+,#+attr_truss: :breakdown steps
 1. Cancel every second review in the calendar
 2. Carry what is still open to the next one
 
 ,* Structure
 :PROPERTIES:
 :TRUSS_DIVISION: structure
-:TRUSS_TELLING: sky-rain-umbrella
 :END:
-,#+attr_truss:
+,#+attr_truss: :telling sky-rain-umbrella
 - sky :: [[truss-include:m1]]
 - rain :: [[truss-include:m5]]
 - umbrella :: [[truss-include:m7]]
@@ -1525,6 +1584,14 @@ Structure is in it, and the trusses and members its include links reach.
   ~[[truss-include:m20]]~, makes its truss compound, and is a heading,
   the facts a list under it.  ~TRUSS_AS~, or ~:as~ in ~#+attr_truss~,
   writes one truss's the other way (see [[*Writing members]]).
+- Under an axis, each item opens with its value, /Under 100k:/, and a
+  member whose words are none is its value.  Two axes are a table, when
+  each row is its value alone and each cell a value and its words, with
+  no text, members or include links: a row for each value of the one,
+  a column for each of the other in the order first met, the corner
+  naming both, /Amounts × stage/, and a cell empty where a row has none.
+  Any other is told as a tree.  ~TRUSS_AS~ writes it as a list or as
+  headings all the same.
 - Once a list, what is under it stays a list, and so below the sixth
   level: a truss there that ~TRUSS_AS~ says to write as headings is a list
   all the same, and /Headings in a list/ finds it.

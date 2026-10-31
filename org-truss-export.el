@@ -83,10 +83,6 @@ It names the link as text, which nothing reads as a link again."
 TARGET is written as text, which nothing reads as a link again."
   (format (org-truss--pick "(broken link: %s)" "（リンク切れ: %s）") target))
 
-(defun org-truss--present-p (text)
-  "Non-nil when TEXT has words."
-  (and text (not (string-blank-p text))))
-
 (defun org-truss--join (texts)
   "Return TEXTS that have words, a blank line apart.
 Each without the blank lines around it; its first line keeps its indent."
@@ -116,11 +112,14 @@ its words, else its body."
   "Return what opens SUPPORT, a supporting member of APEX, or \"\" for nothing.
 The role SUPPORT plays in a pattern of APEX whose role is flagged :label,
 named in `org-truss-language': the reader is told which part of it each
-piece is."
+piece is.  Under an axis, the value before :: it is written with, unless
+it has no words, and the value is its words."
   (let ((role (org-truss-labelling-role apex support)))
-    (if role
-        (format (org-truss--pick "%s: " "%s：") (org-truss-role-label role))
-      "")))
+    (cond (role (format (org-truss--pick "%s: " "%s：") (org-truss-role-label role)))
+          ((and (org-truss-member-by apex) (org-truss-member-term support)
+                (not (string-empty-p (org-truss-member-words support))))
+           (format (org-truss--pick "%s: " "%s：") (org-truss-member-value support)))
+          (t ""))))
 
 (defun org-truss--list-marker (apex support n)
   "Return (BULLET . LABEL) for SUPPORT, the Nth item of APEX's list.
@@ -186,7 +185,9 @@ them to write, BEFORE of them written already, which headings are
 numbered after."
   (let ((supports (seq-remove #'org-truss-noexport-p
                               (or supports (org-truss-member-supports member)))))
-    (cond ((or (null level) (>= level org-truss--deepest-level))
+    (cond ((eq (org-truss-supports-shape org-truss--model member) 'table)
+           (org-truss--supports-table member supports))
+          ((or (null level) (>= level org-truss--deepest-level))
            (when (and org-truss--listed-headings supports
                       (eq (org-truss-member-as member) 'headings))
              (push member (car org-truss--listed-headings)))
@@ -233,6 +234,43 @@ level, which it writes as a list, are not told apart."
                   (concat (car marker) (cdr marker)))
               (concat (if (eq (org-truss-list-form apex) 'numbered) (format "%d. " n) "")
                       (org-truss--role-opening apex support)))))))
+
+(defun org-truss--table-cell (text)
+  "Return TEXT as a cell of an Org table: on one line, a bar written \\vert{}."
+  (replace-regexp-in-string "|" "\\vert{}"
+                            (replace-regexp-in-string "[ \t]*\n[ \t]*" " " (string-trim (or text "")))
+                            t t))
+
+(defun org-truss--supports-table (apex rows)
+  "Return ROWS, the supporting members of APEX, as an Org table.
+A row for each, by its value, and a column for each value of the axis
+its cells are cut by, in the order first met; the corner names the two
+axes.  A cell is its words, and empty where the row has none."
+  (let* ((cells (lambda (row) (seq-remove #'org-truss-noexport-p (org-truss-member-supports row))))
+         (columns (seq-uniq (mapcan (lambda (row) (mapcar #'org-truss-member-value (funcall cells row)))
+                                    rows)))
+         (line (lambda (texts) (concat "| " (mapconcat #'org-truss--table-cell texts " | ") " |"))))
+    (mapconcat
+     #'identity
+     (append
+      (list (funcall line (cons (format "%s × %s" (car (org-truss-axes apex))
+                                        (cadr (org-truss-axes apex)))
+                                columns))
+            "|-")
+      (mapcar (lambda (row)
+                (funcall line
+                         (cons (car (org-truss--inline (org-truss-member-value row) nil))
+                               (mapcar (lambda (column)
+                                         (let ((cell (seq-find (lambda (c) (equal (org-truss-member-value c) column))
+                                                               (funcall cells row))))
+                                           (or (and cell (org-truss--write
+                                                          cell nil
+                                                          (lambda (output)
+                                                            (car (org-truss--inline (car output) nil)))))
+                                               "")))
+                                       columns))))
+              rows))
+     "\n")))
 
 (defun org-truss--supports-headings (apex supports level &optional before)
   "Return SUPPORTS, supporting members of APEX, as headings one level below LEVEL.

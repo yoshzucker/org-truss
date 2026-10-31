@@ -359,11 +359,15 @@ if the line has one."
 
 (defun org-truss--role-names (member)
   "Return the roles MEMBER plays in the patterns above, as the board names them.
-Joined, in the order of their kinds; nil when it plays none."
-  (let ((roles (org-truss-member-roles member)))
+Joined, in the order of their kinds; nil when it plays none.  Under an
+axis its value stands for its role in the breakdown: its words, when
+it has no term before ::, which then shows them once."
+  (let ((roles (org-truss-member-roles member))
+        (value (and (org-truss-member-term member) (org-truss-member-value member))))
     (and roles (mapconcat (lambda (kind)
-                            (let ((role (alist-get kind roles)))
-                              (and role (org-truss-role-name role))))
+                            (if (and value (eq kind 'breakdown))
+                                value
+                              (org-truss-role-name (alist-get kind roles))))
                           (seq-filter (lambda (kind) (alist-get kind roles)) org-truss-pattern-kinds)
                           " · "))))
 
@@ -1280,6 +1284,12 @@ finds it, as `org-truss-check-descriptions' names them."
             model "No grounds" (funcall in (mapcar #'list (plist-get checks :no-grounds)))
             (lambda (_) org-truss-no-grounds-text))
            (org-truss--check-group
+            model "Whole without grounds" (funcall in (mapcar #'list (plist-get checks :whole-ungrounded)))
+            (lambda (e) (org-truss-whole-without-grounds-text (car e))))
+           (org-truss--check-group
+            model "Axis not named" (funcall in (plist-get checks :axes-not-named))
+            #'org-truss-axes-not-named-text)
+           (org-truss--check-group
             model "Open" (funcall in (mapcar #'list (plist-get checks :open)))
             (lambda (_) org-truss-open-text))
            (org-truss--check-group
@@ -1330,6 +1340,9 @@ finds it, as `org-truss-check-descriptions' names them."
                                                (if asking (format " (%s)" asking) ""))))
                                    (cdr e) ", ")))
            (org-truss--check-group
+            model "Missing cells" (funcall in (plist-get checks :missing-cells))
+            #'cdr)
+           (org-truss--check-group
             model "No role" (funcall in (plist-get checks :no-role))
             (lambda (e) (format "plays no role of %s"
                                 (org-truss-pattern-label (org-truss-member-pattern (cddr e) (cadr e))))))
@@ -1339,6 +1352,9 @@ finds it, as `org-truss-check-descriptions' names them."
            (org-truss--check-group
             model "No relation" (funcall in (mapcar #'list (plist-get checks :no-relation)))
             (lambda (_) org-truss-no-relation-text))
+           (org-truss--check-group
+            model "Values without :by" (funcall in (mapcar #'list (plist-get checks :values-without-by)))
+            (lambda (_) org-truss-values-without-by-text))
            (org-truss--check-group
             model "Headings in a list" (funcall in (mapcar #'list (plist-get checks :listed-headings)))
             (lambda (_) org-truss-listed-headings-text))

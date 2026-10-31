@@ -320,8 +320,7 @@ with no Brief, Subject or Structure, and its commands work on it there:
 
 (defun org-truss--patterned-p ()
   "Non-nil when the heading at point has a pattern of any kind."
-  (seq-some (lambda (property) (org-entry-get nil property))
-            (mapcar #'cdr org-truss-pattern-properties)))
+  (seq-some (lambda (kind) (org-truss-heading-pattern (point) kind)) org-truss-pattern-kinds))
 
 (defun org-truss--alone-here ()
   "Return a marker at the heading to draw a board of alone, or nil.
@@ -1227,13 +1226,18 @@ COPY is the copy's buffer, ORIGIN the buffer it came from and LINE the
 line of ORIGIN the copy starts at.  As (WORDS . PLAYS): the words of the
 heading right above, and each (PATTERN . ROLE) of it the copy's heading
 plays a role of; nil when it plays none."
-  (let ((roles (with-current-buffer copy
-                 (org-with-wide-buffer
-                  (goto-char (point-min))
-                  (when (or (org-at-heading-p) (outline-next-heading))
-                    (mapcar (lambda (kind)
-                              (cons kind (org-entry-get nil (org-truss-role-property (car kind)))))
-                            org-truss-pattern-properties))))))
+  (let* ((term nil)
+         ;; Each kind's role in its property, or the one before ::.
+         (roles (with-current-buffer copy
+                  (org-with-wide-buffer
+                   (goto-char (point-min))
+                   (when (or (org-at-heading-p) (outline-next-heading))
+                     (setq term (let ((found (org-truss--heading-term (point))))
+                                  (and found (org-truss--intern (cddr found)))))
+                     (mapcar (lambda (kind)
+                               (cons kind (org-truss--intern
+                                           (org-entry-get nil (org-truss-role-property kind)))))
+                             org-truss-pattern-kinds))))))
     (with-current-buffer origin
       (org-with-wide-buffer
        (goto-char (point-min))
@@ -1241,10 +1245,11 @@ plays a role of; nil when it plays none."
        (when (and (org-at-heading-p) (org-up-heading-safe))
          (let ((plays (delq nil
                             (mapcar (lambda (kind)
-                                      (let* ((id (org-entry-get nil (cdar kind)))
-                                             (id (and id (intern id)))
-                                             (role (and (cdr kind) (intern (cdr kind)))))
-                                        (and (assq role (org-truss-pattern-roles id))
+                                      (let* ((id (org-truss-heading-pattern (point) (car kind)))
+                                             (pattern-roles (org-truss-pattern-roles id))
+                                             (role (or (cdr kind)
+                                                       (and (assq term pattern-roles) term))))
+                                        (and (assq role pattern-roles)
                                              (cons id role))))
                                     roles))))
            (and plays (cons (org-get-heading t t t t) plays))))))))

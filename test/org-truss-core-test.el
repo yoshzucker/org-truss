@@ -522,14 +522,29 @@ From next month.
       (error "No member %s" label)))
 
 (defun org-truss-test--heading-pos (label)
-  "Return the position of the first heading labelled LABEL."
+  "Return the position of the first heading labelled LABEL.
+Its words, after the role it names before ::, if any."
   (save-excursion
     (goto-char (point-min))
     (catch 'found
       (while (re-search-forward org-heading-regexp nil t)
-        (when (equal (org-truss--heading-words) label)
+        (when (member label (list (org-truss--heading-words)
+                                  (replace-regexp-in-string "\\`[^ \t:]+[ \t]+::[ \t]*" ""
+                                                            (org-truss--heading-words))))
           (throw 'found (line-beginning-position))))
       (error "No heading %s" label))))
+
+(defun org-truss-test--written (pos property)
+  "Return what the heading at POS says of PROPERTY, wherever it is written.
+A pattern's, TRUSS_LOGIC and the rest, in a property or #+attr_truss; a
+role's, TRUSS_LOGIC_ROLE and the rest, in a property or before ::; any
+other in its property."
+  (let ((kind (car (rassoc property org-truss-pattern-properties)))
+        (role (seq-find (lambda (k) (equal (org-truss-role-property k) property))
+                        org-truss-pattern-kinds)))
+    (cond (kind (let ((p (org-truss-heading-pattern pos kind))) (and p (symbol-name p))))
+          (role (let ((r (org-truss--heading-role pos role))) (and r (symbol-name r))))
+          (t (org-entry-get pos property)))))
 
 (defun org-truss-test--section-labels (section)
   (mapcar #'org-truss-member-words (org-truss-member-supports section)))
@@ -1143,8 +1158,8 @@ either language.  Those the output document does not tell are not asked."
                      '("Situation" "Part" "Interpretation" "Part" "Reason" "Action" "Step")))
       (should (org-truss-placeholder-p (org-truss-model-structure model)))))
   (org-truss-test--with (replace-regexp-in-string
-                         "^\\*\\* \\(<<m[0-9]+>>\\)Interpretation$" "** \\1解釈"
-                         (replace-regexp-in-string "^\\*\\* \\(<<m[0-9]+>>\\)Action$" "** \\1Test drivers are checked"
+                         "^\\*\\* \\(interpretation :: <<m[0-9]+>>\\)Interpretation$" "** \\1解釈"
+                         (replace-regexp-in-string "^\\*\\* \\(action :: <<m[0-9]+>>\\)Action$" "** \\1Test drivers are checked"
                                                    (org-truss-skeleton "T")))
     (should (equal (mapcar #'org-truss-member-words
                            (seq-filter #'org-truss-member-roles
@@ -2194,15 +2209,17 @@ that one line; or the error it says."
 
 (ert-deftest org-truss-test-toggle-carries-what-a-member-is ()
   "C-c * and C-c - carry a member's role, ID and patterns between an
-item and a heading, and its tags; where Org would put one under another,
-they do nothing and say why."
+item and a heading, and its tags: a role before ::, patterns in
+#+attr_truss, where they were written; one in a property comes before ::
+or into #+attr_truss.  Where Org would put one under another, they do
+nothing and say why."
   (unwind-protect
       (progn
         (org-item-tags-mode 1)
         (should (equal (org-truss-test--toggle
                         "** P\n#+attr_truss: :logic deduction\n- major :: <<m1>>Big\n- minor :: Small :assumption:\n"
                         "- minor" nil #'org-toggle-heading)
-                       "** P\n#+attr_truss: :logic deduction\n- major :: <<m1>>Big\n*** Small :assumption:\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: minor\n:END:\n"))
+                       "** P\n#+attr_truss: :logic deduction\n- major :: <<m1>>Big\n*** minor :: Small :assumption:\n"))
         (should (string-prefix-p "Org would put the items after it under it"
                                  (org-truss-test--toggle
                                   "** P\n#+attr_truss: :logic deduction\n- major :: Big\n- minor :: Small\n"
@@ -2211,10 +2228,10 @@ they do nothing and say why."
                          "** P\n#+attr_truss: :logic reasons\n- A\n  #+attr_truss: :logic reasons :as list\n  - A1\n  - A2\n- B\n"
                          "- A" "- B" #'org-toggle-heading)))
           (should (equal headings
-                         "** P\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n*** A\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:TRUSS_AS: list\n:END:\n**** A1\n**** A2\n*** B\n"))
+                         "** P\n#+attr_truss: :logic reasons\n*** A\n#+attr_truss: :logic reasons :as list\n**** A1\n**** A2\n*** B\n"))
           ;; And back.
           (should (equal (org-truss-test--toggle headings "*** A" "*** B" #'org-toggle-item)
-                         "** P\n:PROPERTIES:\n:TRUSS_LOGIC: reasons\n:END:\n#+attr_truss:\n- A\n  #+attr_truss: :logic reasons :as list\n  - A1\n  - A2\n- B\n")))
+                         "** P\n#+attr_truss: :logic reasons\n- A\n  #+attr_truss: :logic reasons :as list\n  - A1\n  - A2\n- B\n")))
         (should (equal (org-truss-test--toggle
                         "** P\n:PROPERTIES:\n:TRUSS_LOGIC: deduction\n:END:\n*** <<m3>>Big\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: major\n:END:\ntext\n*** Small :assumption:\n:PROPERTIES:\n:CUSTOM_ID: m4\n:TRUSS_LOGIC_ROLE: minor\n:END:\n"
                         "*** <<m3>>Big" "*** Small" #'org-toggle-item)
@@ -2384,8 +2401,7 @@ and what plays no role stays at the end."
                      '("move" "none")))
       (should (eq (org-truss-member-role (funcall by-label "Umbrella") 'telling) 'answer))
       (should (eq (org-truss-member-role (funcall by-label "Question") 'telling) 'question))
-      (should (string-match-p "^\\*\\* Question\n:PROPERTIES:\n:TRUSS_TELLING_ROLE: question\n:END:"
-                              (buffer-string)))
+      (should (string-match-p "^\\*\\* question :: Question\n" (buffer-string)))
       (should (equal (org-truss-member-includes (funcall by-label "Rain"))
                      '("half"))))))
 
@@ -2437,13 +2453,14 @@ and what plays no role stays at the end."
                      '("inner"))))))
 
 (ert-deftest org-truss-test-add-places ()
-  "A heading is put in for each role a pattern lacks, playing it in the
-property of the pattern's kind."
+  "A heading is put in for each role a pattern lacks, playing it named
+before ::, as an item names it.  Its pattern is read from #+attr_truss,
+as from a property."
   (org-truss-test--with org-truss-test--file
     (let ((move (org-truss-test--heading-pos "Move to fortnightly")))
       (should (= (org-truss-add-role-members move '((logic minor . 1))) 1))
       (should (string-match-p
-               "^\\*\\*\\* Minor premise\n:PROPERTIES:\n:TRUSS_LOGIC_ROLE: minor\n:END:\n"
+               "^\\*\\*\\* minor :: Minor premise\n\n"
                (buffer-string)))
       (should-not (org-truss-gaps (org-truss-test--m (org-truss-read) "Move to fortnightly"))))))
 
@@ -2479,6 +2496,43 @@ the drawer."
                  (car (org-truss-member-supports (org-truss-model-structure (org-truss-read))))
                  'telling)
                 'ask))))
+
+(ert-deftest org-truss-test-patterns-in-attr-for-headings ()
+  "A heading names its patterns in #+attr_truss in its text, on a line of
+its own before the headings under it, and the role it plays before ::, as
+an item does; the line is no text the reader is shown.  A property names
+them as well, and is read first.  A pattern set where none is written goes
+in #+attr_truss, and one taken off takes the line with it."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:END:
+** Claim
+Some text.
+#+attr_truss: :logic reasons :breakdown pros-cons
+*** pros :: <<m1>>Less time
+*** cons :: Items wait
+:PROPERTIES:
+:TRUSS_BREAKDOWN_ROLE: pros
+:END:
+"
+    (let* ((model (org-truss-read))
+           (claim (org-truss-test--m model "Claim"))
+           (pros (org-truss-member-by-id model "m1"))
+           (cons (org-truss-test--m model "cons :: Items wait")))
+      (should (eq (org-truss-member-logic claim) 'reasons))
+      (should (eq (org-truss-member-breakdown claim) 'pros-cons))
+      (should (equal (org-truss-member-body claim) "Some text."))
+      (should (equal (org-truss-member-words pros) "Less time"))
+      (should (equal (org-truss-member-roles pros) '((logic . reason) (breakdown . pros))))
+      (should (equal (org-truss-member-role cons 'breakdown) 'pros)))
+    (let ((pos (org-truss-test--heading-pos "Claim")))
+      (org-truss-set-pattern pos 'telling 'prep)
+      (should (string-match-p "^#\\+attr_truss: :logic reasons :breakdown pros-cons :telling prep$"
+                              (buffer-string)))
+      (dolist (kind '(logic breakdown telling))
+        (org-truss-set-pattern pos kind nil))
+      (should-not (string-match-p "attr_truss" (buffer-string))))))
 
 (ert-deftest org-truss-test-set-role ()
   "A heading's role in one kind of pattern is set, or taken off, apart from
@@ -2565,14 +2619,14 @@ directories there."
         (dolist (dir '("^  sources/ " "^  notes/ " "^  attach/ " "^  out/ "))
           (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries #'org-truss--heading-words)
-                       '("Brief" "Subject" "Part" "Message" "Situation" "Interpretation" "Part" "Action"
-                         "Structure")))
+                       '("Brief" "Subject" "Part" "Message" "situation :: Situation"
+                         "interpretation :: Interpretation" "Part" "action :: Action" "Structure")))
         (should (string-match-p (if (eq org-truss-language 'ja)
                                     "^:GUIDE:\nこの truss\\.org から出力文書を一つ作る。"
                                   "^:GUIDE:\nThis truss\\.org makes one output document\\.")
                                 (buffer-string)))
         (should (= (how-many "^:GUIDE:$" (point-min) (point-max)) 1))
-        (should (string-match-p ":TRUSS_BREAKDOWN: reader-question-response-constraints\n"
+        (should (string-match-p "^#\\+attr_truss: :breakdown reader-question-response-constraints\n"
                                 (buffer-string)))
         (should (eq (org-truss-member-breakdown (org-truss-model-brief model))
                     'reader-question-response-constraints))
@@ -2738,6 +2792,127 @@ them; one that sets where attachments go already is left as it is."
     (let ((before (buffer-string)))
       (org-truss-put-file-variables)
       (should (equal (buffer-string) before)))))
+
+(defconst org-truss-test--axes-file "* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:TRUSS_BREAKDOWN: parts
+:END:
+** Expenses
+Amounts are cut by the rules [[https://e.x/rules][art. 3]]; each stage by the FAQ [[https://e.x/faq][Q2]].
+#+attr_truss: :breakdown parts :by Amounts
+- Under 100k ::
+  #+attr_truss: :breakdown parts :by stage
+  - approval :: The section head
+  - payment :: Month end
+- Over 100k ::
+  #+attr_truss: :breakdown parts :by stage
+  - approval :: The department head
+  - apply ::
+** Systems
+#+attr_truss: :breakdown parts :by system
+- Billing
+- Ledger
+** Regions
+#+attr_truss: :breakdown parts
+- east :: Tokyo
+- west :: Osaka
+"
+  "A file of axes: a table, an axis on no grounds, and terms read as values.")
+
+(ert-deftest org-truss-test-axes-read ()
+  "TRUSS_BY or :by is the axis a breakdown is cut by: under it, the term
+before :: is a member's value, an item's or a heading's, and not its words;
+a member with none has its words as its value.  Two axes, the second cutting
+every supporting member alike, are a table's."
+  (org-truss-test--with org-truss-test--axes-file
+    (let* ((model (org-truss-read))
+           (expenses (org-truss-test--m model "Expenses"))
+           (row (car (org-truss-member-supports expenses)))
+           (cell (car (org-truss-member-supports row))))
+      (should (equal (org-truss-member-by expenses) "Amounts"))
+      (should (equal (org-truss-axes expenses) '("Amounts" "stage")))
+      (should (equal (org-truss-member-value row) "Under 100k"))
+      (should (equal (org-truss-member-words row) ""))
+      (should (equal (org-truss-member-value cell) "approval"))
+      (should (equal (org-truss-member-words cell) "The section head"))
+      (should (equal (org-truss-member-value (org-truss-test--m model "Billing")) "Billing"))
+      (should (equal (org-truss-member-words (org-truss-test--m model "east :: Tokyo")) "east :: Tokyo"))
+      (should (equal (org-truss-patterns-label expenses) "breakdown › parts by Amounts"))
+      (should (org-truss-table-row-p model row))))
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:END:
+** Expenses
+:PROPERTIES:
+:TRUSS_BREAKDOWN: parts
+:TRUSS_BY: amount
+:END:
+*** Under 100k :: The section head
+*** Over 100k
+"
+    (let ((model (org-truss-read)))
+      (should (equal (mapcar (lambda (m) (cons (org-truss-member-value m) (org-truss-member-words m)))
+                             (org-truss-member-supports (org-truss-test--m model "Expenses")))
+                     '(("Under 100k" . "The section head") ("Over 100k" . "Over 100k")))))))
+
+(ert-deftest org-truss-test-axes-checks ()
+  "An axis stands on grounds in its apex member's own text, which name it;
+a table's rows on the table's.  What an axis leaves empty is listed, and
+terms before :: that name no role, with no axis, are told to name one."
+  (org-truss-test--with org-truss-test--axes-file
+    (let* ((model (org-truss-read))
+           (checks (org-truss-checks model))
+           (words (lambda (m) (or (org-truss-member-value m) (org-truss-member-words m)))))
+      (should (equal (mapcar #'org-truss-member-words (plist-get checks :whole-ungrounded))
+                     '("Systems")))
+      (should-not (plist-get checks :axes-not-named))
+      (should (equal (mapcar (lambda (e) (cons (funcall words (car e)) (cdr e)))
+                             (plist-get checks :missing-cells))
+                     '(("Under 100k" . "no apply") ("Over 100k" . "no payment") ("apply" . "empty"))))
+      (should (equal (mapcar #'org-truss-member-words (plist-get checks :values-without-by))
+                     '("Regions")))
+      ;; Values under an axis are where they are used, as reasons are.
+      (should-not (seq-some (lambda (e) (org-truss-member-value (car e))) (plist-get checks :unearned)))
+      (should (string-match-p "^.*:16: apply -- empty$" (org-truss-check-report model)))))
+  (org-truss-test--with (replace-regexp-in-string "each stage" "the rest" org-truss-test--axes-file)
+    (should (equal (mapcar (lambda (e) (cons (org-truss-member-words (car e)) (cdr e)))
+                           (plist-get (org-truss-checks (org-truss-read)) :axes-not-named))
+                   '(("Expenses" "stage"))))))
+
+(ert-deftest org-truss-test-grounds-set-low-sources ()
+  "Supporting members that all link to the same place in a source, or all
+quote the same words, have their grounds set low as a member's are."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:END:
+** Expenses
+#+attr_truss: :breakdown parts :by amount
+- Under 100k :: The section head [[https://e.x/rules#3][art. 3]]
+- Over 100k :: The department head [[https://e.x/rules#3][art. 3]]
+"
+    (let ((model (org-truss-read)))
+      (should (equal (mapcar #'cdr (plist-get (org-truss-checks model) :low-grounds))
+                     '((source . "https://e.x/rules#3"))))
+      (should (string-match-p "Expenses -- every supporting member links to \\[\\[https://e.x/rules#3\\]\\]"
+                              (org-truss-check-report model))))))
+
+(ert-deftest org-truss-test-toggle-carries-axis ()
+  "C-c * and C-c - carry an axis in #+attr_truss, and a value stays before ::."
+  (unwind-protect
+      (progn
+        (org-item-tags-mode 1)
+        (let ((headings (org-truss-test--toggle
+                         "** P\n#+attr_truss: :breakdown parts\n- A\n  #+attr_truss: :breakdown parts :by amount\n  - Under :: Head\n  - Over :: Dept\n"
+                         "- A" "- Over" #'org-toggle-heading)))
+          (should (equal headings
+                         "** P\n#+attr_truss: :breakdown parts\n*** A\n#+attr_truss: :breakdown parts :by amount\n**** Under :: Head\n**** Over :: Dept\n"))
+          ;; And back.
+          (should (equal (org-truss-test--toggle headings "*** A" "**** Over" #'org-toggle-item)
+                         "** P\n#+attr_truss: :breakdown parts\n- A\n  #+attr_truss: :breakdown parts :by amount\n  - Under :: Head\n  - Over :: Dept\n"))))
+    (org-item-tags-mode -1)))
 
 (provide 'org-truss-core-test)
 

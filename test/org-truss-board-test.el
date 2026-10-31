@@ -267,11 +267,11 @@ member playing none of them is marked, and r gives it a role."
                         (org-map-entries (lambda () (org-get-heading t t t t)) "LEVEL=2"))))
           (property (lambda (heading name)
                       (with-current-buffer source
-                        (org-entry-get (org-truss-test--heading-pos heading) name)))))
+                        (org-truss-test--written (org-truss-test--heading-pos heading) name)))))
       (org-truss-test--goto-line-with "^   Past —")
       (org-truss-test--creating '("Tests are random")
         (should (equal (seq-take (seq-drop (funcall headings) 3) 3)
-                       '("Tests are random" "Issue" "Constraints")))
+                       '("past :: Tests are random" "Issue" "Constraints")))
         (should (equal (funcall property "Tests are random" "TRUSS_BREAKDOWN_ROLE") "past")))
       (should (string-match-p "^   Past[ ·]+Tests are random" (buffer-string)))
       (org-truss-test--goto-line-with "^ Subject ")
@@ -285,7 +285,7 @@ member playing none of them is marked, and r gives it a role."
         (org-truss-board-pattern))
       (should (equal (funcall property "Subject" "TRUSS_BREAKDOWN") "pros-cons"))
       (should (equal (seq-drop (funcall headings) 3)
-                     '("Pros" "Cons" "Tests are random" "Issue" "Constraints"
+                     '("pros :: Pros" "cons :: Cons" "past :: Tests are random" "Issue" "Constraints"
                        "Check with a breathalyser" "Constraints")))
       (org-truss-test--goto-line-with "^   Present \\[no role\\]")
       (should (eq (get-text-property (+ (point) 11) 'face) 'org-truss-attention))
@@ -1485,7 +1485,7 @@ telling pattern off."
   (org-truss-test--with-board org-truss-test--file
     (let ((property (lambda (name)
                       (with-current-buffer source
-                        (org-entry-get (org-truss-test--heading-pos "Structure") name)))))
+                        (org-truss-test--written (org-truss-test--heading-pos "Structure") name)))))
       (org-truss-test--goto-line-with "^ Structure ")
       (org-truss-test--answering '("breakdown › Past, present, future")
         (org-truss-board-pattern))
@@ -1520,7 +1520,7 @@ the patterns above, those no section plays yet first."
                   nil))
     (org-truss-board-redraw)
     (with-current-buffer source
-      (should (equal (org-entry-get (org-truss-test--heading-pos "When we start") "TRUSS_BREAKDOWN_ROLE")
+      (should (equal (org-truss-test--written (org-truss-test--heading-pos "When we start") "TRUSS_BREAKDOWN_ROLE")
                      "when")))
     (should-not (string-match-p "^     When —$" (buffer-string)))
     (org-truss-test--goto-line-with "When we start")
@@ -1530,7 +1530,7 @@ the patterns above, those no section plays yet first."
         (org-truss-board-roles))
       (should (equal (seq-take offered 5) '("Who" "Where" "What" "Why" "How"))))
     (with-current-buffer source
-      (should (equal (org-entry-get (org-truss-test--heading-pos "When we start") "TRUSS_BREAKDOWN_ROLE")
+      (should (equal (org-truss-test--written (org-truss-test--heading-pos "When we start") "TRUSS_BREAKDOWN_ROLE")
                      "who")))
     (org-truss-test--goto-line-with "^     When —$")
     (should-error (org-truss-board-new) :type 'user-error)))
@@ -1579,7 +1579,7 @@ missing role one playing it; on a section a member listed there."
       (should-not (string-match-p "Minor premise —" (buffer-string)))
       (with-current-buffer edit
         (should (looking-at-p "$"))
-        (should (string-match-p ":TRUSS_LOGIC_ROLE: minor" (buffer-string)))))
+        (should (string-match-p "^\\*+ minor :: " (buffer-string)))))
     (org-truss-test--goto-member "Sky")
     (org-truss-test--creating '("The team grew")
       (should (equal (org-truss-test--parent-label source "The team grew") '("Message" . 2)))
@@ -1605,7 +1605,7 @@ but the member, and taking it back leaves the file as it was."
   (org-truss-test--with-board org-truss-test--file
     (let ((role (lambda (label kind)
                   (with-current-buffer source
-                    (org-entry-get (org-truss-test--heading-pos label) (org-truss-role-property kind)))))
+                    (org-truss-test--written (org-truss-test--heading-pos label) (org-truss-role-property kind)))))
           (plays (lambda (label kind)
                    (org-truss-member-role (org-truss-member-by-words (org-truss-read source) label) kind))))
       (org-truss-test--goto-member "Half the items repeat")
@@ -1622,7 +1622,7 @@ but the member, and taking it back leaves the file as it was."
       (org-truss-test--goto-member "Lone remark")
       (org-truss-test--creating '("Said twice")
         (should-not (with-current-buffer source
-                      (org-entry-get (org-truss-test--heading-pos "Lone remark") "TRUSS_LOGIC")))
+                      (org-truss-test--written (org-truss-test--heading-pos "Lone remark") "TRUSS_LOGIC")))
         (should-not (funcall role "Said twice" 'logic)))))
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
     (let ((default-directory dir)
@@ -2042,7 +2042,7 @@ at once.  Fontifying the file is not an edit.  Only an edit made while a
 command is asking makes it draw again instead of acting."
   (org-truss-test--with-board org-truss-test--file
     (let ((pattern (lambda () (with-current-buffer source
-                                (org-entry-get (org-truss-test--heading-pos "Umbrella")
+                                (org-truss-test--written (org-truss-test--heading-pos "Umbrella")
                                                "TRUSS_BREAKDOWN")))))
       (with-current-buffer source
         (with-silent-modifications
@@ -2331,8 +2331,8 @@ document.  A pattern applied there puts in a heading for each place."
         (should (string-match-p "breakdown › 5W1H" (buffer-string)))
         (with-current-buffer org-truss--source
           (goto-char (point-min))
-          (should (equal (org-entry-get (search-forward "New approval") "TRUSS_BREAKDOWN") "5w1h"))
-          (should (re-search-forward "^\\*\\* Who\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: who\n" nil t)))
+          (should (equal (org-truss-test--written (search-forward "New approval") "TRUSS_BREAKDOWN") "5w1h"))
+          (should (re-search-forward "^\\*\\* who :: Who\n" nil t)))
         ;; From under it, the board is of the heading with the pattern.
         (with-current-buffer org-truss--source
           (goto-char (point-min))
@@ -2370,23 +2370,23 @@ pattern; in a truss file to the member the heading is."
       (org-truss-test--answering '("breakdown › 5W1H")
         (org-truss-apply-pattern))
       (goto-char (point-min))
-      (should (equal (org-entry-get (point) "TRUSS_BREAKDOWN") "5w1h"))
-      (should (re-search-forward "^\\*\\* When\n:PROPERTIES:\n:TRUSS_BREAKDOWN_ROLE: when\n" nil t))
+      (should (equal (org-truss-test--written (point) "TRUSS_BREAKDOWN") "5w1h"))
+      (should (re-search-forward "^\\*\\* when :: When\n" nil t))
       (should-not (re-search-forward "^\\*\\* Who$" nil t))
       (goto-char (point-min))
       (search-forward "** Who")
       (org-truss-test--answering '("breakdown › steps")
         (org-truss-apply-pattern))
-      (should (equal (org-entry-get (point) "TRUSS_BREAKDOWN") "steps"))
+      (should (equal (org-truss-test--written (point) "TRUSS_BREAKDOWN") "steps"))
       (goto-char (point-min))
       (search-forward "* Else")
-      (should-not (org-entry-get (point) "TRUSS_BREAKDOWN")))
+      (should-not (org-truss-test--written (point) "TRUSS_BREAKDOWN")))
     (org-truss-test--with org-truss-test--file
       (search-forward "** Reviews run long")
       (org-truss-test--answering '("logic › deduction")
         (org-truss-apply-pattern))
-      (should (equal (org-entry-get (point) "TRUSS_LOGIC") "deduction"))
-      (should (re-search-forward "^\\*\\*\\* Major premise\n" nil t)))))
+      (should (equal (org-truss-test--written (point) "TRUSS_LOGIC") "deduction"))
+      (should (re-search-forward "^\\*\\*\\* major :: Major premise\n" nil t)))))
 
 (defconst org-truss-test--steps
   (concat "** Procedure\n:PROPERTIES:\n:TRUSS_BREAKDOWN: steps\n:END:\n"

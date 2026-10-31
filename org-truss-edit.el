@@ -22,6 +22,11 @@
 
 ;;;; A member and what is under it, as written
 
+(defconst org-truss--heading-term-re
+  "\\(?:<<[^<>\n]+>>\\)?\\([^ \t\n:][^\n]*?\\)[ \t]+::\\(?:[ \t]+\\|$\\)"
+  "The term before :: at the start of a heading's words, group 1, and the
+:: after it.")
+
 ;; Edits that rearrange Structure's members read a subtree into a
 ;; snapshot, change the snapshot, and write the subtree back.  A snapshot
 ;; keeps what it does not understand -- its text, other drawers -- as
@@ -44,8 +49,13 @@ of their own) and :children, the snapshots of the headings under it."
             :children (mapcar #'org-truss--snapshot (org-truss--child-headings pos))))))
 
 (defun org-truss--snapshot-telling-role (snapshot)
-  "Return the role SNAPSHOT's TRUSS_TELLING_ROLE names, or nil."
-  (org-truss--intern (cdr (assoc (org-truss-role-property 'telling) (plist-get snapshot :props)))))
+  "Return the role SNAPSHOT's TRUSS_TELLING_ROLE names, or the term before
+:: in its heading names, or nil."
+  (or (org-truss--intern (cdr (assoc (org-truss-role-property 'telling) (plist-get snapshot :props))))
+      (let ((heading (plist-get snapshot :heading)))
+        (and (string-match (concat "\\`" org-truss--heading-term-re) heading)
+             (let ((term (org-truss--intern (match-string 1 heading))))
+               (and (assq term (org-truss-pattern-roles-all)) term))))))
 
 (defun org-truss--drawer (props)
   "Return the property drawer for PROPS, an alist, or \"\" when it is empty."
@@ -98,10 +108,10 @@ of their own) and :children, the snapshots of the headings under it."
       rest)))
 
 (defun org-truss--role-snapshot (role)
-  "Return a snapshot of a new heading playing ROLE, a (ROLE . FLAGS), of a telling."
-  (list :heading (org-truss-role-label (car role))
-        :props (list (cons (org-truss-role-property 'telling) (symbol-name (car role))))
-        :drawers "" :all "" :include-lines nil :children nil))
+  "Return a snapshot of a new heading playing ROLE, a (ROLE . FLAGS), of a telling.
+The role named before ::, its words the role's."
+  (list :heading (format "%s :: %s" (car role) (org-truss-role-label (car role)))
+        :props nil :drawers "" :all "" :include-lines nil :children nil))
 
 (defun org-truss-apply-telling (pos pattern)
   "Give the member at POS the telling PATTERN, and a member for each role.
@@ -128,10 +138,8 @@ stay on it."
                                            (list new)))
                                      news)
                              (seq-remove role-of olds))))
-    (setq snapshot (plist-put snapshot :props
-                              (org-truss--set-prop (plist-get snapshot :props)
-                                                   "TRUSS_TELLING" (symbol-name pattern))))
-    (org-truss--replace-subtree pos (org-truss--serialize snapshot (org-truss--level pos)))))
+    (org-truss--replace-subtree pos (org-truss--serialize snapshot (org-truss--level pos)))
+    (org-truss-set-pattern pos 'telling pattern)))
 
 (defun org-truss--snapshot-descendants (snapshot)
   "Return the snapshots below SNAPSHOT, depth first."
@@ -170,12 +178,61 @@ words, alone."
   "Return the properties that say ROLES, (KIND . ROLE) each, as an alist."
   (mapcar (lambda (r) (cons (org-truss-role-property (car r)) (symbol-name (cdr r)))) roles))
 
+(defun org-truss--heading-term (pos)
+  "Return (BEG END . TERM) for the term before :: in the heading at POS, or nil.
+BEG and END bound the term and the :: after it."
+  (org-with-point-at pos
+    (let ((case-fold-search nil))
+      (looking-at org-complex-heading-regexp))
+    (let ((start (match-beginning 4)))
+      (when start
+        (goto-char start)
+        (when (looking-at org-truss--heading-term-re)
+          (cons (match-beginning 1) (cons (match-end 0) (match-string-no-properties 1))))))))
+
+(defun org-truss--parent-pattern (pos kind)
+  "Return the pattern of KIND of the heading above the heading at POS, or nil."
+  (org-with-point-at pos
+    (and (org-up-heading-safe) (org-truss-heading-pattern (point) kind))))
+
 (defun org-truss-set-role (pos kind role)
   "Make the heading at POS play ROLE in the pattern of KIND above it.
-With ROLE nil, it plays none there."
-  (if role
-      (org-entry-put pos (org-truss-role-property kind) (symbol-name role))
-    (org-entry-delete pos (org-truss-role-property kind))))
+With ROLE nil, it plays none there.  Before ::, as an item names it,
+where no property names a role of KIND, its words name none of another
+kind and the pattern above has ROLE; else in the property.  A role of
+a pattern of one role is played unnamed, and named nowhere."
+  (let* ((property (org-truss-role-property kind))
+         (pattern (org-truss--parent-pattern pos kind))
+         (one (and pattern (null (cdr (org-truss-pattern-roles pattern)))))
+         (term (org-truss--heading-term pos))
+         (named (and term (org-truss--intern (cddr term))))
+         ;; The kind its term names a role of, in the patterns above.
+         (named-kind (and named
+                          (seq-find (lambda (k)
+                                      (let ((p (org-truss--parent-pattern pos k)))
+                                        (and p (assq named (org-truss-pattern-roles p)))))
+                                    org-truss-pattern-kinds))))
+    (cond ((or (org-entry-get pos property)
+               ;; Before :: a role is read in the pattern above alone.
+               (and role (not (assq role (org-truss-pattern-roles pattern)))))
+           (if (and role (not one))
+               (org-entry-put pos property (symbol-name role))
+             (org-entry-delete pos property)))
+          ((and named-kind (not (eq named-kind kind)))
+           (when (and role (not one))
+             (org-entry-put pos property (symbol-name role))))
+          (t
+           (save-excursion
+             (when (eq named-kind kind)
+               (delete-region (car term) (cadr term)))
+             (when (and role (not one))
+               (org-with-point-at pos
+                 (let ((case-fold-search nil))
+                   (looking-at org-complex-heading-regexp))
+                 (goto-char (or (match-beginning 4) (line-end-position)))
+                 (when (and (null (match-beginning 4)) (not (eq (char-before) ?\s)))
+                   (insert " "))
+                 (insert (symbol-name role) " :: "))))))))
 
 (defun org-truss-set-item-role (pos role)
   "Make the item at POS play ROLE, its term before ::, or none with nil.
@@ -195,29 +252,103 @@ A term naming no role is its words, and stays."
         (when role
           (insert (symbol-name role) " :: "))))))
 
+(defun org-truss--heading-attr-pos (pos)
+  "Return where the #+attr_truss naming the heading at POS's patterns is.
+Nil when there is none.
+That of the first list of its members in its text, or else the first
+line that marks no list; see `org-truss--heading-attrs'."
+  (let* ((bounds (save-excursion (org-truss--text-bounds pos)))
+         (lists (save-excursion (org-truss--text-item-lists (car bounds) (cdr bounds)))))
+    (if lists
+        (org-element-property :begin (car lists))
+      (save-excursion
+        (goto-char (car bounds))
+        (let ((skip (org-truss--list-bounds
+                     (save-restriction
+                       (narrow-to-region (car bounds) (cdr bounds))
+                       (seq-filter (lambda (e) (eq (org-element-type e) 'plain-list))
+                                   (mapcan #'org-element-contents
+                                           (seq-filter (lambda (e) (eq (org-element-type e) 'section))
+                                                       (org-element-contents (org-element-parse-buffer))))))))
+              found)
+          (while (and (not found) (re-search-forward org-truss--attr-line-re (cdr bounds) t))
+            (let ((at (line-beginning-position)))
+              (unless (seq-some (lambda (r) (and (>= at (car r)) (< at (cdr r)))) skip)
+                (setq found at))))
+          found)))))
+
+(defun org-truss--attr-plist-line (plist)
+  "Return the #+attr_truss line saying PLIST: its patterns, :by and :as."
+  (org-truss--attr-line
+   (delq nil (mapcar (lambda (kind)
+                       (let ((value (plist-get plist (intern (format ":%s" kind)))))
+                         (and value (cons kind value))))
+                     org-truss-pattern-kinds))
+   (plist-get plist :as) (plist-get plist :by)))
+
+(defun org-truss--set-heading-attr (pos key value)
+  "Set KEY, :logic, :by and the like, to VALUE in the heading at POS's attr.
+In its #+attr_truss; see `org-truss--heading-attr-pos'.  With VALUE nil,
+take it off; a line that marks no list and is left saying nothing goes.
+A heading with none is given one, VALUE given, at the end of its text,
+before the headings under it."
+  (let ((at (org-truss--heading-attr-pos pos)))
+    (save-excursion
+      (if at
+          (let* ((plist (org-truss--attr-plist at))
+                 (plist (if value (plist-put plist key value)
+                          (org-plist-delete plist key)))
+                 (line (org-truss--attr-plist-line plist)))
+            (goto-char at)
+            (let ((indent (current-indentation))
+                  (marks (save-excursion (forward-line) (skip-chars-forward " \t") (org-at-item-p))))
+              (if (and (not marks) (equal line "#+attr_truss:"))
+                  (delete-region at (min (point-max) (1+ (line-end-position))))
+                (delete-region at (line-end-position))
+                (insert (make-string indent ?\s) line))))
+        (when value
+          (org-truss--add-line pos (org-truss--attr-plist-line (list key value))))))))
+
 (defun org-truss-set-pattern (pos kind pattern)
   "Give the heading at POS PATTERN of KIND.
 KIND is `logic', `breakdown' or `telling'; see `org-truss-patterns'.  With
 PATTERN nil it has none of that kind: no reasons, no breakdown, or no
-order asked of its supporting members."
+order asked of its supporting members.  Written in its #+attr_truss,
+where it can be read; in its property where one names that kind."
   (let ((property (alist-get kind org-truss-pattern-properties)))
-    (if pattern
-        (org-entry-put pos property (symbol-name pattern))
-      (org-entry-delete pos property))))
+    (cond ((org-entry-get pos property)
+           (if pattern
+               (org-entry-put pos property (symbol-name pattern))
+             (org-entry-delete pos property)))
+          (t (org-truss--set-heading-attr pos (intern (format ":%s" kind)) pattern)))))
 
 (defun org-truss--rank (pos kind role)
   "Return where ROLE comes among the roles of the pattern of KIND at POS."
-  (or (seq-position (mapcar #'car (org-truss-pattern-roles
-                                   (org-truss--intern (org-entry-get pos (alist-get kind org-truss-pattern-properties)))))
+  (or (seq-position (mapcar #'car (org-truss-pattern-roles (org-truss-heading-pattern pos kind)))
                     role)
       most-positive-fixnum))
 
 (defun org-truss--one-role-p (pos kind)
   "Non-nil when the pattern of KIND of the heading at POS has one role.
 That role is played without a term: a heading under it names none."
-  (let ((roles (org-truss-pattern-roles
-                (org-truss--intern (org-entry-get pos (alist-get kind org-truss-pattern-properties))))))
+  (let ((roles (org-truss-pattern-roles (org-truss-heading-pattern pos kind))))
     (and roles (null (cdr roles)))))
+
+(defun org-truss--heading-role (pos kind)
+  "Return the role the heading at POS plays in the pattern of KIND above it.
+Named in its property, or before :: in its words: a role of that pattern,
+or one of no pattern above, left from one it had before.  Nil when
+neither names one."
+  (or (org-truss--intern (org-entry-get pos (org-truss-role-property kind)))
+      (let* ((term (org-truss--heading-term pos))
+             (named (and term (org-truss--intern (cddr term)))))
+        (and named
+             (assq named (org-truss-pattern-roles-all))
+             (or (assq named (org-truss-pattern-roles (org-truss--parent-pattern pos kind)))
+                 (not (seq-some (lambda (k)
+                                  (assq named (org-truss-pattern-roles (org-truss--parent-pattern pos k))))
+                                org-truss-pattern-kinds)))
+             named))))
 
 (defun org-truss-add-heading (parent words &optional props text)
   "Write a heading of WORDS, with PROPS and TEXT under it, under PARENT.
@@ -225,15 +356,15 @@ PARENT is the position of any heading.  The new one goes where the
 patterns of PARENT list the roles its PROPS give it: before the first
 heading there that plays, in one of those patterns, a role listed after
 its own; or else last.  A role of a pattern of one role is not
-written; see `org-truss--one-role-p'.  Return a marker at it."
+written; see `org-truss--one-role-p'.  One role is named before ::, as
+an item names it; another stays a property.  Return a marker at it."
   (let* ((kinds (seq-filter (lambda (kind) (assoc (org-truss-role-property kind) props))
                             org-truss-pattern-kinds))
          (rank (lambda (kind role) (org-truss--rank parent kind role)))
          (own (lambda (kind) (org-truss--intern (cdr (assoc (org-truss-role-property kind) props)))))
          (before (seq-find (lambda (child)
                              (seq-some (lambda (kind)
-                                         (let ((theirs (org-truss--intern
-                                                        (org-entry-get child (org-truss-role-property kind)))))
+                                         (let ((theirs (org-truss--heading-role child kind)))
                                            (and theirs (> (funcall rank kind theirs)
                                                           (funcall rank kind (funcall own kind))))))
                                        kinds))
@@ -243,7 +374,16 @@ written; see `org-truss--one-role-p'.  Return a marker at it."
                                             (and (equal (car prop) (org-truss-role-property kind))
                                                  (org-truss--one-role-p parent kind)))
                                           kinds))
-                              props)))
+                              props))
+         (named (seq-find (lambda (prop)
+                            (seq-some (lambda (kind) (equal (car prop) (org-truss-role-property kind)))
+                                      kinds))
+                          written))
+         (words (if named
+                    (let ((id (and (string-match "\\`<<[^<>\n]+>>" words) (match-string 0 words))))
+                      (concat (cdr named) " :: " id (if id (substring words (length id)) words)))
+                  words))
+         (written (remq named written)))
     (save-excursion
       (if before
           (goto-char before)
@@ -399,7 +539,7 @@ own is given the line, at its end, for the list to follow."
                                          (and value (cons k value))))
                                      org-truss-pattern-kinds)))
          (line (concat (make-string (org-truss--item-column pos) ?\s)
-                       (org-truss--attr-line patterns (plist-get plist :as)))))
+                       (org-truss--attr-line patterns (plist-get plist :as) (plist-get plist :by)))))
     (save-excursion
       (if attr
           (progn (goto-char attr)
@@ -460,7 +600,7 @@ one.  Return the number made."
 ;; file they carry what makes a member one: the role it plays, written
 ;; before :: on an item and in a _ROLE property on a heading; the patterns
 ;; of its truss, in #+attr_truss before its list or in properties; and
-;; TRUSS_AS.  Its ID, <<m7>>, goes with its words, and its tags with
+;; TRUSS_BY and TRUSS_AS.  Its ID, <<m7>>, goes with its words, and its tags with
 ;; org-item-tags.  Where Org would put a member under another -- an item
 ;; following the one made a heading, or a heading made an item in the
 ;; text of the heading before it -- nothing is done and it is said why.
@@ -476,20 +616,26 @@ The region from its first non-blank line, or the current line."
             (save-excursion (goto-char (region-end)) (line-end-position)))
     (cons (line-beginning-position) (line-end-position))))
 
-(defun org-truss--attr-line (patterns as)
-  "Return the #+attr_truss line naming PATTERNS, (KIND . PATTERN), and AS."
+(defun org-truss--attr-line (patterns as &optional by)
+  "Return the #+attr_truss line naming PATTERNS, (KIND . PATTERN), BY and AS.
+BY, the axis, right after the breakdown it cuts."
   (string-trim-right
    (concat "#+attr_truss:"
-           (mapconcat (lambda (p) (format " :%s %s" (car p) (cdr p))) patterns "")
+           (mapconcat (lambda (p)
+                        (concat (format " :%s %s" (car p) (cdr p))
+                                (if (and by (eq (car p) 'breakdown)) (format " :by %s" by) "")))
+                      patterns "")
+           (if (and by (not (assq 'breakdown patterns))) (format " :by %s" by) "")
            (if as (format " :as %s" as) ""))))
 
 (defun org-truss--member-shape (member)
   "Return what of MEMBER a conversion carries, as a plist.
-:patterns (KIND . PATTERN) and :as, those of its truss."
+:patterns (KIND . PATTERN), :by and :as, those of its truss."
   (list :patterns (delq nil (mapcar (lambda (kind)
                                       (let ((p (org-truss-member-pattern member kind)))
                                         (and p (cons kind p))))
                                     org-truss-pattern-kinds))
+        :by (org-truss-member-by member)
         :as (org-truss-member-as member)))
 
 (defun org-truss--one-role-of-p (member kind)
@@ -530,72 +676,55 @@ selecting them all, or move it last")))))
                        (list :marker (copy-marker (org-truss-member-pos m))
                              :roles roles
                              :shape (org-truss--member-shape m)
-                             :holder (copy-marker (org-truss-member-holder m))
-                             :up-shape (and up (org-truss--member-shape up)))))
+                             :term (save-excursion
+                                     (goto-char (org-truss-member-pos m))
+                                     (and (looking-at org-list-full-item-re)
+                                          (match-string-no-properties 4)
+                                          (string-trim (match-string-no-properties 4)))))))
                    items)))
       (when (seq-some (lambda (r) (cdr (plist-get r :roles))) records)
         (user-error "An item names one role before ::; one plays two"))
-      ;; The term before :: is its role, not its words: Org would keep it
-      ;; as words.
-      (dolist (r records)
-        (when (plist-get r :roles)
-          (save-excursion
-            (goto-char (plist-get r :marker))
-            (when (looking-at "\\([ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t]+\\(?:\\[[ X-]\\][ \t]+\\)?\\)[^\n]*?[ \t]+::[ \t]*")
-              (replace-match "\\1")))))
       (apply fn args)
+      ;; Org writes the region anew, which leaves every marker in it at
+      ;; its start: the headings it made are the items, in order.
+      (save-excursion
+        (goto-char (car range))
+        (forward-line 0)
+        (dolist (r records)
+          (when (or (org-at-heading-p) (re-search-forward org-heading-regexp nil t))
+            (forward-line 0)
+            (set-marker (plist-get r :marker) (point))
+            (forward-line))))
+      ;; What the item said stays where it was written: its role or value
+      ;; before ::, which Org would take for its words, and #+attr_truss,
+      ;; which a heading's text reads as an item's does.
       (dolist (r records)
         (org-with-point-at (plist-get r :marker)
           (when (org-at-heading-p)
             ;; One space after the stars, as Org writes a heading.
             (when (looking-at "\\(\\*+\\)[ \t][ \t]+")
               (replace-match "\\1 "))
-            (pcase-dolist (`(,kind . ,role) (plist-get r :roles))
-              (org-entry-put nil (org-truss-role-property kind) (symbol-name role)))
-            ;; Its patterns, when no list of its own is left to name them.
-            (unless (org-truss--text-item-lists (point) (cdr (org-truss--text-bounds (point))))
-              (let ((shape (plist-get r :shape)))
-                (pcase-dolist (`(,kind . ,pattern) (plist-get shape :patterns))
-                  (org-entry-put nil (alist-get kind org-truss-pattern-properties) (symbol-name pattern)))
-                (when (plist-get shape :as)
-                  (org-entry-put nil "TRUSS_AS" (symbol-name (plist-get shape :as)))))))))
-      ;; A #+attr_truss left with no list after it gives its patterns to
-      ;; the heading whose text it is in.
-      (dolist (holder (seq-uniq (mapcar (lambda (r) (marker-position (plist-get r :holder))) records)))
-        (org-truss--dangling-attrs holder))
+            (forward-line 0)
+            (let ((term (plist-get r :term)))
+              (when (and term
+                         (looking-at (concat "\\(\\*+ +\\(?:<<[^<>\n]+>>\\)?\\)"
+                                             (regexp-quote term) "\\(?:[ \t]+::\\)?[ \t]*")))
+                (replace-match (concat (match-string 1) term " ::"
+                                       (if (= (match-end 0) (line-end-position)) "" " "))
+                               t t)))
+            ;; Org drops the #+attr_truss of a list it makes headings.
+            (let ((shape (plist-get r :shape))
+                  (pos (point)))
+              (pcase-dolist (`(,kind . ,pattern) (plist-get shape :patterns))
+                (unless (org-truss-heading-pattern pos kind)
+                  (org-truss-set-pattern pos kind pattern)))
+              (dolist (key '(:by :as))
+                (let ((value (plist-get shape key)))
+                  (when (and value
+                             (not (seq-some (lambda (a) (plist-get a key)) (org-truss--heading-attrs pos))))
+                    (org-truss--set-heading-attr pos key value))))))))
       (dolist (r records)
-        (set-marker (plist-get r :marker) nil)
-        (set-marker (plist-get r :holder) nil)))))
-
-(defun org-truss--dangling-attrs (pos)
-  "Give the heading at POS the patterns of a #+attr_truss in its text that
-marks no list, and take the line away."
-  (setq pos (copy-marker pos))
-  (save-excursion
-    (let ((bounds (org-truss--text-bounds pos)))
-      (goto-char (car bounds))
-      (while (re-search-forward "^[ \t]*#\\+attr_truss:\\(.*\\)$" (cdr bounds) t)
-        (let ((line (match-string 1))
-              (beg (copy-marker (line-beginning-position))))
-          (unless (save-excursion
-                    (forward-line)
-                    (skip-chars-forward " \t\n")
-                    (org-at-item-p))
-            (let ((plist (condition-case nil (car (read-from-string (concat "(" line ")")))
-                           (error nil))))
-              (org-with-point-at pos
-                (dolist (kind org-truss-pattern-kinds)
-                  (let ((value (plist-get plist (intern (format ":%s" kind))))
-                        (property (alist-get kind org-truss-pattern-properties)))
-                    (when (and value (not (org-entry-get nil property)))
-                      (org-entry-put nil property (format "%s" value)))))
-                (let ((as (plist-get plist :as)))
-                  (when (and as (not (org-entry-get nil "TRUSS_AS")))
-                    (org-entry-put nil "TRUSS_AS" (format "%s" as))))))
-            (goto-char beg)
-            (delete-region beg (min (point-max) (1+ (line-end-position))))
-            (setq bounds (org-truss--text-bounds pos)))
-          (set-marker beg nil))))))
+        (set-marker (plist-get r :marker) nil)))))
 
 (defun org-truss--headings-to-items (fn args)
   "Make headings items by FN, Org's `org-toggle-item' called with ARGS.
@@ -628,6 +757,11 @@ make items from the first heading under %s on"
                           (when (cdr roles)
                             (user-error "%s plays two roles; an item names one before ::"
                                         (org-truss-member-words m)))
+                          ;; One named before :: in its words is there already.
+                          (setq roles (seq-filter (lambda (r)
+                                                    (org-entry-get (org-truss-member-pos m)
+                                                                   (org-truss-role-property (car r))))
+                                                  roles))
                           (list :marker (copy-marker (org-truss-member-pos m))
                                 :id (and (org-entry-get (org-truss-member-pos m) "CUSTOM_ID")
                                          (org-truss-member-id m))
@@ -664,13 +798,14 @@ make items from the first heading under %s on"
         (dolist (r records) (set-marker (plist-get r :marker) nil))))))
 
 (defun org-truss--mark-list-under (shape)
-  "Name SHAPE's patterns and :as before the first list in the item at point.
+  "Name SHAPE's patterns, :by and :as before the first list in the item at point.
 SHAPE is what `org-truss--member-shape' gives.  The list made of the
 headings that were under it, or a marked list in its text naming none."
   (let ((patterns (plist-get shape :patterns))
         (as (plist-get shape :as))
+        (by (plist-get shape :by))
         (item (org-element-lineage (org-element-at-point) '(item) t)))
-    (when (and item (or patterns as) (org-element-property :contents-end item))
+    (when (and item (or patterns as by) (org-element-property :contents-end item))
       (save-excursion
         (goto-char (org-element-property :contents-begin item))
         (when (re-search-forward "^\\([ \t]*\\)\\(#\\+attr_truss:.*\n[ \t]*\\)?\\(?:[-+]\\|[0-9]+[.)]\\)[ \t]"
@@ -679,10 +814,10 @@ headings that were under it, or a marked list in its text naming none."
                 (marked (match-string 2)))
             (goto-char (match-beginning 0))
             (cond ((null marked)
-                   (insert indent (org-truss--attr-line patterns as) "\n"))
+                   (insert indent (org-truss--attr-line patterns as by) "\n"))
                   ((string-match-p "\\`#\\+attr_truss:[ \t]*\n" (string-trim-left marked))
                    (delete-region (point) (line-end-position))
-                   (insert indent (org-truss--attr-line patterns as))))))))))
+                   (insert indent (org-truss--attr-line patterns as by))))))))))
 
 (defun org-truss--toggle-heading (fn &rest args)
   "Around `org-toggle-heading': in a truss file, items made headings keep

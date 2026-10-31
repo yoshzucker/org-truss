@@ -785,6 +785,57 @@ what the truss is, not how it is written."
                               "^\\*\\*\\* \\[\\[truss-include:m1\\]\\]$" "#+attr_truss:\n- [[truss-include:m1]]"
                               file))))))
 
+(ert-deftest org-truss-test-render-axes ()
+  "Two axes are written as a table: rows by the one, columns by the other in
+the order first met, the corner naming both, a cell empty where a row has
+none.  One axis is a list, each value opening its item; and a table whose
+cells hold more than a table's do is told as a tree."
+  (let* ((file "* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:TRUSS_BREAKDOWN: parts
+:END:
+** Expenses
+:PROPERTIES:
+:CUSTOM_ID: m1
+:END:
+Amounts and stages are cut by the rules [[https://e.x/rules][art. 3]].
+#+attr_truss: :breakdown parts :by amount
+- Under 100k ::
+  #+attr_truss: :breakdown parts :by stage
+  - approval :: The section head | deputy
+  - payment :: Month end
+- Over 100k ::
+  #+attr_truss: :breakdown parts :by stage
+  - approval :: The department head
+** Kinds
+:PROPERTIES:
+:CUSTOM_ID: m2
+:END:
+Kinds are cut by the rules [[https://e.x/rules][rules]].
+#+attr_truss: :breakdown parts :by kind
+- Travel :: At cost
+- Meals :: Capped
+* S
+:PROPERTIES:
+:TRUSS_DIVISION: structure
+:TRUSS_BREAKDOWN: parts
+:END:
+** [[truss-include:m1]]
+** [[truss-include:m2]]
+")
+         (out (org-truss-test--render file)))
+    (should (string-match-p (concat "^| amount × stage | approval | payment |\n|-\n"
+                                    "| Under 100k | The section head \\\\vert{} deputy | Month end |\n"
+                                    "| Over 100k | The department head |  |$")
+                            out))
+    (should (string-match-p "^- Travel: At cost\n- Meals: Capped$" out))
+    (let ((tree (org-truss-test--render
+                 (replace-regexp-in-string "  - payment :: Month end\n"
+                                           "  - payment :: Month end\n    On the last day.\n" file))))
+      (should-not (string-match-p "^|" tree))
+      (should (string-match-p "^\\*\\* Under 100k\n\n- approval: The section head" tree)))))
+
 (provide 'org-truss-export-test)
 
 ;;; org-truss-export-test.el ends here
