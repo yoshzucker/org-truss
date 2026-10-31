@@ -177,6 +177,36 @@ by org-moor came from, and follows any other link."
                        '("file:minutes.txt" "moor:6f1c::12" "file:minutes.txt" "file:minutes.txt")))
         (should (equal origins '("6f1c")))))))
 
+(ert-deftest org-truss-test-board-opens-an-items-source ()
+  "m o on a member written as an item of a list opens a source its own
+lines link to, not one of the items under it."
+  (org-truss-test--in-directory
+      (list (cons "truss.org" "#+title: T
+* Message
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:END:
+** Why
+#+attr_truss:
+- [[moor:6f1c][Manual]] :draft:
+  It says so.
+  - [[moor:9a3e][Calendar]]
+- Most items can wait
+"))
+    (let ((org-truss-language 'en)
+          followed)
+      (with-temp-buffer
+        (org-truss-board-mode)
+        (setq org-truss--source (find-file-noselect (expand-file-name "truss.org" dir)))
+        (org-truss-board-redraw)
+        (org-truss--show-all 'whole)
+        (org-truss-test--goto-line-with "Manual")
+        (cl-letf (((symbol-function 'org-link-open)
+                   (lambda (link &rest _) (push (org-element-property :raw-link link) followed))))
+          (let ((this-command 'org-truss-board-open-source))
+            (org-truss-board-open-source)))
+        (should (equal followed '("moor:6f1c")))))))
+
 (ert-deftest org-truss-test-preamble-says-how-to-take ()
   "The guide gives the check as it runs here, org-dock and all, and how an
 agent takes a source when org-moor is there."

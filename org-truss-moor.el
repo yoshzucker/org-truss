@@ -157,12 +157,21 @@ On a line of its own after the member's text."
               (org-truss-moor--at-item pos (lambda () (insert (org-moor-link record)))))))))
     (org-truss-board-redraw)))
 
+(defun org-truss-moor--item-text-end (pos)
+  "Return where the text of the item at POS ends, before the items under it."
+  (org-with-wide-buffer
+   (goto-char pos)
+   (let* ((struct (org-list-struct))
+          (under (car (org-list-get-children pos struct (org-list-parents-alist struct)))))
+     (or under (org-list-get-item-end pos struct)))))
+
 (defun org-truss-moor--open (origin how)
   "Open a source of the board's line, as following its link does.
 On a link to a source drawn in a member's text, that one; on a quotation
 there, a link in it or else the first the text cites; elsewhere on a
 member's lines, one its own words or text link to, asked for when several --
-not those of the members under it, which the board shows under them.
+not those of the members under it, which the board shows under them.  A
+member written as an item of a list, by the item's own lines.
 ORIGIN opens where a source taken by org-moor came from rather than its
 replica; any other link is followed either way.  HOW is the prefix, as for
 following a link."
@@ -170,30 +179,34 @@ following a link."
          (pos (plist-get item :pos))
          (here (get-text-property (point) 'org-truss-link)))
     (org-truss--fresh)
-    (with-current-buffer org-truss--source
-      (let* ((links (or (and here (string-match-p (concat "\\`" org-truss--source-link-re "\\'") here)
-                             (list here))
-                        (seq-uniq (org-truss--source-links-in
-                                   (concat (org-with-point-at pos
-                                             (if (org-at-heading-p) (org-truss--heading-words) ""))
-                                           "\n" (plist-get (org-truss--text-at pos) :all))))
-                        (user-error "No source here")))
-             (link (if (cdr links)
-                       (org-truss--read-choice
-                        "Source: " (mapcar (lambda (l) (cons (concat (org-truss--link-text l) "  " l) l))
-                                           links))
-                     (car links)))
-             (end (cdr (org-truss--text-bounds pos))))
-        (save-excursion
-          ;; Point on the link, so it is followed from where it is written:
-          ;; a file beside the truss file, the member a replica is read for.
-          (goto-char pos)
-          (unless (search-forward link end t)
-            (user-error "The link is no longer in the member's text: %s" link))
-          (goto-char (match-beginning 0))
-          (if (and origin (string-prefix-p "[[moor:" link))
-              (org-moor-open-origin how)
-            (org-open-at-point how)))))))
+    (let ((in-item (org-truss--item-holder pos)))
+      (with-current-buffer org-truss--source
+        (let* ((item-end (and in-item (org-truss-moor--item-text-end pos)))
+               (links (or (and here (string-match-p (concat "\\`" org-truss--source-link-re "\\'") here)
+                               (list here))
+                          (seq-uniq (org-truss--source-links-in
+                                     (if item-end
+                                         (org-with-wide-buffer (buffer-substring-no-properties pos item-end))
+                                       (concat (org-with-point-at pos
+                                                 (if (org-at-heading-p) (org-truss--heading-words) ""))
+                                               "\n" (plist-get (org-truss--text-at pos) :all)))))
+                          (user-error "No source here")))
+               (link (if (cdr links)
+                         (org-truss--read-choice
+                          "Source: " (mapcar (lambda (l) (cons (concat (org-truss--link-text l) "  " l) l))
+                                             links))
+                       (car links)))
+               (end (or item-end (cdr (org-truss--text-bounds pos)))))
+          (save-excursion
+            ;; Point on the link, so it is followed from where it is written:
+            ;; a file beside the truss file, the member a replica is read for.
+            (goto-char pos)
+            (unless (search-forward link end t)
+              (user-error "The link is no longer in the member's text: %s" link))
+            (goto-char (match-beginning 0))
+            (if (and origin (string-prefix-p "[[moor:" link))
+                (org-moor-open-origin how)
+              (org-open-at-point how))))))))
 
 (defun org-truss-board-open-source (&optional how)
   "Open the replica of a source of the board's line, or follow its link.

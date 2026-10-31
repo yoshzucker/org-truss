@@ -237,6 +237,14 @@ source taken, the output document written out, what a line is for.
 Every other command of the board is called by name, M-x
 org-truss-board-..., or bound where you want it.")
 
+;; Evil's C-o goes back by its jump list, which a link followed on the
+;; board, a move within it, leaves out but for this.
+(declare-function evil-add-command-properties "evil-common" (command &rest properties))
+(with-eval-after-load 'evil
+  (dolist (command '(org-truss-board-visit org-truss-board-visit-other-window
+                     org-truss-board-open-link))
+    (evil-add-command-properties command :jump t)))
+
 (defun org-truss--catch-up (window)
   "Draw the board in WINDOW again, if it is selected and its file has changed.
 So an edit made in the file, or with \\[org-truss-board-edit], is on the
@@ -409,7 +417,8 @@ while a command was asking something."
     org-truss-board-edit org-truss-board-same
     org-truss-board-pattern org-truss-board-roles
     org-truss-board-take-url org-truss-board-take-file org-truss-board-take-clipboard
-    org-truss-board-keep-replica org-truss-board-link-source)
+    org-truss-board-keep-replica org-truss-board-link-source
+    org-truss-board-open-source org-truss-board-open-origin)
   "The board's commands that take a member written as an item of a list.")
 
 (defun org-truss--want (item &rest types)
