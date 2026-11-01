@@ -2608,25 +2608,23 @@ told, what they mean and what to do; and Structure telling those in that
 order, each item that member there.  End members are items, and so are
 Structure's, include links alone, which its telling makes headings of
 the output document all the same.  The guide is in the
-language, in a drawer at its head, and only there.  Its first line keeps
-what is attached to its headings beside it, and the guide names the
-directories there."
+language, in a drawer at its head, and only there, and names the
+directories beside the file."
   (dolist (org-truss-language '(en ja))
     (org-truss-test--with (org-truss-skeleton "T")
       (let ((model (org-truss-read)))
         (should (equal (org-truss-model-title model) "T"))
-        (should (string-prefix-p (concat "# -*- org-attach-id-dir: \"attach/\"; -*-\n"
-                                         "#+title: T\n\n:GUIDE:\n" (org-truss-guide) ":END:\n\n* Brief\n")
+        (should (string-prefix-p (concat "#+title: T\n\n:GUIDE:\n" (org-truss-guide) ":END:\n\n* Brief\n")
                                  (buffer-string)))
-        (should (equal (hack-local-variables-prop-line) '((org-attach-id-dir . "attach/"))))
-        (dolist (dir '("^  sources/ " "^  notes/ " "^  attach/ " "^  out/ "))
+        (should-not (hack-local-variables-prop-line))
+        (dolist (dir '("^  sources/ " "^  notes/ " "^  out/ "))
           (should (string-match-p dir (buffer-string))))
         (should (equal (org-map-entries #'org-truss--heading-words)
                        '("Brief" "Subject" "Part" "Message" "situation :: Situation"
                          "interpretation :: Interpretation" "Part" "action :: Action" "Structure")))
         (should (string-match-p (if (eq org-truss-language 'ja)
-                                    "^:GUIDE:\nこの truss\\.org から出力文書を一つ作る。"
-                                  "^:GUIDE:\nThis truss\\.org makes one output document\\.")
+                                    "^:GUIDE:\nこのファイルから出力文書を一つ作る。"
+                                  "^:GUIDE:\nThis file makes one output document\\.")
                                 (buffer-string)))
         (should (= (how-many "^:GUIDE:$" (point-min) (point-max)) 1))
         (should (string-match-p "^#\\+attr_truss: :breakdown reader-question-response-constraints\n"
@@ -2694,9 +2692,7 @@ a guide before it -- a drawer, or the comments it was once written in --
 and takes away the guides once written under the parts and the members
 playing their roles.  A guide of your own, of a role nothing is said of
 or of any other member, stays, and so does what is written before the
-first heading that is no comment.  A file without the first line that
-keeps its attachments beside it is given it, and the buffer takes it at
-once."
+first heading that is no comment."
   (let ((org-truss-language 'ja))
     (org-truss-test--with "#+title: T
 
@@ -2745,11 +2741,9 @@ Not a division's.
 "
       (org-truss-refresh-guides-in-buffer)
       (let ((text (buffer-string)))
-        (should (string-prefix-p (concat "# -*- org-attach-id-dir: \"attach/\"; -*-\n"
-                                         "#+title: T\n\n:GUIDE:\n" (org-truss-guide) ":END:\n\n"
+        (should (string-prefix-p (concat "#+title: T\n\n:GUIDE:\n" (org-truss-guide) ":END:\n\n"
                                          "Notes before the parts.\n\n* 与件\n")
                                  text))
-        (should (equal org-attach-id-dir "attach/"))
         (should-not (string-match-p "Old wording\\|Old reader\\|Old message\\|An old preamble\\|An old guide" text))
         (should (string-match-p (concat ":TRUSS_BREAKDOWN: reader-question-response-constraints\n"
                                         ":END:\nNotes on the brief\\.")
@@ -2782,19 +2776,28 @@ examples, <<m21>> among them, are no member's."
   (org-truss-test--with (concat (org-truss-skeleton "T") "\n** A\n:PROPERTIES:\n:CUSTOM_ID: m8\n:END:\n")
     (should (equal (org-truss--next-id) "m9"))))
 
-(ert-deftest org-truss-test-file-variables ()
-  "A first line setting variables of its own gets the attachments' among
-them; one that sets where attachments go already is left as it is."
-  (org-truss-test--with "# -*- fill-column: 70 -*-\n#+title: T\n"
-    (org-truss-put-file-variables)
-    (let ((vars (hack-local-variables-prop-line)))
-      (should (equal (alist-get 'fill-column vars) 70))
-      (should (equal (alist-get 'org-attach-id-dir vars) "attach/")))
-    (should (string-match-p "\n#\\+title: T\n\\'" (buffer-string))))
-  (org-truss-test--with "# -*- org-attach-id-dir: \"pictures/\" -*-\n#+title: T\n"
-    (let ((before (buffer-string)))
-      (org-truss-put-file-variables)
-      (should (equal (buffer-string) before)))))
+(ert-deftest org-truss-test-guide-names-its-file ()
+  "The guide's command that checks the file names it as it is named: a
+truss file of any name, or `org-truss-file-name' for none."
+  (let ((org-truss-language 'en))
+    (should (string-match-p "org-truss-batch-check truss\\.org$" (org-truss-guide)))
+    (should (string-match-p "org-truss-batch-check 2026-procedure\\.org$"
+                            (org-truss-guide "/memex/2026-procedure.org")))))
+
+(ert-deftest org-truss-test-refresh-guides-after-property-drawer ()
+  "The guide goes after what heads the file -- its property drawer, its
+keywords -- and names the file."
+  (let ((org-truss-language 'en))
+    (org-truss-test--with ":PROPERTIES:\n:ID: abc\n:END:\n#+title: T\n\n* M\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
+      (setq buffer-file-name "/memex/procedure.org")
+      (unwind-protect
+          (progn
+            (org-truss-refresh-guides-in-buffer)
+            (should (string-prefix-p (concat ":PROPERTIES:\n:ID: abc\n:END:\n#+title: T\n\n"
+                                             (org-truss--guide-drawer "/memex/procedure.org")
+                                             "\n* M\n")
+                                     (buffer-string))))
+        (setq buffer-file-name nil)))))
 
 (defconst org-truss-test--axes-file "* M
 :PROPERTIES:

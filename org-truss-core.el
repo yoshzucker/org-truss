@@ -44,7 +44,6 @@
 (require 'org-element)
 (require 'org-item-tags)
 (require 'org-attach)
-(require 'files-x)
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
@@ -69,7 +68,10 @@ reads the same to every setting."
   :group 'org-truss)
 
 (defcustom org-truss-file-name "truss.org"
-  "Name of the truss file.  There is one in each directory that holds a document."
+  "Name of the truss file `org-truss-init' writes, one in a directory.
+A file is a truss file by what it holds, its Message division, whatever
+its name; this name is the one looked for from a directory, so that a
+command run anywhere in it finds the file.  See `org-truss-file-p'."
   :type 'string
   :group 'org-truss)
 
@@ -98,18 +100,12 @@ member cites as its grounds.  What is worked out goes in the truss file itself.
   :type 'directory
   :group 'org-truss)
 
-(defcustom org-truss-attach-directory "attach"
-  "Directory beside the truss file that what is attached to its headings goes in.
-A new truss file sets `org-attach-id-dir' to it on its first line, so
-whatever `org-attach' puts on a heading of the file -- a picture, a file --
-is kept here, each heading's in a directory named by its ID, and not in
-the directory attachments go in elsewhere."
-  :type 'directory
-  :group 'org-truss)
-
-;; Org declares `org-attach-id-dir' safe as a file variable, but only once
-;; org-attach is loaded; said here too, a truss file opened before then sets
-;; it without asking.
+;; What `org-attach' puts on a heading goes where Org puts it, `data/'
+;; beside the file unless the configuration says otherwise.  A truss file
+;; may name its own place on its first line; Org declares
+;; `org-attach-id-dir' safe as a file variable, but only once org-attach is
+;; loaded, and said here too, such a file opened before then sets it
+;; without asking.
 ;;;###autoload
 (put 'org-attach-id-dir 'safe-local-variable #'stringp)
 
@@ -442,7 +438,7 @@ For `org-open-link-functions': Org follows [[#m7]] to a CUSTOM_ID and
 [[m7]] to <<m7>>; in a truss file both find m7, however it is written."
   (when (and (derived-mode-p 'org-mode)
              (buffer-file-name)
-             (equal (file-name-nondirectory (buffer-file-name)) org-truss-file-name)
+             (org-truss-truss-file-p (buffer-file-name))
              (string-match-p "\\`[[:alnum:]_-]+\\'" path))
     (let ((pos (org-truss--member-id-pos path)))
       (when pos
@@ -2769,6 +2765,19 @@ item (LINE . TEXT), the line of MODEL's buffer and what is there."
     (and (derived-mode-p 'org-mode)
          (org-truss--division-pos "message")
          t)))
+
+(defun org-truss-truss-file-p (file)
+  "Non-nil when FILE is a truss file: named `org-truss-file-name', or holding
+a Message division.  Its buffer is read when it is visited, else the file."
+  (or (equal (file-name-nondirectory file) org-truss-file-name)
+      (if-let* ((buffer (find-buffer-visiting file)))
+          (org-truss-file-p buffer)
+        (and (file-readable-p file)
+             (with-temp-buffer
+               (insert-file-contents file)
+               (let ((case-fold-search t))
+                 (re-search-forward "^[ \t]*:TRUSS_DIVISION:[ \t]+message[ \t]*$" nil t)))
+             t))))
 
 (declare-function project-root "project" (project))
 

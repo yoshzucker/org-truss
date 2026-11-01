@@ -699,14 +699,23 @@ They say what is so; what to do about it is written in the file.
 
 * The file
 
-There is one ~truss.org~ per output document, in a directory of its own.
-~M-x org-truss-init~ sets the directory up; run on one set up before, it
-adds what is missing and leaves what is there.
+There is one truss file per output document.  ~M-x org-truss-init~ sets
+a directory up with a ~truss.org~; run on one set up before, it adds what
+is missing and leaves what is there.
+
+A file is a truss file by what it holds, its Message division, not by its
+name.  ~M-x org-truss-init-buffer~ makes the Org file in the buffer one,
+whatever it is called: what heads it -- its property drawer, its title --
+stays, and the guide and the divisions go after it.  So several truss
+files can share a directory, and with it ~sources/~, ~notes/~ and ~out/~,
+each writing its output document under its own name.  ~truss.org~ is the
+name a directory is searched for, so that a command run anywhere in it
+finds the file; a truss file named otherwise is found from its own
+buffer, or asked for.
 
 | ~truss.org~ | the file; the rest is written from it or for it                        |
 | ~sources/~  | sources referred to: with org-moor, a directory each, its file and record |
 | ~notes/~    | what is ours and no source: memos, slides of our own, minutes          |
-| ~attach/~   | what ~org-attach~ (~C-c C-a~) attaches to a heading: a picture, a file |
 | ~out/~      | the output document, written by ~x~ on the board or ~M-x org-truss-export~ |
 
 So the directory can be moved, or handed over, whole.  With org-moor, a
@@ -715,13 +724,11 @@ the source's id, holding its replica and its record -- a title, where it came
 from, how and when.  A member cites it with a ~moor:~ link, ~[[moor:ID::12][p. 12]]~
 for a page or a line, the source named once above it (see [[*One source
 at a time]]), in its text, beside the words it quotes or
-on a line of its own; either gives it grounds.  The first line of
-~truss.org~ sets ~org-attach-id-dir~ to ~attach/~, so what ~org-attach~ puts
-on its headings is kept there, not where attachments go elsewhere, each
-heading's in a directory named by its ~ID~; it is a file variable Org
-declares safe, so it holds whether org-truss is loaded or not.  The board
-and the output document read a link to an attachment,
-~[[attachment:NAME]]~, as a link to its file.
+on a line of its own; either gives it grounds.  What ~org-attach~
+(~C-c C-a~) puts on a heading goes where Org puts it: ~data/~ beside the
+file, by Org's default, so it moves with the directory too.  The board and
+the output document read a link to an attachment, ~[[attachment:NAME]]~,
+as a link to its file.
 
 ~org-truss-project-file~, when it names one, is an empty file written there
 too, that marks the directory as a project: ~".project"~, say, with
@@ -732,12 +739,13 @@ Inside a repository it makes the directory a project apart from the rest.
 
 ** The guide
 
-A ~:GUIDE:~ drawer at the head of ~truss.org~, before the first heading,
+A ~:GUIDE:~ drawer at the head of a truss file, before the first heading,
 holds the rules of the file, the same for whoever edits it, by hand, on
 the board, or as a language model working in the file: the words above,
 the four divisions, how members and trusses are written, grounds,
 claims, sources, what is in the output document, what goes in the
-directories beside it, and the command that checks the file.  Org folds
+directories beside it, and the command that checks the file, named as
+it is named.  Org folds
 it as it folds any drawer, out of the way of the divisions, and ~TAB~ on
 it opens it to be read.  Its example is in an example block, and its
 IDs, ~<<m21>>~ among them, are no member's: IDs are counted from the
@@ -767,7 +775,6 @@ does anything else you wrote.
 The guide's drawer left out:
 
 #+begin_src org
-# -*- org-attach-id-dir: "attach/"; -*-
 ,#+title: Fortnightly reviews
 
 ,* Brief
@@ -1006,7 +1013,8 @@ still shows before its words what it is -- /Who:/, /When:/ -- so the words
 need not say it.  An agent asked about it with org-dock is told what its
 patterns ask, and how to check its copy; see [[*Batch][Batch]].
 
-It can be called from anywhere: when no ~truss.org~ is near the current
+It can be called from anywhere: in a truss file's buffer it draws that
+file, whatever its name, and when no ~truss.org~ is near the current
 buffer, or with a prefix argument, it asks for one as ~find-file~ asks for
 a file -- the file, its directory, or anything below it -- and offers to
 start one in a directory that has none, making the directory if it is
@@ -1552,7 +1560,8 @@ shows only a title.
 
 ~M-x org-truss-export~, or ~x~ on the board, walks Structure and writes
 what the reader sees to ~out/truss.org~ (~org-truss-output-directory~),
-then runs pandoc, when it is installed, to make ~out/truss.md~.  Only
+named as the truss file is, then runs pandoc, when it is installed, to
+make ~out/truss.md~.  Only
 Structure is in it, and the trusses and members its include links reach.
 
 - A member is its words (a heading, an item's first line), then its text;
@@ -1610,7 +1619,7 @@ Structure is in it, and the trusses and members its include links reach.
 - An include link to no member is written as /(broken link: …)/, and one
   that would include without end as /(included without end: …)/, where it
   will be seen.
-- A link to a file by a relative path -- a picture in ~attach/~, a source --
+- A link to a file by a relative path -- a picture in ~data/~, a source --
   is written relative to ~out/~, so the output document still finds it,
   and pandoc makes a picture an image.  /view/ shows the pictures where
   they are.
@@ -1674,7 +1683,8 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | Variable                       | Default                        |                                               |
 |--------------------------------+--------------------------------+-----------------------------------------------|
 | ~org-truss-language~           | ~en~                           | ~ja~ for a Japanese guide and member names    |
-| ~org-truss-file-name~          | ~"truss.org"~                  |                                               |
+| ~org-truss-file-name~          | ~"truss.org"~                  | what init writes, and a directory is searched |
+|                                |                                | for                                           |
 | ~org-truss-patterns~           | those above                    | add your own                                  |
 | ~org-truss-roles~              | reason, who, sky, reader ...   | roles a pattern of your own can name          |
 | ~org-truss-new-divisions~      | the basic form above           | the patterns a new file's divisions are given,|
@@ -1683,7 +1693,6 @@ target; pandoc's ~--reference-doc~ gives a slide or word-processor template.
 | ~org-truss-output-directory~   | ~"out"~                        |                                               |
 | ~org-truss-sources-directory~  | ~"sources"~                    | sources referred to, beside the truss file    |
 | ~org-truss-notes-directory~    | ~"notes"~                      | what is ours and no source                    |
-| ~org-truss-attach-directory~   | ~"attach"~                     | what ~org-attach~ attaches to its headings    |
 | ~org-truss-project-file~       | ~nil~                          | an empty file marking the directory a project |
 | ~org-truss-pandoc-program~     | ~"pandoc"~                     |                                               |
 | ~org-truss-board-middle-width~ | ~nil~, the window's edge       | room for the file's words, cut short there    |

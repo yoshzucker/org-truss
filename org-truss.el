@@ -34,10 +34,11 @@
 ;; stays in the file, and the output document is written from it.
 ;;
 ;; `org-truss-init'            set up a directory: a truss.org, what goes beside it
+;; `org-truss-init-buffer'     make the Org file in this buffer a truss file
 ;; `org-truss-board'           draw the trusses, change them, see what is undone
 ;; `org-truss-check'           list what is undone, line by line
 ;; `org-truss-export'          write the output document
-;; `org-truss-refresh-guides'  put the current guide back into a truss.org
+;; `org-truss-refresh-guides'  put the current guide back into a truss file
 ;;
 ;; See README.org.
 
@@ -94,9 +95,7 @@ there is left as it is.  Return the names of what was made."
   "Set up DIRECTORY to make a document in, and open its truss file.
 A new truss file, written to disk, when there is none.  Beside it, what
 is missing of the directories its guide names and of
-`org-truss-project-file'; see `org-truss-set-up-directory'.  A truss
-file written before its attachments were kept beside it is given the
-line that keeps them there, left unsaved to be looked over."
+`org-truss-project-file'; see `org-truss-set-up-directory'."
   (interactive (list (read-directory-name "Directory: " (org-truss--default-directory))))
   (let* ((file (expand-file-name org-truss-file-name directory))
          (new (not (file-exists-p file)))
@@ -108,12 +107,43 @@ line that keeps them there, left unsaved to be looked over."
       (let ((coding-system-for-write 'utf-8-unix))
         (with-temp-file file (insert (org-truss-skeleton title)))))
     (find-file file)
-    (unless new
-      (org-truss-put-file-variables))
-    (let ((made (org-truss-set-up-directory directory)))
-      (when made
-        (message "org-truss: made %s in %s" (string-join made ", ")
-                 (abbreviate-file-name (file-name-as-directory directory)))))))
+    (org-truss--report-set-up directory)))
+
+;;;###autoload
+(defun org-truss-init-buffer ()
+  "Make the Org file in this buffer a truss file, of any name.
+What heads it -- its property drawer, its title and other keywords -- stays;
+after it go the guide and the divisions of a new truss file, and a title
+asked for when it has none.  A file with headings already is left alone.
+Beside it, what is missing of what `org-truss-set-up-directory' puts there,
+shared with any other truss file in the directory.  The buffer is left
+unsaved, to be looked over."
+  (interactive)
+  (unless (and (derived-mode-p 'org-mode) buffer-file-name)
+    (user-error "Not in an Org file"))
+  (when (org-truss-file-p)
+    (user-error "This is a truss file already"))
+  (org-with-wide-buffer
+   (goto-char (point-min))
+   (when (re-search-forward org-heading-regexp nil t)
+     (user-error "This file has headings already; make a truss file of one without")))
+  (org-with-wide-buffer
+   (goto-char (point-min))
+   (org-truss--skip-file-head)
+   (unless (cadr (assoc "TITLE" (org-collect-keywords '("TITLE"))))
+     (insert (format "#+title: %s\n" (read-string "Title: "))))
+   (goto-char (point-max))
+   (unless (bolp) (insert "\n"))
+   (insert "\n" (org-truss--new-divisions-text)))
+  (org-truss-refresh-guides-in-buffer)
+  (org-truss--report-set-up (file-name-directory buffer-file-name)))
+
+(defun org-truss--report-set-up (directory)
+  "Put beside a truss file in DIRECTORY what is missing, and say what was made."
+  (let ((made (org-truss-set-up-directory directory)))
+    (when made
+      (message "org-truss: made %s in %s" (string-join made ", ")
+               (abbreviate-file-name (file-name-as-directory directory))))))
 
 ;;;###autoload
 (defun org-truss-refresh-guides ()

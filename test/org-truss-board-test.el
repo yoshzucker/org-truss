@@ -1901,8 +1901,7 @@ the link that placed it, and leaves the file unmodified when it was."
 (ert-deftest org-truss-test-init-sets-up-the-directory ()
   "init writes a truss file and puts beside it the directories its head
 comment names and, when one is named, the file marking a project,
-leaving what is there already.  A file written before gets the line that keeps its attachments
-beside it, unsaved."
+leaving what is there already.  A file written before is opened as it is."
   (org-truss-test--in-directory
       '(("old/truss.org" . "#+title: Old\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"))
     (let ((org-truss-language 'en)
@@ -1913,9 +1912,7 @@ beside it, unsaved."
         (org-truss-test--answering '("New")
           (org-truss-init (expand-file-name "new" dir)))
         (should (equal (buffer-file-name) (expand-file-name "new/truss.org" dir)))
-        (should (string-prefix-p "# -*- org-attach-id-dir: \"attach/\"; -*-\n#+title: New\n"
-                                 (buffer-string)))
-        (should (equal org-attach-id-dir "attach/"))
+        (should (string-prefix-p "#+title: New\n" (buffer-string)))
         (should-not (buffer-modified-p))
         (should (equal (funcall read "new/truss.org") (buffer-string)))
         (dolist (sub '("new/sources" "new/notes"))
@@ -1923,11 +1920,39 @@ beside it, unsaved."
         (should-not (file-exists-p (expand-file-name "new/.project" dir)))
         (let ((org-truss-project-file ".project"))
           (org-truss-init (expand-file-name "old" dir)))
-        (should (string-prefix-p "# -*- org-attach-id-dir: \"attach/\"; -*-\n#+title: Old\n"
-                                 (buffer-string)))
-        (should (buffer-modified-p))
+        (should (string-prefix-p "#+title: Old\n" (buffer-string)))
+        (should-not (buffer-modified-p))
         (should (file-directory-p (expand-file-name "old/sources" dir)))
         (should (equal (funcall read "old/.project") ""))))))
+
+(ert-deftest org-truss-test-init-buffer ()
+  "init-buffer makes an Org file of any name a truss file: what heads it
+stays, the guide and the divisions go after it, and the directories go
+beside it.  A truss file, or a file with headings, is left alone."
+  (org-truss-test--in-directory
+      '(("note.org" . ":PROPERTIES:\n:ID: abc\n:END:\n#+title: Procedure\n")
+        ("untitled.org" . "")
+        ("headed.org" . "#+title: H\n* A heading\n"))
+    (let ((org-truss-language 'en)
+          (file (expand-file-name "note.org" dir)))
+      (save-window-excursion
+        (find-file file)
+        (org-truss-init-buffer)
+        (should (org-truss-file-p))
+        (should (string-prefix-p (concat ":PROPERTIES:\n:ID: abc\n:END:\n#+title: Procedure\n\n"
+                                         (org-truss--guide-drawer file) "\n* Brief\n")
+                                 (buffer-string)))
+        (should (buffer-modified-p))
+        (should (equal (org-truss-model-title (org-truss-read)) "Procedure"))
+        (dolist (sub '("sources" "notes"))
+          (should (file-directory-p (expand-file-name sub dir))))
+        (should-error (org-truss-init-buffer) :type 'user-error)
+        (find-file (expand-file-name "untitled.org" dir))
+        (org-truss-test--answering '("Untitled")
+          (org-truss-init-buffer))
+        (should (string-prefix-p "#+title: Untitled\n\n:GUIDE:\n" (buffer-string)))
+        (find-file (expand-file-name "headed.org" dir))
+        (should-error (org-truss-init-buffer) :type 'user-error)))))
 
 (ert-deftest org-truss-test-board-asks-for-a-file ()
   "With no truss file near, the board asks for one: the file, its directory,

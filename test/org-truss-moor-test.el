@@ -37,6 +37,23 @@ under a member nested in it gives the member none."
   (should-not (org-truss-moor-sources "/notes/journal.org"))
   (should (equal (org-moor-sources "/docs/plan/truss.org") "/docs/plan/sources/")))
 
+(ert-deftest org-truss-test-sources-beside-a-truss-file-of-any-name ()
+  "A truss file named otherwise is one by its Message division: its sources
+are beside it, shared with the others there, and a place is named alone."
+  (org-truss-test--in-directory
+      (list (cons "procedure.org" org-truss-test--file)
+            (cons "note.org" "#+title: N\n* A heading\n"))
+    (let ((truss (expand-file-name "procedure.org" dir))
+          (note (expand-file-name "note.org" dir)))
+      (should (equal (org-truss-moor-sources truss) (expand-file-name "sources/" dir)))
+      (should (org-truss-moor-place-alone-p truss))
+      (should-not (org-truss-moor-sources note))
+      (should-not (org-truss-moor-place-alone-p note))
+      (with-current-buffer (find-file-noselect note)
+        (goto-char (point-max))
+        (insert "* M\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n")
+        (should (org-truss-moor-sources note))))))
+
 (ert-deftest org-truss-test-batch-take ()
   "An agent takes a file into the truss file's sources, copied, and is
 printed a link to cite it by."

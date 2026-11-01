@@ -16,8 +16,8 @@
 ;; before the first heading, folded as drawers are and opened to be read.
 ;; What each division and each role of Brief's and Message's breakdowns is for
 ;; is said by the board, `?' on its line, and printed by
-;; `org-truss-batch-guide' with the guide.  Here too are the first line
-;; that keeps attachments beside the file, and the skeleton of a new file.
+;; `org-truss-batch-guide' with the guide.  Here too is the skeleton of a
+;; new file.
 
 ;;; Code:
 
@@ -26,15 +26,13 @@
 
 (defconst org-truss--guide-text
   '("\
-This truss.org makes one output document.  x on the board (M-x
+This file makes one output document.  x on the board (M-x
 org-truss-board), or M-x org-truss-export, writes it to OUT/.
 
 Beside this file
   SOURCES/  sources referred to.  Taken in with org-moor, each gets a
             directory here
   NOTES/    what is ours and no source: memos, slides of our own, minutes
-  ATTACH/   what C-c C-a attaches to a heading; ~[[attachment:NAME]]~
-            points to it
   OUT/      the output document.  Not edited by hand
 
 Words
@@ -277,14 +275,13 @@ copy you were handed, check the copy in place of FILE
   emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -l org-truss#MOOR -f org-truss-batch-check FILE
 #TAKE"
     "\
-この truss.org から出力文書を一つ作る。盤面（M-x org-truss-board）の x か
+このファイルから出力文書を一つ作る。盤面（M-x org-truss-board）の x か
 M-x org-truss-export で、OUT/ に書き出す。
 
 このファイルの隣
   SOURCES/  参照する資料。org-moor で取り込むと、資料ごとにディレクトリが
             できる
   NOTES/    資料ではない手元のもの。メモ、自分たちのスライド、議事録
-  ATTACH/   C-c C-a で見出しに付けたもの。~[[attachment:名前]]~ で指す
   OUT/      出力文書。手で直さない
 
 言葉
@@ -506,7 +503,7 @@ and trusses are written, grounds, claims, sources, what is in the output
 document, and what goes in the directories beside it.  ORG-TRUSS-DIR and
 ORG-DOCK-DIR and ORG-ITEM-TAGS-DIR stand for where org-truss, org-dock
 and org-item-tags are loaded from, FILE
-for `org-truss-file-name', and SOURCES/, NOTES/, ATTACH/ and OUT/ for the
+for the truss file's name, and SOURCES/, NOTES/ and OUT/ for the
 directories beside the file; #MOOR and a line #TAKE, for what org-moor
 adds when it is there.  See `org-truss-guide'.")
 
@@ -578,11 +575,12 @@ In English and Japanese.  Keyed by a division, or by (DIVISION ROLE) for a
 member right under the division that plays ROLE in its breakdown.  The
 board says it, `?' on the line, and `org-truss-batch-guide' prints it.")
 
-(defun org-truss-guide ()
+(defun org-truss-guide (&optional file)
   "Return the guide of a truss file, in `org-truss-language', as plain text.
 The command that checks the file is written as it runs here: with the
-directory org-truss is loaded from, and the name of a truss file.  The
-directories beside it are named as they are set here."
+directory org-truss is loaded from, and the name of FILE, by default
+`org-truss-file-name'.  The directories beside it are named as they are
+set here."
   (let* ((dir-of (lambda (name)
                    (let ((library (locate-library name)))
                      (if library
@@ -603,17 +601,17 @@ directories beside it are named as they are set here."
                      ("ORG-DOCK-DIR" . ,(funcall dir-of "org-dock"))
                      ("ORG-ITEM-TAGS-DIR" . ,(funcall dir-of "org-item-tags"))
                      ("ORG-MOOR-DIR" . ,(funcall dir-of "org-moor"))
-                     ("FILE" . ,org-truss-file-name)
+                     ("FILE" . ,(if file (file-name-nondirectory file) org-truss-file-name))
                      ("SOURCES/" . ,(file-name-as-directory org-truss-sources-directory))
                      ("NOTES/" . ,(file-name-as-directory org-truss-notes-directory))
-                     ("ATTACH/" . ,(file-name-as-directory org-truss-attach-directory))
                      ("OUT/" . ,(file-name-as-directory org-truss-output-directory))))
       (setq text (string-replace placeholder value text)))
     text))
 
-(defun org-truss--guide-drawer ()
-  "Return the :GUIDE: drawer that holds the guide at the head of a truss file."
-  (concat ":GUIDE:\n" (org-truss-guide) ":END:\n"))
+(defun org-truss--guide-drawer (&optional file)
+  "Return the :GUIDE: drawer that holds the guide at the head of a truss file.
+FILE is the file's name, as for `org-truss-guide'."
+  (concat ":GUIDE:\n" (org-truss-guide file) ":END:\n"))
 
 (defun org-truss-division-guide (division &optional role)
   "Return what DIVISION is for, or what a member of it playing ROLE is for.
@@ -647,27 +645,6 @@ patterns it has and the roles it plays, with what each pattern asks for."
                     "; "))))
     (and text (not (string-empty-p text))
          (replace-regexp-in-string "[ \t]*\n[ \t]*" (org-truss--pick " " "") text))))
-
-(defun org-truss--file-variables ()
-  "Return the first line of a truss file, which sets its file variables.
-It sends what `org-attach' attaches to the file's headings to
-`org-truss-attach-directory', beside the file, written as
-`modify-file-local-variable-prop-line' writes it."
-  (format "# -*- org-attach-id-dir: %S; -*-\n"
-          (file-name-as-directory org-truss-attach-directory)))
-
-(defun org-truss-put-file-variables ()
-  "Give the truss file in this buffer the line that keeps attachments beside it.
-The first line, as `org-truss--file-variables' writes it.  Where the
-first line sets `org-attach-id-dir' already, it is left alone;
-where it sets other variables, this one is added among them.  The buffer
-takes the value at once, as visiting the file would give it."
-  (org-with-wide-buffer
-   (goto-char (point-min))
-   (unless (looking-at-p ".*-\\*-.*org-attach-id-dir:.*-\\*-")
-     (let ((dir (file-name-as-directory org-truss-attach-directory)))
-       (modify-file-local-variable-prop-line 'org-attach-id-dir dir 'add-or-replace)
-       (setq-local org-attach-id-dir dir)))))
 
 (defun org-truss--new-ids (divisions)
   "Return the IDs a new file gives what the :include of DIVISIONS name.
@@ -766,28 +743,31 @@ takes its ID, and is taken off."
                            nil (nth 2 s) ids))
                         supports "")))))))
 
-(defun org-truss-skeleton (title)
-  "Return the text of a new truss file titled TITLE.
-Its first line keeps what is attached to its headings beside it; see
-`org-truss--file-variables'.  Then the guide, in its drawer, in
-`org-truss-language'.  Then the divisions, with the patterns and the members
-`org-truss-new-divisions' gives them.  Their words are English whatever
-`org-truss-language' says: they name the divisions and the roles, and are
-written over -- those Structure includes reach the reader."
+(defun org-truss--new-divisions-text ()
+  "Return the divisions of a new truss file, as its text.
+With the patterns and the members `org-truss-new-divisions' gives them.
+Their words are English whatever `org-truss-language' says: they name the
+divisions and the roles, and are written over -- those Structure includes
+reach the reader."
   (let ((ids (let ((all (org-truss--new-ids org-truss-new-divisions)))
                (cons (copy-sequence all) all))))
-    (concat
-     (org-truss--file-variables)
-     (format "#+title: %s\n\n" title)
-     (org-truss--guide-drawer) "\n"
-     (string-remove-suffix
-      "\n"
-      (mapconcat (lambda (division)
-                   (org-truss--new-member
-                    1 (car division) (capitalize (symbol-name (car division)))
-                    (list (cons "TRUSS_DIVISION" (symbol-name (car division))))
-                    (cdr division) ids))
-                 org-truss-new-divisions "")))))
+    (string-remove-suffix
+     "\n"
+     (mapconcat (lambda (division)
+                  (org-truss--new-member
+                   1 (car division) (capitalize (symbol-name (car division)))
+                   (list (cons "TRUSS_DIVISION" (symbol-name (car division))))
+                   (cdr division) ids))
+                org-truss-new-divisions ""))))
+
+(defun org-truss-skeleton (title &optional file)
+  "Return the text of a new truss file titled TITLE.
+The guide, in its drawer, in `org-truss-language', naming the file FILE
+as `org-truss-guide' does; then the divisions, as
+`org-truss--new-divisions-text' writes them."
+  (concat (format "#+title: %s\n\n" title)
+          (org-truss--guide-drawer file) "\n"
+          (org-truss--new-divisions-text)))
 
 (defconst org-truss--guide-drawer-re
   "^[ \t]*:GUIDE:[ \t]*\n\\(?:.*\n\\)*?[ \t]*:END:[ \t]*\\(?:\n\\|\\'\\)"
@@ -803,6 +783,15 @@ written over -- those Structure includes reach the reader."
         (delete-region (match-beginning 0) (match-end 0)))
       (set-marker end nil))))
 
+(defun org-truss--skip-file-head ()
+  "Move past what heads the file from point: a first line of file variables,
+the file's property drawer, and the keywords.  Where the guide goes."
+  (when (looking-at-p ".*-\\*-.*-\\*-") (forward-line 1))
+  (when (looking-at org-property-drawer-re)
+    (goto-char (match-end 0))
+    (forward-line 1))
+  (while (looking-at "#\\+") (forward-line 1)))
+
 (defun org-truss-refresh-guides-in-buffer ()
   "Put the current guide back at the head of the truss file in this buffer.
 Before the first heading, after the keywords, what is there -- a guide
@@ -810,10 +799,8 @@ of before, the comments a guide was once written in -- gives way to the
 guide in its drawer.  The :GUIDE: drawers once written under each division
 and each member playing a role of its breakdown go, as the board now
 says what they said; one of a role nothing is said of, a guide of your
-own, stays.  A file without the first line that keeps its attachments
-beside it is given one; see `org-truss-put-file-variables'.  Nothing
-else is read or moved."
-  (org-truss-put-file-variables)
+own, stays.  The guide names the file as it is named; see
+`org-truss-guide'.  Nothing else is read or moved."
   (org-with-wide-buffer
    ;; From the last division up, so what is changed lies below what is still
    ;; to change and positions stay good.
@@ -827,8 +814,7 @@ else is read or moved."
                (org-truss--delete-guide-drawer child))))
          (org-truss--delete-guide-drawer pos))))
    (goto-char (point-min))
-   (when (looking-at-p ".*-\\*-.*-\\*-") (forward-line 1))
-   (while (looking-at "#\\+") (forward-line 1))
+   (org-truss--skip-file-head)
    (let ((start (point)))
      ;; Blank lines, comments and a guide's drawer go; anything else
      ;; written before the first heading stays, after the guide.
@@ -838,7 +824,7 @@ else is read or moved."
                        ((looking-at "\\(?:#\\(?: .*\\)?\\)?$")
                         (delete-region (point) (min (point-max) (1+ (line-end-position)))) t))))
      (goto-char start)
-     (insert "\n" (org-truss--guide-drawer) "\n"))))
+     (insert "\n" (org-truss--guide-drawer (buffer-file-name)) "\n"))))
 
 (provide 'org-truss-guide)
 

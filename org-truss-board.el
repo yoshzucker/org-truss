@@ -293,8 +293,7 @@ to start one there, making the directory if it is new."
                (if (or (file-directory-p path) (not (file-exists-p path)))
                    path
                  (file-name-directory path)))))
-    (cond ((and (file-regular-p path)
-                (equal (file-name-nondirectory path) org-truss-file-name))
+    (cond ((and (file-regular-p path) (org-truss-truss-file-p path))
            path)
           ((and (file-directory-p dir) (org-truss-locate dir)))
           ((y-or-n-p (format "No %s in %s; start one there? "

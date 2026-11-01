@@ -45,7 +45,7 @@
 
 (defun org-truss-moor-sources (file)
   "Return the sources directory of FILE when it is a truss file, else nil."
-  (when (equal (file-name-nondirectory file) org-truss-file-name)
+  (when (org-truss-truss-file-p file)
     (file-name-as-directory
      (expand-file-name org-truss-sources-directory (file-name-directory file)))))
 
@@ -55,7 +55,7 @@
   "Non-nil when FILE is a truss file, whose links to a place are named by it alone.
 The apex member of a truss pointing into a source names it, by its
 title; the members under it name the place, p. 12."
-  (equal (file-name-nondirectory file) org-truss-file-name))
+  (org-truss-truss-file-p file))
 
 (add-hook 'org-moor-place-alone-functions #'org-truss-moor-place-alone-p)
 
