@@ -1148,12 +1148,6 @@ is MEMBER's line's, kept under a key of its own."
           nil nil (plist-put (copy-sequence item) :key
                              (append (plist-get item :key) '(pattern)))))))
 
-(defun org-truss--asking (member gap)
-  "Return the name of the pattern of MEMBER that asks for GAP, or nil.
-Nil when MEMBER has that pattern alone, and no other could be asking."
-  (and (cdr (org-truss-member-patterns member))
-       (org-truss-pattern-name (org-truss-member-pattern member (car gap)))))
-
 (defun org-truss--gap-text (member gap)
   "Return how the board shows GAP of MEMBER, (KIND ROLE . SHORT-BY).
 The role, how many more, and, when MEMBER has more than one pattern, the
@@ -1163,19 +1157,6 @@ one that asks for it."
                                 (if (> (cddr gap) 1) (format " ×%d" (cddr gap)) ""))
                         'face 'org-truss-attention)
             (if asking (propertize (format " (%s)" asking) 'face 'org-truss-dim) ""))))
-
-(defun org-truss--no-pattern-text (entry)
-  "Return what the board says of ENTRY, (CHILD KIND . PARENT) of :no-pattern.
-The role it plays, that PARENT has no pattern of KIND, and the patterns
-that have the role, which PARENT is to take."
-  (let* ((kind (cadr entry))
-         (role (org-truss-member-role (car entry) kind))
-         (ids (org-truss-patterns-with-role kind role)))
-    (format "plays %s, but %s has no %s%s"
-            (org-truss-role-name role) (org-truss-member-words (cddr entry)) kind
-            (if ids
-                (format "; %s has it" (mapconcat #'org-truss-pattern-label ids " or "))
-              ""))))
 
 (defun org-truss--structure-member-lines (model member prefix last path parent)
   "Return board lines for MEMBER of Structure and every member under it.
@@ -1217,7 +1198,7 @@ line, drawn as it is where it is written; see `org-truss--brought-lines'."
                                     (format "Plays no role of %s; %s gives it one"
                                             (org-truss-pattern-label (org-truss-member-pattern parent stray))
                                             (substitute-command-keys "\\[org-truss-board-roles]")))
-                               (and unheld (let ((text (org-truss--no-pattern-text unheld)))
+                               (and unheld (let ((text (org-truss--no-pattern-board-text unheld)))
                                              (concat (upcase (substring text 0 1)) (substring text 1))))
                                late))
                ". "))
@@ -1301,129 +1282,41 @@ wrong there."
                                              (funcall note entry)))
                     entries)))))
 
+(defun org-truss--broken-lines (model entries note)
+  "Return the lines of Broken links for ENTRIES, or nil when there are none.
+ENTRIES are as `org-truss--broken-entries' gives them.  An include link
+to no member is drawn as the link, from the member it is in, after the
+rest, each a member's line with NOTE."
+  (when entries
+    (let ((include-p (lambda (e) (eq (cadr e) 'include))))
+      (cons (org-truss--check-heading "Broken links")
+            (append
+             (cdr (org-truss--check-group model "Broken links" (seq-remove include-p entries) note))
+             (mapcar (lambda (e)
+                       (let ((pos (org-truss-member-pos (car e)))
+                             (id (cddr e)))
+                         (org-truss--line
+                          "   "
+                          (propertize (format "%s ← %s" (org-truss--include-link id)
+                                              (org-truss-member-words (car e)))
+                                      'face 'org-truss-attention)
+                          nil (list :type 'broken :pos pos :link id :holder pos
+                                    :key (list 'broken id)))))
+                     (seq-filter include-p entries)))))))
+
 (defun org-truss--check-lines (model checks division)
   "Return the lines of what CHECKS finds in DIVISION of MODEL, check by check.
 Each thing is listed in the division it is found in, under the check that
-finds it, as `org-truss-check-descriptions' names them."
-  (let* ((in (lambda (entries) (seq-filter (lambda (e) (eq (org-truss-member-division (car e)) division))
-                                           entries)))
-         (ids (lambda (ids) (mapconcat (lambda (id) (format "[[%s]]" (org-truss--pointing-target id)))
-                                       ids " ")))
-         (broken (funcall in (plist-get checks :broken-links)))
-         (found (funcall in (append (plist-get checks :broken-grounds)
-                                    (plist-get checks :broken-sources)
-                                    (mapcar (lambda (l) (cons (car l) (list 'loop (cdr l))))
-                                            (plist-get checks :loops))
-                                    (mapcan (lambda (id)
-                                              (mapcar (lambda (m) (cons m (list 'duplicate id)))
-                                                      (seq-filter (lambda (m) (equal (org-truss-member-id m) id))
-                                                                  (org-truss-model-members model))))
-                                            (plist-get checks :duplicates)))))
-         (lines
-          (append
-           (and (or found broken)
-                (cons (org-truss--check-heading "Broken links")
-                      (append
-                       (cdr (org-truss--check-group
-                             model "Broken links" found
-                             (lambda (e)
-                               (cond ((eq (car-safe (cdr e)) 'duplicate)
-                                      (format "#%s, which another member has too" (cadr (cdr e))))
-                                     ((consp (cdr e))
-                                      (format "%s includes it back" (org-truss--include-link (cadr (cdr e)))))
-                                     ((string-prefix-p "[[" (cdr e)) (format "%s not found" (cdr e)))
-                                     (t (format "%s not found" (funcall ids (list (cdr e)))))))))
-                       (mapcar (lambda (b)
-                                 (org-truss--line
-                                  "   "
-                                  (propertize (format "%s ← %s" (org-truss--include-link (cdr b))
-                                                      (org-truss-member-words (car b)))
-                                              'face 'org-truss-attention)
-                                  nil (list :type 'broken :pos (org-truss-member-pos (car b))
-                                            :link (cdr b) :holder (org-truss-member-pos (car b))
-                                            :key (list 'broken (cdr b)))))
-                               broken))))
-           (org-truss--check-group
-            model "No grounds" (funcall in (mapcar #'list (plist-get checks :no-grounds)))
-            (lambda (_) org-truss-no-grounds-text))
-           (org-truss--check-group
-            model "Whole without grounds" (funcall in (mapcar #'list (plist-get checks :whole-ungrounded)))
-            (lambda (e) (org-truss-whole-without-grounds-text (car e))))
-           (org-truss--check-group
-            model "Axis not named" (funcall in (plist-get checks :axes-not-named))
-            #'org-truss-axes-not-named-text)
-           (org-truss--check-group
-            model "Open" (funcall in (mapcar #'list (plist-get checks :open)))
-            (lambda (e) (org-truss-open-line-text org-truss-open-text (car e) checks)))
-           (org-truss--check-group
-            model "Open, not needed" (funcall in (mapcar #'list (plist-get checks :open-unneeded)))
-            (lambda (e) (org-truss-open-line-text "nothing needed stands on it" (car e) checks)))
-           (org-truss--check-group
-            model "Settled" (funcall in (mapcar #'list (plist-get checks :settled)))
-            (lambda (_) "has grounds, tagged :open:"))
-           (org-truss--check-group
-            model "Unused" (funcall in (mapcar #'list (plist-get checks :unused)))
-            (lambda (_) "no claim stands on it"))
-           (org-truss--check-group
-            model "Aside with members" (funcall in (mapcar #'list (plist-get checks :aside-members)))
-            (lambda (_) "set aside, with members under it"))
-           (org-truss--check-group
-            model "Weak grounds" (funcall in (plist-get checks :weak-grounds))
-            (lambda (e) (format "%s has no grounds" (funcall ids (list (cdr e))))))
-           (org-truss--check-group
-            model "Hidden grounds" (funcall in (plist-get checks :hidden-grounds))
-            #'org-truss-hidden-ground-text)
-           (org-truss--check-group
-            model "Quotes not found" (funcall in (plist-get checks :quotes-not-found))
-            #'org-truss-quote-not-found-text)
-           (org-truss--check-group
-            model "Grounds set low" (funcall in (plist-get checks :low-grounds))
-            #'org-truss-grounds-set-low-text)
-           (org-truss--check-group
-            model "Mixed sources" (funcall in (plist-get checks :mixed-sources))
-            (lambda (e) (format "points into %s" (string-join (cdr e) ", "))))
-           (org-truss--check-group
-            model "Sources in Situation" (funcall in (plist-get checks :situation-sources))
-            #'org-truss-situation-sources-text)
-           (org-truss--check-group
-            model "Said again" (funcall in (plist-get checks :said-again))
-            #'org-truss-said-again-text)
-           (org-truss--check-group
-            model "Set apart" (funcall in (plist-get checks :unearned))
-            #'org-truss-unearned-text)
-           (org-truss--check-group
-            model "Missing roles" (funcall in (plist-get checks :gaps))
-            (lambda (e) (mapconcat (lambda (gap)
-                                     (let ((asking (org-truss--asking (car e) gap)))
-                                       (format "%s%s%s" (org-truss-role-name (cadr gap))
-                                               (if (> (cddr gap) 1) (format " ×%d" (cddr gap)) "")
-                                               (if asking (format " (%s)" asking) ""))))
-                                   (cdr e) ", ")))
-           (org-truss--check-group
-            model "Missing cells" (funcall in (plist-get checks :missing-cells))
-            #'cdr)
-           (org-truss--check-group
-            model "No role" (funcall in (plist-get checks :no-role))
-            (lambda (e) (format "plays no role of %s"
-                                (org-truss-pattern-label (org-truss-member-pattern (cddr e) (cadr e))))))
-           (org-truss--check-group
-            model "No pattern" (funcall in (plist-get checks :no-pattern))
-            #'org-truss--no-pattern-text)
-           (org-truss--check-group
-            model "No relation" (funcall in (mapcar #'list (plist-get checks :no-relation)))
-            (lambda (_) org-truss-no-relation-text))
-           (org-truss--check-group
-            model "Values without :by" (funcall in (mapcar #'list (plist-get checks :values-without-by)))
-            (lambda (_) org-truss-values-without-by-text))
-           (org-truss--check-group
-            model "Headings in a list" (funcall in (mapcar #'list (plist-get checks :listed-headings)))
-            (lambda (_) org-truss-listed-headings-text))
-           (org-truss--check-group
-            model "Out of order" (funcall in (plist-get checks :out-of-order))
-            (lambda (e) (format "below %s" (org-truss-member-words (cdr e)))))
-           (org-truss--check-group
-            model "Words to write" (funcall in (mapcar #'list (plist-get checks :placeholders)))
-            (lambda (_) org-truss-placeholder-text)))))
+finds it, as `org-truss-check-table' names them."
+  (let ((lines
+         (mapcan (lambda (check)
+                   (let ((entries (seq-filter (lambda (e) (eq (org-truss-member-division (car e)) division))
+                                              (org-truss-check-entries check model checks)))
+                         (note (or (plist-get (cdr check) :board) (plist-get (cdr check) :note))))
+                     (if (equal (car check) "Broken links")
+                         (org-truss--broken-lines model entries note)
+                       (org-truss--check-group model (car check) entries note))))
+                 org-truss-check-table)))
     (and lines (cons (org-truss--line "") lines))))
 
 (defun org-truss--division-line (name division gloss item)

@@ -889,7 +889,7 @@ headings under it into its roles first."
                ;; its line names: asked of it with none under it.
                (member (if (org-truss-member-pattern member kind)
                            member
-                         (apply #'org-truss--make-member (list (intern (format ":%s" kind)) id))))
+                         (apply #'org-truss--make-member (list (org-truss--kind-key kind) id))))
                (gaps (seq-filter (lambda (gap) (eq (car gap) kind))
                                  (org-truss-gaps member))))
           (if item

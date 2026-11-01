@@ -281,7 +281,7 @@ line that marks no list; see `org-truss--heading-attrs'."
   "Return the #+attr_truss line saying PLIST: its patterns, :by and :as."
   (org-truss--attr-line
    (delq nil (mapcar (lambda (kind)
-                       (let ((value (plist-get plist (intern (format ":%s" kind)))))
+                       (let ((value (plist-get plist (org-truss--kind-key kind))))
                          (and value (cons kind value))))
                      org-truss-pattern-kinds))
    (plist-get plist :as) (plist-get plist :by)))
@@ -320,7 +320,7 @@ where it can be read; in its property where one names that kind."
            (if pattern
                (org-entry-put pos property (symbol-name pattern))
              (org-entry-delete pos property)))
-          (t (org-truss--set-heading-attr pos (intern (format ":%s" kind)) pattern)))))
+          (t (org-truss--set-heading-attr pos (org-truss--kind-key kind) pattern)))))
 
 (defun org-truss--rank (pos kind role)
   "Return where ROLE comes among the roles of the pattern of KIND at POS."
@@ -535,7 +535,7 @@ own is given the line, at its end, for the list to follow."
          (patterns (delq nil (mapcar (lambda (k)
                                        (let ((value (if (eq k kind)
                                                         pattern
-                                                      (plist-get plist (intern (format ":%s" k))))))
+                                                      (plist-get plist (org-truss--kind-key k)))))
                                          (and value (cons k value))))
                                      org-truss-pattern-kinds)))
          (line (concat (make-string (org-truss--item-column pos) ?\s)
@@ -580,7 +580,7 @@ one.  Return the number made."
                      (skip-chars-backward " \t\n")
                      (if (bobp) (point) (progn (end-of-line) (point)))))))
         (pcase-dolist (`(,kind ,role . ,short) gaps)
-          (let* ((pattern (org-truss--intern (format "%s" (plist-get plist (intern (format ":%s" kind))))))
+          (let* ((pattern (org-truss--attr-pattern plist kind))
                  (many (cdr (org-truss-pattern-roles pattern)))
                  (numbered (or numbered (eq (plist-get (org-truss-pattern pattern) :list) 'numbered))))
             (dotimes (_ short)
