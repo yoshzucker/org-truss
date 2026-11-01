@@ -831,13 +831,14 @@ PARSED is the parse of its text."
     ;; its line too, as an item's first line links one: the apex member
     ;; of a source's truss is the link to it.
     (let* ((all (plist-get parsed :body))
-           (sourced (concat (org-truss--heading-words) "\n" all)))
+           (words (org-truss--heading-words))
+           (sourced (concat words "\n" all)))
       (list :pos pos
             ;; <<m7>> in its words, as an item has it, or its CUSTOM_ID.
             :id (or (org-truss--heading-target)
                     (let ((id (org-entry-get nil "CUSTOM_ID")))
                       (and id (not (string-blank-p id)) (string-trim id))))
-            :words (org-truss--heading-words)
+            :words words
             :level (org-current-level)
             :tags (org-get-tags nil t)
             :roles (org-truss--roles-here)
@@ -847,7 +848,7 @@ PARSED is the parse of its text."
             :as (org-truss--as (org-entry-get nil "TRUSS_AS"))
             :by (org-truss--by (org-entry-get nil "TRUSS_BY"))
             :points (org-truss--points-in all)
-            :includes (append (org-truss--includes-in (org-truss--heading-words))
+            :includes (append (org-truss--includes-in words)
                               (plist-get parsed :includes))
             :source-links (org-truss--source-links-in sourced)
             :cited (car (org-truss--source-links-in sourced))
@@ -934,12 +935,17 @@ the like, and so in a member's fields."
               (org-element-contents container)))
 
 (defun org-truss--text-item-lists (start end)
-  "Return the lists marked #+attr_truss in the text between START and END."
-  (save-restriction
-    (narrow-to-region start end)
-    (mapcan #'org-truss--item-lists-in
-            (seq-filter (lambda (e) (eq (org-element-type e) 'section))
-                        (org-element-contents (org-element-parse-buffer))))))
+  "Return the lists marked #+attr_truss in the text between START and END.
+The text is parsed only when a #+attr_truss line is in it."
+  (when (save-excursion
+          (goto-char start)
+          (let ((case-fold-search t))
+            (re-search-forward org-truss--attr-line-re end t)))
+    (save-restriction
+      (narrow-to-region start end)
+      (mapcan #'org-truss--item-lists-in
+              (seq-filter (lambda (e) (eq (org-element-type e) 'section))
+                          (org-element-contents (org-element-parse-buffer)))))))
 
 (defun org-truss--lists-patterns (lists)
   "Return the patterns LISTS give, as (KIND . PATTERN), the first of each kind."

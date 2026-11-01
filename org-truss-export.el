@@ -438,10 +438,13 @@ for a list item.  Nil is \"\"."
   "Return the members of MODEL whose TRUSS_AS headings is not kept.
 Those whose supporting members the output document writes as a list all
 the same, in a list or below the deepest level; see
-`org-truss--supports-text'."
-  (let ((org-truss--listed-headings (list nil)))
-    (org-truss-render-document model)
-    (seq-uniq (nreverse (car org-truss--listed-headings)))))
+`org-truss--supports-text'.  The document is written only when a member
+says headings: else there is none to find."
+  (when (seq-some (lambda (m) (eq (org-truss-member-as m) 'headings))
+                  (org-truss-model-members model))
+    (let ((org-truss--listed-headings (list nil)))
+      (org-truss-render-document model)
+      (seq-uniq (nreverse (car org-truss--listed-headings))))))
 
 (setq org-truss-listed-headings-function #'org-truss-listed-headings)
 
