@@ -303,6 +303,7 @@ to start one there, making the directory if it is new."
            (buffer-file-name))
           (t (user-error "No %s in %s" org-truss-file-name (abbreviate-file-name dir))))))
 
+;;;###autoload
 (defun org-truss-board (&optional ask)
   "Draw the board for the nearest truss file, from anywhere.
 The current buffer's, when it is one; else the nearest at or above the
