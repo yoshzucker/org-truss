@@ -1166,6 +1166,17 @@ either language.  Those the output document does not tell are not asked."
                                        (plist-get (org-truss-checks (org-truss-read)) :placeholders)))
                    '("Situation" "Part" "解釈" "Part" "Reason" "Step")))))
 
+(ert-deftest org-truss-test-skeleton-include-items ()
+  "A new file writes a member that is an include link alone as an item,
+under a breakdown as under a telling."
+  (let ((org-truss-new-divisions
+         '((message :patterns ((breakdown . parts)))
+           (structure :patterns ((breakdown . parts))
+                      :members ((part :include message))))))
+    (should (string-match-p
+             "^\\* Structure\n:PROPERTIES:\n:TRUSS_DIVISION: structure\n:END:\n\n#\\+attr_truss: :breakdown parts\n- \\[\\[truss-include:m1\\]\\]\n"
+             (org-truss-skeleton "T")))))
+
 (ert-deftest org-truss-test-grounds-in-the-text ()
   "A link in a heading's text to a member is grounds: it gives the heading
 grounds, and what it points to must hold and be there.  A section reads
@@ -1799,6 +1810,24 @@ and gives each thing found a line of its own that compilation mode reads."
                      "Items need a week to move" "Some items are urgent"
                      "Urgent items go to chat" "Who decides what is urgent"
                      "Move to fortnightly" "A meeting that repeats itself can meet less")))))
+
+(ert-deftest org-truss-test-told-not-by-structure-words ()
+  "Structure's words name the division and are never written out, so an
+include link in them tells nothing; one in its text does."
+  (org-truss-test--with "* M
+:PROPERTIES:
+:TRUSS_DIVISION: message
+:END:
+** <<a>>A
+** <<b>>B
+* [[truss-include:a]]
+:PROPERTIES:
+:TRUSS_DIVISION: structure
+:END:
+[[truss-include:b]]
+"
+    (should (equal (org-truss-test--labels (org-truss-in-document (org-truss-read)))
+                   '("B")))))
 
 (ert-deftest org-truss-test-duplicates ()
   "Two headings with one id are reported, since a link cannot tell them

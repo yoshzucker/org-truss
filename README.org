@@ -97,8 +97,9 @@ reader.  What the problem is taken to be is a claim, so it belongs in
 Message, not Subject.
 
 A division is an apex member like any other, and is broken down as any
-member can be.  A new file is written in the basic form: the facts, what
-they mean, what to do, told in that order.
+member can be.  A new file is written in the basic form, unless
+~org-truss-new-divisions~ gives another: the facts, what they mean, what
+to do, told in that order.
 
 | Member         | Pattern                                           | Written                                                               |
 |----------------+---------------------------------------------------+-----------------------------------------------------------------------|

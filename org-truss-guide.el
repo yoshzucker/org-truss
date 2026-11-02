@@ -74,8 +74,9 @@ The four divisions (told apart by TRUSS_DIVISION; filled from the top)
   Structure  the output document's outline, built of trusses.  Each member
              is a heading of the output document, and its text holds the
              include links to the trusses and members it carries
-  A new file is written in the basic form: facts, what they mean, what to
-  do, told in that order.  Its words are to be written over
+  A new file's words are to be written over.  It is written in the basic
+  form, unless the configuration gives it another: facts, what they mean,
+  what to do, told in that order
   - Subject: parts, a truss for each source.  Facts only
   - Message: situation-interpretation-action.  Situation is parts,
     include links to the trusses of the sources whose facts the claims
@@ -316,8 +317,8 @@ M-x org-truss-export で、OUT/ に書き出す。
   Message    出力文書が言うこと：事実の意味（解釈）と、すること（行動）
   Structure  出力文書の構成を、トラスで組む。部材一つが出力文書の見出し
              一つになり、その本文に、載せるトラスや部材を展開リンクで書く
-  新しいファイルは基本形で書かれている。事実、その意味、することを、この
-  順に語る。言葉は書き換える
+  新しいファイルの言葉は書き換える。設定で別の形にしていなければ、
+  基本形で書かれている。事実、その意味、することを、この順に語る
   - Subject：parts。資料ごとにトラスを一つ作る。事実だけを書く
   - Message：situation-interpretation-action。Situation は parts で、
     主張が立脚する事実を持つ資料のトラスへの展開リンクを置く。
@@ -669,7 +670,7 @@ the properties it opens with, as (PROPERTY . VALUE).  Its patterns are
 named in #+attr_truss, and the role of a heading under it before ::.  SPEC, as
 `org-truss-new-divisions' gives one, says its patterns and what is written
 under it: a supporting member for each role, as items when all are end
-members, or members of a telling that are include links alone, which
+members, or members that are include links alone -- of a telling, those
 are headings of the output document all the same; else as headings.
 IDS holds, in its car, the IDs of
 `org-truss--new-ids' not yet given: the first member written for a name
@@ -689,8 +690,7 @@ takes its ID, and is taken off."
          (item-p (lambda (s)
                    (let ((spec (nth 2 s)))
                      (or (null spec)
-                         (and (eq (nth 0 s) 'telling)
-                              (plist-get spec :include) (= (length spec) 2))))))
+                         (and (plist-get spec :include) (= (length spec) 2))))))
          (link (lambda (name) (org-truss--include-link (or (alist-get name (cdr ids)) name))))
          ;; Its patterns, in the #+attr_truss of its list, or on a line of
          ;; their own before the headings under it.

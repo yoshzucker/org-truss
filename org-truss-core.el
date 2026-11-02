@@ -1201,7 +1201,15 @@ duplicates, and the index finds the first.  See `org-truss-model'."
             (brief (funcall division 'brief))
             (subject (funcall division 'subject))
             (message (funcall division 'message))
-            (structure (funcall division 'structure))
+            (structure (let ((root (funcall division 'structure)))
+                         ;; Its words name the division and are never written
+                         ;; out, so an include link there includes nothing.
+                         ;; Its includes are those of its words, then its text's.
+                         (when root
+                           (setf (org-truss-member-includes root)
+                                 (nthcdr (length (org-truss--includes-in (org-truss-member-words root)))
+                                         (org-truss-member-includes root))))
+                         root))
             (alone (and alone-pos (org-truss--read-heading alone-pos 'message)))
             (tops (delq nil (list brief subject message structure alone)))
             (members (org-truss--by-position (mapcan #'org-truss--subtree tops)))
