@@ -2811,19 +2811,19 @@ truss file of any name, or `org-truss-file-name' for none."
   (let ((org-truss-language 'en))
     (should (string-match-p "org-truss-batch-check truss\\.org$" (org-truss-guide)))
     (should (string-match-p "org-truss-batch-check 2026-procedure\\.org$"
-                            (org-truss-guide "/memex/2026-procedure.org")))))
+                            (org-truss-guide "/notes/2026-procedure.org")))))
 
 (ert-deftest org-truss-test-refresh-guides-after-property-drawer ()
   "The guide goes after what heads the file -- its property drawer, its
 keywords -- and names the file."
   (let ((org-truss-language 'en))
     (org-truss-test--with ":PROPERTIES:\n:ID: abc\n:END:\n#+title: T\n\n* M\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
-      (setq buffer-file-name "/memex/procedure.org")
+      (setq buffer-file-name "/notes/procedure.org")
       (unwind-protect
           (progn
             (org-truss-refresh-guides-in-buffer)
             (should (string-prefix-p (concat ":PROPERTIES:\n:ID: abc\n:END:\n#+title: T\n\n"
-                                             (org-truss--guide-drawer "/memex/procedure.org")
+                                             (org-truss--guide-drawer "/notes/procedure.org")
                                              "\n* M\n")
                                      (buffer-string))))
         (setq buffer-file-name nil)))))
