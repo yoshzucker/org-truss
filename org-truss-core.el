@@ -618,9 +618,9 @@ other, or a page on the web.")
 
 (defconst org-truss--place-name-re
   "\\`\\(?:[pl]\\. [0-9]+\\|“[^”]*”\\)\\'"
-  "Words naming a place alone, as org-moor names a link in a truss file:
-p. 12, l. 223, or the words quoted there.  Such a link names its source
-once, in the apex member above it.")
+  "Words naming a place alone, as a link names one: p. 12, l. 223, or the
+words quoted there.  Such a link names its source once, in the apex
+member above it.")
 
 (defun org-truss--source-links-in (text)
   "Return every link to a source in TEXT, in order."
@@ -1754,16 +1754,17 @@ not there to look."
 ;;;; Quotes against their sources
 
 ;; A quote is the source's words as they are, so it is looked for in the
-;; source.  Only where the source's text can surely be read as the agent
-;; that quoted it read it: a replica that is text, or what org-moor made a
-;; replica readable as.  A PDF, a picture, a file that does not read cleanly
-;; is not looked in, and nothing is said of a quote from it: a quote not
+;; source as it is seen: a `moor:' source's replica, by org-moor, whatever
+;; it is -- a page, a PDF, a document -- and a text file linked.  A source
+;; with no replica yet, a picture, a file that does not read cleanly is
+;; not looked in, and nothing is said of a quote from it: a quote not
 ;; found must be one that is not there.
 
-(defvar org-truss-moor-text-function nil
-  "Function returning the text file a `moor:' link's quote is looked for in.
-Called with the link's path and the truss file; nil when there is none
-to look in.  Set by org-truss-moor.el.")
+(defvar org-truss-moor-quote-function nil
+  "Function telling whether words are in the replica a `moor:' link is to.
+Called with the link's path, the words and the truss file; returns
+`found', `not-found', or nil when there is no replica to look in.  Set
+by org-truss-moor.el.")
 
 (defconst org-truss-quote-text-extensions
   '("txt" "md" "markdown" "org" "csv" "tsv" "json" "yaml" "yml" "rst" "tex" "log")
@@ -1772,16 +1773,12 @@ to look in.  Set by org-truss-moor.el.")
 (defun org-truss--quote-text-file (link file)
   "Return the text file LINK's quote is looked for in, or nil.
 FILE is the truss file, from whose directory a relative path is read.
-A `file:' link to a text file; a `moor:' link as
-`org-truss-moor-text-function' says; nothing else."
+A `file:' link to a text file; nothing else.  A `moor:' link is looked
+in by org-moor; see `org-truss-quote-found'."
   (let* ((target (org-link-unescape (or (org-truss--link-target link) "")))
          (path (car (split-string (replace-regexp-in-string "\\`[a-z]+:" "" target) "::")))
          (dir (if file (file-name-directory file) default-directory)))
-    (cond ((string-prefix-p "moor:" target)
-           (and org-truss-moor-text-function
-                (org-truss--source-once (list 'moor-text path file)
-                  (lambda () (funcall org-truss-moor-text-function path file)))))
-          ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
+    (cond ((string-match-p "\\`\\(?:file:\\|\\.\\.?/\\)" target)
            (let ((full (expand-file-name path dir)))
              (and (member (downcase (or (file-name-extension full) "")) org-truss-quote-text-extensions)
                   (org-truss--source-once (list 'readable full)
@@ -1847,21 +1844,31 @@ Read once while `org-truss--sources-read' is bound; see
 (defun org-truss-quote-found (quote link file)
   "Return whether QUOTE is in the source LINK points to: `found', `missing' or nil.
 Nil when the source's text cannot surely be read; see
-`org-truss--quote-text-file'.  Words left out of QUOTE are marked …
+`org-truss--quote-text-file'; a `moor:' source's replica is looked in by
+`org-truss-moor-quote-function'.  Words left out of QUOTE are marked …
 or ...: each piece between them is to be there, in order.  A link in
 QUOTE, to where it is from, is no words of the source.  FILE is the
 truss file."
-  (let* ((path (org-truss--quote-text-file link file))
-         (text (and path (org-truss--quote-source-text path)))
-         (words (replace-regexp-in-string org-truss--source-link-re "" quote)))
-    (when text
+  (let* ((target (org-link-unescape (or (org-truss--link-target link) "")))
+         (words (replace-regexp-in-string org-truss--source-link-re "" quote))
+         (moor (string-prefix-p "moor:" target))
+         (path (and (not moor) (org-truss--quote-text-file link file)))
+         (text (and path (org-truss--quote-source-text path))))
+    (if moor
+        (and org-truss-moor-quote-function
+             (pcase (org-truss--source-once (list 'moor-quote target words file)
+                      (lambda () (funcall org-truss-moor-quote-function
+                                          (string-remove-prefix "moor:" target) words file)))
+               ('found 'found)
+               ('not-found 'missing)))
+     (when text
       (let ((from 0) (found t))
         (dolist (piece (split-string words "…\\|\\.\\.\\." t "[[:space:]]+"))
           (let ((at (and found (string-search (org-truss--squeezed piece) text from))))
             (if at
                 (setq from (+ at (length (org-truss--squeezed piece))))
               (setq found nil))))
-        (if found 'found 'missing)))))
+        (if found 'found 'missing))))))
 
 (defun org-truss-quote-link (model member quote)
   "Return the link to the source QUOTE of MEMBER of MODEL is from, or nil.

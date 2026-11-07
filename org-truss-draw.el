@@ -106,8 +106,8 @@ board is drawn, keeps the tree in line."
   "The marks just before a quotation in a member's text, by what its source says.
 `found', its words are in the source; `missing', they are not, and the
 quote is listed under Quotes not found; `unchecked', the source's text
-cannot surely be read -- a PDF, a picture, a file in an unknown coding,
-none linked -- and was not looked in.  See `org-truss-quote-found'."
+cannot surely be read -- no replica yet, a picture, a file in an unknown
+coding, none linked -- and was not looked in.  See `org-truss-quote-found'."
   :type '(alist :key-type symbol :value-type string)
   :group 'org-truss)
 

@@ -19,16 +19,18 @@
 ;; record -- and a member cites one with a `moor:' link in its text, which
 ;; gives it grounds.
 ;;
-;; Here: the sources of a truss file are put beside it; a link to a place
-;; in one is named by the place alone, p. 12, the source named once by
-;; the apex member of the truss pointing into it; `m' on the board
-;; takes one for a member as org-moor takes one -- a page, a file, the
-;; clipboard -- or links one taken before, for it to stand on; `m o' and
-;; `m O' open a source the board's line names, its replica or where it came
-;; from, so what a member stands on is read beside it; the check finds a
-;; `moor:' link to a source that is not there; the output document links
-;; to where a source came from, not to the replica, and names the source at
-;; the first link to it there; and
+;; Here: the sources of a truss file are put beside it; a link to a source
+;; carries no place, the quote under it, #+begin_quote, being the place,
+;; and is named where in the source the quote is -- an article, a page --
+;; the source named once by the apex member of the truss pointing into it;
+;; a quote is looked for in the source's replica, as it is seen; `m' on the
+;; board takes one for a member as org-moor takes one -- a page, a file,
+;; the clipboard -- or links one taken before, for it to stand on; `m o'
+;; and `m O' open a source the board's line names, its replica at the quote
+;; or where it is seen, so what a member stands on is checked in it; the
+;; check finds a `moor:' link to a source that is not there; the output
+;; document links to where a source is seen, at the quote, not to the
+;; replica, and names the source at the first link to it there; and
 ;; `org-truss-batch-take' takes one for an agent working in the file, which
 ;; cannot ask Emacs, and prints the link to cite it with.
 
@@ -40,7 +42,7 @@
 
 (defvar org-truss-moor-missing-function)
 (defvar org-truss-moor-export-function)
-(defvar org-truss-moor-text-function)
+(defvar org-truss-moor-quote-function)
 (defvar evil-local-mode)
 
 (defun org-truss-moor-sources (file)
@@ -51,13 +53,14 @@
 
 (add-hook 'org-moor-sources-directory-functions #'org-truss-moor-sources)
 
-(defun org-truss-moor-place-alone-p (file)
-  "Non-nil when FILE is a truss file, whose links to a place are named by it alone.
+(defun org-truss-moor-place-by-quote-p (file)
+  "Non-nil when FILE is a truss file, whose links find their place by the quote.
 The apex member of a truss pointing into a source names it, by its
-title; the members under it name the place, p. 12."
+title; the members under it quote it, a link with no place before the
+quote named where in the source it is."
   (org-truss-truss-file-p file))
 
-(add-hook 'org-moor-place-alone-functions #'org-truss-moor-place-alone-p)
+(add-hook 'org-moor-place-by-quote-functions #'org-truss-moor-place-by-quote-p)
 
 ;; The same from the package's autoloads, so that a truss file's sources go
 ;; beside it before anything of org-truss has been used: a source taken in
@@ -65,8 +68,8 @@ title; the members under it name the place, p. 12."
 ;; command an agent is handed to take one, which is written before
 ;; `org-truss-dock-request' loads org-truss.
 ;;;###autoload (autoload 'org-truss-moor-sources "org-truss")
-;;;###autoload (autoload 'org-truss-moor-place-alone-p "org-truss")
-;;;###autoload (with-eval-after-load 'org-moor (add-hook 'org-moor-sources-directory-functions #'org-truss-moor-sources) (add-hook 'org-moor-place-alone-functions #'org-truss-moor-place-alone-p))
+;;;###autoload (autoload 'org-truss-moor-place-by-quote-p "org-truss")
+;;;###autoload (with-eval-after-load 'org-moor (add-hook 'org-moor-sources-directory-functions #'org-truss-moor-sources) (add-hook 'org-moor-place-by-quote-functions #'org-truss-moor-place-by-quote-p))
 
 (defun org-truss-moor--words-end (pos)
   "Return where the words of the item at POS end, before its tags."
@@ -110,7 +113,7 @@ member's text; for an item, at the end of its first line."
 
 (defun org-truss-board-take-url ()
   "Take a web page or a file on the web for the member at point.
-Its replica is fetched in the background, as `org-moor-take-url' fetches it,
+Its replica is what the browser saves, as `org-moor-take-url' has it,
 and the link to it written in the member's text: grounds."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-take-url))
@@ -130,7 +133,7 @@ The link to it is written in the member's text: grounds."
 (defun org-truss-board-keep-replica ()
   "Keep a replica of the sources the member at point links to that have none.
 From their origins, as `org-moor-keep-replica' does: for sources an agent
-took, which could not fetch them as you, signed in."
+took, whose replicas the browser is to save."
   (interactive)
   (org-truss-moor--at-heading #'org-moor-keep-replica))
 
@@ -145,8 +148,8 @@ On a line of its own after the member's text."
         (unless records
           (user-error "No sources in %s" (abbreviate-file-name (org-moor-sources))))
         (let* ((table (mapcar (lambda (r) (cons (or (plist-get r :title) (plist-get r :id)) r))
-                              (sort records (lambda (a b) (string> (or (plist-get a :taken) "")
-                                                                   (or (plist-get b :taken) ""))))))
+                              (sort records (lambda (a b) (string> (org-moor-record-time a)
+                                                                   (org-moor-record-time b))))))
                (record (cdr (assoc (completing-read "Source: " table nil t) table)))
                (pos (plist-get item :pos)))
           (if (org-with-point-at pos (org-at-heading-p))
@@ -204,15 +207,38 @@ following a link."
             (unless (search-forward link end t)
               (user-error "The link is no longer in the member's text: %s" link))
             (goto-char (match-beginning 0))
-            (if (and origin (string-prefix-p "[[moor:" link))
-                (org-moor-open-origin how)
-              (org-open-at-point how))))))))
+            (let ((quote (and (string-prefix-p "[[moor:" link)
+                              (org-truss-moor--quote-after (match-end 0) end))))
+              (cond ((and origin (string-prefix-p "[[moor:" link))
+                     (org-moor-open-origin how))
+                    (quote
+                     (org-moor-open-record
+                      (or (org-moor-find-record (org-moor-link-at-point))
+                          (user-error "No source %s" link))
+                      (org-moor-text-place (car (split-string quote "…\\|\\.\\.\\." t "[[:space:]]+")))
+                      (org-moor--heading-marker) how))
+                    (t (org-open-at-point how))))))))))
+
+(defun org-truss-moor--quote-after (from end)
+  "Return the words of the quote right after the link ending at FROM, or nil.
+The quote, #+begin_quote, on the line after the link's, before END: the
+place a link in a truss file finds."
+  (save-excursion
+    (goto-char from)
+    (forward-line 1)
+    (when (and (< (point) end)
+               (looking-at "[ \t]*#\\+begin_quote\\b.*\n"))
+      (let ((start (match-end 0)))
+        (when (re-search-forward "^[ \t]*#\\+end_quote" end t)
+          (string-trim (buffer-substring-no-properties start (match-beginning 0))))))))
 
 (defun org-truss-board-open-source (&optional how)
   "Open the replica of a source of the board's line, or follow its link.
-On a link to a source in a member's text, that one; on a quotation
-there, the one it quotes; elsewhere, one the member's text links to.  HOW, the prefix, as for following a
-link: \\[universal-argument] in Emacs, two in the program the system opens it with."
+At the quote on the line after the link, when there is one.  On a link to
+a source in a member's text, that one; on a quotation there, the one it
+quotes; elsewhere, one the member's text links to.  HOW, the prefix, as
+for following a link: \\[universal-argument] in Emacs, two in the program
+the system opens it with."
   (interactive "P")
   (org-truss-moor--open nil how))
 
@@ -238,46 +264,49 @@ FILE is the file the link to it is in; with none, the current buffer's."
 
 (setq org-truss-moor-missing-function #'org-truss-moor-missing-p)
 
-(defun org-truss-moor-quote-text (id file)
-  "Return the text file a quote from source ID of FILE is looked for in, or nil.
-Its replica when that is text; else what org-moor made the replica readable as
--- a slide deck, a page, a document by pandoc -- when it has, which is
-what an agent read.  Nil for a PDF and for a replica not made readable:
-their text cannot surely be read as the agent read it.  Nothing is made
-here."
-  (let* ((record (ignore-errors (org-moor-record id (org-moor-sources file))))
-         (replica (and record (plist-get record :replica))))
-    (cond ((null replica) nil)
-          ((org-moor-text-file-p replica) replica)
-          (t (org-moor--made-readable replica)))))
+(defun org-truss-moor-quote-found (path words file)
+  "Return whether WORDS are in the replica of the `moor:' link PATH of FILE.
+`found', `not-found', or nil when it has no replica yet; as
+`org-moor-words-in-replica' looks: the replica as it is seen, a page, a
+PDF, a document."
+  (let ((record (ignore-errors (org-moor-record (car (org-moor-link-parse path))
+                                                (org-moor-sources file)))))
+    (and record
+         (pcase (org-moor-words-in-replica record words)
+           ('found 'found)
+           ('not-found 'not-found)))))
 
-(setq org-truss-moor-text-function #'org-truss-moor-quote-text)
+(setq org-truss-moor-quote-function #'org-truss-moor-quote-found)
 
-(defun org-truss-moor-export-link (path words file &optional first)
+(defun org-truss-moor-export-link (path words file &optional first quote)
   "Return the `moor:' link to PATH, named WORDS, as the reader of FILE follows it.
 The reader has no replica of the source, so the link goes to its origin: a
-page on the web, at the page of a PDF the link names.  A source that came
-from no such page -- a file, a mail -- is named by WORDS, or its title, as
-text, since nothing there can be opened by the reader.  FIRST, the first
-link to the source in the output document, has the title before WORDS
-naming a place alone, p. 12: a fact included without the member naming
-its source above it is not left without it."
+page on the web, at QUOTE, the quote after the link, when there is one --
+by a text fragment, #:~:text=, or the page of a PDF it is on.  A source
+that came from no such page -- a file, a mail -- is named by WORDS, or its
+title, as text, since nothing there can be opened by the reader.  FIRST,
+the first link to the source in the output document, has the title before
+WORDS naming where in it: a fact included without the member naming its
+source above it is not left without it."
   (pcase-let* ((`(,id . ,place) (org-moor-link-parse path))
                (record (org-moor-record id (org-moor-sources file)))
-               (origin (plist-get record :origin))
+               (origin (plist-get record :origin-url))
                (title (plist-get record :title))
                (name (cond ((not words) (or title id))
-                           ((and first title (string-match-p org-truss--place-name-re words))
+                           ((and first title (not (equal words title)))
                             (concat title " " words))
-                           (t words))))
+                           (t words)))
+               (at (let ((words (or quote place)))
+                     (and words (car (split-string words "…\\|\\.\\.\\." t "[[:space:]]+"))))))
     (if (not (and origin (string-match-p "\\`https?://" origin)))
         name
       (org-link-make-string
-       (if (and (integerp place)
-                (not (string-search "#" origin))
-                (equal (org-moor-extension (or (plist-get record :file) origin)) "pdf"))
-           (format "%s#page=%d" origin place)
-         origin)
+       (cond ((or (not at) (string-search "#" origin)) origin)
+             ((equal (org-moor-extension (or (plist-get record :replica-file) origin)) "pdf")
+              (let ((page (and (plist-get record :replica)
+                               (ignore-errors (org-moor-pdf-page-of (plist-get record :replica) at)))))
+                (if page (format "%s#page=%d" origin page) origin)))
+             (t (concat origin "#:~:text=" (url-hexify-string (org-moor-text-place at)))))
        name))))
 
 (setq org-truss-moor-export-function #'org-truss-moor-export-link)
@@ -287,24 +316,18 @@ its source above it is not left without it."
 For an agent working in the file, which cannot ask Emacs:
 
   emacs --batch -L DIR ... -l org-truss -l org-moor \\
-        -f org-truss-batch-take truss.org FILE-OR-URL [TITLE]
+        -f org-truss-batch-take truss.org REPLICA [TITLE] [OPTION...]
 
-A file is copied, never moved, and titled by its name unless TITLE is
-given.  The link printed names the source by its title; written in a
-member's text, it cites the source, and with a place,
-::12 after the id, a page of a PDF or a line of anything else."
-  (let* ((truss (expand-file-name (or (pop command-line-args-left)
-                                      (error "org-truss: no truss file"))))
-         (what (or (pop command-line-args-left)
-                   (error "org-truss: no file or URL to take")))
-         (title (pop command-line-args-left))
-         (sources (org-moor-sources truss))
-         (record (if (string-match-p "\\`https?://" what)
-                     (org-moor-take-url-to what sources title t)
-                   (unless (file-regular-p what)
-                     (error "org-truss: not a file: %s" what))
-                   (org-moor-take-file-to what sources title))))
-    (princ (concat (org-moor-link record) "\n"))))
+As `org-moor-batch-take' takes it into the truss file's sources, with its
+options: a file is the replica, a URL awaits the user's browser, and
+--origin-url, --machine-readable and --machine-readable-url say where it
+is seen and what a machine reads better.  The link printed names the
+source by its title; written in an apex member's words, it names the
+source, and under it, with a quote, it cites it."
+  (let ((truss (expand-file-name (or (pop command-line-args-left)
+                                     (error "org-truss: no truss file")))))
+    (setq command-line-args-left (cons (org-moor-sources truss) command-line-args-left))
+    (org-moor-batch-take)))
 
 (provide 'org-truss-moor)
 ;;; org-truss-moor.el ends here

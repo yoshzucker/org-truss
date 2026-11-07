@@ -511,35 +511,51 @@ it is."
 
 (defvar org-truss-moor-export-function nil
   "Function writing a `moor:' link as the reader is to follow it, or nil.
-Called with the link's path, its words or nil, the truss file, and
-non-nil for the first link to its source in the output document; returns
-what the output document says in its place.  Set by org-truss-moor.el;
-without org-moor a `moor:' link is written as it is.")
+Called with the link's path, its words or nil, the truss file, non-nil
+for the first link to its source in the output document, and the words
+of the quote on the line after the link, or nil; returns what the output
+document says in its place.  Set by org-truss-moor.el; without org-moor
+a `moor:' link is written as it is.")
 
 (defconst org-truss--moor-link-re
   "\\[\\[moor:\\([^]\n]+\\)\\]\\(?:\\[\\([^]\n]*\\)\\]\\)?\\]"
   "A `moor:' link: its path, the id and any place, and its words.")
 
+(defun org-truss--quote-after-in (text from)
+  "Return the words of the quote on the line after FROM in TEXT, or nil."
+  (let ((next (string-search "\n" text from)))
+    (when (and next
+               (eq (string-match "[ \t]*#\\+begin_quote\\b[^\n]*\n" text (1+ next)) (1+ next)))
+      (let ((start (match-end 0)))
+        (when (string-match "^[ \t]*#\\+end_quote" text start)
+          (string-trim (substring text start (match-beginning 0))))))))
+
 (defun org-truss--export-moor-links (text file)
   "Return TEXT with each `moor:' link written for the reader.
 For the reader of FILE's output document.  The copy a link opens is the
-writer's; the reader is sent where the source came from, by
-`org-truss-moor-export-function'.  The first link to each source, in the
-order the reader reads, is told it is: the source is named there."
+writer's; the reader is sent where the source is seen, at the quote after
+the link, by `org-truss-moor-export-function'.  The first link to each
+source, in the order the reader reads, is told it is: the source is named
+there."
   (if (not org-truss-moor-export-function)
       text
-    (let (named)
-      (replace-regexp-in-string
-       org-truss--moor-link-re
-       (lambda (link)
-         (let* ((path (match-string 1 link))
-                (words (match-string 2 link))
-                (id (replace-regexp-in-string "::.*" "" path))
-                (first (not (member id named))))
-           (push id named)
-           (save-match-data
-             (funcall org-truss-moor-export-function path words file first))))
-       text t t))))
+    (let ((named nil) (from 0) (parts nil))
+      (while (string-match org-truss--moor-link-re text from)
+        (let* ((beg (match-beginning 0))
+               (end (match-end 0))
+               (path (match-string 1 text))
+               (words (match-string 2 text))
+               (id (replace-regexp-in-string "::.*" "" path))
+               (first (not (member id named)))
+               (quote (save-match-data (org-truss--quote-after-in text end))))
+          (push id named)
+          (push (substring text from beg) parts)
+          (push (save-match-data
+                  (funcall org-truss-moor-export-function path words file first quote))
+                parts)
+          (setq from end)))
+      (push (substring text from) parts)
+      (apply #'concat (nreverse parts)))))
 
 (defun org-truss-export-buffer (buffer)
   "Write the output document of the truss file in BUFFER.

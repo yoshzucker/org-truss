@@ -185,7 +185,10 @@ Axes
   overlaps, cut a breakdown by an axis: :by after the breakdown.  Its
   supporting members are then all there is, each by its value
     #+begin_example
-    Amounts are cut by the rules [[moor:ID::3][art. 3]].
+    Amounts are cut by the rules [[moor:ID][art. 3]].
+    #+begin_quote
+    Approval of an expense is divided by its amount as follows.
+    #+end_quote
     #+attr_truss: :breakdown parts :by Amounts
     - Under 100k :: The section head approves [[m21]]
     - 100k or more :: The department head approves [[m22]]
@@ -214,9 +217,13 @@ Sources
   Name the source once, in the apex member of the truss that points into
   it: its words are the link with the source's title, ~[[moor:ID][TITLE]]~ ,
   not what is drawn from it -- that is a claim, for Message.  Under it, a
-  link named by its place alone, ~[[moor:ID::223][l. 223]]~ ,
-  ~[[moor:ID::12][p. 12]]~ , at the end of an item's first line, not on a
-  line of its own
+  link with no place, named where in the source the quote under it is, as
+  the source itself numbers it, ~[[moor:ID][art. 74-3 (1)]]~ ,
+  ~[[moor:ID][p. 12]]~ , at the end of an item's first line, not on a
+  line of its own.  The quote is the place: no line number, which is only
+  the file you read's, not the source's as a person checks it
+  A source is what is one thing to its reader: a law, not each of its
+  articles.  Take it once, and point to its articles by the quotes
 
 Scope
   Whether a source or a fact is needed is set by whether the response
@@ -239,10 +246,12 @@ Scope
 Quotes
   A fact of Subject is an end member: its words one fact, in one sentence,
   keeping the bounds it holds within (its period, its team)
-  In its text, a quote, #+begin_quote: the source's words that hold the
-  fact up, one or two sentences, copied as they are from what you read (a
-  moor: source's replica, or what the replica was made readable as).  Change no
-  word; mark words left out with …
+  In its text, a quote, #+begin_quote, on the line after the link to the
+  source: the source's words that hold the fact up, one or two sentences,
+  copied as they are from what you read (a moor: source's file to read).
+  Change no word; mark words left out with …
+  The quote is looked for in the source as a person sees it, its replica:
+  check each one as you write it (see the command after taking a source)
   Put the quote in the text, not in a comment: the output document shows
   it, and its reader checks the fact by it
   Where no words can be quoted (counted from data, read from a figure, what
@@ -266,8 +275,8 @@ In the output document
     more in a cell, a tree.  Under one axis, each item opens with its
     value (\"Under 100k: \")
   - a pointing link is m7's words (its description, if it has one); a
-    moor: link, where the source came from.  The first link to a source,
-    named by its place alone, has the source's title before it
+    moor: link, where the source is seen, at the quote after it.  The first
+    link to a source, named where in it, has the source's title before it
   - comments (a line starting with # and a space, a #+begin_comment
     block) and members tagged :noexport: are left out
 
@@ -418,7 +427,10 @@ M-x org-truss-export で、OUT/ に書き出す。
   調べたことを漏れなく重なりなく並べるときは、内訳を軸で分ける。軸は内訳
   のあとの :by に書く。支持部材はそれで全部になり、それぞれ値で分かれる
     #+begin_example
-    金額の区分は規程の第3条で全部 [[moor:ID::3][第3条]]。
+    金額の区分は規程の第3条で全部 [[moor:ID][第3条]]。
+    #+begin_quote
+    経費の承認は、金額により次のとおり区分する。
+    #+end_quote
     #+attr_truss: :breakdown parts :by 金額
     - 10万円未満 :: 課長が承認する [[m21]]
     - 10万円以上 :: 部長が承認する [[m22]]
@@ -443,9 +455,14 @@ M-x org-truss-export で、OUT/ に書き出す。
   組み合わせるときは、資料へのリンクを書かず、その事実の部材を指す
   資料の名前は、その資料を指すトラスの頂点部材に一度だけ書く。頂点部材の
   言葉を、題で書いたリンク ~[[moor:ID][題]]~ にする。資料から引き出した
-  ことは書かない（それは主張で、Message に書く）。その下の部材では場所
-  だけで ~[[moor:ID::223][l. 223]]~ 、 ~[[moor:ID::12][p. 12]]~ と書く。
-  項目では、改行せずに1行目の終わりに書く
+  ことは書かない（それは主張で、Message に書く）。その下の部材では、場所
+  を持たないリンクを、その下の引用が資料のどこにあるかで名付けて書く。
+  名前には資料自身の番号を使う：~[[moor:ID][第74条の3第1項]]~ 、
+  ~[[moor:ID][p. 12]]~ 。項目では、改行せずに1行目の終わりに書く。引用が
+  場所になる。行番号は書かない。行番号は読んだファイルのもので、人が確かめ
+  る資料のものではない
+  資料は、読み手にとって一つのものを一つにする。法令なら条ごとではなく法令
+  一本。一度だけ取り込み、条は引用で指す
 
 調べる範囲
   資料や事実が要るかどうかは、Brief の求める反応に至るのに要るかで決まる。
@@ -464,9 +481,12 @@ M-x org-truss-export で、OUT/ に書き出す。
 引用
   Subject の事実は末端部材で、その言葉には事実を一つ、一文で書く。その
   事実が成り立つ範囲（期間、チームなど）は削らない
-  その本文に、#+begin_quote で引用を置く。中身は、その事実を支える資料の
-  言葉を1〜2文、読んだ資料（moor: の資料なら、その写しか、写しを読める形
-  にしたもの）からそのまま写したもの。言葉は変えない。省いた所は … で示す
+  その本文の、資料へのリンクの次の行に、#+begin_quote で引用を置く。中身
+  は、その事実を支える資料の言葉を1〜2文、読んだ資料（moor: の資料なら、
+  読むように示されたファイル）からそのまま写したもの。言葉は変えない。
+  省いた所は … で示す
+  引用は、人が見る形の資料（写し）の中で探される。書いたらその都度確かめる
+  （資料を取り込んだあとに示されるコマンドで）
   引用はコメントではなく本文に書く。出力文書に出て、読み手もそれで事実を
   確かめる
   引用できる言葉がないとき（データから数えた、図から読んだ、資料に書かれて
@@ -487,9 +507,9 @@ M-x org-truss-export で、OUT/ に書き出す。
   - 項目の部材は、箇条書きのあった場所に出る
   - 軸が二つで、セルがどれも値と言葉だけなら表になる。セルにそれ以上ある
     ならツリーになる。軸が一つなら、項目は値から始まる（「10万円未満：」）
-  - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料の
-    取り込み元になる。場所だけで名指した、その資料への最初のリンクには、
-    前に資料の題が付く
+  - 指すリンクは m7 の言葉（説明があれば説明）に、moor: のリンクは資料が
+    見られる所の、直後の引用の箇所になる。資料の中の場所で名指した、その
+    資料への最初のリンクには、前に資料の題が付く
   - コメント（# と空白で始まる行、#+begin_comment のブロック）と、
     :noexport: を付けた部材は出ない
 
@@ -511,12 +531,31 @@ adds when it is there.  See `org-truss-guide'.")
 (defconst org-truss--take-text
   '("
 
-A file or a page read, taken into SOURCES/ with a link printed to cite it
-  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE PATH-OR-URL [TITLE]"
+A file or a page read, taken into SOURCES/ with a link printed to cite it,
+then the file to read and the replica
+  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE REPLICA [TITLE] [--origin-url=URL] [--machine-readable=PATH --machine-readable-url=URL]
+  REPLICA is a file you fetched -- the source as a person sees it, a page,
+  a document -- or a URL, which the user's browser saves later: nothing is
+  fetched for you, and there is nothing to read until then.  --origin-url
+  is where it is seen, when you fetched it from elsewhere (a document's
+  page in its library, not the API).  --machine-readable is a file you
+  fetched that you read better -- an API's XML for the same page -- and
+  --machine-readable-url where from
+A quote checked in the replica, Found or Not found
+  emacs --batch -L ORG-MOOR-DIR -L ORG-DOCK-DIR -l org-moor -f org-moor-batch-find SOURCES/ moor:ID WORDS"
     "
 
-読んだファイルやページを SOURCES/ に取り込み、引くためのリンクを出す
-  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE パスかURL [題]")
+読んだファイルやページを SOURCES/ に取り込み、引くためのリンクと、読む
+ファイル、写しを出す
+  emacs --batch -L ORG-TRUSS-DIR -L ORG-DOCK-DIR -L ORG-ITEM-TAGS-DIR -L ORG-MOOR-DIR -l org-truss -l org-moor -f org-truss-batch-take FILE 写し [題] [--origin-url=URL] [--machine-readable=ファイル --machine-readable-url=URL]
+  写しは、取ってきたファイル（人が見る形の資料。ページ、文書）か URL。URL
+  は利用者のブラウザがあとで保存する。代わりに取りには行かないので、それ
+  までは読むものがない。--origin-url は、別の所から取ったときの、資料が
+  見られる所（文書ならライブラリでのページで、API ではない）。
+  --machine-readable は、読みやすいので取ってきたファイル（同じページの
+  API の XML など）で、--machine-readable-url はその取得元
+引用が写しにあるかを確かめる。Found か Not found を出す
+  emacs --batch -L ORG-MOOR-DIR -L ORG-DOCK-DIR -l org-moor -f org-moor-batch-find SOURCES/ moor:ID 言葉")
   "How an agent takes a source, at the end of the guide.
 Written there when org-moor is there to take it with.")
 

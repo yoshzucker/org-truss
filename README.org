@@ -529,7 +529,10 @@ or a heading's, or else the member's words.
 
 #+begin_src org
 ,** Expenses
-Amounts are cut by the rules, art. 3 [[moor:6f1c...::3][art. 3]].
+Amounts are cut by the rules, art. 3 [[moor:6f1c...][art. 3]].
+,#+begin_quote
+Approval of an expense is divided by its amount as follows.
+,#+end_quote
 ,#+attr_truss: :breakdown parts :by Amounts
 - Under 100k :: The section head approves [[m21]]
 - 100k or more :: The department head approves [[m22]]
@@ -560,8 +563,8 @@ cut again by one axis: rows by the one, columns by the other.
 
 #+begin_src org
 ,** Expenses
-Amounts are cut by the rules, art. 3 [[moor:6f1c...::3][art. 3]]; each
-stage by the FAQ [[moor:a90b...::2][Q2]].
+Amounts are cut by the rules, art. 3 [[moor:6f1c...][art. 3]]; each
+stage by the FAQ [[moor:a90b...][Q2]].
 ,#+attr_truss: :breakdown parts :by Amounts
 - Under 100k ::
   ,#+attr_truss: :breakdown parts :by stage
@@ -627,34 +630,44 @@ Write a truss to be checked against one source; the check sees to it.
   source.
 
 A source taken by org-moor is one wherever in it its links point and
-whatever words they give it, ~[[moor:ID::14]]~ and ~[[moor:ID::200][field
+whatever words they give it, ~[[moor:ID][art. 14]]~ and ~[[moor:ID][field
 B]]~ alike; a file is one, a URL is one.  Pointing links are no sources.
+A source is what is one thing to its reader -- a law, not each of its
+articles -- so it is taken once, and its articles pointed to by quotes.
 
 A truss pointing into one source names it once, in its apex member:
 its words are the link with the source's title, ~[[moor:ID][Manual]]~.
 They name the source, not what is drawn from it: that is a claim, and
 its place is Message.  So a reader sees where one source's facts begin,
-and that all under it are of that source.  Under it, each link is named
-by its place alone, ~[[moor:ID::223][l. 223]]~, ~[[moor:ID::12][p.
-12]]~ -- in an item, at the end of its first line, not on a line of its
-own, so the output document gives the place at the end of the fact, not
-as a paragraph after it:
+and that all under it are of that source.  Under it, each link carries
+no place: the quote on the line after it, ~#+begin_quote~, is the place,
+written once.  The link is named where in the source the quote is, as
+the source itself numbers it -- ~[[moor:ID][art. 74-3 (1)]]~,
+~[[moor:ID][p. 12]]~ -- in an item, at the end of its first line, not on
+a line of its own, so the output document gives the place at the end of
+the fact, not as a paragraph after it.  No line number: it is the file
+an agent read's, not the source's as a person checks it.
 
 #+begin_example
 ,** [[moor:6f1c...][Approval manual 2026]]
 ,#+attr_truss:
-- <<m21>>Approval goes to the department head first [[moor:6f1c...::12][p. 12]]
-- <<m22>>Finance approves last [[moor:6f1c...::14][p. 14]]
+- <<m21>>Approval goes to the department head first [[moor:6f1c...][2.1]]
+  ,#+begin_quote
+  Approval goes to the head of the department before it reaches finance.
+  ,#+end_quote
+- <<m22>>Finance approves last [[moor:6f1c...][2.3]]
+  ,#+begin_quote
+  Finance gives the final approval.
+  ,#+end_quote
 #+end_example
 
 The link goes to the same source either way; only its words
 change, so the file and the output document say which source once,
 in the heading the facts of it begin under, and where in it beside each
-fact.  With
-org-moor, what it writes in ~truss.org~ -- a place noted beside the
-source, ~C-c C-l~, what an agent the heading is handed to is told to
-write -- is named so: a link to a place by the place, one to the source
-by its title.  A fact included alone, its apex member left where it is,
+fact.  With org-moor, what it writes in ~truss.org~ -- words quoted from
+the source, ~C-c C-l~, what an agent the heading is handed to is told to
+write -- is so: the quote, and a link with no place before it, one to
+the source by its title.  A fact included alone, its apex member left where it is,
 is not left without its source: see [[*The output document]].
 
 To bring facts of different sources together, point to the members that
@@ -722,10 +735,10 @@ buffer, or asked for.
 So the directory can be moved, or handed over, whole.  With org-moor, a
 source taken from a truss file goes in its ~sources/~: a directory named by
 the source's id, holding its replica and its record -- a title, where it came
-from, how and when.  A member cites it with a ~moor:~ link, ~[[moor:ID::12][p. 12]]~
-for a page or a line, the source named once above it (see [[*One source
-at a time]]), in its text, beside the words it quotes or
-on a line of its own; either gives it grounds.  What ~org-attach~
+from, how and when.  A member cites it with a ~moor:~ link,
+~[[moor:ID][p. 12]]~, and the quote after it, the source named once
+above it (see [[*One source at a time]]), in its text; either gives it
+grounds.  What ~org-attach~
 (~C-c C-a~) puts on a heading goes where Org puts it: ~data/~ beside the
 file, by Org's default, so it moves with the directory too.  The board and
 the output document read a link to an attachment, ~[[attachment:NAME]]~,
@@ -1456,20 +1469,22 @@ a comment block it stays in the file -- and gives it grounds; it may keep
 several, each drawn in its text as a quotation of its own.  /edit/ on
 the member writes one or rewrites it.  With
 org-moor, reading a source beside it -- ~org-moor-noter~ -- writes the
-quotation and the link to its page or line in one go.
+quotation and the link to it in one go, as ~org-moor-insert-quote~ does
+words copied from a page or a document read in its own program.
 
 A quotation is the source's words as they are, so the board looks for
 it in the source: the one linked in the quotation, else the first the
 member's text cites, else the first a member above it cites.  Line
 breaks, spaces and full- or half-width letters are set aside, and words
-left out are marked =…=; a word changed is not found.  It looks only
-where the source's text can surely be read as the one who quoted it
-read it: a replica that is text, or what org-moor made a slide deck, a page
-or a document readable as.  A PDF, a picture, a file that does not read
-cleanly -- raw bytes, or beyond ASCII in a coding of one byte a letter,
-as a file in a coding Emacs did not guess is read -- is not looked in,
-and nothing is said of a quotation from it: one said not to be found is
-one that is not there.  Before its words, where the member's text is
+left out are marked =…=; a word changed is not found.  A source taken by
+org-moor is looked in as a person sees it, its replica -- a page, a PDF,
+a document -- by org-moor, whatever an agent read of it: so a quote it
+took from an API's XML is checked against the page.  A linked file is
+looked in when it is text.  A source with no replica yet, a picture, a
+file that does not read cleanly -- raw bytes, or beyond ASCII in a
+coding of one byte a letter, as a file in a coding Emacs did not guess
+is read -- is not looked in, and nothing is said of a quotation from it:
+one said not to be found is one that is not there.  Before its words, where the member's text is
 drawn, the quotation is marked with which:
 
 | Mark | Says                                                                     |
@@ -1486,19 +1501,20 @@ working by ~org-truss-batch-check~ is told of it.
 into the truss file's ~sources/~, and writes the link to it on a line of
 its own after the member's text -- for an item, at the end of its first
 line, before its tags -- the reader's citation too: ~m w~ a page
-or a file on the web, its replica fetched in the background
+or a file on the web, opened in your browser to save its replica
 (~org-moor-take-url~); ~m f~ a file (~org-moor-take-file~); ~m c~ the
 clipboard (~org-moor-take-clipboard~).  ~m l~ links a source the file
 has, by its title, and ~m k~ keeps a replica, from their origins, of the
-sources the member links to that have none -- those an agent took without
-being able to fetch them as you, signed in (~org-moor-keep-replica~).  ~m o~
+sources the member links to that have none -- those an agent took by a
+URL, awaited from your browser (~org-moor-keep-replica~).  ~m o~
 opens a source to check what a member says against it: on a link to a
 source in a member's text, that source; on a quotation there, the source
 it quotes, linked in it or else the first the text cites; elsewhere on a
 member's lines, one its own text links to, asked for when there are
-several.  The replica, at
-the page or line the link names, as following the link does; ~m O~ where
-it came from instead, the page on the web.  A link to anything but a
+several.  The replica, at the quote on the line after the link -- a PDF
+at its page, a page in the browser at the words, the words on the
+clipboard where they cannot be gone to; ~m O~ where it is seen instead,
+the page on the web.  A link to anything but a
 source org-moor took is followed as it is, with either.  A link put on a
 comment line, ~# [[moor:...]]~, is the file's alone, and no ground.
 
@@ -1624,15 +1640,16 @@ Structure is in it, and the trusses and members its include links reach.
   is written relative to ~out/~, so the output document still finds it,
   and pandoc makes a picture an image.  /view/ shows the pictures where
   they are.
-- A ~moor:~ link, with org-moor, goes where its source came from, since
+- A ~moor:~ link, with org-moor, goes where its source is seen, since
   the replica in ~sources/~ is yours and the reader has none: to the page on
-  the web, at the page the link names when it is a PDF,
-  ~[[https://e.x/act.pdf#page=14][Act p. 14]]~.  A source that came from
-  no such page -- a file, a mail -- is named by the link's words, or its
-  title, as text.  The first link to a source in the output document,
-  named by a place alone, ~l. 223~, has the source's title put before
-  it, ~Manual l. 223~, so the reader is told which source wherever it
-  is first cited; the links after it are as written.  /view/ keeps the
+  the web, at the quote on the line after the link -- by a text fragment,
+  ~#:~:text=~, which a browser goes to, or for a PDF the page the quote is
+  on, ~[[https://e.x/act.pdf#page=14][Act art. 3]]~.  A source that came
+  from no such page -- a file, a mail -- is named by the link's words, or
+  its title, as text.  The first link to a source in the output document,
+  named where in it, ~art. 3~, has the source's title put before it, ~Act
+  art. 3~, so the reader is told which source wherever it is first cited;
+  the links after it are as written.  /view/ keeps the
   link to the replica, to be followed in Emacs.
 
 The file above is written out as:

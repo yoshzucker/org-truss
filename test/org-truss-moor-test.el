@@ -39,16 +39,16 @@ under a member nested in it gives the member none."
 
 (ert-deftest org-truss-test-sources-beside-a-truss-file-of-any-name ()
   "A truss file named otherwise is one by its Message division: its sources
-are beside it, shared with the others there, and a place is named alone."
+are beside it, shared with the others there, and a place is found by the quote."
   (org-truss-test--in-directory
       (list (cons "procedure.org" org-truss-test--file)
             (cons "note.org" "#+title: N\n* A heading\n"))
     (let ((truss (expand-file-name "procedure.org" dir))
           (note (expand-file-name "note.org" dir)))
       (should (equal (org-truss-moor-sources truss) (expand-file-name "sources/" dir)))
-      (should (org-truss-moor-place-alone-p truss))
+      (should (org-truss-moor-place-by-quote-p truss))
       (should-not (org-truss-moor-sources note))
-      (should-not (org-truss-moor-place-alone-p note))
+      (should-not (org-truss-moor-place-by-quote-p note))
       (with-current-buffer (find-file-noselect note)
         (goto-char (point-max))
         (insert "* M\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n")
@@ -56,16 +56,16 @@ are beside it, shared with the others there, and a place is named alone."
 
 (ert-deftest org-truss-test-batch-take ()
   "An agent takes a file into the truss file's sources, copied, and is
-printed a link to cite it by."
+printed a link to cite it by, what to read and the replica."
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file)
                                       (cons "read/minutes.txt" "We agreed.\n"))
     (let* ((truss (expand-file-name "truss.org" dir))
            (file (expand-file-name "read/minutes.txt" dir))
            (command-line-args-left (list truss file "Minutes of May"))
            (printed (with-output-to-string (org-truss-batch-take))))
-      (should (string-match "\\`\\[\\[moor:\\([^]]+\\)\\]\\[Minutes of May\\]\\]\n\\'" printed))
+      (should (string-match "\\`\\[\\[moor:\\([^]]+\\)\\]\\[Minutes of May\\]\\]\nRead: .*\nReplica: .*\n\\'" printed))
       (let ((record (org-moor-record (match-string 1 printed) (expand-file-name "sources/" dir))))
-        (should (equal (plist-get record :origin) file))
+        (should (equal (plist-get record :origin-url) (org-moor-path-url file)))
         (should (plist-get record :replica)))
       (should (file-exists-p file)))))
 
@@ -194,6 +194,30 @@ by org-moor came from, and follows any other link."
                        '("file:minutes.txt" "moor:6f1c::12" "file:minutes.txt" "file:minutes.txt")))
         (should (equal origins '("6f1c")))))))
 
+(ert-deftest org-truss-test-board-opens-a-source-at-its-quote ()
+  "m o on a link with a quote on the line after it opens the source's
+replica at the quote, the words before any left out."
+  (org-truss-test--in-directory '(("truss.org" . ""))
+    (let* ((truss (expand-file-name "truss.org" dir))
+           (org-truss-language 'en)
+           (record (org-moor-new-source "Act" "https://e.x/act" (org-moor-sources truss)))
+           opened)
+      (with-temp-file truss
+        (insert "#+title: T\n* Message\n:PROPERTIES:\n:TRUSS_DIVISION: message\n:END:\n"
+                "** The head approves first\n"
+                (format "[[moor:%s][Art. 3]]\n" (plist-get record :id))
+                "#+begin_quote\nThe head approves … before finance.\n#+end_quote\n"))
+      (with-temp-buffer
+        (org-truss-board-mode)
+        (setq org-truss--source (find-file-noselect truss))
+        (org-truss-board-redraw)
+        (org-truss--show-all 'whole)
+        (cl-letf (((symbol-function 'org-moor-open-record)
+                   (lambda (r place &rest _) (setq opened (list (plist-get r :id) place)))))
+          (org-truss-test--goto-line-with "member[ ·]+The head approves first")
+          (org-truss-board-open-source))
+        (should (equal opened (list (plist-get record :id) "The head approves")))))))
+
 (ert-deftest org-truss-test-board-opens-an-items-source ()
   "m o on a member written as an item of a list opens a source its own
 lines link to, not one of the items under it."
@@ -231,7 +255,8 @@ agent takes a source when org-moor is there."
     (let ((text (org-truss-guide)))
       (should (string-match-p "-L [^ ]+ -L [^ ]+ -l org-truss -L [^ ]+ -l org-moor -f org-truss-batch-check truss\\.org" text))
       (should-not (string-match-p "ORG-DOCK-DIR\\|ORG-MOOR-DIR\\|#TAKE" text))
-      (should (string-match-p "-f org-truss-batch-take truss\\.org PATH-OR-URL" text)))
+      (should (string-match-p "-f org-truss-batch-take truss\\.org REPLICA" text))
+      (should (string-match-p "-f org-moor-batch-find sources/ moor:ID WORDS" text)))
     (cl-letf (((symbol-function 'locate-library)
                (let ((locate (symbol-function 'locate-library)))
                  (lambda (name &rest args)
@@ -261,44 +286,61 @@ though it is kept elsewhere."
           (org-dock-abort))))))
 
 (ert-deftest org-truss-test-export-links-to-the-origin ()
-  "In the document a `moor:' link goes where its source came from: a page
-on the web, at the page of a PDF; a source from a file is named as text."
+  "In the document a `moor:' link goes where its source is seen, at the
+quote after it: a page on the web by a text fragment, a PDF at the page
+it is on; a source from a file is named as text."
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
     (let* ((truss (expand-file-name "truss.org" dir))
            (sources (org-moor-sources truss))
-           (law (org-moor-new-source "Act" "https://e.x/act.pdf" 'web sources))
-           (page (org-moor-new-source "Guide" "https://e.x/guide" 'web sources))
-           (memo (org-moor-new-source "Memo" "/x/memo.txt" 'file sources)))
-      (org-moor-record-set law :file "act.pdf")
-      (should (equal (org-truss--export-moor-links
-                      (format "As [[moor:%s::14][Act p. 14]] says, [[moor:%s::3]] and [[moor:%s][the memo]]; [[#m7]]."
-                              (plist-get law :id) (plist-get page :id) (plist-get memo :id))
-                      truss)
-                     "As [[https://e.x/act.pdf#page=14][Act p. 14]] says, [[https://e.x/guide][Guide]] and the memo; [[#m7]].")))))
+           (law (org-moor-new-source "Act" "https://e.x/act.pdf" sources))
+           (page (org-moor-new-source "Guide" "https://e.x/guide" sources))
+           (memo (org-moor-new-source "Memo" "/x/memo.txt" sources)))
+      (with-temp-file (expand-file-name "act.pdf" (plist-get law :dir)) (insert "%PDF"))
+      (org-moor-record-set law :replica-file "act.pdf")
+      (cl-letf (((symbol-function 'org-moor-pdf-pages)
+                 (lambda (_) (list "one" "two" "The head approves it."))))
+        (should (equal (org-truss--export-moor-links
+                        (format "As [[moor:%s][Art. 3]] says,\n#+begin_quote\nThe head approves …\n#+end_quote\n[[moor:%s][Guide]]\n#+begin_quote\nPaid at month end.\n#+end_quote\nand [[moor:%s][the memo]]; [[#m7]]."
+                                (plist-get law :id) (plist-get page :id) (plist-get memo :id))
+                        truss)
+                       (format "As [[https://e.x/act.pdf#page=3][Act Art. 3]] says,\n#+begin_quote\nThe head approves …\n#+end_quote\n[[https://e.x/guide#:~:text=%s][Guide]]\n#+begin_quote\nPaid at month end.\n#+end_quote\nand Memo the memo; [[#m7]]."
+                               (url-hexify-string "Paid at month end."))))))))
 
-(ert-deftest org-truss-test-place-named-alone ()
-  "In a truss file a link to a place is named by the place alone, and in
-the output document the first link to a source names it: a fact included
-without the member naming its source above it still says which."
+(ert-deftest org-truss-test-place-by-quote ()
+  "In a truss file a link to a source carries no place, the quote under it
+being the place, and in the output document the first link to a source
+names it: a fact included without the member naming its source above it
+still says which."
   (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
     (let* ((truss (expand-file-name "truss.org" dir))
            (sources (org-moor-sources truss))
-           (law (org-moor-new-source "Act" "https://e.x/act.pdf" 'web sources))
-           (memo (org-moor-new-source "Memo" "/x/memo.txt" 'file sources))
+           (memo (org-moor-new-source "Memo" "/x/memo.txt" sources))
            (id (plist-get memo :id)))
-      (org-moor-record-set law :file "act.pdf")
-      (should (org-moor-place-alone-p truss))
-      (should-not (org-moor-place-alone-p (expand-file-name "notes.org" dir)))
+      (should (org-moor-place-by-quote-p truss))
+      (should-not (org-moor-place-by-quote-p (expand-file-name "notes.org" dir)))
+      (should (string-search "[[moor:ID][WHERE]]" (org-moor-request-text (list :origin truss))))
       (should (equal (org-truss--export-moor-links
-                      (format "[[moor:%s::3][l. 3]], [[moor:%s::9][l. 9]], [[moor:%s::14][p. 14]]"
-                              id id (plist-get law :id))
+                      (format "[[moor:%s][Memo]], [[moor:%s][item 3]]; [[moor:%s][item 9]]" id id id)
                       truss)
-                     "Memo l. 3, l. 9, [[https://e.x/act.pdf#page=14][Act p. 14]]"))
-      (should (equal (org-truss--export-moor-links
-                      (format "[[moor:%s][Memo]], [[moor:%s::3][l. 3]]; [[moor:%s::9][its last page]]"
-                              id id (plist-get law :id))
-                      truss)
-                     "Memo, l. 3; [[https://e.x/act.pdf#page=9][its last page]]")))))
+                     "Memo, item 3; item 9"))
+      (should (equal (org-truss--export-moor-links (format "[[moor:%s][item 3]]" id) truss)
+                     "Memo item 3")))))
+
+(ert-deftest org-truss-test-quote-looked-for-in-the-replica ()
+  "A quote of a `moor:' source is looked for in its replica, as it is seen;
+with no replica yet, it is not looked for."
+  (org-truss-test--in-directory (list (cons "truss.org" org-truss-test--file))
+    (let* ((truss (expand-file-name "truss.org" dir))
+           (sources (org-moor-sources truss))
+           (page (org-moor-new-source "Act" "https://e.x/act" sources))
+           (link (format "[[moor:%s][Art. 3]]" (plist-get page :id))))
+      (should-not (org-truss-quote-found "The head approves it." link truss))
+      (with-temp-file (expand-file-name "act.txt" (plist-get page :dir))
+        (insert "Art. 3  The head\napproves it, before finance.\n"))
+      (org-moor-record-set page :replica-file "act.txt")
+      (should (eq (org-truss-quote-found "The head approves it" link truss) 'found))
+      (should (eq (org-truss-quote-found "The head … before finance." link truss) 'found))
+      (should (eq (org-truss-quote-found "The chair approves it" link truss) 'missing)))))
 
 (provide 'org-truss-moor-test)
 ;;; org-truss-moor-test.el ends here
